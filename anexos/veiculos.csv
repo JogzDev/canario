@@ -1,0 +1,20 @@
+veiculo,pais,url,tipo,prioridade,status_feed
+Vogue Brasil,BR,https://vogue.globo.com,editorial,alta,pendente
+Elle Brasil,BR,https://elle.com.br,editorial,alta,pendente
+Harpers Bazaar Brasil,BR,https://harpersbazaar.uol.com.br,editorial,alta,pendente
+Glamour Brasil,BR,https://glamour.globo.com,editorial,media,pendente
+Marie Claire Brasil,BR,https://revistamarieclaire.globo.com,editorial,media,pendente
+FFW,BR,https://ffw.uol.com.br,editorial,alta,pendente
+Steal the Look,BR,https://stealthelook.com.br,editorial,media,pendente
+Fashion Bubbles,BR,https://www.fashionbubbles.com,editorial,media,pendente
+FashionNetwork Brasil,BR,https://br.fashionnetwork.com,editorial,alta,pendente
+Vogue,US,https://www.vogue.com,editorial,alta,pendente
+Vogue Business,UK,https://www.voguebusiness.com,editorial,alta,pendente
+Business of Fashion,UK,https://www.businessoffashion.com,editorial,alta,pendente
+WWD,US,https://wwd.com,editorial,alta,pendente
+Who What Wear,US,https://www.whowhatwear.com,editorial,media,pendente
+Refinery29,US,https://www.refinery29.com,editorial,media,pendente
+Hypebeast,HK,https://hypebeast.com,editorial,media,pendente
+Highsnobiety,DE,https://www.highsnobiety.com,editorial,media,pendente
+Dazed,UK,https://www.dazeddigital.com,editorial,baixa,pendente
+Lyst,UK,https://www.lyst.com,dado_agregado,alta,pendente
