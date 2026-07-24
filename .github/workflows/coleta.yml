@@ -1,10 +1,20 @@
 name: Coleta de varejo + saude
 
-# SEM CRON por enquanto (condicao 2.2): a sonda achou bloqueio em Shopify a
-# partir do datacenter. So dispara sob demanda ate o JP decidir. O cron
-# `0 6 * * *` UTC (03:00 BRT) entra numa proxima edicao, com o ok do JP.
+# Backfill inicial (decisao do JP, 24/07). SEM cron ainda: a espinha dorsal
+# VTEX foi aprovada do datacenter (sonda), mas o cron so entra depois desta
+# primeira coleta manual dar certo. Dispara ao empurrar o coletor e sob demanda.
 on:
   workflow_dispatch:
+    inputs:
+      marca:
+        description: 'Coletar so uma marca (particionamento por marca; vazio = todas)'
+        required: false
+        default: ''
+  push:
+    paths:
+      - 'coletor/coletor_varejo.py'
+      - 'coletor/pente_fino_datacenter.py'
+      - '.github/workflows/coleta.yml'
 
 permissions:
   contents: write
@@ -16,7 +26,7 @@ concurrency:
 jobs:
   coletar:
     runs-on: ubuntu-latest
-    timeout-minutes: 330   # cabe na janela da madrugada
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
@@ -24,10 +34,32 @@ jobs:
         with:
           python-version: '3.11'
 
+      # Fase 1: veredito dos 4 casos-limite (Colcci, Centauro, Amaro, PatBo).
+      - name: Pente fino do datacenter
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python3 coletor/pente_fino_datacenter.py
+
+      # Commit cedo: o JP ve o veredito Shopify/403 sem esperar a coleta longa.
+      - name: Commitar veredito do pente fino
+        run: |
+          git config user.name  "CanarioBot"
+          git config user.email "canarioch3@gmail.com"
+          git add PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv
+          if git diff --cached --quiet; then
+            echo "Sem mudança no pente fino."
+          else
+            git commit -m "Pente fino do datacenter: veredito dos casos-limite [skip ci]"
+            git push
+          fi
+
+      # Fase 2: coleta de varejo (backfill inicial, pode ser longo).
       - name: Coletar varejo e gerar saude
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          COLETA_MARCA: ${{ github.event.inputs.marca }}
         run: python3 coletor/coletor_varejo.py
 
       - name: Commitar SAUDE.md
@@ -35,10 +67,11 @@ jobs:
         run: |
           git config user.name  "CanarioBot"
           git config user.email "canarioch3@gmail.com"
+          git pull --rebase --autostash || true
           git add SAUDE.md
           if git diff --cached --quiet; then
             echo "Sem mudança no SAUDE.md."
           else
-            git commit -m "Saúde: relatório da coleta diária [skip ci]"
+            git commit -m "Saúde: relatório da coleta [skip ci]"
             git push
           fi

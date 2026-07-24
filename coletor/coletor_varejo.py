@@ -1,18 +1,22 @@
-"""Coletor de varejo (§17), modo amplo (A2), gravacao por delta (B3).
+"""Coletor de varejo (§17), modo amplo (A2), gravacao em lote por delta (B3).
 
-Fluxo por marca aprovada (VTEX ou Shopify), EM SERIE (nunca em paralelo):
-  1. descobre as categorias femininas (classificador provisorio, A2);
-  2. pagina os produtos dessas categorias, sem teto de tamanho (condicao 2.3);
-  3. faz upsert de cada produto;
-  4. grava snapshot SO se algo mudou vs. o ultimo, mais batimento semanal (B3);
-  5. acumula saude: visitados vs gravados, e total declarado vs coletado.
+Decisoes do JP (24/07):
+  * SEM teto de produtos por marca: a ordem da loja e ordem de vitrine, cortar
+    coletaria so o promovido e perderia a cauda de encalhe/remarcacao. Catalogo
+    feminino inteiro de cada marca.
+  * Chave de conflito do upsert de produto = (marca_id, id_externo), nunca so o
+    id_externo.
+  * A primeira coleta e backfill: pode passar da janela de 5,5h, roda uma vez,
+    disparada a mao. So as coletas diarias (deltas pequenos) precisam caber. Se
+    a primeira exceder o teto de uma execucao, particionar por marca (env
+    COLETA_MARCA).
+  * SAUDE.md reporta total declarado (header VTEX) vs gravado, por marca.
 
-Ritmo: 1 requisicao por segundo GLOBAL (regra 7 emendada em 24/07), garantido
-pelo throttle de teste_30s.buscar somado a um teto global neste modulo. Coleta
-de madrugada via cron 0 6 * * * UTC.
+Ritmo: 1 req/s GLOBAL (regra 7 emendada), nao por dominio. Escrita no Supabase
+em lote (~500 por bloco) para nao estourar a janela com round-trips.
 
-O matching titulo->termo NAO acontece aqui: a taxonomia ainda nao esta aprovada
-(regra 4 / B2) e o casamento e retroativo. Este coletor so guarda o cru.
+O matching titulo->termo NAO acontece aqui (taxonomia ainda proposta; regra 4 /
+B2). Este coletor so guarda o cru; o casamento e retroativo.
 """
 
 import json
@@ -20,10 +24,9 @@ import os
 import sys
 import threading
 import time
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import teste_30s  # noqa: E402
 from teste_30s import buscar, robots_permite  # noqa: E402
 from mapa_categorias import classificar  # noqa: E402
 import supabase_rest  # noqa: E402
@@ -32,72 +35,95 @@ import materializar_anexos  # noqa: E402
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAUDE_MD = os.path.join(RAIZ, "SAUDE.md")
 
-PAGINA = 50            # VTEX: janela do header Range
-LIMITE_GLOBAL = 1.0   # regra 7 emendada: 1 req/s GLOBAL, nao por dominio
+PAGINA = 50             # janela do header Range da VTEX
+TETO_OFFSET = 2500      # a VTEX corta o offset em 2500 por consulta
+BLOCO_ESCRITA = 500     # linhas por upsert em lote
+BLOCO_LEITURA = 120     # id_externos por filtro in.()
+LIMITE_GLOBAL = 1.0     # regra 7 emendada: 1 req/s GLOBAL
+BACKOFF_429 = 60        # um unico retry longo (decisao do JP)
+PRECO_TETO = 200000     # teto de preco para o particionamento (R$)
 
-_trava_global = threading.Lock()
-_ultima_req = [0.0]
+_trava = threading.Lock()
+_ultima = [0.0]
 
 
-def _ritmo_global():
-    with _trava_global:
-        espera = LIMITE_GLOBAL - (time.monotonic() - _ultima_req[0])
+def _ritmo():
+    with _trava:
+        espera = LIMITE_GLOBAL - (time.monotonic() - _ultima[0])
         if espera > 0:
             time.sleep(espera)
-        _ultima_req[0] = time.monotonic()
+        _ultima[0] = time.monotonic()
 
 
-def buscar_lento(url, dominio):
-    """buscar() com o teto GLOBAL por cima do teto por dominio."""
-    _ritmo_global()
-    return buscar(url, dominio)
+def buscar_varejo(url, dominio):
+    """buscar() com teto GLOBAL e um unico retry longo diante de 429."""
+    _ritmo()
+    codigo, corpo, final, cab = buscar(url, dominio)
+    if codigo == 429:
+        time.sleep(BACKOFF_429)
+        _ritmo()
+        codigo, corpo, final, cab = buscar(url, dominio)
+    return codigo, corpo, final, cab
+
+
+def _total_do_header(cab):
+    recurso = cab.get("resources") or cab.get("Resources") or ""
+    if "/" in recurso:
+        try:
+            return int(recurso.split("/")[-1])
+        except ValueError:
+            return None
+    return None
 
 
 # ---------------------------------------------------------------------------
-# VTEX
+# VTEX: departamentos femininos + paginacao completa por particao de preco
 # ---------------------------------------------------------------------------
 
-def vtex_categorias_femininas(dominio):
-    """Arvore de categorias -> ids que o classificador marca como femininos (A2)."""
-    caminho = "/api/catalog_system/pub/category/tree/3"
+def vtex_departamentos_femininos(dominio):
+    """Nivel 1 da arvore que o classificador marca como feminino (A2).
+
+    fq=C:{id} traz o departamento E suas subcategorias, entao paginar os
+    departamentos de topo cobre o catalogo feminino inteiro. Departamentos de
+    topo sao disjuntos, o que torna o total declarado somavel.
+    """
+    caminho = "/api/catalog_system/pub/category/tree/1"
     if not robots_permite(dominio, caminho)[0]:
-        return [], "robots proibe a arvore"
-    codigo, corpo, _, _ = buscar_lento("https://{}{}".format(dominio, caminho), dominio)
+        return None, "robots proibe a arvore"
+    codigo, corpo, _, _ = buscar_varejo("https://{}{}".format(dominio, caminho), dominio)
     if codigo not in (200, 206) or not corpo:
-        return [], "arvore http {}".format(codigo)
+        return None, "arvore http {}".format(codigo)
     try:
         arvore = json.loads(corpo)
     except ValueError:
-        return [], "arvore nao-json"
-
-    ids = []
-
-    def andar(nos, caminho_pai):
-        for no in nos or []:
-            nome = no.get("name") or ""
-            caminho_cat = "{} > {}".format(caminho_pai, nome) if caminho_pai else nome
-            incluir, _, _ = classificar(caminho_cat)
-            if incluir == "sim" and no.get("id"):
-                ids.append((no["id"], caminho_cat))
-            andar(no.get("children"), caminho_cat)
-
-    andar(arvore, "")
-    return ids, ""
+        return None, "arvore nao-json"
+    deps = [(no["id"], no.get("name") or "")
+            for no in arvore
+            if no.get("id") and classificar(no.get("name") or "")[0] == "sim"]
+    return deps, ""
 
 
-def vtex_paginar(dominio, categoria_id):
-    """Pagina os produtos de uma categoria via fq=C e header Range (sem teto)."""
+def _fq_preco(pmin, pmax):
+    return "&fq=P:[{} TO {}]".format(pmin, pmax) if pmin is not None else ""
+
+
+def _contar(dominio, cat_id, pmin=None, pmax=None):
+    url = ("https://{}/api/catalog_system/pub/products/search"
+           "?fq=C:{}{}&_from=0&_to=0".format(dominio, cat_id, _fq_preco(pmin, pmax)))
+    codigo, _, _, cab = buscar_varejo(url, dominio)
+    if codigo not in (200, 206):
+        return None
+    return _total_do_header(cab) or 0
+
+
+def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
     de = 0
-    while True:
+    while de < min(limite, TETO_OFFSET):
         ate = de + PAGINA - 1
         url = ("https://{}/api/catalog_system/pub/products/search"
-               "?fq=C:{}&_from={}&_to={}".format(dominio, categoria_id, de, ate))
-        if not robots_permite(dominio, "/api/catalog_system/pub/products/search")[0]:
-            return
-        codigo, corpo, _, cab = buscar_lento(url, dominio)
-        if codigo == 429:
-            time.sleep(30)
-            continue
+               "?fq=C:{}{}&_from={}&_to={}".format(
+                   dominio, cat_id, _fq_preco(pmin, pmax), de, ate))
+        codigo, corpo, _, _ = buscar_varejo(url, dominio)
         if codigo not in (200, 206) or not corpo:
             return
         try:
@@ -106,63 +132,80 @@ def vtex_paginar(dominio, categoria_id):
             return
         if not produtos:
             return
-        total = None
-        recurso = cab.get("resources") or cab.get("Resources") or ""
-        if "/" in recurso:
-            try:
-                total = int(recurso.split("/")[-1])
-            except ValueError:
-                total = None
         for p in produtos:
-            yield p, total
+            yield p
         de += PAGINA
-        # A VTEX limita offset em 2500 por consulta; a categoria raramente
-        # passa disso, mas se passar, paramos honestamente nesta categoria.
-        if de > 2500 or len(produtos) < PAGINA:
+        if len(produtos) < PAGINA:
             return
 
 
+def vtex_departamento(dominio, cat_id, estado):
+    """Todos os produtos de um departamento (inclui subcategorias via fq=C).
+
+    Caso comum (departamento <= 2500): pagina so por categoria, sem depender do
+    facet de preco. So quando passa de 2500 e que parte por preco para furar o
+    teto de offset da VTEX; prefere sobreposicao a lacuna (o dedup remove a borda).
+    """
+    total = _contar(dominio, cat_id)
+    if not total:
+        return
+    estado["declarado"] += total
+    if total <= TETO_OFFSET:
+        yield from _paginar(dominio, cat_id, total)
+        return
+
+    def particao(pmin, pmax):
+        t = _contar(dominio, cat_id, pmin, pmax)
+        if not t:
+            return
+        if t <= TETO_OFFSET:
+            yield from _paginar(dominio, cat_id, t, pmin, pmax)
+        elif pmax - pmin > 1:
+            mid = (pmin + pmax) // 2
+            yield from particao(pmin, mid)
+            yield from particao(mid, pmax)
+        else:
+            estado["truncou"] = True  # faixa indivisivel ainda acima do teto
+            yield from _paginar(dominio, cat_id, TETO_OFFSET, pmin, pmax)
+
+    yield from particao(0, PRECO_TETO)
+
+
 def vtex_extrair(p):
-    """Normaliza um produto VTEX para o schema. Defensivo: campo ausente vira None."""
     itens = p.get("items") or []
     grade = {}
     preco_atual = preco_orig = None
     for it in itens:
         tamanho = None
         for v in (it.get("variations") or []):
-            nome = v if isinstance(v, str) else ""
-            if "tam" in nome.lower():
+            if isinstance(v, str) and "tam" in v.lower():
                 vals = it.get(v) or []
                 tamanho = vals[0] if vals else None
-        if not tamanho:
-            tamanho = it.get("Tamanho", [None])[0] if isinstance(it.get("Tamanho"), list) else None
         sellers = it.get("sellers") or []
         disponivel = False
         if sellers:
-            oferta = (sellers[0].get("commertialOffer") or {})
+            oferta = sellers[0].get("commertialOffer") or {}
             disponivel = bool(oferta.get("IsAvailable")) and (oferta.get("AvailableQuantity", 0) or 0) > 0
             if preco_atual is None and oferta.get("Price"):
                 preco_atual = oferta.get("Price")
                 preco_orig = oferta.get("ListPrice") or oferta.get("Price")
         if tamanho:
-            grade[str(tamanho)] = grade.get(str(tamanho), False) or disponivel
-
+            chave = str(tamanho)
+            grade[chave] = grade.get(chave, False) or disponivel
     composicao = None
     for chave in ("Composição", "Composicao", "Material"):
         val = p.get(chave)
         if isinstance(val, list) and val:
             composicao = val[0]
             break
-
     imagem = None
     if itens and (itens[0].get("images") or []):
         imagem = itens[0]["images"][0].get("imageUrl")
-
     return {
         "id_externo": str(p.get("productId") or ""),
-        "url": p.get("link") or (("https://" + p.get("linkText", "") + "/p") if p.get("linkText") else None),
+        "url": p.get("link") or None,
         "titulo": p.get("productName"),
-        "descricao": (p.get("description") or None),
+        "descricao": p.get("description") or None,
         "categoria_site": (p.get("categories") or [None])[0],
         "imagem_url": imagem,
         "preco_original": preco_orig,
@@ -176,56 +219,56 @@ def vtex_extrair(p):
 # Shopify
 # ---------------------------------------------------------------------------
 
-def shopify_paginar(dominio):
-    """Pagina /products.json (modo amplo: catalogo todo; segmento vem depois)."""
+def shopify_todos(dominio, estado):
     pagina = 1
     while True:
         url = "https://{}/products.json?limit=250&page={}".format(dominio, pagina)
         if not robots_permite(dominio, "/products.json")[0]:
+            estado["erro"] = "robots proibe products.json"
             return
-        codigo, corpo, _, _ = buscar_lento(url, dominio)
-        if codigo == 429:
-            time.sleep(30)
-            continue
+        codigo, corpo, _, _ = buscar_varejo(url, dominio)
+        if codigo in (403, 429):
+            estado["erro"] = "http {} (persistiu apos backoff longo)".format(codigo)
+            return
         if codigo not in (200, 206) or not corpo:
+            estado["erro"] = "http {}".format(codigo)
             return
         try:
             produtos = (json.loads(corpo) or {}).get("products") or []
         except ValueError:
+            estado["erro"] = "resposta nao-json"
             return
         if not produtos:
             return
         for p in produtos:
-            yield p, None
+            p["_dominio"] = dominio
+            yield p
         pagina += 1
         if len(produtos) < 250:
             return
 
 
 def shopify_extrair(p):
-    variantes = p.get("variants") or []
     grade = {}
     preco_atual = preco_orig = None
-    for v in variantes:
+    for v in (p.get("variants") or []):
         tamanho = v.get("option1")
-        disponivel = bool(v.get("available"))
         if tamanho:
-            grade[str(tamanho)] = grade.get(str(tamanho), False) or disponivel
+            chave = str(tamanho)
+            grade[chave] = grade.get(chave, False) or bool(v.get("available"))
         if preco_atual is None and v.get("price"):
             try:
                 preco_atual = float(v.get("price"))
                 preco_orig = float(v.get("compare_at_price") or v.get("price"))
             except (TypeError, ValueError):
                 pass
-    imagem = None
-    if p.get("images"):
-        imagem = p["images"][0].get("src")
+    imagem = p["images"][0].get("src") if p.get("images") else None
     handle = p.get("handle")
     return {
         "id_externo": str(p.get("id") or ""),
         "url": ("https://{}/products/{}".format(p.get("_dominio", ""), handle) if handle else None),
         "titulo": p.get("title"),
-        "descricao": None,  # body_html e HTML pesado; nao guardamos cru
+        "descricao": None,
         "categoria_site": p.get("product_type"),
         "imagem_url": imagem,
         "preco_original": preco_orig,
@@ -236,115 +279,160 @@ def shopify_extrair(p):
 
 
 # ---------------------------------------------------------------------------
-# Delta + persistencia
+# Persistencia em lote com delta O(1) (estado na propria linha de produtos)
 # ---------------------------------------------------------------------------
 
-def mudou(novo, ultimo):
-    """B3: grava so quando preco, grade ou disponibilidade mudou."""
-    if ultimo is None:
+def _pedacos(lista, n):
+    for i in range(0, len(lista), n):
+        yield lista[i:i + n]
+
+
+def _mudou(d, ex):
+    if float(d.get("preco_atual") or 0) != float(ex.get("ultimo_preco_atual") or 0):
         return True
-    if float(novo.get("preco_atual") or 0) != float(ultimo.get("preco_atual") or 0):
+    if float(d.get("preco_original") or 0) != float(ex.get("ultimo_preco_original") or 0):
         return True
-    if float(novo.get("preco_original") or 0) != float(ultimo.get("preco_original") or 0):
-        return True
-    if (novo.get("grade_por_tamanho") or {}) != (ultimo.get("grade_por_tamanho") or {}):
+    if (d.get("grade_por_tamanho") or {}) != (ex.get("ultima_grade") or {}):
         return True
     return False
 
 
+def _precisa_snapshot(d, ex, hoje):
+    if ex is None:
+        return True
+    if _mudou(d, ex):
+        return True
+    ultimo = ex.get("ultimo_snapshot_em")
+    if not ultimo:
+        return True
+    try:
+        return (hoje - date.fromisoformat(ultimo)).days >= 7  # batimento semanal (B3)
+    except (TypeError, ValueError):
+        return True
+
+
+def gravar_lote(marca_id, coletados, hoje):
+    """Grava um bloco de produtos coletados. Devolve (gravados, campos_ok)."""
+    if not coletados:
+        return 0, 0
+
+    existentes = {}
+    ids = [d["id_externo"] for d in coletados]
+    for sub in _pedacos(ids, BLOCO_LEITURA):
+        lista = ",".join('"{}"'.format(i) for i in sub)
+        params = ("?marca_id=eq.{}&id_externo=in.({})"
+                  "&select=id,id_externo,ultimo_preco_atual,ultimo_preco_original,"
+                  "ultima_grade,ultimo_snapshot_em,primeiro_avistamento".format(marca_id, lista))
+        for r in supabase_rest.selecionar("produtos", params):
+            existentes[r["id_externo"]] = r
+
+    prod_rows, snap_alvo = [], []
+    campos_ok = 0
+    for d in coletados:
+        ex = existentes.get(d["id_externo"])
+        escreve = _precisa_snapshot(d, ex, hoje)
+        campos_ok += 1 if (d["preco_atual"] is not None and d["grade_por_tamanho"] and d["titulo"]) else 0
+        prod_rows.append({
+            "marca_id": marca_id,
+            "id_externo": d["id_externo"],
+            "url": d["url"],
+            "titulo": d["titulo"],
+            "descricao": d["descricao"],
+            "categoria_site": d["categoria_site"],
+            "imagem_url": d["imagem_url"],
+            "primeiro_avistamento": (ex.get("primeiro_avistamento") if ex else hoje.isoformat()) or hoje.isoformat(),
+            "ultimo_preco_atual": d["preco_atual"],
+            "ultimo_preco_original": d["preco_original"],
+            "ultima_grade": d["grade_por_tamanho"],
+            "ultimo_snapshot_em": hoje.isoformat() if escreve else (ex.get("ultimo_snapshot_em") if ex else hoje.isoformat()),
+        })
+        if escreve:
+            snap_alvo.append(d)
+
+    id_por_externo = {}
+    for bloco in _pedacos(prod_rows, BLOCO_ESCRITA):
+        ret = supabase_rest.upsert("produtos", bloco,
+                                   on_conflict="marca_id,id_externo", retornar=True)
+        for r in ret:
+            id_por_externo[r["id_externo"]] = r["id"]
+
+    snap_rows = []
+    for d in snap_alvo:
+        pid = id_por_externo.get(d["id_externo"])
+        if pid is None:
+            continue
+        snap_rows.append({
+            "produto_id": pid, "data": hoje.isoformat(),
+            "preco_original": d["preco_original"], "preco_atual": d["preco_atual"],
+            "composicao": d["composicao"], "grade_por_tamanho": d["grade_por_tamanho"],
+        })
+    for bloco in _pedacos(snap_rows, BLOCO_ESCRITA):
+        supabase_rest.upsert("snapshots", bloco, on_conflict="produto_id,data")
+
+    return len(snap_rows), campos_ok
+
+
 def coletar_marca(marca, hoje):
-    """Coleta uma marca. Devolve metricas de saude."""
     nome, dominio, plataforma = marca["nome"], marca["dominio"], marca["plataforma"]
+    estado = {"declarado": 0, "truncou": False, "erro": None}
+    vistos = set()
+    buffer = []
     visitados = gravados = campos_ok = 0
-    total_declarado = 0
+
+    def descarregar():
+        nonlocal gravados, campos_ok, buffer
+        if buffer:
+            g, c = gravar_lote(marca["id"], buffer, hoje)
+            gravados += g
+            campos_ok += c
+            buffer = []
 
     if plataforma == "vtex":
-        cats, erro = vtex_categorias_femininas(dominio)
+        if not robots_permite(dominio, "/api/catalog_system/pub/products/search")[0]:
+            return {"marca_id": marca["id"], "nome": nome, "plataforma": plataforma,
+                    "visitados": 0, "gravados": 0, "declarado": None,
+                    "pct_campos_ok": None, "alertas": {"erro": "robots proibe a busca"}}
+        deps, erro = vtex_departamentos_femininos(dominio)
         if erro:
-            return {"marca_id": marca["id"], "fonte": "varejo", "visitados": 0,
-                    "gravados": 0, "itens": 0, "total_declarado": None,
-                    "pct_campos_ok": None, "alertas": {"erro": erro}}
-        vistos_ids = set()
-        for cat_id, _caminho in cats:
-            for p, total in vtex_paginar(dominio, cat_id):
-                if total:
-                    total_declarado = max(total_declarado, total)
-                dados = vtex_extrair(p)
-                if not dados["id_externo"] or dados["id_externo"] in vistos_ids:
+            estado["erro"] = erro
+            deps = []
+        for cat_id, _nome in deps:
+            for p in vtex_departamento(dominio, cat_id, estado):
+                d = vtex_extrair(p)
+                if not d["id_externo"] or d["id_externo"] in vistos:
                     continue
-                vistos_ids.add(dados["id_externo"])
+                vistos.add(d["id_externo"])
                 visitados += 1
-                campos_ok += _campos_ok(dados)
-                gravados += _persistir(marca["id"], dados, hoje)
+                buffer.append(d)
+                if len(buffer) >= BLOCO_ESCRITA:
+                    descarregar()
     elif plataforma == "shopify":
-        for p, _ in shopify_paginar(dominio):
-            p["_dominio"] = dominio
-            dados = shopify_extrair(p)
-            if not dados["id_externo"]:
+        for p in shopify_todos(dominio, estado):
+            d = shopify_extrair(p)
+            if not d["id_externo"] or d["id_externo"] in vistos:
                 continue
+            vistos.add(d["id_externo"])
             visitados += 1
-            campos_ok += _campos_ok(dados)
-            gravados += _persistir(marca["id"], dados, hoje)
+            buffer.append(d)
+            if len(buffer) >= BLOCO_ESCRITA:
+                descarregar()
     else:
         return None
+    descarregar()
 
-    pct = round(campos_ok / visitados, 3) if visitados else None
     alertas = {}
-    # Condicao 2.3: divergencia >2% entre coletado e declarado vira alerta.
-    if plataforma == "vtex" and total_declarado:
-        div = abs(visitados - total_declarado) / total_declarado
-        if div > 0.02:
-            alertas["divergencia_total"] = {
-                "coletado": visitados, "declarado_no_header": total_declarado,
-                "obs": "esperado: o total do header conta so 'vestido'; o coletado cobre todas as categorias femininas"}
-    return {"marca_id": marca["id"], "fonte": "varejo", "visitados": visitados,
-            "gravados": gravados, "itens": visitados,
-            "total_declarado": total_declarado or None, "pct_campos_ok": pct,
-            "alertas": alertas or None}
-
-
-def _campos_ok(d):
-    """1 se os campos essenciais de varejo vieram (tamanho, preco, titulo)."""
-    tem_preco = d.get("preco_atual") is not None
-    tem_grade = bool(d.get("grade_por_tamanho"))
-    tem_titulo = bool(d.get("titulo"))
-    return 1 if (tem_preco and tem_grade and tem_titulo) else 0
-
-
-def _persistir(marca_id, dados, hoje):
-    """Upsert do produto e snapshot por delta. Devolve 1 se gravou snapshot."""
-    prod = supabase_rest.upsert("produtos", [{
-        "marca_id": marca_id,
-        "id_externo": dados["id_externo"],
-        "url": dados["url"],
-        "titulo": dados["titulo"],
-        "descricao": dados["descricao"],
-        "categoria_site": dados["categoria_site"],
-        "imagem_url": dados["imagem_url"],
-        "primeiro_avistamento": hoje.isoformat(),
-    }], on_conflict="marca_id,id_externo", retornar=True)
-    if not prod:
-        return 0
-    produto_id = prod[0]["id"]
-
-    ultimo = supabase_rest.selecionar(
-        "snapshots",
-        "?produto_id=eq.{}&order=data.desc&limit=1".format(produto_id))
-    ultimo = ultimo[0] if ultimo else None
-
-    novo = {"preco_atual": dados["preco_atual"], "preco_original": dados["preco_original"],
-            "grade_por_tamanho": dados["grade_por_tamanho"]}
-    if not mudou(novo, ultimo):
-        return 0
-    supabase_rest.upsert("snapshots", [{
-        "produto_id": produto_id,
-        "data": hoje.isoformat(),
-        "preco_original": dados["preco_original"],
-        "preco_atual": dados["preco_atual"],
-        "composicao": dados["composicao"],
-        "grade_por_tamanho": dados["grade_por_tamanho"],
-    }], on_conflict="produto_id,data")
-    return 1
+    if estado["erro"]:
+        alertas["erro"] = estado["erro"]
+    if estado["truncou"]:
+        alertas["truncou"] = "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada"
+    declarado = estado["declarado"] or None
+    if plataforma == "vtex" and declarado and visitados < declarado * 0.98:
+        alertas["divergencia"] = {"declarado": declarado, "coletado": visitados,
+                                  "obs": "coletado < declarado; ver truncamento ou multi-categoria"}
+    pct = round(campos_ok / visitados, 3) if visitados else None
+    return {"marca_id": marca["id"], "nome": nome, "plataforma": plataforma,
+            "visitados": visitados, "gravados": gravados, "declarado": declarado,
+            "pct_campos_ok": pct, "alertas": alertas or None}
 
 
 # ---------------------------------------------------------------------------
@@ -355,34 +443,36 @@ def escrever_saude(hoje, metricas):
     for m in metricas:
         supabase_rest.upsert("saude", [{
             "data": hoje.isoformat(), "fonte": "varejo", "marca_id": m["marca_id"],
-            "visitados": m["visitados"], "gravados": m["gravados"],
-            "itens": m["itens"], "total_declarado": m["total_declarado"],
-            "pct_campos_ok": m["pct_campos_ok"], "alertas": m["alertas"],
+            "visitados": m["visitados"], "gravados": m["gravados"], "itens": m["visitados"],
+            "total_declarado": m["declarado"], "pct_campos_ok": m["pct_campos_ok"],
+            "alertas": m["alertas"],
         }], on_conflict="data,fonte,marca_id")
 
     tot_vis = sum(m["visitados"] for m in metricas)
     tot_grav = sum(m["gravados"] for m in metricas)
-    marcas_zero = [m for m in metricas if m["visitados"] == 0]
+    zero = [m for m in metricas if m["visitados"] == 0]
 
     linhas = ["# SAÚDE — coletores do Canário\n",
               "**Última coleta (UTC):** {}\n".format(datetime.now(timezone.utc).isoformat()),
               "\n## Varejo\n",
               "- Produtos **visitados**: {}\n".format(tot_vis),
               "- Snapshots **gravados** (delta, B3): {}\n".format(tot_grav),
-              "- Marcas coletando: {} de {}\n".format(len(metricas) - len(marcas_zero), len(metricas))]
-    if marcas_zero:
-        linhas.append("\n> ⚠️ Marcas com ZERO itens (alerta imediato, §20): {}\n".format(
-            ", ".join(str(m["marca_id"]) for m in marcas_zero)))
-    linhas.append("\n| Marca (id) | Visitados | Gravados | % campos ok | Total declarado | Alertas |")
-    linhas.append("|---|---|---|---|---|---|")
+              "- Marcas coletando: {} de {}\n".format(len(metricas) - len(zero), len(metricas))]
+    if zero:
+        linhas.append("\n> ⚠️ Zero itens (alerta imediato, §20): {}\n".format(
+            ", ".join(m["nome"] for m in zero)))
+    linhas.append("\n| Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |")
+    linhas.append("|---|---|---|---|---|---|---|")
     for m in sorted(metricas, key=lambda x: -x["visitados"]):
-        linhas.append("| {} | {} | {} | {} | {} | {} |".format(
-            m["marca_id"], m["visitados"], m["gravados"],
+        linhas.append("| {} | {} | {} | {} | {} | {} | {} |".format(
+            m["nome"], m["plataforma"], m["visitados"], m["gravados"],
+            m["declarado"] if m["declarado"] else "—",
             m["pct_campos_ok"] if m["pct_campos_ok"] is not None else "—",
-            m["total_declarado"] or "—",
             json.dumps(m["alertas"], ensure_ascii=False) if m["alertas"] else "—"))
     linhas.append("\n---\n")
-    linhas.append("Se *visitados* e *gravados* convergirem dia após dia, é sinal de bug no delta (B3).\n")
+    linhas.append("*Declarado* é a soma dos totais de departamento no header `resources` da VTEX; "
+                  "*visitados* são produtos distintos após dedup. Divergência acima de 2% vira alerta (condição 2.3). "
+                  "Se *visitados* e *gravados* convergirem dia após dia, é bug no delta (B3).\n")
     with open(SAUDE_MD, "w", encoding="utf-8") as f:
         f.write("\n".join(linhas))
 
@@ -396,24 +486,38 @@ def main():
     materializar_anexos.materializar_marcas()
     materializar_anexos.materializar_termos()
 
+    filtro = os.environ.get("COLETA_MARCA", "").strip()  # particionar por marca se preciso
     marcas = supabase_rest.selecionar(
         "marcas",
-        "?status_teste=in.(vtex,shopify)&ativa=eq.true&select=id,nome,dominio,plataforma")
-    print("Marcas aprovadas para coleta: {}".format(len(marcas)), file=sys.stderr)
+        "?status_teste=in.(vtex,shopify)&ativa=eq.true&select=id,nome,dominio,plataforma&order=nome")
+    if filtro:
+        marcas = [m for m in marcas if m["nome"].lower() == filtro.lower()]
+    print("Marcas a coletar: {}{}".format(
+        len(marcas), " (filtro: {})".format(filtro) if filtro else ""), file=sys.stderr)
 
     hoje = date.today()
     metricas = []
     for marca in marcas:
         t0 = time.monotonic()
-        m = coletar_marca(marca, hoje)
+        try:
+            m = coletar_marca(marca, hoje)
+        except Exception as e:
+            # Uma marca com problema nao derruba a run inteira nem perde o SAUDE.
+            import traceback
+            traceback.print_exc()
+            m = {"marca_id": marca["id"], "nome": marca["nome"],
+                 "plataforma": marca.get("plataforma"), "visitados": 0, "gravados": 0,
+                 "declarado": None, "pct_campos_ok": None,
+                 "alertas": {"excecao": "{}: {}".format(type(e).__name__, str(e)[:200])}}
         if m:
             metricas.append(m)
-            print("  {:14} visitados={} gravados={} ({:.0f}s)".format(
-                marca["nome"], m["visitados"], m["gravados"], time.monotonic() - t0),
-                file=sys.stderr)
+            print("  {:14} visit={} grav={} decl={} ({:.0f}s) {}".format(
+                m["nome"], m["visitados"], m["gravados"], m["declarado"],
+                time.monotonic() - t0, m["alertas"] or ""), file=sys.stderr)
 
-    escrever_saude(hoje, metricas)
-    print("Coleta concluída. SAUDE.md atualizado.", file=sys.stderr)
+    if metricas:
+        escrever_saude(hoje, metricas)
+    print("Coleta concluída.", file=sys.stderr)
     return 0
 
 
