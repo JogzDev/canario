@@ -13,6 +13,7 @@ workflow) para o resultado voltar sem depender de ler log de Actions.
 import json
 import os
 import sys
+import time
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -22,11 +23,13 @@ import supabase_rest  # noqa: E402
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAIDA = os.path.join(RAIZ, "SONDA_ACTIONS.md")
 
-# Amostra minima: uma VTEX pequena, uma Shopify, uma VTEX grande (loja de massa).
+# Amostra: as duas plataformas, com as DUAS Shopify (Amaro e PatBo) para
+# distinguir bloqueio de plataforma de 429 transitorio de uma loja so.
 ALVOS = [
     ("Cantao", "www.cantao.com.br", "vtex"),
-    ("Amaro", "amaro.com", "shopify"),
     ("C&A", "www.cea.com.br", "vtex"),
+    ("Amaro", "amaro.com", "shopify"),
+    ("PatBo", "www.patbo.com.br", "shopify"),
 ]
 
 CAMINHO = {
@@ -34,10 +37,22 @@ CAMINHO = {
     "shopify": "/products.json?limit=5",
 }
 
+ESPERAS = [0, 8, 20]  # backoff entre tentativas: distingue transitorio de duro
+
 
 def sondar_dominio(marca, dominio, plataforma):
     url = "https://{}{}".format(dominio, CAMINHO[plataforma])
-    codigo, corpo, _, cab = buscar(url, dominio)
+    tentativas = []
+    codigo = corpo = None
+    cab = {}
+    for i, espera in enumerate(ESPERAS):
+        if espera:
+            time.sleep(espera)
+        codigo, corpo, _, cab = buscar(url, dominio)
+        tentativas.append(codigo)
+        if codigo not in (403, 429, None):
+            break  # respondeu: nao adianta insistir
+
     ok_json = False
     total = ""
     try:
@@ -54,8 +69,8 @@ def sondar_dominio(marca, dominio, plataforma):
     bloqueado = codigo in (403, 429) or codigo is None
     return {
         "marca": marca, "dominio": dominio, "plataforma": plataforma,
-        "http": codigo, "json_ok": ok_json, "total_catalogo": total,
-        "bloqueado": bloqueado,
+        "http": codigo, "tentativas": tentativas, "json_ok": ok_json,
+        "total_catalogo": total, "bloqueado": bloqueado,
     }
 
 
@@ -74,21 +89,34 @@ def main():
     dominios = [sondar_dominio(*a) for a in ALVOS]
     supa = sondar_supabase()
 
-    algum_bloqueio = any(d["bloqueado"] for d in dominios)
-    veredito = ("BLOQUEIO DETECTADO — nao agendar o coletor; avisar o JP"
-                if algum_bloqueio else
-                "SEM BLOQUEIO — datacenter do Actions responde; seguro agendar")
+    def bloqueio_plataforma(plat):
+        ds = [d for d in dominios if d["plataforma"] == plat]
+        return ds and all(d["bloqueado"] for d in ds)
+
+    vtex_bloqueada = bloqueio_plataforma("vtex")
+    shopify_bloqueada = bloqueio_plataforma("shopify")
+
+    if vtex_bloqueada:
+        veredito = "BLOQUEIO EM VTEX — espinha dorsal do painel barrada; parar e avisar o JP"
+    elif shopify_bloqueada:
+        veredito = ("SHOPIFY BARRA O DATACENTER — VTEX (12 marcas) livre; as 2 Shopify "
+                    "(Amaro, PatBo) precisam de decisao do JP antes de agendar")
+    elif any(d["bloqueado"] for d in dominios):
+        veredito = "BLOQUEIO PARCIAL — ver tabela; decidir antes de agendar"
+    else:
+        veredito = "SEM BLOQUEIO — datacenter do Actions responde nas duas plataformas; seguro agendar"
 
     linhas = []
     linhas.append("# Sonda do Actions — condicao 2.2\n")
     linhas.append("**Executado (UTC):** {}  \n".format(agora.isoformat()))
     linhas.append("**IP de origem:** datacenter do GitHub Actions (não o residencial do JP)\n")
     linhas.append("\n## Veredito: {}\n".format(veredito))
-    linhas.append("\n| Marca | Domínio | Plataforma | HTTP | JSON ok | Catálogo | Bloqueado |")
+    linhas.append("\n| Marca | Domínio | Plataforma | Tentativas HTTP | JSON ok | Catálogo | Bloqueado |")
     linhas.append("|---|---|---|---|---|---|---|")
     for d in dominios:
+        tent = " → ".join(str(t) for t in d["tentativas"])
         linhas.append("| {} | {} | {} | {} | {} | {} | {} |".format(
-            d["marca"], d["dominio"], d["plataforma"], d["http"],
+            d["marca"], d["dominio"], d["plataforma"], tent,
             "sim" if d["json_ok"] else "não", d["total_catalogo"] or "—",
             "SIM" if d["bloqueado"] else "não"))
     linhas.append("\n## Supabase\n")
