@@ -153,7 +153,7 @@ Vivem em `anexos/veiculos.csv`. Critérios de permanência: publica no mínimo s
 
 ### 15. Sazonalidade e calendário
 
-- O motor **nunca armazena estação**; armazena semana e mês. Estação é etiqueta de exibição configurável por conta: preset `PV/OI` (primavera-verão / outono-inverno) e preset `Azzas` (verão, alto verão, inverno, alto inverno). O mapeamento oficial de meses para as sub-coleções do Azzas é pergunta aberta ao cliente (seção 36); até lá, usar aproximação declarada como aproximação.
+- O motor **nunca armazena estação**; armazena semana e mês. Estação é etiqueta de exibição configurável por ~~conta~~ **ajuste local do dispositivo** `[ADITIVA 23/07/2026 por C1: "conta" não existe na v1 (§34 proíbe login), então lê-se "ajuste local do dispositivo" em toda a v1]`: preset `PV/OI` (primavera-verão / outono-inverno) e preset `Azzas` (verão, alto verão, inverno, alto inverno). O mapeamento oficial de meses para as sub-coleções do Azzas é pergunta aberta ao cliente (seção 36); até lá, usar aproximação declarada como aproximação.
 - **Sazonalidade vem do Trends** (que tem 5 anos de história), nunca do bot de varejo (que nasce sem passado).
 - **Oferta e demanda são medidas separadas:** oferta = presença do atributo no sortimento do painel; demanda = busca no Trends. A divergência entre as duas curvas é um insight de primeira classe, não um erro.
 
@@ -245,7 +245,7 @@ Cor é medida, não opinada: dominância no sortimento do painel (share de SKUs 
 
 ### 26. Stack e alvo
 
-SwiftUI, iOS 17 como mínimo, iPhone primeiro. Idioma da interface: PT-BR apenas na v1. Gráficos com Swift Charts. Dependências de terceiros: mínimas e justificadas uma a uma. Coletores em Python 3.11+ na pasta `/coletor` do mesmo repositório. Distribuição: TestFlight interno (time) e depois externo (Pedro, Lorena, Victor); App Store não é obrigação do projeto.
+SwiftUI, iOS 17 como mínimo, iPhone primeiro. Idioma da interface: PT-BR apenas na v1. Gráficos com Swift Charts. Dependências de terceiros: mínimas e justificadas uma a uma. Coletores em Python 3.11+ na pasta `/coletor` do mesmo repositório. Distribuição: TestFlight interno (time) e depois externo (Pedro, Lorena, Victor); ~~App Store não é obrigação do projeto~~ `[REVOGADO em 23/07/2026 por A6: publicação na App Store passa a ser requisito com data. O app precisa estar publicado em 24/08/2026, dia do Demo Day. Feature freeze 10/08, submissão até 13/08 para caber uma rejeição e uma ressubmissão. TestFlight continua sendo o canal das reuniões de progresso, que nunca esperam o review.]`
 
 ### 27. Estrutura em 3 abas
 
@@ -258,6 +258,8 @@ SwiftUI, iOS 17 como mínimo, iPhone primeiro. Idioma da interface: PT-BR apenas
 **Vocabulário de interface:** estados sem duração no título (`em alta`, `estável`, `em queda`, `pico`; janelas de tempo vão para a letra miúda dos insumos). Palavras proibidas: a lista negra da seção 6, mais "provão" (não existe no produto), "atualizada hoje" e equivalentes que sugiram cultivo/espera.
 
 ### 28. Entrada por imagem e visão computacional
+
+`[REVOGADO PARA A v1 em 23/07/2026 por A7: com 32 dias até o Demo Day, a entrada por foto e a visão computacional saem por completo. A entrada é só busca textual, que já era a principal por decisão de privacidade. Ganho colateral: sem permissão de câmera nem de fototeca, a ficha de privacidade da App Store fica trivial. Volta na v1.1 (A9), treinada com o dataset de imagens que o coletor terá acumulado até setembro. O texto abaixo permanece como especificação da v1.1.]`
 
 - **Fluxo:** upload → tela de formulário onde o usuário confirma/corrige os atributos. O humano no circuito é o que derruba a exigência de acurácia da visão.
 - **v0:** formulário primeiro; visão é conveniência de pré-preenchimento apenas se disponível e confiável.
@@ -276,6 +278,8 @@ Ordem dos blocos, de cima para baixo:
 Rastreabilidade (regra inviolável 3) em todos os números.
 
 ### 30. Referências internas (opcional, por cliente)
+
+`[REVOGADO PARA A v1 em 23/07/2026 por A7: o cliente ainda não entregou dado nenhum e construir para dado que não existe é desperdício no prazo atual. Volta na v1.1 (A9). O texto abaixo permanece como especificação da v1.1.]`
 
 - Template rígido, nunca documento livre: um arquivo com 1 linha por peça e 10 colunas: `ref, descricao, categoria, preco, qtd_comprada, pct_vendido_preco_cheio, semanas_em_loja, colecao, vendas_por_tamanho (opcional), foto (opcional)`. Duas coleções: a mesma estação do ano anterior (análogos diretos) e a estação oposta (controle que separa atributo sazonal de atributo estável).
 - **Usos:** análogos no relatório ("as 3 peças mais parecidas da sua coleção passada e o desfecho delas"), baseline por categoria da própria marca, e autocalibração por cliente (correlação entre o índice externo e o desempenho interno, exibida com honestidade).
@@ -327,6 +331,7 @@ Sem login/conta de usuário, sem push notification, sem closet/monitoramento con
 4. Mapa oficial de meses → sub-coleções (verão, alto verão, inverno, alto inverno), com a Lorena.
 5. Teste presencial / visita deles na Mostra: datas e formato.
 6. Quanto da informação externa o comercial já tem hoje (calibra o discurso de valor).
+7. **Autorização escrita para coletar Maria Filó e Fábula** `[ADITIVA 23/07/2026]`. As duas são VTEX mas fecharam a API de catálogo no edge, e o teste dos 30 segundos as reprovou (23/07). São marcas do próprio grupo do cliente, então a autorização é dele para dar. **Enquanto não vier, as duas permanecem `falhou` e fora da coleta**, mesmo tratamento dado a Colcci e Centauro — senão a regra 7 vira conveniência. Se a autorização chegar, registrar no changelog e só então liberar a coleta, pelo caminho que funcionar. Prioridade: a Maria Filó é a cliente-modelo e hoje está fora do próprio painel.
 
 ### 37. Glossário
 
@@ -357,3 +362,49 @@ Se os arquivos CSV não estiverem presentes junto deste documento, o agente os c
 ### 39. Changelog
 
 - 23/07/2026 | v1.0 | CRIAÇÃO | Documento inicial consolidando todas as decisões da fase de pesquisa e estruturação.
+
+**23/07/2026 | v1.1 | Respostas à AUDITORIA_INICIAL (arquivo `RESPOSTAS_AUDITORIA.md`, autor JP).** A auditoria da tarefa zero (§2) voltou com 6 bloqueadores, 6 contradições, 11 constantes ausentes e 7 ambiguidades. Abaixo, o que cada resposta mudou.
+
+**Prazo (o que reorganiza tudo)**
+
+- `ADITIVA` | **B1** | Demo Day fixado em **24/08/2026**, 32 dias a partir de 23/07. Consequência aceita como decisão explícita, não como acidente: **a perna de varejo nunca terá z-score dentro deste projeto**, porque §8 exige 8 semanas e a coleta começa em 24/07. A regra não é afrouxada — z-score com 4 pontos é instável, e afrouxar seria exatamente a conveniência que a regra existe para impedir.
+- `ADITIVA` | **B1.2** | O índice de aquecimento roda na v1 com **duas pernas: busca e editorial**, as duas com anos de história via backfill. A interface declara "baseado em: busca + editorial", mecanismo que §8 já previa.
+- `ADITIVA` | **B1.3 (a §21 e §23)** | Criada a **camada descritiva de varejo**: o varejo entra no produto sem passar por z-score, como fatos do presente que não precisam de normalização nem de história longa — participação do atributo no sortimento, percentil de preço, estado da grade, velocidade relativa de esgotamento por tamanho, eventos de reposição e de remarcação. Cada número declara o N e a data de coleta. Não é consolo: é o ativo proprietário do projeto, e nunca precisou de z-score para existir.
+- `ADITIVA` | **A3** | Forma descritiva do marco de demo 2: participação atual do atributo no sortimento contra a curva sazonal de busca dos últimos 5 anos. Exige ~2 semanas de varejo em vez de 8, desde que a tela declare que a leitura é descritiva e não normalizada.
+
+**Coleta**
+
+- `ADITIVA` | **B2 (interpretação oficial da regra inviolável 4)** | A regra 4 governa a coleta **por termo** (consultas ao Trends, matching editorial), o cálculo de índice e a exibição em tela. O snapshot de varejo não depende de termo e pode ligar imediatamente, antes da aprovação da taxonomia. Justificativa: o matching título→termo é **retroativo** — snapshot guardado hoje pode ser etiquetado semana que vem sem perda, e o contrário não é verdade, porque dia não coletado não volta. Registrado aqui para não haver reinterpretação futura.
+- `ADITIVA` | **B3** | Gravação por **delta**: linha de snapshot só quando algo muda (preço, disponibilidade, grade), mais um batimento semanal por produto; série diária reconstruída por carry-forward na leitura. Condição obrigatória: **visitar diariamente, gravar por exceção** — sem visita diária não existe detecção de ausência (K1) nem debounce de reposição (§23). O `SAUDE.md` registra produtos *visitados* e linhas *gravadas*; se os dois números convergirem, é bug na comparação de delta.
+- `REVOGATÓRIA` | **B4 (corrige o Anexo D)** | `segmento` sai de `marcas` e passa a ser coluna de `produtos`, derivada do mapa de categorias, com `marcas.segmento` como padrão de fallback. Sem isso, produto de multimarca não podia ser atribuído a um segmento e a célula termo × segmento × semana ficava sem ele.
+- `ADITIVA` | **A2** | **Colete amplo, classifique depois.** Resolve a colisão entre B2 (ligar já) e B5 (o mapa de categorias ainda não existe): desde o dia 1 coleta-se o **catálogo feminino inteiro** de cada marca aprovada, sem filtrar por segmento. A atribuição de `segmento` por produto é retroativa. Com a gravação por delta o excedente é barato; a história perdida por esperar o mapa não é recuperável.
+- `ADITIVA` | **B5** | Criado `anexos/mapa_categorias.csv`, tudo `status=proposto`, aprovado junto com a taxonomia.
+- `ADITIVA` | **B6** | E-mail do projeto: `canarioch3@gmail.com`. User-Agent final: `CanarioBot/1.0 (projeto academico; contato: canarioch3@gmail.com)`.
+
+**Taxonomia e motor**
+
+- `ADITIVA` | **C1** | "Conta" lê-se "ajuste local do dispositivo" em toda a v1 (aplicado em §15).
+- `REVOGATÓRIA` | **C2 (corrige §11)** | A dimensão `modelagem` misturava dois eixos e a promessa de exclusividade intra-dimensão era falsa: uma peça é midi **e** flare ao mesmo tempo. `modelagem` se divide em `comprimento` (curto, midi, longo) e `silhueta` (flare, reta_wide), e entra a coluna `exclusiva` por dimensão, com `tecido` e `cor` como não exclusivas. **Sete dimensões, 35 termos, nenhum `id` alterado** — a regra de id estável de §11 continua honrada. A implementar junto: o IDF (K5) precisa lidar com cardinalidade variável por dimensão.
+- `REVOGATÓRIA` | **C3 (reenquadra §11)** | O teste triplo de admissão deixa de ser **porta de admissão** e passa a ser **anotação de capacidade**: o termo existe, o que varia é quais pernas conseguem servi-lo. Antes de marcar `sem_perna_busca`, tenta-se corrigir o `termo_busca`, registrando qual variante foi testada. Motivo: o teste original eliminaria `liso`, que é o denominador da dimensão estampa. Aplicado: os `termo_busca` genéricos ("roupa lisa", "roupa preta") foram reescritos ancorados em categoria real, e a dimensão `cor` inteira passou a ser medida dentro de "vestido", categoria âncora do segmento, para as sete cores serem comparáveis entre si.
+- `ADITIVA` | **C4 (corrige §22)** | O estado `pico` passa a ser calculado sobre a contagem editorial da **semana crua**, não sobre a janela móvel de 4 semanas — que o mantinha aceso quase um mês, o oposto de "evento pontual que morre rápido". A janela de 4 semanas permanece para todo o resto. É a única métrica do sistema que quer sensibilidade em vez de estabilidade, e isso fica escrito ao lado da fórmula.
+- `ADITIVA` | **C5** | Lyst permanece em `veiculos.csv`, sai da soma editorial por construção (`tipo=dado_agregado` excluído da perna) e ganha `fonte` própria em `series_semanais`.
+- `ADITIVA` | **C6 (exceção a §6)** | A lista negra proíbe as formas futuras e prescritivas; o teste automatizado carrega allowlist explícita de rótulos factuais no passado. Princípio, escrito no próprio arquivo de teste: **passado observado é permitido; futuro e prescrição são proibidos.**
+- `ADITIVA` | **A1** | Bootstrap do flag continuativo: K2 (26 semanas) e K3 (3 reposições em 12 semanas) são regime permanente mas inúteis no prazo. Entram `continuativo_presumido` e `colecao_presumida`, presumidos por categoria de básicos e palavras-chave de título, substituídos pela classificação medida assim que houver dado. A interface diferencia presumido de medido.
+- `ADITIVA` | **K1 a K11** | Constantes aceitas conforme propostas na auditoria. K7 (âncora fixa nas consultas ao Trends) e K11 (coorte fixa de marcas, célula vira "cobertura insuficiente" acima de 25% de ausência) não se relaxam sem consulta ao JP.
+
+**Escopo e publicação**
+
+- `REVOGATÓRIA` | **A6 (revoga §26)** | Publicação na App Store passa a ser requisito, com data. Conta de desenvolvedor resolvida sem custo (regra 13 intacta). **Similares com identidade visual própria**: o binário submetido não republica foto de produto de terceiro — cada card é representação gerada dos atributos (bloco na família de cor, glifo de silhueta, textura pela estampa) mais marca em texto, preço, remarcação e estado da grade; o toque abre a página original em `SFSafariViewController`, cumprindo a rastreabilidade da regra 3. Tarefa de design da Bianca, e é identidade do produto, não fallback. Feature freeze 10/08, submissão até 13/08.
+- `REVOGATÓRIA` | **A7 (revoga §28 e §30 para a v1)** | Saem da v1 a entrada por foto e visão computacional inteira, e as referências internas. Fica de pé: Analisar (busca → relatório), Explorar, Comparar, coletores e relatório de saúde.
+- `ADITIVA` | **A8** | Vocabulário interno nunca vira produto. "Efeito Ozempic", "provão" e apelidos de regra não aparecem em interface, templates, release, nomes de variável ou identificadores visíveis. O achado da curva de tamanhos é descrito como "deslocamento da curva de tamanhos" ou "quebra de grade concentrada nos tamanhos menores". **Referência a medicamento, peso corporal ou condição de saúde é proibida em qualquer texto do produto.** Entra como bloco próprio no teste automatizado de §6.
+- `ADITIVA` | **A9** | Roadmap v1.1 (setembro): a coleta não para no Demo Day, o varejo cruza as 8 semanas em meados de setembro e o z-score liga sozinho pelo mecanismo de pernas declaradas — como o índice é computado no servidor, **o app publicado em 24/08 passa a exibir a perna nova sem atualização de binário**. Depois: referências internas e visão computacional.
+
+**23/07/2026 | Execução da F1 (agente).**
+
+- `ADITIVA` | **Teste dos 30 segundos executado** nas 26 marcas pendentes. Resultado: 14 aprovadas (12 VTEX, 2 Shopify). **As externas de `feminino_casual_br` somam 11 aprovadas contra o mínimo de 8 de §8: o segmento v1 passa** e o plano B de §35 não é acionado.
+- `ADITIVA` | **Nenhum multimarca passou** (Dafiti, Shop2gether, Iguatemi 365, Centauro). O multiplicador de cobertura de §13 **não existe na v1**, e a ressalva de leitura relativa dentro da mesma vitrine fica sem objeto. O painel externo se sustenta sem eles.
+- `ADITIVA` | **Fora por plataforma ou proteção:** Youcom (Linx), Mixed (Magento), Shoulder e Renner (plataforma própria), Foxton (domínio não resolve), Colcci e Centauro (HTTP 403, fora por regra 7 — não se procura outro caminho).
+- `ADITIVA` | **Maria Filó e Fábula reprovadas por decisão de princípio.** As duas são VTEX mas fecharam a API de catálogo no edge. O host da plataforma responderia, e a decisão do JP foi **não contornar**: API fechada no edge é escolha deliberada da loja, e entrar por outra porta é o mesmo que foi negado a Colcci e Centauro — senão a regra 7 vira conveniência. Vira a pergunta aberta 7 de §36: o JP pedirá autorização escrita ao cliente, e só com ela a coleta é liberada. Domínio real da Fábula corrigido para `afabula.com.br`.
+- `ADITIVA` | **Anexo B ganha as colunas `dominio`, `data_teste` e `detalhe_teste`.** O Anexo D exigia `marcas.dominio` e o CSV não trazia a coluna — o teste dos 30 segundos não tinha como rodar.
+- `ADITIVA` | **Escala medida para dimensionar o B3:** só na consulta "vestido", C&A tem 13.436 produtos, Dress To 1.755 e Farm 1.443. A gravação por delta é requisito, não otimização.
+- `ADITIVA` | **Ambiente:** a máquina do JP não tem Homebrew nem Python 3.11, só o 3.9.6 do sistema. Os coletores rodam em 3.11 no GitHub Actions e o código evita sintaxe de 3.10+ para permanecer testável localmente, sem instalar nada.
