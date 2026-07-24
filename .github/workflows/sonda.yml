@@ -1,0 +1,47 @@
+name: Sonda do Actions (condicao 2.2)
+
+# Diagnostico do IP de datacenter antes de agendar o coletor. Roda ao empurrar
+# a propria sonda e sob demanda. NAO tem cron: nao coleta dado.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'coletor/sonda_actions.py'
+      - 'coletor/teste_30s.py'
+      - 'coletor/supabase_rest.py'
+      - '.github/workflows/sonda.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sonda
+  cancel-in-progress: false
+
+jobs:
+  sondar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Rodar a sonda
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python3 coletor/sonda_actions.py
+
+      - name: Commitar o resultado
+        run: |
+          git config user.name  "CanarioBot"
+          git config user.email "canarioch3@gmail.com"
+          git add SONDA_ACTIONS.md
+          if git diff --cached --quiet; then
+            echo "Sem mudança no resultado da sonda."
+          else
+            git commit -m "Sonda do Actions: resultado da coleta de diagnóstico [skip ci]"
+            git push
+          fi
