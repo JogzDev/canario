@@ -14,13 +14,12 @@ coleta da regra 7 (1 req/s por dominio, User-Agent identificavel, robots.txt).
 import csv
 import json
 import os
-import re
 import sys
 import time
-import unicodedata
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from teste_30s import buscar, robots_permite  # noqa: E402
+from matcher import normalizar, compilar_lista, casa_algum  # noqa: E402
 
 _robots_cache = {}
 
@@ -64,28 +63,19 @@ EXCLUSOES = [
 ]
 
 
-def normalizar(texto):
-    sem_acento = unicodedata.normalize("NFKD", texto or "")
-    sem_acento = "".join(c for c in sem_acento if not unicodedata.combining(c))
-    return sem_acento.lower().strip()
+# Compila os gatilhos uma vez, com o matcher compartilhado (correspondencia
+# exata por palavra, prefixo livre so no `*`). Mesmo motor dos outros dois
+# matchers do sistema.
+_EXCLUSOES_COMPILADAS = [(motivo, compilar_lista(gatilhos))
+                         for motivo, gatilhos in EXCLUSOES]
 
 
 def classificar(caminho):
-    """Propoe incluir/excluir para um caminho de categoria.
-
-    O casamento e por palavra inteira, nunca por substring. Substring exclui
-    "casaco" porque contem "casa", e "botao" porque contem "bota" -- ou seja,
-    derruba justamente categorias centrais da taxonomia.
-    """
+    """Propoe incluir/excluir para um caminho de categoria."""
     alvo = normalizar(caminho)
-    for motivo, gatilhos in EXCLUSOES:
-        for g in gatilhos:
-            if g.endswith("*"):
-                padrao = r"\b{}\w*".format(re.escape(g[:-1]))
-            else:
-                padrao = r"\b{}\b".format(re.escape(g))
-            if re.search(padrao, alvo):
-                return "nao", "", motivo
+    for motivo, regexes in _EXCLUSOES_COMPILADAS:
+        if casa_algum(alvo, regexes):
+            return "nao", "", motivo
     return "sim", "feminino_casual_br", "vestuario feminino: proposto para o segmento v1"
 
 

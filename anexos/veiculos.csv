@@ -1,20 +1,20 @@
-veiculo,pais,url,tipo,prioridade,status_feed
-Vogue Brasil,BR,https://vogue.globo.com,editorial,alta,pendente
-Elle Brasil,BR,https://elle.com.br,editorial,alta,pendente
-Harpers Bazaar Brasil,BR,https://harpersbazaar.uol.com.br,editorial,alta,pendente
-Glamour Brasil,BR,https://glamour.globo.com,editorial,media,pendente
-Marie Claire Brasil,BR,https://revistamarieclaire.globo.com,editorial,media,pendente
-FFW,BR,https://ffw.uol.com.br,editorial,alta,pendente
-Steal the Look,BR,https://stealthelook.com.br,editorial,media,pendente
-Fashion Bubbles,BR,https://www.fashionbubbles.com,editorial,media,pendente
-FashionNetwork Brasil,BR,https://br.fashionnetwork.com,editorial,alta,pendente
-Vogue,US,https://www.vogue.com,editorial,alta,pendente
-Vogue Business,UK,https://www.voguebusiness.com,editorial,alta,pendente
-Business of Fashion,UK,https://www.businessoffashion.com,editorial,alta,pendente
-WWD,US,https://wwd.com,editorial,alta,pendente
-Who What Wear,US,https://www.whowhatwear.com,editorial,media,pendente
-Refinery29,US,https://www.refinery29.com,editorial,media,pendente
-Hypebeast,HK,https://hypebeast.com,editorial,media,pendente
-Highsnobiety,DE,https://www.highsnobiety.com,editorial,media,pendente
-Dazed,UK,https://www.dazeddigital.com,editorial,baixa,pendente
-Lyst,UK,https://www.lyst.com,dado_agregado,alta,pendente
+veiculo,pais,url,tipo,prioridade,status_feed,url_feed,itens_no_feed,data_item_mais_antigo,backfill_wpjson,data_descoberta,detalhe_feed
+Vogue Brasil,BR,https://vogue.globo.com,editorial,alta,link-alternate,https://vogue.globo.com/rss/vogue,100,2026-07-20,nao,2026-07-24,100/100 itens com titulo+link+data
+Elle Brasil,BR,https://elle.com.br,editorial,alta,/feed,https://elle.com.br/feed,10,2026-07-23,nao,2026-07-24,10/10 itens com titulo+link+data
+Harpers Bazaar Brasil,BR,https://harpersbazaar.uol.com.br,editorial,alta,/feed,https://harpersbazaar.uol.com.br/feed,10,2026-07-22,nao,2026-07-24,10/10 itens com titulo+link+data
+Glamour Brasil,BR,https://glamour.globo.com,editorial,media,link-alternate,https://glamour.globo.com/rss/glamour,100,2026-07-20,nao,2026-07-24,100/100 itens com titulo+link+data
+Marie Claire Brasil,BR,https://revistamarieclaire.globo.com,editorial,media,link-alternate,https://revistamarieclaire.globo.com/rss/marieclaire,100,2026-07-21,nao,2026-07-24,100/100 itens com titulo+link+data
+FFW,BR,https://ffw.uol.com.br,editorial,alta,wp-json,https://ffw.uol.com.br/wp-json/wp/v2/posts?per_page=10,3,2025-05-22,sim,2026-07-24,3/3 itens com titulo+link+data
+Steal the Look,BR,https://stealthelook.com.br,editorial,media,wp-json,https://stealthelook.com.br/wp-json/wp/v2/posts?per_page=10,10,2026-07-23,sim,2026-07-24,10/10 itens com titulo+link+data
+Fashion Bubbles,BR,https://www.fashionbubbles.com,editorial,media,/feed,https://www.fashionbubbles.com/feed,24,2026-07-10,nao,2026-07-24,24/24 itens com titulo+link+data
+FashionNetwork Brasil,BR,https://br.fashionnetwork.com,editorial,alta,falhou,,,,nao,2026-07-24,"403 anti-bot em todos os caminhos de feed e no sitemap; falha definitiva pela regra 7, sem contornar"
+Vogue,US,https://www.vogue.com,editorial,alta,link-alternate,https://www.vogue.com/feed/rss,29,2026-07-23,nao,2026-07-24,29/29 itens com titulo+link+data
+Vogue Business,UK,https://www.voguebusiness.com,editorial,alta,link-alternate,https://www.vogue.com/feed/rss,29,2026-07-23,nao,2026-07-24,29/29 itens com titulo+link+data
+Business of Fashion,UK,https://www.businessoffashion.com,editorial,alta,/feed,https://www.businessoffashion.com/feed,100,2025-11-14,nao,2026-07-24,100/100 itens com titulo+link+data
+WWD,US,https://wwd.com,editorial,alta,/feed,https://wwd.com/feed,10,2026-07-24,nao,2026-07-24,10/10 itens com titulo+link+data
+Who What Wear,US,https://www.whowhatwear.com,editorial,media,/rss,https://www.whowhatwear.com/rss,50,2026-07-22,nao,2026-07-24,50/50 itens com titulo+link+data
+Refinery29,US,https://www.refinery29.com,editorial,media,/feed.xml,https://www.refinery29.com/feed.xml,10,2026-07-23,nao,2026-07-24,10/10 itens com titulo+link+data
+Hypebeast,HK,https://hypebeast.com,editorial,media,/feed,https://hypebeast.com/feed,20,2026-07-24,nao,2026-07-24,20/20 itens com titulo+link+data
+Highsnobiety,DE,https://www.highsnobiety.com,editorial,media,/feed,https://www.highsnobiety.com/feed,17,2026-07-23,nao,2026-07-24,17/17 itens com titulo+link+data
+Dazed,UK,https://www.dazeddigital.com,editorial,baixa,/rss,https://www.dazeddigital.com/rss,15,2026-07-23,nao,2026-07-24,15/15 itens com titulo+link+data
+Lyst,UK,https://www.lyst.com,dado_agregado,alta,falhou,,,,nao,2026-07-24,"dado_agregado, nao editorial: sem RSS; entra por outra via (secao 12), nao pela descoberta de feed"
