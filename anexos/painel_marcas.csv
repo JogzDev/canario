@@ -1,30 +1,30 @@
 marca,dominio,segmento,papel,justificativa,status_teste,data_teste,detalhe_teste
 Cantao,www.cantao.com.br,feminino_casual_br,nucleo,Concorrente mais direto: carioca com estampa autoral e mesma faixa de preco,vtex,2026-07-23,10 produtos na sonda de 211 no catalogo para 'vestido'
-Shoulder,www.shoulder.com.br,feminino_casual_br,nucleo,Feminino contemporaneo com sortimento amplo de vestido e alfaiataria na mesma faixa,falhou,2026-07-23,plataforma propria sem API de catalogo publica: fora do escopo v1
+Shoulder,www.shoulder.com.br,feminino_casual_br,nucleo,Feminino contemporaneo com sortimento amplo de vestido e alfaiataria na mesma faixa,falhou,2026-07-24,"pente fino 24/07: plataforma propria, VTEX search 404; sem endpoint publico documentado; falha definitiva"
 Dress To,www.dressto.com.br,feminino_casual_br,nucleo,Casual chic com forte peso em vestido que e a categoria ancora do segmento,vtex,2026-07-23,10 produtos na sonda de 1755 no catalogo para 'vestido'
 Lanca Perfume,www.lancaperfume.com.br,feminino_casual_br,nucleo,Estampa e feminino jovem na mesma prateleira: bom sinal de estampa,vtex,2026-07-23,10 produtos na sonda de 569 no catalogo para 'vestido'
 Morena Rosa,www.morenarosa.com.br,feminino_casual_br,nucleo,Mid-market feminino com capilaridade: da volume estatistico a celula,vtex,2026-07-23,10 produtos na sonda de 327 no catalogo para 'vestido'
 Zinzane,www.zinzane.com.br,feminino_casual_br,nucleo,Meio degrau abaixo: mostra tendencia descendo de faixa,vtex,2026-07-23,10 produtos na sonda de 245 no catalogo para 'vestido'
 Amaro,amaro.com,feminino_casual_br,nucleo,Nativa digital que gira e remarca rapido: termometro mais sensivel do painel,shopify,2026-07-23,5 produtos na sonda
-Mixed,www.mixed.com.br,feminino_casual_br,nucleo,Meio degrau acima: antecipa movimento que depois desce,falhou,2026-07-23,plataforma Magento em loja.mixed.com.br: fora do escopo v1
+Mixed,loja.mixed.com.br,feminino_casual_br,nucleo,Meio degrau acima: antecipa movimento que depois desce,falhou,2026-07-24,pente fino 24/07: plataforma Magento; sem endpoint de catalogo publico documentado; falha definitiva
 Le Lis Blanc,www.lelis.com.br,feminino_casual_br,adjacente,Um degrau acima em social e alfaiataria: sinal de oportunidade de preco,vtex,2026-07-23,10 produtos na sonda de 193 no catalogo para 'vestido'
 Bo.Bo,www.bobo.com.br,feminino_casual_br,adjacente,Acima e mais fashion: antecipa estetica que o mid-market copia,vtex,2026-07-23,10 produtos na sonda de 118 no catalogo para 'vestido'
-Colcci,www.colcci.com.br,feminino_casual_br,adjacente,Cobre a dimensao jeans que o nucleo cobre mal,falhou,2026-07-23,"HTTP 403 (protecao anti-bot): fora por regra 7, nao burlar"
+Colcci,www.colcci.com.br,feminino_casual_br,adjacente,Cobre a dimensao jeans que o nucleo cobre mal,falhou,2026-07-24,403 do IP residencial em janela de penalidade VTEX; RE-TESTE do datacenter PENDENTE (item 3.2) antes de veredito final
 PatBo,www.patbo.com.br,feminino_casual_br,adjacente,Estampa e artesanal em faixa alta: ponte com a direcao sem sair do Brasil,shopify,2026-07-23,5 produtos na sonda
-Renner,www.lojasrenner.com.br,feminino_casual_br,ancora,Maior espelho do consumo feminino de massa: se passar no teste vale por cinco,falhou,2026-07-23,plataforma propria sem API de catalogo publica: fora do escopo v1
+Renner,www.lojasrenner.com.br,feminino_casual_br,ancora,Maior espelho do consumo feminino de massa: se passar no teste vale por cinco,falhou,2026-07-24,pente fino 24/07: plataforma Linx; sem endpoint de catalogo publico documentado; falha definitiva
 C&A,www.cea.com.br,feminino_casual_br,ancora,Massa e costuma levar tendencia primeiro ao varejo popular,vtex,2026-07-23,10 produtos na sonda de 13436 no catalogo para 'vestido'
-Youcom,www.youcom.com.br,feminino_casual_br,ancora,Recorte jovem: tendencia entrando pela base,falhou,2026-07-23,plataforma Linx: fora do escopo v1 (so VTEX e Shopify)
+Youcom,www.youcom.com.br,feminino_casual_br,ancora,Recorte jovem: tendencia entrando pela base,falhou,2026-07-24,pente fino 24/07: plataforma Linx; sem endpoint publico documentado; falha definitiva
 Hering,www.hering.com.br,feminino_casual_br,ancora,Referencia de continuativo e basico: calibra o que e classico,vtex,2026-07-23,10 produtos na sonda de 675 no catalogo para 'vestido'
 Farm,www.farmrio.com.br,feminino_casual_br,grupo,Autobenchmark do cliente: nunca conta como mercado externo,vtex,2026-07-23,10 produtos na sonda de 1443 no catalogo para 'vestido'
 Animale,www.animale.com.br,feminino_casual_br,grupo,Autobenchmark do grupo em faixa premium,vtex,2026-07-23,10 produtos na sonda de 847 no catalogo para 'vestido'
 Maria Filo,www.mariafilo.com.br,feminino_casual_br,grupo,Cliente-modelo: autobenchmark central,falhou,2026-07-23,API de catalogo fechada no edge; host da plataforma responde mas nao foi sondado por regra 7
 Fabula,www.afabula.com.br,feminino_casual_br,grupo,Autobenchmark do grupo,falhou,2026-07-23,API de catalogo fechada no edge; host da plataforma responde mas nao foi sondado por regra 7
 NV,www.bynv.com.br,feminino_casual_br,grupo,Autobenchmark do grupo,vtex,2026-07-23,10 produtos na sonda de 164 no catalogo para 'vestido'
-Foxton,www.foxton.com.br,masculino_casual_br,grupo,Autobenchmark do grupo no masculino: fora dos indices da v1,falhou,2026-07-23,dominio nao resolve (DNS): marca sem site proprio acessivel
-Dafiti,www.dafiti.com.br,multimarca_geral,multimarca,Maior agregador de moda do pais: cobre marcas sem site coletavel com ressalva de leitura relativa,falhou,2026-07-23,www.dafiti.com.br: vtex http 404 | www.dafiti.com.br: shopify http 404 | www.dafiti.com.br: vtex http 404
-Iguatemi 365,www.iguatemi365.com.br,multimarca_premium,multimarca,Agrega o premium nacional de uma vez,falhou,2026-07-23,www.iguatemi365.com.br: home inacessivel | www.iguatemi365.com: vtex resposta nao-json | www.iguatemi365.com: shopify resposta nao-json
-Shop2gether,www.shop2gether.com.br,multimarca_premium,multimarca,Curadoria de designer brasileiro no premium,falhou,2026-07-23,www.shop2gether.com.br: vtex http 404 | www.shop2gether.com.br: shopify http 404 | www.shop2gether.com.br: vtex http 404
-Centauro,www.centauro.com.br,multimarca_esportivo,multimarca,Resolve Nike e Adidas sem bater na fortaleza: so para o segmento esportivo futuro,falhou,2026-07-23,"HTTP 403 (protecao anti-bot): fora por regra 7, nao burlar"
+Foxton,www.foxton.com.br,masculino_casual_br,grupo,Autobenchmark do grupo no masculino: fora dos indices da v1,falhou,2026-07-24,"pente fino 24/07: dominio .com.br nao resolve; masculino_casual_br papel grupo, fora dos indices v1; baixa prioridade"
+Dafiti,www.dafiti.com.br,multimarca_geral,multimarca,Maior agregador de moda do pais: cobre marcas sem site coletavel com ressalva de leitura relativa,falhou,2026-07-24,pente fino 24/07: 404 em VTEX e Shopify; catalogo nao exposto nos caminhos padrao; falha definitiva
+Iguatemi 365,iguatemi365.com,multimarca_premium,multimarca,Agrega o premium nacional de uma vez,falhou,2026-07-24,"pente fino 24/07: dominio real e iguatemi365.com (VTEX), nao .com.br; API de catalogo fecha no edge (302 para HTML); falha definitiva regra 7, mesma classe de Maria Filo/Fabula"
+Shop2gether,www.shop2gether.com.br,multimarca_premium,multimarca,Curadoria de designer brasileiro no premium,falhou,2026-07-24,pente fino 24/07: sem catalogo publico VTEX nem Shopify (404 nos dois caminhos); falha definitiva
+Centauro,www.centauro.com.br,multimarca_esportivo,multimarca,Resolve Nike e Adidas sem bater na fortaleza: so para o segmento esportivo futuro,falhou,2026-07-24,"403 do IP residencial em janela de penalidade; RE-TESTE do datacenter PENDENTE (item 3.2); multimarca_esportivo, so para segmento futuro"
 Misci,,direcao,direcao,Citada pelo proprio cliente como referencia de pesquisa,nao_se_aplica,,
 Zimmermann,,direcao,direcao,Referencia estetica direta do romantico estampado premium,nao_se_aplica,,
 Ganni,,direcao,direcao,Velocidade de virar tendencia de massa,nao_se_aplica,,

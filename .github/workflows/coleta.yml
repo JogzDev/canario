@@ -1,0 +1,44 @@
+name: Coleta de varejo + saude
+
+# SEM CRON por enquanto (condicao 2.2): a sonda achou bloqueio em Shopify a
+# partir do datacenter. So dispara sob demanda ate o JP decidir. O cron
+# `0 6 * * *` UTC (03:00 BRT) entra numa proxima edicao, com o ok do JP.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coleta
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330   # cabe na janela da madrugada
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Coletar varejo e gerar saude
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python3 coletor/coletor_varejo.py
+
+      - name: Commitar SAUDE.md
+        if: always()
+        run: |
+          git config user.name  "CanarioBot"
+          git config user.email "canarioch3@gmail.com"
+          git add SAUDE.md
+          if git diff --cached --quiet; then
+            echo "Sem mudança no SAUDE.md."
+          else
+            git commit -m "Saúde: relatório da coleta diária [skip ci]"
+            git push
+          fi
