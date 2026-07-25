@@ -4,17 +4,16 @@ name: Coleta de varejo + saude
 # VTEX foi aprovada do datacenter (sonda), mas o cron so entra depois desta
 # primeira coleta manual dar certo. Dispara ao empurrar o coletor e sob demanda.
 on:
+  # Só sob demanda. O gatilho automático por push foi removido em 24/07 depois
+  # que a rajada de testes estourou o rate-limit do range de IPs do Actions na
+  # VTEX (429). A coleta só volta a rodar por decisão explícita, para o limite
+  # da VTEX descansar (regra 7).
   workflow_dispatch:
     inputs:
       marca:
         description: 'Coletar so uma marca (particionamento por marca; vazio = todas)'
         required: false
         default: ''
-  push:
-    paths:
-      - 'coletor/coletor_varejo.py'
-      - 'coletor/pente_fino_datacenter.py'
-      - '.github/workflows/coleta.yml'
 
 permissions:
   contents: write

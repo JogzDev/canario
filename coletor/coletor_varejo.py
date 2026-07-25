@@ -497,12 +497,25 @@ def main():
 
     hoje = date.today()
     metricas = []
+    # Disjuntor (regra 7): se a VTEX devolve 429 em marcas seguidas, é rate-limit
+    # de range do IP; insistir nas 12 é justamente o que a regra 7 proíbe. Após
+    # LIMITE_429 marcas VTEX seguidas com 429, aborta o resto do VTEX. Shopify
+    # (outra infra) continua.
+    LIMITE_429 = 3
+    vtex_429_seguidos = 0
+    vtex_abortado = False
     for marca in marcas:
+        eh_vtex = marca.get("plataforma") == "vtex"
+        if eh_vtex and vtex_abortado:
+            metricas.append({"marca_id": marca["id"], "nome": marca["nome"],
+                             "plataforma": "vtex", "visitados": 0, "gravados": 0,
+                             "declarado": None, "pct_campos_ok": None,
+                             "alertas": {"disjuntor": "pulada: VTEX em 429 (rate-limit de range); nao insistir (regra 7)"}})
+            continue
         t0 = time.monotonic()
         try:
             m = coletar_marca(marca, hoje)
         except Exception as e:
-            # Uma marca com problema nao derruba a run inteira nem perde o SAUDE.
             import traceback
             traceback.print_exc()
             m = {"marca_id": marca["id"], "nome": marca["nome"],
@@ -514,6 +527,17 @@ def main():
             print("  {:14} visit={} grav={} decl={} ({:.0f}s) {}".format(
                 m["nome"], m["visitados"], m["gravados"], m["declarado"],
                 time.monotonic() - t0, m["alertas"] or ""), file=sys.stderr)
+            if eh_vtex:
+                erro = (m.get("alertas") or {}).get("erro", "")
+                if "429" in str(erro):
+                    vtex_429_seguidos += 1
+                    if vtex_429_seguidos >= LIMITE_429:
+                        vtex_abortado = True
+                        print("  DISJUNTOR: VTEX em 429 por {} marcas seguidas; "
+                              "abortando o resto do VTEX (regra 7).".format(LIMITE_429),
+                              file=sys.stderr)
+                elif m["visitados"] > 0:
+                    vtex_429_seguidos = 0
 
     if metricas:
         escrever_saude(hoje, metricas)
