@@ -1,19 +1,21 @@
 name: Coleta de varejo + saude
 
-# Backfill inicial (decisao do JP, 24/07). SEM cron ainda: a espinha dorsal
-# VTEX foi aprovada do datacenter (sonda), mas o cron so entra depois desta
-# primeira coleta manual dar certo. Dispara ao empurrar o coletor e sob demanda.
+# Runner: definido pela variavel de repositorio RUNNER_COLETA.
+#   - nao definida  -> ubuntu-latest (datacenter do GitHub; a VTEX responde 429)
+#   - "self-hosted" -> o Mac do JP, em IP residencial (que a VTEX aceita)
+# Trocar de um para o outro e so mudar a variavel em Settings > Variables.
 on:
-  # Só sob demanda. O gatilho automático por push foi removido em 24/07 depois
-  # que a rajada de testes estourou o rate-limit do range de IPs do Actions na
-  # VTEX (429). A coleta só volta a rodar por decisão explícita, para o limite
-  # da VTEX descansar (regra 7).
   workflow_dispatch:
     inputs:
       marca:
-        description: 'Coletar so uma marca (particionamento por marca; vazio = todas)'
+        description: 'Coletar so uma marca (particionamento; vazio = todas)'
         required: false
         default: ''
+  schedule:
+    # 03:00 BRT = 06:00 UTC (Brasil sem horario de verao desde 2019).
+    # So faz efeito quando o runner residencial estiver de pe: no datacenter
+    # a VTEX devolve 429 e o disjuntor aborta.
+    - cron: '0 6 * * *'
 
 permissions:
   contents: write
@@ -24,36 +26,29 @@ concurrency:
 
 jobs:
   coletar:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
+      # No Mac self-hosted isso pode falhar (toolcache ausente); nao e bloqueador:
+      # os coletores rodam tambem no Python 3.9 que vem com o macOS.
       - uses: actions/setup-python@v5
+        continue-on-error: true
         with:
           python-version: '3.11'
 
-      # Fase 1: veredito dos 4 casos-limite (Colcci, Centauro, Amaro, PatBo).
       - name: Pente fino do datacenter
+        if: github.event_name == 'workflow_dispatch'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python3 coletor/pente_fino_datacenter.py
 
-      # Commit cedo: o JP ve o veredito Shopify/403 sem esperar a coleta longa.
       - name: Commitar veredito do pente fino
-        run: |
-          git config user.name  "CanarioBot"
-          git config user.email "canarioch3@gmail.com"
-          git add PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv
-          if git diff --cached --quiet; then
-            echo "Sem mudança no pente fino."
-          else
-            git commit -m "Pente fino do datacenter: veredito dos casos-limite [skip ci]"
-            git push
-          fi
+        if: github.event_name == 'workflow_dispatch'
+        run: bash .github/commitar.sh "PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv" "Pente fino: veredito dos casos-limite"
 
-      # Fase 2: coleta de varejo (backfill inicial, pode ser longo).
       - name: Coletar varejo e gerar saude
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -63,14 +58,4 @@ jobs:
 
       - name: Commitar SAUDE.md
         if: always()
-        run: |
-          git config user.name  "CanarioBot"
-          git config user.email "canarioch3@gmail.com"
-          git pull --rebase --autostash || true
-          git add SAUDE.md
-          if git diff --cached --quiet; then
-            echo "Sem mudança no SAUDE.md."
-          else
-            git commit -m "Saúde: relatório da coleta [skip ci]"
-            git push
-          fi
+        run: bash .github/commitar.sh "SAUDE.md" "Saúde: relatório da coleta"

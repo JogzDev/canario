@@ -41,6 +41,42 @@ CAMINHO = {
     "shopify": "/products.json?limit=5",
 }
 
+# Marcas do grupo Azzas com AUTORIZACAO ESCRITA do cliente (registrada no
+# changelog em 28/07). As duas sao VTEX mas fecharam a API no dominio proprio.
+# Com autorizacao do dono da marca, o host da plataforma deixa de ser contorno
+# e passa a ser acesso autorizado -- a distincia que separa isto de Colcci e
+# Centauro, que continuam fora porque nao temos (nem pediremos) autorizacao.
+AUTORIZADAS = [
+    ("Maria Filo", ["mariafilo", "mariafilolojas", "grupomariafilo"]),
+    ("Fabula", ["afabula", "fabula", "fabulakids"]),
+]
+HOST_PLATAFORMA = "{}.vtexcommercestable.com.br"
+
+
+def testar_host_plataforma(marca, contas):
+    """Descobre a conta VTEX de uma marca autorizada e testa o catalogo."""
+    tentativas = []
+    for conta in contas:
+        dominio = HOST_PLATAFORMA.format(conta)
+        url = "https://{}{}".format(dominio, CAMINHO["vtex"])
+        _ritmo()
+        codigo, corpo, _, _ = buscar(url, dominio)
+        tentativas.append("{}:{}".format(conta, codigo))
+        if codigo in (200, 206) and corpo:
+            try:
+                dados = json.loads(corpo)
+            except ValueError:
+                continue
+            if isinstance(dados, list) and dados:
+                return {"marca": marca, "dominio": dominio, "plataforma": "vtex",
+                        "tentativas": tentativas, "http": codigo, "json_ok": True,
+                        "veredito": "ABRIU pelo host da plataforma (conta '{}'), "
+                                    "com autorizacao escrita do cliente".format(conta)}
+    return {"marca": marca, "dominio": HOST_PLATAFORMA.format(contas[0]),
+            "plataforma": "vtex", "tentativas": tentativas, "http": None,
+            "json_ok": False,
+            "veredito": "conta VTEX nao descoberta entre os candidatos testados"}
+
 
 def _ritmo():
     espera = 1.0 - (time.monotonic() - _ultima[0])
@@ -102,7 +138,10 @@ def atualizar_painel(resultados):
             if l["marca"] == r["marca"] and r["json_ok"] and l["status_teste"] == "falhou":
                 l["status_teste"] = r["plataforma"]
                 l["data_teste"] = hoje
-                l["detalhe_teste"] = "pente fino datacenter 24/07: {}".format(r["veredito"])
+                # O dominio precisa virar o que respondeu, senao o coletor
+                # continuaria batendo no endereco que fechou no edge.
+                l["dominio"] = r["dominio"]
+                l["detalhe_teste"] = "pente fino {}: {}".format(hoje, r["veredito"])
                 promovidos.append(r["marca"])
     if promovidos:
         campos = ["marca", "dominio", "segmento", "papel", "justificativa",
@@ -117,6 +156,7 @@ def atualizar_painel(resultados):
 def main():
     agora = datetime.now(timezone.utc)
     resultados = [testar(*a) for a in ALVOS]
+    resultados += [testar_host_plataforma(marca, contas) for marca, contas in AUTORIZADAS]
     promovidos = atualizar_painel(resultados)
 
     linhas = ["# Pente fino do datacenter — 4 casos-limite\n",

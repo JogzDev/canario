@@ -35,13 +35,4 @@ jobs:
         run: python3 coletor/sonda_actions.py
 
       - name: Commitar o resultado
-        run: |
-          git config user.name  "CanarioBot"
-          git config user.email "canarioch3@gmail.com"
-          git add SONDA_ACTIONS.md
-          if git diff --cached --quiet; then
-            echo "Sem mudança no resultado da sonda."
-          else
-            git commit -m "Sonda do Actions: resultado da coleta de diagnóstico [skip ci]"
-            git push
-          fi
+        run: bash .github/commitar.sh "SONDA_ACTIONS.md" "Sonda do Actions: resultado do diagnóstico"
