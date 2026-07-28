@@ -21,3 +21,6 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+# Pagina de revisao gerada localmente (regenerar com o script)
+VERIFICACAO_TRENDS.html
