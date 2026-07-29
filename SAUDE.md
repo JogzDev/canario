@@ -1,13 +1,13 @@
 # SAÚDE — coletores do Canário
 
-**Última coleta (UTC):** 2026-07-29T21:32:06.459185+00:00
+**Última coleta (UTC):** 2026-07-29T22:00:26.610381+00:00
 
 
 ## Varejo
 
-- Produtos **visitados**: 43202
+- Produtos **visitados**: 49563
 
-- Snapshots **gravados** (delta, B3): 41894
+- Snapshots **gravados** (delta, B3): 30721
 
 - Marcas coletando: 12 de 16
 
@@ -17,7 +17,7 @@
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
-| C&A | vtex | 18722 | 18722 | 143834 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "divergencia": {"obs": "coletado < declarado; ver truncamento ou multi-categoria", "coletado": 18722, "declarado": 143834}} |
+| C&A | vtex | 25083 | 7549 | 26808 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 25083, "paginavel": 26808}, "faixas_truncadas": [{"faixa": "0-1", "existem": 41184, "coletados": 2500}, {"faixa": "0-1", "existem": 11379, "coletados": 2500}, {"faixa": "0-1", "existem": 7278, "coletados": 2500}, {"faixa": "0-1", "existem": 3459, "coletados": 2500}, {"faixa": "0-1", "existem": 6908, "coletados": 2500}]} |
 | Hering | vtex | 7777 | 7777 | 7777 | 0.983 | — |
 | Dress To | vtex | 4540 | 4540 | 7178 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "divergencia": {"obs": "coletado < declarado; ver truncamento ou multi-categoria", "coletado": 4540, "declarado": 7178}} |
 | Farm | vtex | 2767 | 2767 | 2796 | 0.985 | — |
