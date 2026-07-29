@@ -1,4 +1,25 @@
 {
+ "Animale": [
+  {
+   "id": 348,
+   "nome": "LAST CHANCE",
+   "origem": "busca"
+  }
+ ],
+ "Bo.Bo": [
+  {
+   "id": 2,
+   "nome": "Roupas",
+   "origem": "busca"
+  }
+ ],
+ "C&A": [
+  {
+   "id": 1000003,
+   "nome": "Moda Feminina",
+   "origem": "busca"
+  }
+ ],
  "Cantao": [
   {
    "id": 13,
@@ -38,6 +59,154 @@
   {
    "id": 65,
    "nome": "Vestidos",
+   "origem": "busca"
+  }
+ ],
+ "Dress To": [
+  {
+   "id": 28,
+   "nome": "Lovedress",
+   "origem": "arvore"
+  },
+  {
+   "id": 58,
+   "nome": "dress to",
+   "origem": "arvore"
+  }
+ ],
+ "Farm": [
+  {
+   "id": 1,
+   "nome": "Moda Feminina",
+   "origem": "busca"
+  },
+  {
+   "id": 435,
+   "nome": "Fábula e Bento",
+   "origem": "busca"
+  }
+ ],
+ "Hering": [
+  {
+   "id": 14,
+   "nome": "Blusas",
+   "origem": "busca"
+  },
+  {
+   "id": 26,
+   "nome": "Calças",
+   "origem": "busca"
+  },
+  {
+   "id": 27,
+   "nome": "Calcinhas",
+   "origem": "busca"
+  },
+  {
+   "id": 28,
+   "nome": "Camisas",
+   "origem": "busca"
+  },
+  {
+   "id": 29,
+   "nome": "Camisetas",
+   "origem": "busca"
+  },
+  {
+   "id": 38,
+   "nome": "Casacos",
+   "origem": "busca"
+  },
+  {
+   "id": 60,
+   "nome": "Jaquetas",
+   "origem": "busca"
+  },
+  {
+   "id": 71,
+   "nome": "Macacões",
+   "origem": "busca"
+  },
+  {
+   "id": 86,
+   "nome": "Polos",
+   "origem": "busca"
+  },
+  {
+   "id": 95,
+   "nome": "Saias",
+   "origem": "busca"
+  },
+  {
+   "id": 98,
+   "nome": "Shorts",
+   "origem": "busca"
+  },
+  {
+   "id": 581,
+   "nome": "Vestidos",
+   "origem": "busca"
+  }
+ ],
+ "Lanca Perfume": [
+  {
+   "id": 1,
+   "nome": "Roupas",
+   "origem": "busca"
+  }
+ ],
+ "Le Lis Blanc": [
+  {
+   "id": 2,
+   "nome": "Feminino",
+   "origem": "busca"
+  }
+ ],
+ "Maria Filo": [
+  {
+   "id": 35,
+   "nome": "OFF",
+   "origem": "busca"
+  },
+  {
+   "id": 60,
+   "nome": "Loja",
+   "origem": "busca"
+  }
+ ],
+ "Morena Rosa": [
+  {
+   "id": 2,
+   "nome": "Linhas",
+   "origem": "busca"
+  }
+ ],
+ "NV": [
+  {
+   "id": 2,
+   "nome": "Roupas",
+   "origem": "busca"
+  },
+  {
+   "id": 29,
+   "nome": "New In",
+   "origem": "busca"
+  },
+  {
+   "id": 131,
+   "nome": "Linhas",
+   "origem": "busca"
+  },
+  {
+   "id": 138,
+   "nome": "BlackFriday",
+   "origem": "busca"
+  }
+ ],
+ "Zinzane": [
+  {
+   "id": 1,
+   "nome": "Feminino",
    "origem": "busca"
   }
  ],
