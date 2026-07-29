@@ -24,6 +24,7 @@ import os
 import sys
 import threading
 import time
+import urllib.parse
 from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -197,7 +198,16 @@ def _departamentos_por_produtos(dominio):
 
 
 def _fq_preco(pmin, pmax):
-    return "&fq=P:[{} TO {}]".format(pmin, pmax) if pmin is not None else ""
+    """Filtro de faixa de preco da VTEX, com a URL codificada.
+
+    O espaco cru em `P:[0 TO 200000]` invalida a URL e a requisicao nem chega a
+    sair (urlopen levanta antes da rede). O sintoma era silencioso e caro: toda
+    marca com mais de 2500 produtos -- que e justamente quando a particao por
+    preco entra -- coletava ZERO, com o total declarado correto ao lado.
+    """
+    if pmin is None:
+        return ""
+    return "&fq=" + urllib.parse.quote("P:[{} TO {}]".format(pmin, pmax))
 
 
 def _contar(dominio, cat_id, pmin=None, pmax=None):
