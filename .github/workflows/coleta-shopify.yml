@@ -1,0 +1,51 @@
+name: Coleta Shopify (runner residencial)
+
+# Existe por uma diferenca medida em 29/07: Amaro e PatBo devolvem 429 do
+# datacenter do GitHub e 200 do IP residencial. As duas sao Shopify; as 12 VTEX
+# coletam bem do datacenter. Entao a divisao de trabalho e por plataforma:
+#   * coleta.yml         -> VTEX, nos servidores do GitHub
+#   * coleta-shopify.yml -> Shopify, no Mac do JP (IP residencial)
+#
+# Amaro e nucleo e o termometro mais sensivel do painel: e a marca que mais
+# justifica o Mac existir no projeto.
+on:
+  workflow_dispatch:
+  schedule:
+    # 03:20 BRT, 20 minutos depois da VTEX, para as duas coletas nao disputarem
+    # o mesmo minuto nem o mesmo teto de requisicao.
+    - cron: '20 6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coleta-shopify
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      # No Mac pode nao haver toolcache; nao e bloqueador, o coletor roda no
+      # Python 3.9 que vem com o macOS.
+      - uses: actions/setup-python@v5
+        continue-on-error: true
+        with:
+          python-version: '3.11'
+
+      - name: Coletar so as marcas Shopify
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          COLETA_PLATAFORMA: shopify
+        run: python3 coletor/coletor_varejo.py
+
+      - name: Commitar SAUDE.md
+        if: always()
+        run: >-
+          bash .github/commitar.sh
+          "SAUDE.md anexos/departamentos_vtex.json"
+          "Relatorio de saude - Shopify no runner residencial"

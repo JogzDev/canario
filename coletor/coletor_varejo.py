@@ -242,12 +242,50 @@ def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
             return
 
 
+def _subcategorias(dominio, pai):
+    """Subcategorias de um departamento, descobertas pela busca.
+
+    Mesma tecnica dos departamentos: `categoriesIds` de um produto e o caminho
+    completo ('/65/67/'), entao um caminho de dois segmentos que comeca no pai
+    revela a subcategoria. Amostra paginas espalhadas porque a primeira pagina
+    tende a trazer so a subcategoria mais promovida da vitrine.
+    """
+    vistos = {}
+    for de in (0, 400, 900, 1500, 2200):
+        url = ("https://{}/api/catalog_system/pub/products/search"
+               "?fq=C:{}&_from={}&_to={}".format(dominio, pai, de, de + PAGINA - 1))
+        codigo, corpo, _, _ = buscar_varejo(url, dominio)
+        if codigo not in (200, 206) or not corpo:
+            continue
+        try:
+            produtos = json.loads(corpo)
+        except ValueError:
+            continue
+        if not produtos:
+            break
+        for p in produtos:
+            for caminho, id_caminho in zip(p.get("categories") or [],
+                                           p.get("categoriesIds") or []):
+                nomes = [x for x in caminho.strip("/").split("/") if x]
+                nums = [x for x in id_caminho.strip("/").split("/") if x]
+                if len(nums) == 2 and nums[0] == str(pai):
+                    try:
+                        vistos[int(nums[1])] = nomes[1] if len(nomes) > 1 else ""
+                    except ValueError:
+                        pass
+    return sorted(vistos.items())
+
+
 def vtex_departamento(dominio, cat_id, estado):
     """Todos os produtos de um departamento (inclui subcategorias via fq=C).
 
-    Caso comum (departamento <= 2500): pagina so por categoria, sem depender do
-    facet de preco. So quando passa de 2500 e que parte por preco para furar o
-    teto de offset da VTEX; prefere sobreposicao a lacuna (o dedup remove a borda).
+    Caso comum (departamento <= 2500): pagina direto.
+
+    Acima de 2500 (teto de offset da VTEX), parte por SUBCATEGORIA, que e o
+    eixo natural do catalogo. A particao por preco ficou como ultimo recurso
+    porque tem limite estrutural: preco de moda se concentra em pontos exatos
+    (R$ 199,90, R$ 299,90), e a faixa [199 TO 200] sozinha estoura o teto sem
+    ter como dividir mais -- foi o que truncou o Dress To em 4540 de 7178.
     """
     total = _contar(dominio, cat_id)
     if not total:
@@ -257,6 +295,24 @@ def vtex_departamento(dominio, cat_id, estado):
         yield from _paginar(dominio, cat_id, total)
         return
 
+    subs = _subcategorias(dominio, cat_id)
+    if subs:
+        for sub_id, _nome in subs:
+            t = _contar(dominio, sub_id)
+            if not t:
+                continue
+            if t <= TETO_OFFSET:
+                yield from _paginar(dominio, sub_id, t)
+            else:
+                yield from _por_preco(dominio, sub_id, estado)
+        return
+
+    # Sem subcategoria visivel: sobra o preco.
+    yield from _por_preco(dominio, cat_id, estado)
+
+
+def _por_preco(dominio, cat_id, estado):
+    """Ultimo recurso: parte a faixa de preco ao meio ate caber no teto."""
     def particao(pmin, pmax):
         t = _contar(dominio, cat_id, pmin, pmax)
         if not t:
@@ -543,6 +599,12 @@ def coletar_marca(marca, hoje, cache_deps):
 # ---------------------------------------------------------------------------
 
 def escrever_saude(hoje, metricas):
+    """Grava a saude no banco e RE-RENDERIZA o SAUDE.md a partir dele.
+
+    Renderizar do banco, e nao das metricas em memoria, e o que permite duas
+    coletas independentes no mesmo dia (VTEX no datacenter, Shopify no runner
+    residencial) sem uma apagar o relatorio da outra.
+    """
     for m in metricas:
         supabase_rest.upsert("saude", [{
             "data": hoje.isoformat(), "fonte": "varejo", "marca_id": m["marca_id"],
@@ -550,6 +612,21 @@ def escrever_saude(hoje, metricas):
             "total_declarado": m["declarado"], "pct_campos_ok": m["pct_campos_ok"],
             "alertas": m["alertas"],
         }], on_conflict="data,fonte,marca_id")
+
+    nomes = {m["id"]: (m["nome"], m.get("plataforma") or "?")
+             for m in supabase_rest.selecionar(
+                 "marcas", "?select=id,nome,plataforma")}
+    do_dia = supabase_rest.selecionar(
+        "saude", "?data=eq.{}&fonte=eq.varejo&select=marca_id,visitados,"
+                 "gravados,total_declarado,pct_campos_ok,alertas".format(hoje.isoformat()))
+    metricas = [{
+        "marca_id": r["marca_id"],
+        "nome": nomes.get(r["marca_id"], ("(id {})".format(r["marca_id"]), "?"))[0],
+        "plataforma": nomes.get(r["marca_id"], ("", "?"))[1],
+        "visitados": r["visitados"] or 0, "gravados": r["gravados"] or 0,
+        "declarado": r["total_declarado"], "pct_campos_ok": r["pct_campos_ok"],
+        "alertas": r["alertas"],
+    } for r in do_dia] or metricas
 
     tot_vis = sum(m["visitados"] for m in metricas)
     tot_grav = sum(m["gravados"] for m in metricas)
@@ -590,11 +667,17 @@ def main():
     materializar_anexos.materializar_termos()
 
     filtro = os.environ.get("COLETA_MARCA", "").strip()  # particionar por marca se preciso
+    # COLETA_PLATAFORMA existe porque Amaro e PatBo (Shopify) devolvem 429 do
+    # datacenter do GitHub e 200 do IP residencial. Assim o runner do Mac cuida
+    # so delas, e o datacenter cuida das VTEX, que responde bem.
+    plataforma = os.environ.get("COLETA_PLATAFORMA", "").strip().lower()
     marcas = supabase_rest.selecionar(
         "marcas",
         "?status_teste=in.(vtex,shopify)&ativa=eq.true&select=id,nome,dominio,plataforma&order=nome")
     if filtro:
         marcas = [m for m in marcas if m["nome"].lower() == filtro.lower()]
+    if plataforma:
+        marcas = [m for m in marcas if (m["plataforma"] or "").lower() == plataforma]
     print("Marcas a coletar: {}{}".format(
         len(marcas), " (filtro: {})".format(filtro) if filtro else ""), file=sys.stderr)
 

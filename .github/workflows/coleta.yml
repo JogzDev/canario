@@ -57,6 +57,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           COLETA_MARCA: ${{ github.event.inputs.marca }}
+          # Divisao de trabalho por plataforma: as Shopify (Amaro, PatBo) dao
+          # 429 daqui e ficam com o runner residencial (coleta-shopify.yml).
+          COLETA_PLATAFORMA: vtex
         run: python3 coletor/coletor_varejo.py
 
       - name: Commitar SAUDE.md
