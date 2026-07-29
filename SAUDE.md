@@ -1,6 +1,6 @@
 # SAÚDE — coletores do Canário
 
-**Última coleta (UTC):** 2026-07-29T18:23:33.681433+00:00
+**Última coleta (UTC):** 2026-07-29T18:36:10.215362+00:00
 
 
 ## Varejo
@@ -17,7 +17,7 @@
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
-| Cantao | vtex | 0 | 0 | — | — | {"erro": "arvore http 429"} |
+| Cantao | vtex | 0 | 0 | — | — | {"erro": "arvore http 429 (apos 4 tentativas)"} |
 
 ---
 
