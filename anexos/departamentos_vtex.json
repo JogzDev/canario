@@ -1,3 +1,45 @@
 {
+ "Cantao": [
+  {
+   "id": 13,
+   "nome": "Blusas e T-shirts",
+   "origem": "busca"
+  },
+  {
+   "id": 19,
+   "nome": "Camisas",
+   "origem": "busca"
+  },
+  {
+   "id": 22,
+   "nome": "Calças",
+   "origem": "busca"
+  },
+  {
+   "id": 42,
+   "nome": "Casacos",
+   "origem": "busca"
+  },
+  {
+   "id": 51,
+   "nome": "Macacões",
+   "origem": "busca"
+  },
+  {
+   "id": 54,
+   "nome": "Saias",
+   "origem": "busca"
+  },
+  {
+   "id": 60,
+   "nome": "Shorts e Bermudas",
+   "origem": "busca"
+  },
+  {
+   "id": 65,
+   "nome": "Vestidos",
+   "origem": "busca"
+  }
+ ],
  "_nota": "Departamentos femininos por marca, descobertos uma vez. A arvore de categorias da VTEX e o endpoint mais limitado (429 mesmo quando a busca de produtos responde 206), e ela quase nao muda -- buscar toda noite era desperdicio e ponto unico de falha. Apagar uma marca daqui forca a redescoberta."
 }

@@ -1,23 +1,20 @@
 # SAÚDE — coletores do Canário
 
-**Última coleta (UTC):** 2026-07-29T18:36:10.215362+00:00
+**Última coleta (UTC):** 2026-07-29T18:44:13.417593+00:00
 
 
 ## Varejo
 
-- Produtos **visitados**: 0
+- Produtos **visitados**: 917
 
-- Snapshots **gravados** (delta, B3): 0
+- Snapshots **gravados** (delta, B3): 917
 
-- Marcas coletando: 0 de 1
-
-
-> ⚠️ Zero itens (alerta imediato, §20): Cantao
+- Marcas coletando: 1 de 1
 
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
-| Cantao | vtex | 0 | 0 | — | — | {"erro": "arvore http 429 (apos 4 tentativas)"} |
+| Cantao | vtex | 917 | 917 | 917 | 1.0 | — |
 
 ---
 
