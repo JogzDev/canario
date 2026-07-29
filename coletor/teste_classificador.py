@@ -15,8 +15,12 @@ from mapa_categorias import classificar  # noqa: E402
 
 CASOS = [
     # As armadilhas de substring que motivaram o teste.
-    ("Bazar | Casacos Com Desconto", "sim"),
+    ("Casacos Com Desconto", "sim"),   # "casa" nao pode derrubar "casacos"
     ("Casaco e Jaqueta", "sim"),
+    # "Bazar | Casacos" era `sim` ate 29/07: passou a `nao` quando "bazar"
+    # entrou nas exclusoes junto de sale e outlet. Nao e regressao de
+    # substring -- e balde de merchandising, e a exclusao vence.
+    ("Bazar | Casacos Com Desconto", "nao"),
     ("BLUSAS DE BOTAO", "sim"),
     ("Casa e Decoracao", "nao"),
     ("Botas", "nao"),
