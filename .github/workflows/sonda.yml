@@ -34,6 +34,9 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python3 coletor/sonda_actions.py
 
+      # `always()`: se a sonda quebrar no meio, o diagnostico parcial ainda
+      # tem valor e precisa chegar ao repositorio.
       - name: Commitar o resultado
+        if: always()
         run: >-
           bash .github/commitar.sh "SONDA_ACTIONS.md" "Sonda do Actions - diagnostico"

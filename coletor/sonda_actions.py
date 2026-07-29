@@ -130,7 +130,9 @@ def main():
     # Espelha no stdout do Actions para leitura rapida no log.
     print("\n".join(linhas))
     print("\nRESUMO_JSON:", json.dumps(
-        {"bloqueio": algum_bloqueio, "supabase_ok": supa["ok"],
+        {"vtex_bloqueada": vtex_bloqueada, "shopify_bloqueada": shopify_bloqueada,
+         "bloqueio_parcial": any(d["bloqueado"] for d in dominios),
+         "supabase_ok": supa["ok"],
          "http": {d["marca"]: d["http"] for d in dominios}}, ensure_ascii=False))
     # Nunca falha o job: um exit!=0 abortaria o commit do resultado.
     return 0
