@@ -62,4 +62,6 @@ jobs:
       - name: Commitar SAUDE.md
         if: always()
         run: >-
-          bash .github/commitar.sh "SAUDE.md" "Relatorio de saude da coleta"
+          bash .github/commitar.sh
+          "SAUDE.md anexos/departamentos_vtex.json"
+          "Relatorio de saude da coleta"

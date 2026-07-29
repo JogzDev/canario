@@ -34,6 +34,13 @@ import materializar_anexos  # noqa: E402
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAUDE_MD = os.path.join(RAIZ, "SAUDE.md")
+CACHE_DEPS = os.path.join(RAIZ, "anexos", "departamentos_vtex.json")
+
+# A arvore de categorias e o endpoint mais limitado da VTEX: em 29/07 devolveu
+# 429 enquanto a busca de produtos respondia 206 no mesmo dominio, minutos
+# antes. Como e UMA requisicao por marca e sem ela a marca inteira fica de
+# fora, vale esperar muito mais do que numa pagina qualquer.
+ESPERAS_ARVORE = [0, 45, 120, 240]
 
 PAGINA = 50             # janela do header Range da VTEX
 TETO_OFFSET = 2500      # a VTEX corta o offset em 2500 por consulta
@@ -80,26 +87,65 @@ def _total_do_header(cab):
 # VTEX: departamentos femininos + paginacao completa por particao de preco
 # ---------------------------------------------------------------------------
 
-def vtex_departamentos_femininos(dominio):
-    """Nivel 1 da arvore que o classificador marca como feminino (A2).
+def _carregar_cache_departamentos():
+    if os.path.exists(CACHE_DEPS):
+        try:
+            return json.load(open(CACHE_DEPS, encoding="utf-8"))
+        except ValueError:
+            return {}
+    return {}
+
+
+def _salvar_cache_departamentos(cache):
+    cache["_nota"] = ("Departamentos femininos por marca, descobertos uma vez. "
+                      "A arvore de categorias da VTEX e o endpoint mais limitado "
+                      "(429 mesmo quando a busca de produtos responde 206), e ela "
+                      "quase nao muda -- buscar toda noite era desperdicio e ponto "
+                      "unico de falha. Apagar uma marca daqui forca a redescoberta.")
+    with open(CACHE_DEPS, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=1, sort_keys=True)
+
+
+def vtex_departamentos_femininos(dominio, marca_nome, cache):
+    """Departamentos de nivel 1 que o classificador marca como femininos (A2).
 
     fq=C:{id} traz o departamento E suas subcategorias, entao paginar os
     departamentos de topo cobre o catalogo feminino inteiro. Departamentos de
     topo sao disjuntos, o que torna o total declarado somavel.
+
+    Le do cache quando existe. So bate na arvore na primeira vez -- e ai com
+    paciencia extra, porque e UMA requisicao por marca e sem ela a marca
+    inteira fica de fora.
     """
+    if marca_nome in cache:
+        return [(d["id"], d["nome"]) for d in cache[marca_nome]], ""
+
     caminho = "/api/catalog_system/pub/category/tree/1"
     if not robots_permite(dominio, caminho)[0]:
         return None, "robots proibe a arvore"
-    codigo, corpo, _, _ = buscar_varejo("https://{}{}".format(dominio, caminho), dominio)
+
+    url = "https://{}{}".format(dominio, caminho)
+    codigo = None
+    for espera in ESPERAS_ARVORE:
+        if espera:
+            time.sleep(espera)
+        _ritmo()
+        codigo, corpo, _, _ = buscar(url, dominio)
+        if codigo in (200, 206) and corpo:
+            break
     if codigo not in (200, 206) or not corpo:
-        return None, "arvore http {}".format(codigo)
+        return None, "arvore http {} (apos {} tentativas)".format(
+            codigo, len(ESPERAS_ARVORE))
     try:
         arvore = json.loads(corpo)
     except ValueError:
         return None, "arvore nao-json"
+
     deps = [(no["id"], no.get("name") or "")
             for no in arvore
             if no.get("id") and classificar(no.get("name") or "")[0] == "sim"]
+    if deps:
+        cache[marca_nome] = [{"id": i, "nome": n} for i, n in deps]
     return deps, ""
 
 
@@ -372,7 +418,7 @@ def gravar_lote(marca_id, coletados, hoje):
     return len(snap_rows), campos_ok
 
 
-def coletar_marca(marca, hoje):
+def coletar_marca(marca, hoje, cache_deps):
     nome, dominio, plataforma = marca["nome"], marca["dominio"], marca["plataforma"]
     estado = {"declarado": 0, "truncou": False, "erro": None}
     vistos = set()
@@ -392,7 +438,7 @@ def coletar_marca(marca, hoje):
             return {"marca_id": marca["id"], "nome": nome, "plataforma": plataforma,
                     "visitados": 0, "gravados": 0, "declarado": None,
                     "pct_campos_ok": None, "alertas": {"erro": "robots proibe a busca"}}
-        deps, erro = vtex_departamentos_femininos(dominio)
+        deps, erro = vtex_departamentos_femininos(dominio, nome, cache_deps)
         if erro:
             estado["erro"] = erro
             deps = []
@@ -497,6 +543,9 @@ def main():
 
     hoje = date.today()
     metricas = []
+    cache_deps = _carregar_cache_departamentos()
+    conhecidas = sum(1 for k in cache_deps if not k.startswith("_"))
+    print("Departamentos em cache: {} marcas".format(conhecidas), file=sys.stderr)
     # Disjuntor (regra 7): se a VTEX devolve 429 em marcas seguidas, é rate-limit
     # de range do IP; insistir nas 12 é justamente o que a regra 7 proíbe. Após
     # LIMITE_429 marcas VTEX seguidas com 429, aborta o resto do VTEX. Shopify
@@ -514,7 +563,7 @@ def main():
             continue
         t0 = time.monotonic()
         try:
-            m = coletar_marca(marca, hoje)
+            m = coletar_marca(marca, hoje, cache_deps)
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -539,6 +588,9 @@ def main():
                 elif m["visitados"] > 0:
                     vtex_429_seguidos = 0
 
+    # Salva antes da saude: uma arvore descoberta hoje e o que evita a
+    # redescoberta amanha, e nao pode se perder se a saude falhar.
+    _salvar_cache_departamentos(cache_deps)
     if metricas:
         escrever_saude(hoje, metricas)
     print("Coleta concluída.", file=sys.stderr)
