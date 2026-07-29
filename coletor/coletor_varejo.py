@@ -232,8 +232,20 @@ def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
     de = 0
     while de < min(limite, TETO_OFFSET):
         ate = de + PAGINA - 1
+        # ORDEM DETERMINISTICA (OrderByPriceASC), e nao a ordem padrao.
+        #
+        # A ordem padrao da VTEX e ordem de vitrine: muda conforme a loja
+        # promove peca. Onde a categoria estoura o teto de 2500 e a coleta pega
+        # so um pedaco, a ordem padrao faria a composicao do pedaco MUDAR de um
+        # dia para o outro -- e ai um produto "aparecendo" seria ruido de
+        # amostragem, nao reposicao de verdade. Isso corromperia os eventos da
+        # §23, que sao o sinal mais forte do painel.
+        #
+        # Ordenar por preco resolve dois problemas de uma vez: o pedaco passa a
+        # ser o MESMO todo dia (evento virou evento), e desaparece o vies de
+        # promocao que a decisao A2 queria justamente evitar.
         url = ("https://{}/api/catalog_system/pub/products/search"
-               "?fq=C:{}{}&_from={}&_to={}".format(
+               "?fq=C:{}{}&O=OrderByPriceASC&_from={}&_to={}".format(
                    dominio, cat_id, _fq_preco(pmin, pmax), de, ate))
         codigo, corpo, _, _ = buscar_varejo(url, dominio)
         if codigo not in (200, 206) or not corpo:
@@ -289,7 +301,6 @@ def vtex_departamento(dominio, cat_id, estado):
     total = _contar(dominio, str(cat_id))
     if not total:
         return
-    estado["declarado"] += total
     yield from _por_categoria(dominio, str(cat_id), estado, total)
 
 
@@ -306,6 +317,11 @@ def _por_categoria(dominio, caminho, estado, total=None, nivel=1):
     if not total:
         return
     if total <= TETO_OFFSET:
+        # `declarado` soma so o que e REALMENTE paginavel e incluido pelo
+        # classificador. Somar o total do departamento inflava o denominador
+        # com Calcados, Moda Intima e Moda Praia, e o alerta de divergencia
+        # acusava perda onde havia exclusao correta.
+        estado["declarado"] += total
         yield from _paginar(dominio, caminho, total)
         return
 
@@ -331,13 +347,23 @@ def _por_preco(dominio, cat_id, estado):
         if not t:
             return
         if t <= TETO_OFFSET:
+            estado["declarado"] += t
             yield from _paginar(dominio, cat_id, t, pmin, pmax)
         elif pmax - pmin > 1:
             mid = (pmin + pmax) // 2
             yield from particao(pmin, mid)
             yield from particao(mid, pmax)
         else:
-            estado["truncou"] = True  # faixa indivisivel ainda acima do teto
+            # Faixa de 1 real com mais de 2500 produtos: nao ha como dividir
+            # mais. Preco de moda se concentra em ponto exato (R$ 39,90), e a
+            # C&A tem 46 mil blusas sem subcategoria. Aqui a cobertura e
+            # parcial POR CONSTRUCAO, e o que salva a leitura e a ordem
+            # deterministica: o mesmo pedaco todo dia, sem vies de vitrine.
+            estado["truncou"] = True
+            estado["declarado"] += min(t, TETO_OFFSET)
+            estado.setdefault("faixas_truncadas", []).append(
+                {"faixa": "{}-{}".format(pmin, pmax), "existem": t,
+                 "coletados": TETO_OFFSET})
             yield from _paginar(dominio, cat_id, TETO_OFFSET, pmin, pmax)
 
     yield from particao(0, PRECO_TETO)
@@ -598,9 +624,13 @@ def coletar_marca(marca, hoje, cache_deps):
     if estado["truncou"]:
         alertas["truncou"] = "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada"
     declarado = estado["declarado"] or None
+    if estado.get("faixas_truncadas"):
+        alertas["faixas_truncadas"] = estado["faixas_truncadas"][:5]
     if plataforma == "vtex" and declarado and visitados < declarado * 0.98:
-        alertas["divergencia"] = {"declarado": declarado, "coletado": visitados,
-                                  "obs": "coletado < declarado; ver truncamento ou multi-categoria"}
+        alertas["divergencia"] = {
+            "paginavel": declarado, "coletado": visitados,
+            "obs": "coletado < paginavel; o normal e dedup (produto em duas "
+                   "categorias). Perda real aparece em faixas_truncadas."}
     pct = round(campos_ok / visitados, 3) if visitados else None
     return {"marca_id": marca["id"], "nome": nome, "plataforma": plataforma,
             "visitados": visitados, "gravados": gravados, "declarado": declarado,
