@@ -56,6 +56,7 @@ EXCLUSOES = [
                         "fitness", "esporte*", "academia", "lingerie",
                         "pijama*", "moda intima", "sleepwear", "underwear"]),
     ("nao e categoria de produto", ["sale", "outlet", "promocao", "promocoes",
+                                    "bazar", "liquidacao", "ultimas pecas",
                                     "black", "novidade*", "lancamento*",
                                     "colecao", "colecoes", "presente",
                                     "presentes", "gift*", "todos", "ver tudo",

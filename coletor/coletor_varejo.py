@@ -37,10 +37,16 @@ SAUDE_MD = os.path.join(RAIZ, "SAUDE.md")
 CACHE_DEPS = os.path.join(RAIZ, "anexos", "departamentos_vtex.json")
 
 # A arvore de categorias e o endpoint mais limitado da VTEX: em 29/07 devolveu
-# 429 enquanto a busca de produtos respondia 206 no mesmo dominio, minutos
-# antes. Como e UMA requisicao por marca e sem ela a marca inteira fica de
-# fora, vale esperar muito mais do que numa pagina qualquer.
-ESPERAS_ARVORE = [0, 45, 120, 240]
+# 429 em 4 tentativas ao longo de 408s enquanto a busca de produtos respondia
+# 206 no mesmo dominio. Paciencia nao resolve; por isso duas tentativas curtas
+# e, falhando, o caminho alternativo por produtos.
+ESPERAS_ARVORE = [0, 45]
+
+# Termos de sonda para descobrir departamentos pela BUSCA (nao pela arvore).
+# Cobrem as categorias da taxonomia, para nenhum departamento feminino ficar
+# invisivel so porque a marca nao vende aquela peca.
+TERMOS_SONDA = ["vestido", "blusa", "calca", "saia", "camisa", "short",
+                "casaco", "macacao"]
 
 PAGINA = 50             # janela do header Range da VTEX
 TETO_OFFSET = 2500      # a VTEX corta o offset em 2500 por consulta
@@ -125,7 +131,7 @@ def vtex_departamentos_femininos(dominio, marca_nome, cache):
         return None, "robots proibe a arvore"
 
     url = "https://{}{}".format(dominio, caminho)
-    codigo = None
+    codigo = corpo = None
     for espera in ESPERAS_ARVORE:
         if espera:
             time.sleep(espera)
@@ -133,20 +139,61 @@ def vtex_departamentos_femininos(dominio, marca_nome, cache):
         codigo, corpo, _, _ = buscar(url, dominio)
         if codigo in (200, 206) and corpo:
             break
-    if codigo not in (200, 206) or not corpo:
-        return None, "arvore http {} (apos {} tentativas)".format(
-            codigo, len(ESPERAS_ARVORE))
-    try:
-        arvore = json.loads(corpo)
-    except ValueError:
-        return None, "arvore nao-json"
 
-    deps = [(no["id"], no.get("name") or "")
-            for no in arvore
-            if no.get("id") and classificar(no.get("name") or "")[0] == "sim"]
+    brutos, origem = [], ""
+    if codigo in (200, 206) and corpo:
+        try:
+            brutos = [(no["id"], no.get("name") or "")
+                      for no in json.loads(corpo) if no.get("id")]
+            origem = "arvore"
+        except ValueError:
+            brutos = []
+    if not brutos:
+        brutos = _departamentos_por_produtos(dominio)
+        origem = "busca"
+    if not brutos:
+        return None, "arvore http {} e a busca nao revelou departamentos".format(codigo)
+
+    deps = [(i, n) for i, n in brutos if classificar(n)[0] == "sim"]
     if deps:
-        cache[marca_nome] = [{"id": i, "nome": n} for i, n in deps]
+        cache[marca_nome] = [{"id": i, "nome": n, "origem": origem} for i, n in deps]
     return deps, ""
+
+
+def _departamentos_por_produtos(dominio):
+    """Descobre departamentos de nivel 1 pela BUSCA, sem tocar na arvore.
+
+    Cada produto da VTEX traz `categories` e `categoriesIds` pareados, do mais
+    especifico ao mais geral:
+        categories    ['/Vestidos/Longos/', '/Vestidos/', '/Bazar/']
+        categoriesIds ['/65/67/',           '/65/',       '/141/']
+    O nivel 1 e o caminho de um segmento so. Como a busca de produtos responde
+    206 quando a arvore devolve 429, este e o caminho que sobrevive ao
+    rate-limit -- e usa exatamente o endpoint que o coletor ja usaria depois.
+    """
+    vistos = {}
+    for termo in TERMOS_SONDA:
+        url = ("https://{}/api/catalog_system/pub/products/search/{}"
+               "?_from=0&_to=9".format(dominio, termo))
+        codigo, corpo, _, _ = buscar_varejo(url, dominio)
+        if codigo not in (200, 206) or not corpo:
+            continue
+        try:
+            produtos = json.loads(corpo)
+        except ValueError:
+            continue
+        for p in produtos:
+            caminhos = p.get("categories") or []
+            ids = p.get("categoriesIds") or []
+            for caminho, id_caminho in zip(caminhos, ids):
+                nomes = [x for x in caminho.strip("/").split("/") if x]
+                numeros = [x for x in id_caminho.strip("/").split("/") if x]
+                if len(nomes) == 1 and len(numeros) == 1:
+                    try:
+                        vistos[int(numeros[0])] = nomes[0]
+                    except ValueError:
+                        pass
+    return sorted(vistos.items())
 
 
 def _fq_preco(pmin, pmax):
