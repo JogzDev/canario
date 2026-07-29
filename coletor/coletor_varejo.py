@@ -56,6 +56,7 @@ BLOCO_LEITURA = 120     # id_externos por filtro in.()
 LIMITE_GLOBAL = 1.0     # regra 7 emendada: 1 req/s GLOBAL
 BACKOFF_429 = 60        # um unico retry longo (decisao do JP)
 PRECO_TETO = 200000     # teto de preco para o particionamento (R$)
+NIVEL_MAXIMO = 4        # profundidade maxima da arvore de categorias da VTEX
 
 _trava = threading.Lock()
 _ultima = [0.0]
@@ -211,6 +212,8 @@ def _fq_preco(pmin, pmax):
 
 
 def _contar(dominio, cat_id, pmin=None, pmax=None):
+    """Conta produtos de uma categoria. `cat_id` pode ser um id ou um CAMINHO
+    de ids ("1000003/1004161") -- ver a nota em `_paginar`."""
     url = ("https://{}/api/catalog_system/pub/products/search"
            "?fq=C:{}{}&_from=0&_to=0".format(dominio, cat_id, _fq_preco(pmin, pmax)))
     codigo, _, _, cab = buscar_varejo(url, dominio)
@@ -220,6 +223,12 @@ def _contar(dominio, cat_id, pmin=None, pmax=None):
 
 
 def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
+    """Pagina uma categoria.
+
+    `cat_id` e id de departamento OU caminho completo de ids para subcategoria.
+    A VTEX exige o caminho: na C&A, `fq=C:1004161` devolve 0 e
+    `fq=C:1000003/1004161` devolve 89.354 para a mesma categoria "Roupas".
+    """
     de = 0
     while de < min(limite, TETO_OFFSET):
         ate = de + PAGINA - 1
@@ -242,18 +251,20 @@ def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
             return
 
 
-def _subcategorias(dominio, pai):
-    """Subcategorias de um departamento, descobertas pela busca.
+def _filhos(dominio, caminho):
+    """Filhos diretos de um caminho de categoria, descobertos pela busca.
 
-    Mesma tecnica dos departamentos: `categoriesIds` de um produto e o caminho
-    completo ('/65/67/'), entao um caminho de dois segmentos que comeca no pai
-    revela a subcategoria. Amostra paginas espalhadas porque a primeira pagina
-    tende a trazer so a subcategoria mais promovida da vitrine.
+    Funciona em qualquer nivel: `categoriesIds` de um produto e o caminho
+    completo ('/1000003/1004161/1004164/'), entao um caminho com um segmento
+    a mais que o pai revela o filho. Amostra paginas espalhadas porque a
+    primeira pagina traz so o que a vitrine promove.
     """
+    partes = [x for x in caminho.split("/") if x]
+    n = len(partes)
     vistos = {}
     for de in (0, 400, 900, 1500, 2200):
         url = ("https://{}/api/catalog_system/pub/products/search"
-               "?fq=C:{}&_from={}&_to={}".format(dominio, pai, de, de + PAGINA - 1))
+               "?fq=C:{}&_from={}&_to={}".format(dominio, caminho, de, de + PAGINA - 1))
         codigo, corpo, _, _ = buscar_varejo(url, dominio)
         if codigo not in (200, 206) or not corpo:
             continue
@@ -264,51 +275,53 @@ def _subcategorias(dominio, pai):
         if not produtos:
             break
         for p in produtos:
-            for caminho, id_caminho in zip(p.get("categories") or [],
-                                           p.get("categoriesIds") or []):
-                nomes = [x for x in caminho.strip("/").split("/") if x]
-                nums = [x for x in id_caminho.strip("/").split("/") if x]
-                if len(nums) == 2 and nums[0] == str(pai):
-                    try:
-                        vistos[int(nums[1])] = nomes[1] if len(nomes) > 1 else ""
-                    except ValueError:
-                        pass
+            for cam, id_cam in zip(p.get("categories") or [],
+                                   p.get("categoriesIds") or []):
+                nomes = [x for x in cam.strip("/").split("/") if x]
+                nums = [x for x in id_cam.strip("/").split("/") if x]
+                if len(nums) == n + 1 and nums[:n] == partes:
+                    vistos["/".join(nums)] = nomes[n] if len(nomes) > n else ""
     return sorted(vistos.items())
 
 
 def vtex_departamento(dominio, cat_id, estado):
-    """Todos os produtos de um departamento (inclui subcategorias via fq=C).
-
-    Caso comum (departamento <= 2500): pagina direto.
-
-    Acima de 2500 (teto de offset da VTEX), parte por SUBCATEGORIA, que e o
-    eixo natural do catalogo. A particao por preco ficou como ultimo recurso
-    porque tem limite estrutural: preco de moda se concentra em pontos exatos
-    (R$ 199,90, R$ 299,90), e a faixa [199 TO 200] sozinha estoura o teto sem
-    ter como dividir mais -- foi o que truncou o Dress To em 4540 de 7178.
-    """
-    total = _contar(dominio, cat_id)
+    """Todos os produtos de um departamento, descendo a arvore ate caber."""
+    total = _contar(dominio, str(cat_id))
     if not total:
         return
     estado["declarado"] += total
+    yield from _por_categoria(dominio, str(cat_id), estado, total)
+
+
+def _por_categoria(dominio, caminho, estado, total=None, nivel=1):
+    """Pagina uma categoria; se estoura o teto de offset, desce nos filhos.
+
+    Subcategoria e o eixo natural do catalogo. A particao por preco ficou como
+    ultimo recurso porque tem limite estrutural: preco de moda se concentra em
+    pontos exatos (R$ 199,90), e a faixa [199 TO 200] sozinha estoura o teto
+    sem ter como dividir mais -- foi o que truncou o Dress To em 4540 de 7178.
+    """
+    if total is None:
+        total = _contar(dominio, caminho)
+    if not total:
+        return
     if total <= TETO_OFFSET:
-        yield from _paginar(dominio, cat_id, total)
+        yield from _paginar(dominio, caminho, total)
         return
 
-    subs = _subcategorias(dominio, cat_id)
-    if subs:
-        for sub_id, _nome in subs:
-            t = _contar(dominio, sub_id)
-            if not t:
-                continue
-            if t <= TETO_OFFSET:
-                yield from _paginar(dominio, sub_id, t)
-            else:
-                yield from _por_preco(dominio, sub_id, estado)
-        return
+    if nivel < NIVEL_MAXIMO:
+        filhos = _filhos(dominio, caminho)
+        if filhos:
+            for cam, nome in filhos:
+                # O classificador vale em todo nivel: sem isto a C&A traria
+                # Calcados, Moda Intima e Moda Praia para dentro de
+                # feminino_casual_br, porque sao filhas de "Moda Feminina".
+                if nome and classificar(nome)[0] != "sim":
+                    continue
+                yield from _por_categoria(dominio, cam, estado, None, nivel + 1)
+            return
 
-    # Sem subcategoria visivel: sobra o preco.
-    yield from _por_preco(dominio, cat_id, estado)
+    yield from _por_preco(dominio, caminho, estado)
 
 
 def _por_preco(dominio, cat_id, estado):
