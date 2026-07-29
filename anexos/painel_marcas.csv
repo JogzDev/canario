@@ -17,8 +17,8 @@ Youcom,www.youcom.com.br,feminino_casual_br,ancora,Recorte jovem: tendencia entr
 Hering,www.hering.com.br,feminino_casual_br,ancora,Referencia de continuativo e basico: calibra o que e classico,vtex,2026-07-23,10 produtos na sonda de 675 no catalogo para 'vestido'
 Farm,www.farmrio.com.br,feminino_casual_br,grupo,Autobenchmark do cliente: nunca conta como mercado externo,vtex,2026-07-23,10 produtos na sonda de 1443 no catalogo para 'vestido'
 Animale,www.animale.com.br,feminino_casual_br,grupo,Autobenchmark do grupo em faixa premium,vtex,2026-07-23,10 produtos na sonda de 847 no catalogo para 'vestido'
-Maria Filo,www.mariafilo.com.br,feminino_casual_br,grupo,Cliente-modelo: autobenchmark central,falhou,2026-07-23,API de catalogo fechada no edge; host da plataforma responde mas nao foi sondado por regra 7
-Fabula,www.afabula.com.br,feminino_casual_br,grupo,Autobenchmark do grupo,falhou,2026-07-23,API de catalogo fechada no edge; host da plataforma responde mas nao foi sondado por regra 7
+Maria Filo,mariafilo.vtexcommercestable.com.br,feminino_casual_br,grupo,Cliente-modelo: autobenchmark central,vtex,2026-07-29,"pente fino 2026-07-29: ABRIU pelo host da plataforma (conta 'mariafilo'), com autorizacao escrita do cliente"
+Fabula,fabula.vtexcommercestable.com.br,feminino_casual_br,grupo,Autobenchmark do grupo,vtex,2026-07-29,"pente fino 2026-07-29: ABRIU pelo host da plataforma (conta 'fabula'), com autorizacao escrita do cliente"
 NV,www.bynv.com.br,feminino_casual_br,grupo,Autobenchmark do grupo,vtex,2026-07-23,10 produtos na sonda de 164 no catalogo para 'vestido'
 Foxton,www.foxton.com.br,masculino_casual_br,grupo,Autobenchmark do grupo no masculino: fora dos indices da v1,falhou,2026-07-24,"pente fino 24/07: dominio .com.br nao resolve; masculino_casual_br papel grupo, fora dos indices v1; baixa prioridade"
 Dafiti,www.dafiti.com.br,multimarca_geral,multimarca,Maior agregador de moda do pais: cobre marcas sem site coletavel com ressalva de leitura relativa,falhou,2026-07-24,pente fino 24/07: 404 em VTEX e Shopify; catalogo nao exposto nos caminhos padrao; falha definitiva
