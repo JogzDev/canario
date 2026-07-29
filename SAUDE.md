@@ -1,22 +1,23 @@
 # SAÚDE — coletores do Canário
 
-**Última coleta (UTC):** 2026-07-29T21:11:23.671385+00:00
+**Última coleta (UTC):** 2026-07-29T21:32:06.459185+00:00
 
 
 ## Varejo
 
-- Produtos **visitados**: 24480
+- Produtos **visitados**: 43202
 
-- Snapshots **gravados** (delta, B3): 23172
+- Snapshots **gravados** (delta, B3): 41894
 
-- Marcas coletando: 11 de 16
+- Marcas coletando: 12 de 16
 
 
-> ⚠️ Zero itens (alerta imediato, §20): Lanca Perfume, Zinzane, Amaro, C&A, Fabula
+> ⚠️ Zero itens (alerta imediato, §20): Lanca Perfume, Zinzane, Amaro, Fabula
 
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
+| C&A | vtex | 18722 | 18722 | 143834 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "divergencia": {"obs": "coletado < declarado; ver truncamento ou multi-categoria", "coletado": 18722, "declarado": 143834}} |
 | Hering | vtex | 7777 | 7777 | 7777 | 0.983 | — |
 | Dress To | vtex | 4540 | 4540 | 7178 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "divergencia": {"obs": "coletado < declarado; ver truncamento ou multi-categoria", "coletado": 4540, "declarado": 7178}} |
 | Farm | vtex | 2767 | 2767 | 2796 | 0.985 | — |
@@ -31,7 +32,6 @@
 | Lanca Perfume | vtex | 0 | 0 | 2639 | — | {"divergencia": {"obs": "coletado < declarado; ver truncamento ou multi-categoria", "coletado": 0, "declarado": 2639}} |
 | Zinzane | vtex | 0 | 0 | 2706 | — | {"divergencia": {"obs": "coletado < declarado; ver truncamento ou multi-categoria", "coletado": 0, "declarado": 2706}} |
 | Amaro | shopify | 0 | 0 | — | — | {"erro": "http 429 (persistiu apos backoff longo)"} |
-| C&A | vtex | 0 | 0 | 143841 | — | {"divergencia": {"obs": "coletado < declarado; ver truncamento ou multi-categoria", "coletado": 0, "declarado": 143841}} |
 | Fabula | vtex | 0 | 0 | — | — | — |
 
 ---
