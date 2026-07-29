@@ -47,7 +47,10 @@ jobs:
 
       - name: Commitar veredito do pente fino
         if: github.event_name == 'workflow_dispatch'
-        run: bash .github/commitar.sh "PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv" "Pente fino: veredito dos casos-limite"
+        run: >-
+          bash .github/commitar.sh
+          "PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv"
+          "Pente fino do datacenter"
 
       - name: Coletar varejo e gerar saude
         env:
@@ -58,4 +61,5 @@ jobs:
 
       - name: Commitar SAUDE.md
         if: always()
-        run: bash .github/commitar.sh "SAUDE.md" "Saúde: relatório da coleta"
+        run: >-
+          bash .github/commitar.sh "SAUDE.md" "Relatorio de saude da coleta"

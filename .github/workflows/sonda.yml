@@ -35,4 +35,5 @@ jobs:
         run: python3 coletor/sonda_actions.py
 
       - name: Commitar o resultado
-        run: bash .github/commitar.sh "SONDA_ACTIONS.md" "Sonda do Actions: resultado do diagnóstico"
+        run: >-
+          bash .github/commitar.sh "SONDA_ACTIONS.md" "Sonda do Actions - diagnostico"
