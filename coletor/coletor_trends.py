@@ -152,6 +152,63 @@ def grupos_de_termos(termos_aprovados):
     return [fila[i:i + tamanho] for i in range(0, len(fila), tamanho)]
 
 
+def _veredito(pontos, media_ancora):
+    """C3: decide sem_perna_busca a partir do que foi MEDIDO."""
+    if not pontos:
+        return "sim", "o Trends nao devolveu serie para este termo_busca"
+    media = sum(v for _, v in pontos) / len(pontos)
+    zeros = sum(1 for _, v in pontos if v <= 0) / float(len(pontos))
+    # Duas formas de estar morto: nivel baixo demais, ou serie quase toda zerada
+    # com picos isolados (ruido, nao sinal).
+    if media < MEDIA_MINIMA:
+        sem_perna = "sim"
+        detalhe = "chapada: media {:.2f} em {} semanas (minimo {})".format(
+            media, len(pontos), MEDIA_MINIMA)
+    elif zeros > 0.8:
+        sem_perna = "sim"
+        detalhe = "esparsa: {:.0%} das {} semanas em zero".format(zeros, len(pontos))
+    else:
+        sem_perna = "nao"
+        detalhe = "media {:.1f} em {} semanas, {:.0%} de semanas em zero".format(
+            media, len(pontos), zeros)
+    if media_ancora:
+        detalhe += "; {:.2f}x a ancora".format(media / media_ancora)
+    return sem_perna, detalhe
+
+
+def gravar_grupo(dados_por_termo, hoje, agora):
+    """Grava as series e os vereditos de UM grupo.
+
+    Grava por grupo, e nao no fim de tudo: o Trends pode bloquear no meio, e
+    perder nove grupos por causa do decimo seria repetir a perda silenciosa que
+    a gravacao por delta (B3) existe para evitar.
+    """
+    linhas, atualizacoes = [], []
+    for termo_id, dados in dados_por_termo.items():
+        pontos = dados["pontos"]
+        meta = {"fonte": "google_trends", "geo": GEO, "intervalo": INTERVALO,
+                "ancora": ANCORA, "grupo": dados["grupo"],
+                "ancora_media_no_grupo": dados["media_ancora"],
+                "termo_busca": dados["termo_busca"], "coletado_em": agora}
+        for semana, valor in pontos:
+            linhas.append({
+                "termo_id": termo_id, "segmento": "feminino_casual_br",
+                "fonte": "busca", "semana": semana.isoformat(),
+                "valor_bruto": valor, "z": None, "n_amostra": None, "meta": meta,
+            })
+        sem_perna, detalhe = _veredito(pontos, dados["media_ancora"])
+        atualizacoes.append({"id": termo_id, "sem_perna_busca": sem_perna,
+                             "volume_verificado_em": hoje.isoformat(),
+                             "volume_detalhe": detalhe})
+
+    for i in range(0, len(linhas), 500):
+        supabase_rest.upsert("series_semanais", linhas[i:i + 500],
+                             on_conflict="termo_id,segmento,fonte,semana")
+    if atualizacoes:
+        supabase_rest.upsert("termos", atualizacoes, on_conflict="id")
+    return len(linhas), [a for a in atualizacoes if a["sem_perna_busca"] == "sim"]
+
+
 def main():
     if not supabase_rest.configurado():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
@@ -176,16 +233,19 @@ def main():
 
     id_da_ancora = next((x["id"] for x in aprovados
                          if x["termo_busca"] == ANCORA), None)
-    por_termo = {}
     falhas = []
     ancora_pontos = None
+    total_pontos = 0
+    mortos = []
+
     for i, grupo in enumerate(grupos, 1):
         consulta = [ANCORA] + [x["termo_busca"] for x in grupo]
         try:
             series = t.serie(consulta)
         except TrendsErro as e:
             falhas.append({"grupo": i, "erro": str(e)})
-            print("  grupo {}/{}: FALHOU ({})".format(i, len(grupos), e), file=sys.stderr)
+            print("  grupo {}/{}: FALHOU ({})".format(i, len(grupos), e),
+                  file=sys.stderr)
             continue
 
         # A media da ancora NESTE grupo e o que torna os grupos comparaveis: o
@@ -198,75 +258,36 @@ def main():
         if ancora_pontos is None and pontos_ancora:
             ancora_pontos = pontos_ancora
 
+        dados_grupo = {}
         for termo_row in grupo:
             tb = termo_row["termo_busca"]
-            por_termo[termo_row["id"]] = {
+            dados_grupo[termo_row["id"]] = {
                 "termo_busca": tb, "pontos": series.get(tb) or [],
                 "grupo": i, "media_ancora": media_ancora}
-        n = sum(len(series.get(x["termo_busca"]) or []) for x in grupo)
-        print("  grupo {}/{}: {} termos, {} pontos (ancora media {})".format(
-            i, len(grupos), len(grupo), n,
-            "{:.1f}".format(media_ancora) if media_ancora else "-"), file=sys.stderr)
+
+        gravados, sem_perna = gravar_grupo(dados_grupo, hoje, agora)
+        total_pontos += gravados
+        mortos.extend(a["id"] for a in sem_perna)
+        print("  grupo {}/{}: {} termos, {} pontos gravados"
+              " (ancora media {}){}".format(
+                  i, len(grupos), len(grupo), gravados,
+                  "{:.1f}".format(media_ancora) if media_ancora else "-",
+                  "  sem perna: " + ", ".join(a["id"] for a in sem_perna)
+                  if sem_perna else ""), file=sys.stderr)
 
     # A propria ancora e um termo da taxonomia (`floral`): a serie dela tambem
     # precisa ser gravada, senao o termo mais usado do sistema fica sem perna.
     if id_da_ancora and ancora_pontos:
-        por_termo[id_da_ancora] = {"termo_busca": ANCORA, "pontos": ancora_pontos,
-                                   "grupo": 0, "media_ancora": None}
+        gravados, _ = gravar_grupo(
+            {id_da_ancora: {"termo_busca": ANCORA, "pontos": ancora_pontos,
+                            "grupo": 0, "media_ancora": None}}, hoje, agora)
+        total_pontos += gravados
+        print("  ancora {!r}: {} pontos gravados".format(ANCORA, gravados),
+              file=sys.stderr)
 
-    # --- gravar series e aferir volume (C3) ---
-    linhas, atualizacoes = [], []
-    for termo_id, dados in por_termo.items():
-        pontos = dados["pontos"]
-        meta = {"fonte": "google_trends", "geo": GEO, "intervalo": INTERVALO,
-                "ancora": ANCORA, "grupo": dados["grupo"],
-                "ancora_media_no_grupo": dados["media_ancora"],
-                "termo_busca": dados["termo_busca"], "coletado_em": agora}
-        for semana, valor in pontos:
-            linhas.append({
-                "termo_id": termo_id, "segmento": "feminino_casual_br",
-                "fonte": "busca", "semana": semana.isoformat(),
-                "valor_bruto": valor, "z": None,
-                "n_amostra": None, "meta": meta,
-            })
-        # C3: veredito MEDIDO, com o detalhe do que sustentou a decisao.
-        if not pontos:
-            sem_perna = "sim"
-            detalhe = "o Trends nao devolveu serie para este termo_busca"
-        else:
-            media = sum(v for _, v in pontos) / len(pontos)
-            zeros = sum(1 for _, v in pontos if v <= 0) / float(len(pontos))
-            # Duas formas de estar morto: nivel baixo demais, ou serie quase toda
-            # zerada com picos isolados (ruido, nao sinal).
-            if media < MEDIA_MINIMA:
-                sem_perna = "sim"
-                detalhe = ("chapada: media {:.2f} em {} semanas (minimo {})"
-                           .format(media, len(pontos), MEDIA_MINIMA))
-            elif zeros > 0.8:
-                sem_perna = "sim"
-                detalhe = ("esparsa: {:.0%} das {} semanas em zero"
-                           .format(zeros, len(pontos)))
-            else:
-                sem_perna = "nao"
-                detalhe = "media {:.1f} em {} semanas, {:.0%} de semanas em zero".format(
-                    media, len(pontos), zeros)
-            if dados["media_ancora"]:
-                detalhe += "; {:.2f}x a ancora".format(media / dados["media_ancora"])
-        atualizacoes.append({"id": termo_id, "sem_perna_busca": sem_perna,
-                             "volume_verificado_em": hoje.isoformat(),
-                             "volume_detalhe": detalhe})
-
-    for i in range(0, len(linhas), 500):
-        supabase_rest.upsert("series_semanais", linhas[i:i + 500],
-                             on_conflict="termo_id,segmento,fonte,semana")
-    for i in range(0, len(atualizacoes), 200):
-        supabase_rest.upsert("termos", atualizacoes[i:i + 200], on_conflict="id")
-
-    mortos = [a["id"] for a in atualizacoes if a["sem_perna_busca"] == "sim"]
-    print("\nGravados {} pontos de serie para {} termos.".format(
-        len(linhas), len(por_termo)), file=sys.stderr)
+    print("\nTotal: {} pontos de serie.".format(total_pontos), file=sys.stderr)
     print("Sem perna de busca ({}): {}".format(
-        len(mortos), ", ".join(mortos) or "nenhum"), file=sys.stderr)
+        len(mortos), ", ".join(sorted(mortos)) or "nenhum"), file=sys.stderr)
     if falhas:
         print("Grupos que falharam: {}".format(falhas), file=sys.stderr)
     return 0
