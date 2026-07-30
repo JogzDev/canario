@@ -1,0 +1,44 @@
+name: Coleta de busca (Google Trends)
+
+# RODA NO RUNNER RESIDENCIAL de proposito: o Google recusa IP de datacenter.
+# Verificado em 30/07 -- a API do Trends devolve 200 do IP de casa e bloqueia
+# no Actions hospedado.
+#
+# A primeira execucao e o backfill de 5 anos (§19) e traz ~261 semanas por
+# termo de uma vez. As seguintes sao incrementais e baratas.
+on:
+  workflow_dispatch:
+  schedule:
+    # Semanal (§19: cadencia semanal), segunda 04:00 BRT = 07:00 UTC. Depois das
+    # coletas de varejo, para nao competir por janela.
+    - cron: '0 7 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coleta-trends
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/python-mac
+
+      - name: Coletar Trends (backfill 5 anos, geo BR)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: "$PY coletor/coletor_trends.py"
+
+      # O git deste Mac tambem e atalho do Xcode e nao funciona; o dado ja esta
+      # no Supabase. Ver a nota em coleta-shopify.yml.
+      - name: Commitar relatorio (opcional neste runner)
+        if: always()
+        continue-on-error: true
+        run: >-
+          bash .github/commitar.sh "SAUDE.md" "Relatorio de saude - busca"

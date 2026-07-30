@@ -1,0 +1,43 @@
+name: Garantir Python no runner do Mac
+description: >-
+  Deixa um Python utilizavel disponivel em $PY. Usa o do sistema quando existe;
+  senao instala um portatil na pasta do runner, sem senha de administrador.
+
+  Existe porque o `actions/setup-python` nao funciona neste Mac: o script de
+  instalacao do actions/python-versions tem /Users/runner fixo no codigo e
+  ignora AGENT_TOOLSDIRECTORY. E o `python3` do macOS e um atalho que exige as
+  Command Line Tools do Xcode, que a maquina nao tem.
+
+outputs:
+  python:
+    description: Caminho do Python utilizavel
+    value: ${{ steps.achar.outputs.python }}
+
+runs:
+  using: composite
+  steps:
+    - id: achar
+      shell: bash
+      run: |
+        set -euo pipefail
+        if python3 -c "import json,urllib.request" 2>/dev/null; then
+          echo "Python do sistema serve: $(python3 --version)"
+          echo "python=python3" >> "$GITHUB_OUTPUT"
+          echo "PY=python3" >> "$GITHUB_ENV"
+          exit 0
+        fi
+        PORTATIL="$HOME/.canario-python/bin/python3"
+        if [ ! -x "$PORTATIL" ]; then
+          echo "Sem Python utilizavel; instalando um portatil (uma vez so)."
+          mkdir -p "$HOME/.canario-python-dl"
+          curl -fsSL -o "$HOME/.canario-python-dl/py.tar.gz" \
+            "https://github.com/astral-sh/python-build-standalone/releases/download/20240726/cpython-3.11.9+20240726-x86_64-apple-darwin-install_only.tar.gz"
+          rm -rf "$HOME/.canario-python"
+          mkdir -p "$HOME/.canario-python"
+          tar xzf "$HOME/.canario-python-dl/py.tar.gz" \
+            -C "$HOME/.canario-python" --strip-components=1
+        fi
+        "$PORTATIL" --version
+        "$PORTATIL" -c "import json,urllib.request; print('stdlib ok')"
+        echo "python=$PORTATIL" >> "$GITHUB_OUTPUT"
+        echo "PY=$PORTATIL" >> "$GITHUB_ENV"
