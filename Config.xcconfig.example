@@ -1,0 +1,37 @@
+// Configuração do app iOS — MODELO
+//
+// Copie este arquivo para `Config.xcconfig` (sem o `.example`) e preencha com
+// os valores reais. O `Config.xcconfig` está no .gitignore e nunca é
+// commitado; este modelo existe para o Davi e a Bianca conseguirem rodar o
+// projeto sem depender de alguém mandar valores por mensagem.
+//
+// Os valores reais são fornecidos pelo JP localmente.
+//
+// ---------------------------------------------------------------------------
+// POR QUE A CHAVE AQUI É A *PUBLISHABLE*, E NÃO A SECRETA
+//
+// A chave publishable é pública por desenho: ela vai embutida no binário, e
+// qualquer pessoa consegue extraí-la de um `.ipa`. Isso não é falha — é como o
+// Supabase funciona. A segurança do banco depende INTEIRAMENTE das políticas
+// RLS, e não do sigilo da chave.
+//
+// Hoje, com essa chave, o app enxerga apenas:
+//   * `indices_semanais`  — índice, estado e pernas ativas (saída do motor)
+//   * `series_semanais`   — as séries por fonte, para o minigráfico do §29
+//   * `termos`            — SÓ as linhas com status='aprovado' (regra 4 em RLS)
+//
+// E não enxerga nada de `produtos`, `snapshots`, `marcas`, `saude` ou
+// `artigos`. Escrita é negada em tudo.
+//
+// A chave SECRETA (`sb_secret_...`) nunca entra aqui, nem no app, nem no
+// repositório: ela vive só nos GitHub Secrets, onde os coletores rodam
+// (regra inviolável 9).
+// ---------------------------------------------------------------------------
+
+SUPABASE_URL = https://SEU-PROJETO.supabase.co
+SUPABASE_PUBLISHABLE_KEY = sb_publishable_COLE_A_SUA_AQUI
+
+// Observação sobre o formato: este projeto usa o sistema NOVO de chaves do
+// Supabase (`sb_publishable_...` e `sb_secret_...`). A aba "Legacy anon,
+// service_role API keys" do painel NÃO é usada aqui — misturar os dois
+// sistemas causa erro de autenticação difícil de diagnosticar.

@@ -24,3 +24,11 @@ xcuserdata/
 
 # Pagina de revisao gerada localmente (regenerar com o script)
 VERIFICACAO_TRENDS.html
+
+# Xcode (alem do que ja estava acima)
+*.xcuserdatad/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
