@@ -1,0 +1,164 @@
+import SwiftUI
+import Charts
+
+/// Relatório de um termo (§29, adaptado ao que existe hoje).
+///
+/// A ordem dos blocos segue a §29: resumo por template determinístico, índice
+/// com pernas declaradas, minigráfico, insumos com fonte e data, e limites
+/// declarados no fim.
+///
+/// **Sem LLM** (§29 proíbe na v1): o parágrafo-resumo é template fixo com slots
+/// preenchidos exclusivamente por valores que o motor computou.
+struct RelatorioDoTermo: View {
+    let termo: Termo
+
+    @State private var serie: [PontoSerie] = []
+    @State private var indices: [IndiceSemanal] = []
+    @State private var carregando = true
+    @State private var erro: String?
+
+    private var atual: IndiceSemanal? { indices.first }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                if carregando {
+                    Carregando()
+                } else if let erro {
+                    FalhaDeRede(mensagem: erro) { Task { await carregar() } }
+                } else {
+                    resumo
+                    indiceEEstado
+                    grafico
+                    insumos
+                    limites
+                }
+            }
+            .padding(Tokens.Espaco.m)
+        }
+        .navigationTitle(termo.rotulo)
+        .navigationBarTitleDisplayMode(.large)
+        .task { await carregar() }
+    }
+
+    // MARK: Blocos
+
+    /// §29.1 — template determinístico. Cada frase só existe se o número que a
+    /// sustenta existir; nada é preenchido com valor plausível.
+    private var resumo: some View {
+        Cartao {
+            Text(frase).font(Tokens.Fonte.corpo)
+        }
+    }
+
+    private var frase: String {
+        guard let atual, let valor = atual.indice else {
+            return "Ainda não tenho índice para \(termo.rotulo) neste recorte."
+        }
+        let pernas = Perna.frase(atual.pernasAtivas)
+        if let bruto = atual.estado, let e = Estado(rawValue: bruto) {
+            return "\(termo.rotulo) está \(e.rotulo.lowercased()), com índice \(fmt(valor)) na semana de \(atual.semana). Leitura \(pernas)."
+        }
+        return "\(termo.rotulo) tem índice \(fmt(valor)) na semana de \(atual.semana), mas não há cobertura para declarar um estado: isso exige duas fontes concordando. Leitura \(pernas)."
+    }
+
+    /// §29.3 — índice, estado e as pernas ativas declaradas.
+    private var indiceEEstado: some View {
+        Cartao {
+            HStack(alignment: .firstTextBaseline) {
+                Text(atual?.indice.map(fmt) ?? "—")
+                    .font(Tokens.Fonte.numero)
+                Spacer()
+                SeloEstado(estado: atual?.estado,
+                           motivo: "A §22 exige duas fontes concordando para declarar estado.")
+            }
+            LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
+            if atual?.estado == nil {
+                LinhaInsumo(texto: "O índice existe e é exibido; o estado fica em silêncio até uma segunda perna atingir o mínimo de história.")
+            }
+        }
+    }
+
+    /// Minigráfico do §29.3, uma linha por perna.
+    @ViewBuilder
+    private var grafico: some View {
+        let comZ = serie.filter { $0.z != nil }
+        if comZ.isEmpty {
+            CoberturaInsuficiente(
+                titulo: "Sem série normalizada ainda",
+                explicacao: "Nenhuma perna deste termo atingiu o mínimo de história para z-score.",
+                oQueTem: serie.isEmpty ? nil : "Há \(serie.count) pontos de valor bruto coletados.")
+        } else {
+            Cartao {
+                Text("Histórico").font(Tokens.Fonte.secao)
+                Chart(comZ) { ponto in
+                    LineMark(
+                        x: .value("Semana", ponto.semana),
+                        y: .value("z", ponto.z ?? 0)
+                    )
+                    .foregroundStyle(by: .value("Perna", Perna.rotulo(ponto.fonte)))
+                }
+                .chartXAxis(.hidden)
+                .frame(height: 160)
+                .accessibilityLabel("Gráfico do z-score por perna ao longo das semanas")
+                LinhaInsumo(texto: "z-score contra a própria história, janela móvel de 12 semanas.")
+            }
+        }
+    }
+
+    /// §29.4 — um bloco por fator, com fonte e data.
+    private var insumos: some View {
+        Cartao {
+            Text("Insumos").font(Tokens.Fonte.secao)
+            ForEach(porFonte, id: \.0) { fonte, pontos in
+                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                    Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.apoio)
+                    LinhaInsumo(texto: "\(pontos.count) semanas · mais recente em \(pontos.first?.semana ?? "—")")
+                }
+                .padding(.vertical, Tokens.Espaco.xs)
+            }
+        }
+    }
+
+    private var porFonte: [(String, [PontoSerie])] {
+        Dictionary(grouping: serie, by: \.fonte)
+            .map { ($0.key, $0.value.sorted { $0.semana > $1.semana }) }
+            .sorted { $0.0 < $1.0 }
+    }
+
+    /// §29.6 — limites declarados. Fica no relatório sempre, não só quando dá ruim.
+    private var limites: some View {
+        Cartao {
+            Text("Limites").font(Tokens.Fonte.secao)
+            LinhaInsumo(texto: "Não consideramos: seu histórico de vendas, seus custos, sua capacidade de produção.")
+            LinhaInsumo(texto: "Sinal editorial carrega viés comercial de publicidade.")
+            if termo.semPernaBusca == "sim" {
+                LinhaInsumo(texto: "Este termo não tem perna de busca: o volume aferido no Google Trends foi baixo demais para servir de série.")
+            }
+        }
+    }
+
+    // MARK: Dados
+
+    private func fmt(_ v: Double) -> String {
+        String(format: "%+.2f", v)
+    }
+
+    private func carregar() async {
+        carregando = true
+        erro = nil
+        do {
+            async let s: [PontoSerie] = Supabase.shared.buscar(
+                "series_semanais",
+                "select=*&termo_id=eq.\(termo.id)&order=semana.desc&limit=600")
+            async let i: [IndiceSemanal] = Supabase.shared.buscar(
+                "indices_semanais",
+                "select=*&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
+            serie = try await s
+            indices = try await i
+        } catch {
+            erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+        }
+        carregando = false
+    }
+}

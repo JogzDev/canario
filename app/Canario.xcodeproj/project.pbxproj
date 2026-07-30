@@ -1,0 +1,274 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B4F1AFF779F42A33002C3BA /* CanarioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */; };
+		5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */; };
+		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
+		4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F27BA6A40F86F6D498DA29B /* Modelos.swift */; };
+		4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCED70ADF52E633975D5BF1 /* Supabase.swift */; };
+		E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907420D533A7734E5A3F0DE7 /* Analisar.swift */; };
+		88385EED03003FB44A18542E /* Comparar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4913E2A3FAD2255EF6E66096 /* Comparar.swift */; };
+		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
+		BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		DCA037677632104E4598159D /* Canario.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Canario.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CanarioApp.swift"; sourceTree = "<group>"; };
+		D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Componentes.swift"; sourceTree = "<group>"; };
+		7D66F3CA4E705669DD73EF9B /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tokens.swift"; sourceTree = "<group>"; };
+		6F27BA6A40F86F6D498DA29B /* Modelos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Modelos.swift"; sourceTree = "<group>"; };
+		5DCED70ADF52E633975D5BF1 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Supabase.swift"; sourceTree = "<group>"; };
+		907420D533A7734E5A3F0DE7 /* Analisar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Analisar.swift"; sourceTree = "<group>"; };
+		4913E2A3FAD2255EF6E66096 /* Comparar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparar.swift"; sourceTree = "<group>"; };
+		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
+		13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDoTermo.swift"; sourceTree = "<group>"; };
+		461A5A3F9FDD134BC064B0B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		287CA93205B19FFB0C44728B = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		017282487AEAE6079E734CB7 = {
+			isa = PBXGroup;
+			children = (
+				3BD879AA0097A5271DEF1DA6 /* Canario */,
+				5CAC9C2F49F815B0F5A5D463 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5CAC9C2F49F815B0F5A5D463 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DCA037677632104E4598159D /* Canario.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3BD879AA0097A5271DEF1DA6 /* Canario */ = {
+			isa = PBXGroup;
+			children = (
+				014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */,
+				799A1BDA5D4B143D5515FC08 /* Design */,
+				D5AB6A142F723C9CAC621013 /* Rede */,
+				3292BE3A6EAD8B36569AC07C /* Telas */,
+				461A5A3F9FDD134BC064B0B7 /* Info.plist */,
+			);
+			path = "Canario";
+			sourceTree = "<group>";
+		};
+		799A1BDA5D4B143D5515FC08 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */,
+				7D66F3CA4E705669DD73EF9B /* Tokens.swift */,
+			);
+			path = "Design";
+			sourceTree = "<group>";
+		};
+		D5AB6A142F723C9CAC621013 /* Rede */ = {
+			isa = PBXGroup;
+			children = (
+				6F27BA6A40F86F6D498DA29B /* Modelos.swift */,
+				5DCED70ADF52E633975D5BF1 /* Supabase.swift */,
+			);
+			path = "Rede";
+			sourceTree = "<group>";
+		};
+		3292BE3A6EAD8B36569AC07C /* Telas */ = {
+			isa = PBXGroup;
+			children = (
+				907420D533A7734E5A3F0DE7 /* Analisar.swift */,
+				4913E2A3FAD2255EF6E66096 /* Comparar.swift */,
+				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
+				13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */,
+			);
+			path = "Telas";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		60FCB50722E3F1420F940980 /* Canario */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5B317240D56AAED5A2ECA80E ;
+			buildPhases = (
+				6237EE632008921A5516F59E ,
+				287CA93205B19FFB0C44728B ,
+				B1A0F0CB489E589610C83B54 ,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = "Canario";
+			productName = "Canario";
+			productReference = DCA037677632104E4598159D ;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C53FD45B2F336A44D158902C /* Project object */ = {
+			isa = PBXProject;
+			attributes = { BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; };
+			buildConfigurationList = 9B7C8A846387B5A3E7B50F6B ;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = pt_BR;
+			hasScannedForEncodings = 0;
+			knownRegions = (pt_BR, Base, );
+			mainGroup = 017282487AEAE6079E734CB7 ;
+			productRefGroup = 5CAC9C2F49F815B0F5A5D463 ;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				60FCB50722E3F1420F940980 ,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B1A0F0CB489E589610C83B54 = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6237EE632008921A5516F59E = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B4F1AFF779F42A33002C3BA /* CanarioApp.swift in Sources */,
+				5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */,
+				90BBD61C629F5B7911560245 /* Tokens.swift in Sources */,
+				4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */,
+				4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */,
+				E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */,
+				88385EED03003FB44A18542E /* Comparar.swift in Sources */,
+				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
+				BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2D7C126B1DD510A133F9BB7F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = "Debug";
+		};
+		662701B99CF3F77385B7CDB7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = "Release";
+		};
+		2701597AE2249B7C0F1FC00C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Canario/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.canario.app";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = "Debug";
+		};
+		AF3D03E4B14791F520E076B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Canario/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.canario.app";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = "Release";
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9B7C8A846387B5A3E7B50F6B /* Build configuration list for PBXProject */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D7C126B1DD510A133F9BB7F ,
+				662701B99CF3F77385B7CDB7 ,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5B317240D56AAED5A2ECA80E /* Build configuration list for PBXNativeTarget */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2701597AE2249B7C0F1FC00C ,
+				AF3D03E4B14791F520E076B4 ,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C53FD45B2F336A44D158902C /* Project object */;
+}

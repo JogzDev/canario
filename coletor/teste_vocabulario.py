@@ -75,13 +75,30 @@ BLOCOS = [
 ]
 
 # --- Allowlist (C6) ---------------------------------------------------------
-# Rotulos factuais no passado. Curta, explicita e auditavel de proposito: cada
-# linha aqui e uma excecao a um Won't Have permanente, e precisa se justificar.
+# Curta, explicita e auditavel de proposito: cada linha aqui e uma excecao a um
+# Won't Have permanente, e precisa se justificar. Duas familias:
+#
+# 1. PASSADO OBSERVADO. Fato ja acontecido sobre a colecao do proprio usuario.
+#    "% vendido a preco cheio" precisa aparecer na tela (§30, §31) e nao e
+#    previsao de coisa nenhuma.
+#
+# 2. NEGACAO DA AFIRMACAO PROIBIDA. Descoberto em 30/07, quando o teste barrou o
+#    disclaimer que a propria §27 exige em texto: "Nao e previsao de venda".
+#    Negar a promessa e o OPOSTO de faze-la, e e justamente onde o documento
+#    quer a palavra aparecendo. Sem esta familia, o teste proibiria a frase que
+#    protege a regra inviolavel 1.
 PERMITIDO = [
+    # (1) passado observado
     "% vendido a preco cheio",
     "percentual vendido a preco cheio",
     "pct_vendido_preco_cheio",
     "vendido sem remarcacao",
+    # (2) negacao explicita
+    "nao e previsao de venda",
+    "nao preve",
+    "nao prevemos",
+    "sem previsao de venda",
+    "nunca preve",
 ]
 
 
