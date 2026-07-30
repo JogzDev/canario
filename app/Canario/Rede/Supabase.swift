@@ -20,6 +20,7 @@ actor Supabase {
         case semConfiguracao
         case rede(Error)
         case resposta(Int, String)
+        case urlInvalida(String, String)
 
         var errorDescription: String? {
             switch self {
@@ -29,6 +30,8 @@ actor Supabase {
                 return "Não foi possível falar com o servidor."
             case .resposta(let codigo, _):
                 return "O servidor respondeu \(codigo)."
+            case .urlInvalida(let caminho, _):
+                return "Consulta malformada para \(caminho)."
             }
         }
     }
@@ -54,17 +57,42 @@ actor Supabase {
         !chave.isEmpty && url.host != "invalido.invalido"
     }
 
+    /// Caracteres que o PostgREST usa como sintaxe e que NÃO podem ser
+    /// escapados: `=` separa chave e valor, `.` separa operador (`eq.`, `in.`),
+    /// `,` separa itens de lista, `()` delimita `in.(...)`, `*` é o select
+    /// completo, `&` separa parâmetros. Tudo o mais — inclusive espaço e aspas —
+    /// precisa ser codificado.
+    private static let sintaxePostgREST = CharacterSet(
+        charactersIn: "=&.,()*:-_~/").union(.alphanumerics)
+
+    /// Codifica a query preservando a sintaxe do PostgREST.
+    ///
+    /// Existe por um crash real: a consulta de Explorar tinha
+    /// `estado=in.("em alta","em queda",pico)` com espaços literais, a URL
+    /// ficava inválida e o app morria com SIGTRAP no force-unwrap abaixo.
+    static func codificar(_ query: String) -> String {
+        query.addingPercentEncoding(withAllowedCharacters: sintaxePostgREST) ?? query
+    }
+
     /// GET em uma tabela/view exposta, com query PostgREST.
     /// Ex.: `buscar("indices_semanais", "select=*&limit=10")`
     func buscar<T: Decodable>(_ caminho: String, _ query: String) async throws -> [T] {
         guard configurado else { throw Falha.semConfiguracao }
 
-        var componentes = URLComponents(
+        guard var componentes = URLComponents(
             url: url.appendingPathComponent("rest/v1/\(caminho)"),
-            resolvingAgainstBaseURL: false)!
-        componentes.percentEncodedQuery = query
+            resolvingAgainstBaseURL: false) else {
+            throw Falha.urlInvalida(caminho, query)
+        }
+        componentes.percentEncodedQuery = Supabase.codificar(query)
 
-        var req = URLRequest(url: componentes.url!)
+        // SEM force-unwrap. Uma consulta malformada é bug de programação, mas
+        // derrubar o app na cara do usuário é a pior forma possível de reportar
+        // isso — vira erro tratado, e a tela mostra falha de consulta.
+        guard let enderecoFinal = componentes.url else {
+            throw Falha.urlInvalida(caminho, query)
+        }
+        var req = URLRequest(url: enderecoFinal)
         req.setValue(chave, forHTTPHeaderField: "apikey")
         req.setValue("Bearer \(chave)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Accept")

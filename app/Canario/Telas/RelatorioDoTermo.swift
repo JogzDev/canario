@@ -14,10 +14,32 @@ struct RelatorioDoTermo: View {
 
     @State private var serie: [PontoSerie] = []
     @State private var indices: [IndiceSemanal] = []
+    @State private var coberturas: [Cobertura] = []
     @State private var carregando = true
     @State private var erro: String?
 
     private var atual: IndiceSemanal? { indices.first }
+
+    /// §8: sem cobertura, não há índice nem estado — só o que existe com
+    /// honestidade. O portão vem antes de qualquer número na tela.
+    ///
+    /// A cobertura tem de ser a da MESMA SEMANA do índice exibido. Liberar a
+    /// semana A com a cobertura da semana B é o mesmo erro de comparar
+    /// declarado com gravado de dias diferentes — e foi o que aconteceu no
+    /// primeiro teste: o índice era de 20/07 (4 peças, deveria bloquear) e a
+    /// cobertura consultada era de 27/07 (364 peças, liberou).
+    private var temCobertura: Bool {
+        guard let semanaDoIndice = atual?.semana else { return false }
+        guard let c = coberturas.first(where: { $0.semana == semanaDoIndice }) else {
+            // Sem medição de cobertura para esta semana, não se afirma nada.
+            return false
+        }
+        return c.suficiente
+    }
+
+    private var coberturaDaSemana: Cobertura? {
+        atual.flatMap { i in coberturas.first(where: { $0.semana == i.semana }) }
+    }
 
     var body: some View {
         ScrollView {
@@ -26,6 +48,14 @@ struct RelatorioDoTermo: View {
                     Carregando()
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
+                } else if !temCobertura {
+                    CoberturaInsuficiente(
+                        titulo: "Cobertura insuficiente neste segmento",
+                        explicacao: "A §8 exige \(coberturaDaSemana?.minimoPecas ?? 30) peças na célula e \(coberturaDaSemana?.minimoMarcas ?? 8) marcas externas coletando para exibir índice e estado. Aqui: \(coberturaDaSemana?.oQueFalta ?? "não há medição de cobertura para esta semana").",
+                        oQueTem: "Prefiro dizer que não sei a mostrar um número que não se sustenta.")
+                    grafico
+                    insumos
+                    limites
                 } else {
                     resumo
                     indiceEEstado
@@ -154,8 +184,12 @@ struct RelatorioDoTermo: View {
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_semanais",
                 "select=*&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
+            async let c: [Cobertura] = Supabase.shared.buscar(
+                "cobertura_por_celula",
+                "select=*&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
             serie = try await s
             indices = try await i
+            coberturas = try await c
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

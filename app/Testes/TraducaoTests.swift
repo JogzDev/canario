@@ -144,3 +144,47 @@ extension TraducaoTests {
         XCTAssertFalse(Traducao.casa("vestido preta", wide))
     }
 }
+
+/// Construção de URL de consulta.
+///
+/// Nasceu de um CRASH real: a consulta de Explorar tinha
+/// `estado=in.("em alta","em queda",pico)` com espaços literais. A URL ficava
+/// inválida, `URLComponents.url` devolvia nil e o app morria com SIGTRAP num
+/// force-unwrap — fechava na cara do usuário ao tocar na aba.
+final class ConsultaTests: XCTestCase {
+
+    /// Espaço e aspas precisam sair codificados, senão a URL é inválida.
+    func testEspacoEAspasSaoCodificados() {
+        let cru = "select=*&estado=in.(\"em alta\",\"em queda\",pico)&limit=20"
+        let codificado = Supabase.codificar(cru)
+        XCTAssertFalse(codificado.contains(" "), "espaço literal invalida a URL")
+        XCTAssertFalse(codificado.contains("\""), "aspas literais invalidam a URL")
+        XCTAssertTrue(codificado.contains("%20"))
+    }
+
+    /// A sintaxe do PostgREST não pode ser escapada, senão o servidor não
+    /// entende o filtro e devolve a tabela inteira — ou nada.
+    func testSintaxeDoPostgRESTSobrevive() {
+        let codificado = Supabase.codificar("select=*&termo_id=eq.floral&order=semana.desc")
+        XCTAssertTrue(codificado.contains("select=*"))
+        XCTAssertTrue(codificado.contains("termo_id=eq.floral"))
+        XCTAssertTrue(codificado.contains("order=semana.desc"))
+        XCTAssertTrue(codificado.contains("&"))
+    }
+
+    /// A URL final tem de ser construível para toda consulta que o app usa.
+    /// Este é o teste que teria evitado o crash.
+    func testTodaConsultaDoAppProduzURLValida() {
+        let consultas = [
+            "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca&order=dimensao,id",
+            "select=*&order=semana.desc&limit=400",
+            "select=*&estado=in.(\"em alta\",\"em queda\",pico)&order=semana.desc&limit=20",
+            "select=*&termo_id=eq.branco_cru&order=semana.desc&limit=600",
+        ]
+        for consulta in consultas {
+            var c = URLComponents(string: "https://exemplo.supabase.co/rest/v1/tabela")!
+            c.percentEncodedQuery = Supabase.codificar(consulta)
+            XCTAssertNotNil(c.url, "consulta produziu URL inválida: \(consulta)")
+        }
+    }
+}

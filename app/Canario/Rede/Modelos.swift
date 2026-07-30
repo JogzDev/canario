@@ -120,3 +120,43 @@ enum Perna {
         return "baseado em: " + pernas.map(rotulo).joined(separator: " + ")
     }
 }
+
+// MARK: - Cobertura
+
+/// O portão da §8: abaixo dos mínimos, a interface exibe "cobertura
+/// insuficiente" e **não mostra índice nem estado**.
+///
+/// Existe porque o app não checava nada disso e exibia número sempre. Com o
+/// dado de 30/07, seis células estavam abaixo do mínimo de 30 peças — a menor
+/// com 4 — e o app mostrava índice em todas.
+struct Cobertura: Decodable, Hashable {
+    let termoId: String
+    let segmento: String
+    let semana: String
+    let pecasNaCelula: Int?
+    let marcasExternas: Int?
+    let minimoPecas: Int
+    let minimoMarcas: Int
+    let suficiente: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case segmento, semana, suficiente
+        case termoId = "termo_id"
+        case pecasNaCelula = "pecas_na_celula"
+        case marcasExternas = "marcas_externas"
+        case minimoPecas = "minimo_pecas"
+        case minimoMarcas = "minimo_marcas"
+    }
+
+    /// Frase honesta sobre o que falta, para a tela não dizer só "não dá".
+    var oQueFalta: String {
+        var partes: [String] = []
+        if let p = pecasNaCelula, p < minimoPecas {
+            partes.append("\(p) peças no painel nesta semana, mínimo \(minimoPecas)")
+        }
+        if let m = marcasExternas, m < minimoMarcas {
+            partes.append("\(m) marcas externas coletando, mínimo \(minimoMarcas)")
+        }
+        return partes.isEmpty ? "cobertura abaixo do mínimo" : partes.joined(separator: "; ")
+    }
+}
