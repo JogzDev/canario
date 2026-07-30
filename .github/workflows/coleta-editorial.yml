@@ -1,0 +1,39 @@
+name: Coleta editorial (share of voice)
+
+# Roda no datacenter do GitHub: feed de veiculo editorial nao tem o problema de
+# rate-limit por IP que a VTEX e o Google tem. So a coleta de busca e as duas
+# Shopify precisam do runner residencial.
+on:
+  workflow_dispatch:
+  schedule:
+    # Diaria, 03:40 BRT = 06:40 UTC. Depois da VTEX (03:00) e da Shopify (03:20).
+    - cron: '40 6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coleta-editorial
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Coletar editorial e casar contra a taxonomia
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python3 coletor/coletor_editorial.py
+
+      - name: Commitar SAUDE.md
+        if: always()
+        run: >-
+          bash .github/commitar.sh "SAUDE.md" "Relatorio de saude - editorial"
