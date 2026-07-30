@@ -28,12 +28,37 @@ def normalizar(texto):
     return re.sub(r"\s+", " ", sem_acento.lower()).strip()
 
 
-def compilar(padrao):
+# Terminacoes que, em portugues, sao inequivocamente de ADJETIVO. So nelas vale
+# trocar o genero: "canelado/canelada" e seguro, mas "linho/linha" nao seria --
+# linho e tecido, linha e outra coisa. Por isso a troca nao e geral.
+_ADJETIVO = re.compile(r"^(.*(?:ad|id|os|ic))[oa]$")
+
+
+def _com_flexao(palavra):
+    """Trecho de regex que cobre plural e, quando cabe, genero.
+
+    Titulo de moda em portugues flexiona o tempo todo -- "Blusa Canelada",
+    "Camisa Listrada", "Saia Rodada", e a categoria do site vem no plural
+    ("Vestidos"). Sem isto o casamento perde esses produtos em silencio.
+
+    O comeco continua ancorado em `\\b` no chamador, entao a regressao critica
+    segue de pe: `reta` vira `retas?` e continua NAO casando `preta`.
+    """
+    m = _ADJETIVO.match(palavra)
+    if m:
+        return re.escape(m.group(1)) + "[oa]s?"
+    return re.escape(palavra) + "s?"
+
+
+def compilar(padrao, flexionar=True):
     """Compila um padrao (palavra ou frase) em regex de palavra inteira.
 
     Sufixo `*` libera o fim da ultima palavra (prefixo intencional). O comeco
     fica sempre ancorado em fronteira, para nunca casar no meio de outra
     palavra.
+
+    `flexionar=False` desliga plural e genero: e o que o classificador de
+    categorias usa, porque ali os nomes vem da arvore do site e ja sao exatos.
     """
     prefixo_livre = padrao.endswith("*")
     if prefixo_livre:
@@ -41,15 +66,21 @@ def compilar(padrao):
     tokens = normalizar(padrao).split()
     if not tokens:
         return None
-    corpo = r"\s+".join(re.escape(t) for t in tokens)
     if prefixo_livre:
+        corpo = r"\s+".join(re.escape(t) for t in tokens)
         return re.compile(r"\b" + corpo + r"\w*")
-    return re.compile(r"\b" + corpo + r"\b")
+    if flexionar:
+        # A flexao vale so na ULTIMA palavra: "wide leg" -> "wide legs?".
+        partes = [re.escape(t) for t in tokens[:-1]] + [_com_flexao(tokens[-1])]
+    else:
+        partes = [re.escape(t) for t in tokens]
+    return re.compile(r"\b" + r"\s+".join(partes) + r"\b")
 
 
-def compilar_lista(padroes):
+def compilar_lista(padroes, flexionar=True):
     """Compila varios padroes de uma vez, descartando vazios."""
-    return [c for c in (compilar(p) for p in padroes if p and p.strip()) if c]
+    return [c for c in (compilar(p, flexionar) for p in padroes
+                        if p and p.strip()) if c]
 
 
 def casa_algum(texto, regexes):

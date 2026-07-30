@@ -67,7 +67,7 @@ EXCLUSOES = [
 # Compila os gatilhos uma vez, com o matcher compartilhado (correspondencia
 # exata por palavra, prefixo livre so no `*`). Mesmo motor dos outros dois
 # matchers do sistema.
-_EXCLUSOES_COMPILADAS = [(motivo, compilar_lista(gatilhos))
+_EXCLUSOES_COMPILADAS = [(motivo, compilar_lista(gatilhos, flexionar=False))
                          for motivo, gatilhos in EXCLUSOES]
 
 

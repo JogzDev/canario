@@ -15,6 +15,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from matcher import compilar, casa_algum, termos_que_casam  # noqa: E402
 
 
+def sem_flexao(padrao, texto):
+    return casa_algum(texto, [compilar(padrao, flexionar=False)])
+
+
 def um(padrao, texto):
     return casa_algum(texto, [compilar(padrao)])
 
@@ -32,7 +36,11 @@ CASOS = [
     ("casa", "casaco de linho", False),
     ("casa", "casa e decoracao", True),
     ("bota", "blusa de botao", False),
-    ("bota", "botas de couro", False),   # botas != bota (exato)
+    # "botas" passou a casar "bota" em 30/07, quando o matcher ganhou flexao.
+    # E o comportamento certo para varejo e editorial: titulo de moda em
+    # portugues flexiona o tempo todo. O classificador de categorias usa
+    # `flexionar=False` e continua exato -- ver CASOS_SEM_FLEXAO.
+    ("bota", "botas de couro", True),
     ("liso", "vestido liso", True),
     ("liso", "vestido alisado", False),
     ("midi", "vestido midi", True),
@@ -50,6 +58,27 @@ CASOS = [
     # Acentos e caixa: normalizados dos dois lados.
     ("floral", "Vestido FLORAL", True),
     ("trico", "TRICÔ artesanal", True),
+    # --- Flexao (30/07): plural sempre, genero so em terminacao de adjetivo ---
+    ("vestido", "Vestidos Midi", True),
+    ("calca", "Calcas wide leg", True),
+    ("canelado", "Blusa Canelada", True),      # -ado/-ada: adjetivo, troca
+    ("listrado", "Camisa Listrada", True),
+    ("rodado", "Saia Rodada", True),
+    ("florido", "Estampa Florida", True),      # -ido/-ida: adjetivo, troca
+    ("wide leg", "calcas wide legs", True),    # flexao so na ultima palavra
+    # Substantivo NAO troca de genero: linho e tecido, linha e outra coisa.
+    ("linho", "blusa de linha", False),
+    ("saia", "saio", False),
+    # A regressao critica sobrevive a flexao: o comeco continua ancorado.
+    ("reta", "vestido preta", False),
+    ("reta", "calcas retas", True),
+]
+
+# O classificador de categorias usa nomes vindos da arvore do site, que ja sao
+# exatos: flexionar ali so criaria falso positivo.
+CASOS_SEM_FLEXAO = [
+    ("bota", "botas de couro", False),
+    ("vestido", "Vestidos", False),
 ]
 
 # Matching titulo->termo com contagem unica (§11): varias palavras do mesmo
@@ -74,6 +103,11 @@ def main():
             falhas.append("compilar({!r}) em {!r}: esperava {}".format(
                 padrao, texto, esperado))
 
+    for padrao, texto, esperado in CASOS_SEM_FLEXAO:
+        if sem_flexao(padrao, texto) != esperado:
+            falhas.append("sem flexao: compilar({!r}) em {!r}: esperava {}".format(
+                padrao, texto, esperado))
+
     for texto, esperado in CASOS_TERMO:
         obtido = termos_que_casam(texto, TERMOS)
         if obtido != esperado:
@@ -82,7 +116,8 @@ def main():
 
     for f in falhas:
         print("FALHOU:", f)
-    print("{} casos, {} falhas".format(len(CASOS) + len(CASOS_TERMO), len(falhas)))
+    print("{} casos, {} falhas".format(
+        len(CASOS) + len(CASOS_SEM_FLEXAO) + len(CASOS_TERMO), len(falhas)))
     return 1 if falhas else 0
 
 
