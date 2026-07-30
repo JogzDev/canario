@@ -81,6 +81,15 @@ def main():
     print("Termos aprovados: {} ({} categorias)".format(
         len(termos), len(categorias)), file=sys.stderr)
 
+    # Apaga as ligacoes de origem='titulo' antes de recomputar. Sem isto o
+    # upsert so ACRESCENTA, e uma ligacao criada por uma versao antiga do
+    # matcher (ou por uma palavra que saiu da taxonomia) ficaria para sempre.
+    # Aconteceu em 30/07: 375 mil ligacoes computadas a partir da descricao
+    # continuariam no banco depois da correcao. So mexe em origem='titulo';
+    # 'visao' e 'manual' sao de outra procedencia e nao se apagam aqui.
+    supabase_rest.apagar("produto_termos", "origem=eq.titulo")
+    print("Ligacoes anteriores de origem='titulo' apagadas.", file=sys.stderr)
+
     total = casados = ligacoes = 0
     sem_categoria = 0
     por_dimensao = {}
@@ -89,10 +98,18 @@ def main():
     for lote in produtos_em_paginas():
         for p in lote:
             total += 1
-            # §17: o titulo do e-commerce e a etiqueta quase pronta; a descricao
-            # ajuda quando o titulo e curto demais.
+            # TITULO + CATEGORIA, nunca a descricao.
+            #
+            # §28 diz que "titulos de e-commerce sao etiquetas quase prontas", e
+            # e literal: o titulo e escrito para identificar a peca. A descricao
+            # e texto de marketing, cheio de adjetivo solto -- medido em 30/07,
+            # 74% dos casamentos de `reta_wide` vinham dela, e o exemplo tipico
+            # era uma camiseta com "caimento amplo e despojado" virando silhueta
+            # de perna. Mesmo erro que o `content:encoded` causou no editorial.
+            #
+            # Tecido continua recuperavel depois por `snapshots.composicao`, que
+            # e campo estruturado, e nao prosa publicitaria.
             texto = " ".join(filter(None, [p.get("titulo"),
-                                           p.get("descricao"),
                                            p.get("categoria_site")]))
             achados = termos_que_casam(texto, termos) if texto.strip() else set()
             if achados:

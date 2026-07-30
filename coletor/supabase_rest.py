@@ -93,6 +93,15 @@ def atualizar(tabela, filtro, campos):
                 prefer="return=minimal")
 
 
+def apagar(tabela, filtro):
+    """DELETE com filtro PostgREST (ex.: "origem=eq.titulo").
+
+    Existe para o motor poder RECOMPUTAR de verdade: upsert so acrescenta, e
+    ligacao criada por versao antiga do matcher ficaria no banco para sempre.
+    """
+    _requisicao("DELETE", tabela, params="?" + filtro, prefer="return=minimal")
+
+
 def inserir(tabela, linhas, retornar=False):
     if not linhas:
         return []
