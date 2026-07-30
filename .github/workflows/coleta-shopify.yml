@@ -26,32 +26,47 @@ jobs:
   coletar:
     runs-on: [self-hosted, macOS]
     timeout-minutes: 300
-    env:
-      # Sem isto o setup-python tenta escrever em /Users/runner, caminho que so
-      # existe nos servidores do GitHub, e falha com "Permission denied". Aqui
-      # ele baixa o Python para dentro da pasta do proprio runner.
-      AGENT_TOOLSDIRECTORY: /Users/canario/actions-runner/_work/_tool
     steps:
       - uses: actions/checkout@v4
 
-      # No Mac o `python3` do sistema e um atalho que exige as Command Line
-      # Tools do Xcode; sem elas ele so abre um dialogo de instalacao. Por isso
-      # o Python vem daqui, e este passo NAO pode falhar em silencio.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Confirmar que existe Python utilizavel
+      # `actions/setup-python` NAO funciona neste Mac: o script de instalacao
+      # dentro do pacote do python-versions tem /Users/runner fixo no codigo e
+      # ignora AGENT_TOOLSDIRECTORY, falhando com "Permission denied". E o
+      # `python3` do sistema e um atalho que exige as Command Line Tools do
+      # Xcode, que a maquina nao tem.
+      #
+      # Solucao sem senha de administrador: um Python portatil, extraido dentro
+      # da pasta do proprio runner. Fica em cache entre execucoes.
+      - name: Garantir Python (do sistema ou portatil)
         run: |
-          python3 --version
-          python3 -c "import json,urllib.request; print('stdlib ok')"
+          set -euo pipefail
+          if python3 -c "import json,urllib.request" 2>/dev/null; then
+            echo "Python do sistema serve."
+            echo "PY=python3" >> "$GITHUB_ENV"
+            python3 --version
+            exit 0
+          fi
+          echo "Sem Python utilizavel; instalando um portatil."
+          PORTATIL="$HOME/.canario-python/bin/python3"
+          if [ ! -x "$PORTATIL" ]; then
+            mkdir -p "$HOME/.canario-python-dl"
+            curl -fsSL -o "$HOME/.canario-python-dl/py.tar.gz" \
+              "https://github.com/astral-sh/python-build-standalone/releases/download/20240726/cpython-3.11.9+20240726-x86_64-apple-darwin-install_only.tar.gz"
+            rm -rf "$HOME/.canario-python"
+            mkdir -p "$HOME/.canario-python"
+            tar xzf "$HOME/.canario-python-dl/py.tar.gz" \
+              -C "$HOME/.canario-python" --strip-components=1
+          fi
+          "$PORTATIL" --version
+          "$PORTATIL" -c "import json,urllib.request; print('stdlib ok')"
+          echo "PY=$PORTATIL" >> "$GITHUB_ENV"
 
       - name: Coletar so as marcas Shopify
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           COLETA_PLATAFORMA: shopify
-        run: python3 coletor/coletor_varejo.py
+        run: "$PY coletor/coletor_varejo.py"
 
       - name: Commitar SAUDE.md
         if: always()
