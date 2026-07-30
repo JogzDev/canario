@@ -79,6 +79,20 @@ def upsert(tabela, linhas, on_conflict, retornar=False):
     return dados or []
 
 
+def atualizar(tabela, filtro, campos):
+    """UPDATE de campos parciais numa linha que JA existe.
+
+    Existe porque `upsert` com campos parciais nao serve para atualizar: o
+    PostgREST trata POST+merge-duplicates como insercao quando nao casa, e uma
+    linha parcial estoura os NOT NULL da tabela ("null value in column rotulo").
+    Aconteceu ao gravar o veredito de volume dos termos.
+
+    `filtro` e a query PostgREST sem o `?` (ex.: "id=eq.floral").
+    """
+    _requisicao("PATCH", tabela, corpo=campos, params="?" + filtro,
+                prefer="return=minimal")
+
+
 def inserir(tabela, linhas, retornar=False):
     if not linhas:
         return []

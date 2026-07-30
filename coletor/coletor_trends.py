@@ -47,8 +47,12 @@ ANCORA = "vestido floral"   # K7: fixa em todos os grupos
 POR_GRUPO = 5               # teto do Trends
 TZ = 180                    # minutos; BRT = UTC-3
 
-ESPERA_ENTRE = 12.0         # o Trends bloqueia rapido; generoso de proposito
-ESPERAS_429 = [30, 90, 240]
+# Medido em 30/07: com 12s entre requisicoes, 7 de 10 grupos tomaram 429 mesmo
+# do IP residencial. O Trends limita por janela de tempo, nao por requisicao,
+# entao o remedio e esperar de verdade -- e a coleta ser RETOMAVEL, para uma
+# execucao que pega metade deixar a outra metade para a proxima.
+ESPERA_ENTRE = 45.0
+ESPERAS_429 = [60, 180, 420]
 
 # Abaixo disto a serie e considerada sem sinal utilizavel (C3). Media do valor
 # bruto na janela inteira: o Trends normaliza 0-100, entao media < 1 significa
@@ -204,8 +208,13 @@ def gravar_grupo(dados_por_termo, hoje, agora):
     for i in range(0, len(linhas), 500):
         supabase_rest.upsert("series_semanais", linhas[i:i + 500],
                              on_conflict="termo_id,segmento,fonte,semana")
-    if atualizacoes:
-        supabase_rest.upsert("termos", atualizacoes, on_conflict="id")
+    # UPDATE, nao upsert: o termo ja existe e a linha aqui e parcial.
+    for a in atualizacoes:
+        supabase_rest.atualizar(
+            "termos", "id=eq." + urllib.parse.quote(a["id"]),
+            {"sem_perna_busca": a["sem_perna_busca"],
+             "volume_verificado_em": a["volume_verificado_em"],
+             "volume_detalhe": a["volume_detalhe"]})
     return len(linhas), [a for a in atualizacoes if a["sem_perna_busca"] == "sim"]
 
 
@@ -221,6 +230,25 @@ def main():
     if not aprovados:
         print("Nenhum termo aprovado com termo_busca. Nada a coletar.", file=sys.stderr)
         return 0
+
+    # RETOMAVEL: pula termo que ja tem serie de busca, salvo TRENDS_REFAZER=1.
+    # Com o 429 do Google, uma execucao raramente fecha os 10 grupos; assim cada
+    # execucao avanca e algumas noites cobrem a taxonomia inteira, em vez de
+    # bater sempre nos mesmos primeiros grupos e nunca chegar ao fim.
+    if os.environ.get("TRENDS_REFAZER") != "1":
+        ja_tem = set()
+        for r in supabase_rest.selecionar(
+                "series_semanais", "?fonte=eq.busca&select=termo_id"):
+            ja_tem.add(r["termo_id"])
+        if ja_tem:
+            antes = len(aprovados)
+            aprovados = [t for t in aprovados if t["id"] not in ja_tem]
+            print("Pulando {} termos que ja tem serie de busca; restam {}.".format(
+                antes - len(aprovados), len(aprovados)), file=sys.stderr)
+        if not aprovados:
+            print("Todos os termos aprovados ja tem serie. Use TRENDS_REFAZER=1 "
+                  "para refazer o backfill.", file=sys.stderr)
+            return 0
 
     grupos = grupos_de_termos(aprovados)
     print("Termos aprovados: {} | grupos de {}: {} | ancora fixa: {!r}".format(
