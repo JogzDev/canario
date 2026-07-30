@@ -10,7 +10,17 @@ import SwiftUI
 /// faz o app parecer quebrado; dizer o que falta e por quê é o que a regra 6
 /// pede, e é a mesma honestidade que o marco de demo 3 quer demonstrar.
 struct Explorar: View {
-    @State private var mudaram: [IndiceSemanal] = []
+    @State private var todos: [IndiceSemanal] = []
+
+    /// Um termo por linha, com a mudança MAIS RECENTE dele.
+    ///
+    /// Sem isto o mesmo termo aparecia várias vezes — "Casaco e jaqueta" saía
+    /// duas vezes, nas semanas 13/07 e 06/07. Digest é resumo do que mudou, não
+    /// histórico: repetir o termo gasta a atenção do usuário sem informar.
+    private var mudaram: [IndiceSemanal] {
+        var vistos = Set<String>()
+        return todos.filter { vistos.insert($0.termoId).inserted }
+    }
     @State private var rotulos: [String: String] = [:]
     @State private var carregando = true
     @State private var erro: String?
@@ -53,9 +63,14 @@ struct Explorar: View {
             } else {
                 ForEach(mudaram) { i in
                     Cartao {
-                        HStack {
+                        HStack(alignment: .firstTextBaseline) {
                             Text(rotulos[i.termoId] ?? i.termoId).font(Tokens.Fonte.corpo)
                             Spacer()
+                            // O número junto do selo: o estado diz a direção, o
+                            // índice diz o tamanho. Só o rótulo informava pouco.
+                            Text(i.indice.map { String(format: "%+.2f", $0) } ?? "—")
+                                .font(Tokens.Fonte.numero)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
                             SeloEstado(estado: i.estado, motivo: nil)
                         }
                         LinhaInsumo(texto: Perna.frase(i.pernasAtivas) + " · semana de \(i.semana)")
@@ -86,10 +101,10 @@ struct Explorar: View {
         do {
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_semanais",
-                "select=*&estado=in.(\"em alta\",\"em queda\",pico)&order=semana.desc&limit=20")
+                "select=*&estado=in.(\"em alta\",\"em queda\",pico)&order=semana.desc&limit=200")
             async let t: [Termo] = Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca")
-            mudaram = try await i
+            todos = try await i
             rotulos = Dictionary(uniqueKeysWithValues: try await t.map { ($0.id, $0.rotulo) })
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
