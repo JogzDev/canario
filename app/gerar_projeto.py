@@ -88,6 +88,17 @@ def main():
               ident("ref", a), os.path.basename(a), os.path.basename(a)))
     A('\t\t{} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; '
       'path = Info.plist; sourceTree = "<group>"; }};'.format(ident("ref", "Info.plist")))
+    # O Config.xcconfig vive na raiz do repositorio (fora de app/), porque e
+    # ele que o README manda copiar do .example. Sem esta referencia, o
+    # $(SUPABASE_URL) do Info.plist nunca e substituido e o app sobe sem
+    # saber falar com o servidor -- compila, mas nao conecta.
+    # sourceTree = SOURCE_ROOT resolve a partir da pasta do .xcodeproj (app/),
+    # e nao do grupo -- com "<group>" o caminho cairia em app/Canario/../, que
+    # e app/, e o arquivo esta um nivel acima.
+    A('\t\t{} /* Config.xcconfig */ = {{isa = PBXFileReference; '
+      'lastKnownFileType = text.xcconfig; name = Config.xcconfig; '
+      'path = "../Config.xcconfig"; sourceTree = SOURCE_ROOT; }};'.format(
+          ident("ref", "Config.xcconfig")))
     A("/* End PBXFileReference section */")
 
     # --- PBXFrameworksBuildPhase ---
@@ -127,6 +138,7 @@ def main():
     for p in pastas:
         A("\t\t\t\t{} /* {} */,".format(grupos_pasta[p], os.path.basename(p)))
     A("\t\t\t\t{} /* Info.plist */,".format(ident("ref", "Info.plist")))
+    A("\t\t\t\t{} /* Config.xcconfig */,".format(ident("ref", "Config.xcconfig")))
     A("\t\t\t);")
     A('\t\t\tpath = "{}";'.format(NOME))
     A("\t\t\tsourceTree = \"<group>\";")
@@ -260,6 +272,9 @@ def main():
     for cid, nome in [(cfg_alvo_debug, "Debug"), (cfg_alvo_release, "Release")]:
         A("\t\t{} /* {} */ = {{".format(cid, nome))
         A("\t\t\tisa = XCBuildConfiguration;")
+        # E daqui que SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY entram no build.
+        A("\t\t\tbaseConfigurationReference = {} /* Config.xcconfig */;".format(
+            ident("ref", "Config.xcconfig")))
         A("\t\t\tbuildSettings = {")
         for s in alvo_comuns:
             A("\t\t\t\t" + s)
