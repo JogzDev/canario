@@ -29,7 +29,8 @@ from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from teste_30s import buscar, robots_permite  # noqa: E402
-from mapa_categorias import classificar  # noqa: E402
+from mapa_categorias import (classificar, classificar_populacao,  # noqa: E402
+                             loja_so_feminina)
 import supabase_rest  # noqa: E402
 import materializar_anexos  # noqa: E402
 
@@ -156,9 +157,15 @@ def vtex_departamentos_femininos(dominio, marca_nome, cache):
     if not brutos:
         return None, "arvore http {} e a busca nao revelou departamentos".format(codigo)
 
-    deps = [(i, n) for i, n in brutos if classificar(n)[0] == "sim"]
+    # Numa loja so de moda feminina, vitrine de topo ("Bazar") e segura e
+    # carrega o sinal de encalhe da §23. Numa loja multi-publico, a mesma
+    # vitrine misturaria masculino e infantil: fica fora.
+    so_feminina = loja_so_feminina([n for _, n in brutos])
+    regra = classificar_populacao if so_feminina else classificar
+    deps = [(i, n) for i, n in brutos if regra(n)[0] == "sim"]
     if deps:
-        cache[marca_nome] = [{"id": i, "nome": n, "origem": origem} for i, n in deps]
+        cache[marca_nome] = [{"id": i, "nome": n, "origem": origem,
+                              "loja_so_feminina": so_feminina} for i, n in deps]
     return deps, ""
 
 
@@ -329,10 +336,12 @@ def _por_categoria(dominio, caminho, estado, total=None, nivel=1):
         filhos = _filhos(dominio, caminho)
         if filhos:
             for cam, nome in filhos:
-                # O classificador vale em todo nivel: sem isto a C&A traria
-                # Calcados, Moda Intima e Moda Praia para dentro de
-                # feminino_casual_br, porque sao filhas de "Moda Feminina".
-                if nome and classificar(nome)[0] != "sim":
+                # Dentro de um departamento ja aprovado, exclui-se so por
+                # POPULACAO (calcado, moda intima, praia, masculino), nunca por
+                # recorte comercial. Excluir "Bazar" aqui derrubou o Dress To de
+                # 4540 para 326: 6852 dos 7178 produtos dele vivem no Bazar, e a
+                # §23 trata remarcada-com-grade-cheia como o sinal de encalhe.
+                if nome and classificar_populacao(nome)[0] != "sim":
                     continue
                 yield from _por_categoria(dominio, cam, estado, None, nivel + 1)
             return

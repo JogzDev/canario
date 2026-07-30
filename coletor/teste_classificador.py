@@ -11,7 +11,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mapa_categorias import classificar  # noqa: E402
+from mapa_categorias import (classificar, classificar_populacao,  # noqa: E402
+                             loja_so_feminina)
 
 CASOS = [
     # As armadilhas de substring que motivaram o teste.
@@ -45,6 +46,30 @@ CASOS = [
 ]
 
 
+# Populacao x recorte comercial. Nasceu de um erro real: excluir "Bazar"
+# derrubou o Dress To de 4540 para 326 produtos, porque 6852 dos 7178 itens
+# dele vivem no Bazar. Vitrine e a mesma roupa noutro lugar; populacao e gente
+# ou produto diferente.
+CASOS_POPULACAO = [
+    ("Bazar", "sim"),
+    ("Sale", "sim"),
+    ("Novidades da Semana", "sim"),
+    ("Promocoes", "sim"),
+    ("Calcados", "nao"),
+    ("Moda Intima", "nao"),
+    ("Moda Praia", "nao"),
+    ("Moda Masculina", "nao"),
+    ("Roupas Infantis", "nao"),
+    ("Vestidos", "sim"),
+]
+
+CASOS_LOJA = [
+    (["Vestidos", "Saias", "Bazar", "Blusas"], True),          # Cantao
+    (["Moda Feminina", "Moda Masculina", "Moda Infantil"], False),  # C&A
+    (["dress to", "Bazar"], True),                              # Dress To
+]
+
+
 def main():
     falhas = []
     for caminho, esperado in CASOS:
@@ -52,10 +77,21 @@ def main():
         if obtido != esperado:
             falhas.append((caminho, obtido, esperado))
 
+    for caminho, esperado in CASOS_POPULACAO:
+        obtido = classificar_populacao(caminho)[0]
+        if obtido != esperado:
+            falhas.append(("populacao: " + caminho, obtido, esperado))
+
+    for deps, esperado in CASOS_LOJA:
+        obtido = loja_so_feminina(deps)
+        if obtido != esperado:
+            falhas.append(("loja_so_feminina " + str(deps), obtido, esperado))
+
     for caminho, obtido, esperado in falhas:
         print("FALHOU: {!r} -> {} (esperado {})".format(caminho, obtido, esperado))
 
-    print("{} casos, {} falhas".format(len(CASOS), len(falhas)))
+    print("{} casos, {} falhas".format(
+        len(CASOS) + len(CASOS_POPULACAO) + len(CASOS_LOJA), len(falhas)))
     return 1 if falhas else 0
 
 

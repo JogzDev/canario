@@ -80,6 +80,48 @@ def classificar(caminho):
     return "sim", "feminino_casual_br", "vestuario feminino: proposto para o segmento v1"
 
 
+# Motivos que falam de POPULACAO (gente ou produto diferente) contra motivos
+# que falam de RECORTE COMERCIAL (a mesma roupa numa vitrine diferente).
+MOTIVO_VITRINE = "nao e categoria de produto"
+
+
+def classificar_populacao(caminho):
+    """Como `classificar`, mas ignora recorte comercial.
+
+    Existe por um erro real: excluir "bazar" derrubou o Dress To de 4540 para
+    326 produtos, porque 6852 dos 7178 itens dele vivem no Bazar -- que ali nao
+    e um cantinho de liquidacao, e o catalogo. Pior: a §23 trata "remarcada com
+    grade cheia" como o encalhe, o fracasso mais claro que o metodo enxerga.
+    Excluir liquidacao joga fora justamente o sinal mais interessante.
+
+    Sale, bazar, novidades e promocao sao VISTAS da mesma roupa: o produto ou
+    tambem aparece na categoria real (e o dedup resolve a sobreposicao) ou so
+    aparece ali (e ai excluir perde o dado). Ja masculino, calcado e moda praia
+    sao populacoes diferentes, e continuam fora.
+    """
+    alvo = normalizar(caminho)
+    for motivo, regexes in _EXCLUSOES_COMPILADAS:
+        if motivo == MOTIVO_VITRINE:
+            continue
+        if casa_algum(alvo, regexes):
+            return "nao", "", motivo
+    return "sim", "feminino_casual_br", "vestuario feminino"
+
+
+def loja_so_feminina(nomes_departamentos):
+    """True quando nenhum departamento de topo e de outro publico.
+
+    Numa loja so de moda feminina, uma vitrine de topo ("Bazar" no Cantao) e
+    segura de coletar. Numa loja multi-publico (C&A, Hering), a mesma vitrine
+    de topo misturaria masculino e infantil no segmento -- e ai ela fica fora.
+    """
+    for nome in nomes_departamentos:
+        motivo = classificar(nome)[2]
+        if motivo == "outro publico":
+            return False
+    return True
+
+
 def achatar_vtex(nos, prefixo="", nivel=1, saida=None):
     if saida is None:
         saida = []
