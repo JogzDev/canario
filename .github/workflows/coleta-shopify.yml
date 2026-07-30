@@ -26,15 +26,25 @@ jobs:
   coletar:
     runs-on: [self-hosted, macOS]
     timeout-minutes: 300
+    env:
+      # Sem isto o setup-python tenta escrever em /Users/runner, caminho que so
+      # existe nos servidores do GitHub, e falha com "Permission denied". Aqui
+      # ele baixa o Python para dentro da pasta do proprio runner.
+      AGENT_TOOLSDIRECTORY: /Users/canario/actions-runner/_work/_tool
     steps:
       - uses: actions/checkout@v4
 
-      # No Mac pode nao haver toolcache; nao e bloqueador, o coletor roda no
-      # Python 3.9 que vem com o macOS.
+      # No Mac o `python3` do sistema e um atalho que exige as Command Line
+      # Tools do Xcode; sem elas ele so abre um dialogo de instalacao. Por isso
+      # o Python vem daqui, e este passo NAO pode falhar em silencio.
       - uses: actions/setup-python@v5
-        continue-on-error: true
         with:
           python-version: '3.11'
+
+      - name: Confirmar que existe Python utilizavel
+        run: |
+          python3 --version
+          python3 -c "import json,urllib.request; print('stdlib ok')"
 
       - name: Coletar so as marcas Shopify
         env:
