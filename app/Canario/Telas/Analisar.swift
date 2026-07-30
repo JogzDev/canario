@@ -16,12 +16,9 @@ struct Analisar: View {
     @State private var carregando = true
     @State private var erro: String?
 
+    /// A tradução vive em `Traducao`, que é testada. Aqui a tela só consome.
     private var casados: [Termo] {
-        let alvo = normalizar(texto)
-        guard !alvo.isEmpty else { return [] }
-        return termos.filter { termo in
-            termo.termosDeBusca.contains { normalizar($0).contains(alvo) || alvo.contains(normalizar($0)) }
-        }
+        Traducao.termos(para: texto, em: termos)
     }
 
     var body: some View {
@@ -82,11 +79,6 @@ struct Analisar: View {
         var vistas = Set<String>()
         return termos.filter { vistas.insert($0.dimensao).inserted }
             .prefix(5).map(\.rotulo)
-    }
-
-    private func normalizar(_ s: String) -> String {
-        s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func carregar() async {

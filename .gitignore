@@ -32,3 +32,6 @@ VERIFICACAO_TRENDS.html
 *.ipa
 *.dSYM.zip
 .swiftpm/xcode/package.xcworkspace/xcuserdata/
+
+# SwiftPM
+.build/

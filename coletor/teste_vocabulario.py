@@ -41,6 +41,10 @@ ALVOS = [
     ("coletor", (".py",)),
 ]
 
+# Artefato de compilacao nao e codigo-fonte: varrer isso so gera ruido e ensina
+# a ignorar o teste.
+PASTAS_IGNORADAS = {".build", "build", "DerivedData", ".git"}
+
 # --- Bloco 1: §6, previsao de venda -----------------------------------------
 PROIBIDO_PREVISAO = [
     "prever", "previsao", "previsoes", "vai vender", "vao vender",
@@ -124,6 +128,18 @@ def esta_permitido(trecho):
     return any(normalizar(p) in alvo for p in PERMITIDO)
 
 
+def e_token_isolado(trecho):
+    """True quando o trecho e uma palavra so, sem frase em volta.
+
+    O §0 permite o codinome como TOKEN (nome de projeto, de target, bundle id)
+    e proibe so embutir em FRASE de interface: "para a troca pelo nome
+    definitivo ser uma operacao unica de find-and-replace". `Package.swift`
+    usando "Canario" como nome de modulo e uso correto, e marcar isso como
+    violacao ensinaria a ignorar o teste.
+    """
+    return len(trecho.strip().split()) == 1
+
+
 def main():
     compilados = [(nome, compilar_lista(termos), escopo)
                   for nome, termos, escopo in BLOCOS]
@@ -134,7 +150,8 @@ def main():
         raiz = os.path.join(RAIZ, pasta)
         if not os.path.isdir(raiz):
             continue
-        for atual, _dirs, nomes in os.walk(raiz):
+        for atual, dirs, nomes in os.walk(raiz):
+            dirs[:] = [d for d in dirs if d not in PASTAS_IGNORADAS]
             for nome in nomes:
                 if not nome.endswith(extensoes):
                     continue
@@ -148,6 +165,9 @@ def main():
                         continue
                     for bloco, regexes, escopo in compilados:
                         if pasta not in escopo:
+                            continue
+                        # `canario` como token isolado e permitido (§0).
+                        if bloco.startswith("vocabulario interno") and e_token_isolado(trecho):
                             continue
                         alvo = normalizar(trecho)
                         for r in regexes:
