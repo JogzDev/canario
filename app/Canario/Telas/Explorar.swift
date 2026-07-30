@@ -22,6 +22,7 @@ struct Explorar: View {
         return todos.filter { vistos.insert($0.termoId).inserted }
     }
     @State private var rotulos: [String: String] = [:]
+    @State private var eventos: [EventoVarejo] = []
     @State private var carregando = true
     @State private var erro: String?
 
@@ -44,6 +45,8 @@ struct Explorar: View {
     private var conteudo: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                reposicoes
+                remarcacoes
                 digest
                 pendentes
             }
@@ -80,18 +83,62 @@ struct Explorar: View {
         }
     }
 
+    /// §27 dá destaque editorial às reposições, e a §23 explica por quê: "é a
+    /// marca votando com o próprio dinheiro". Ruptura pode ser só estoque
+    /// acabando; reposição é decisão de compra.
+    private var reposicoes: some View {
+        blocoDeEventos(
+            titulo: "Reposições da semana",
+            tipo: "reposicao",
+            vazio: "Nenhuma reposição confirmada ainda. Ela exige ver um tamanho sair e voltar de forma persistente, e a coleta de varejo começou em 24/07.")
+    }
+
+    private var remarcacoes: some View {
+        blocoDeEventos(
+            titulo: "Remarcações da semana",
+            tipo: "remarcacao",
+            vazio: "Nenhuma queda de preço de 5% ou mais nesta janela.")
+    }
+
+    private func blocoDeEventos(titulo: String, tipo: String, vazio: String) -> some View {
+        let doTipo = eventos.filter { $0.tipo == tipo }
+        return VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            Text(titulo).font(Tokens.Fonte.secao)
+            if doTipo.isEmpty {
+                CoberturaInsuficiente(titulo: "Sem registro nesta janela",
+                                      explicacao: vazio, oQueTem: nil)
+            } else {
+                ForEach(doTipo.prefix(8)) { e in
+                    Cartao {
+                        HStack(alignment: .firstTextBaseline) {
+                            Label(e.marca, systemImage: e.icone)
+                                .font(Tokens.Fonte.apoio.weight(.semibold))
+                            Spacer()
+                            Text(e.data).font(Tokens.Fonte.miudo)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                        Text(e.peca ?? "—").font(Tokens.Fonte.corpo)
+                        Text(e.resumo).font(Tokens.Fonte.apoio)
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                        // Regra 3: todo número carrega o caminho até a origem.
+                        if let url = e.urlDaPeca, let link = URL(string: url) {
+                            Link("ver no site da marca", destination: link)
+                                .font(Tokens.Fonte.miudo)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Os blocos que a §27 pede e que ainda não têm dado. Declarados, não ocultos.
     private var pendentes: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
             Text("Ainda sem cobertura").font(Tokens.Fonte.secao)
             CoberturaInsuficiente(
-                titulo: "Ruptura e reposições da semana",
-                explicacao: "Dependem dos eventos de grade, que o motor ainda não computa. Reposição exige ver um tamanho sair e voltar de forma persistente, e a coleta de varejo começou em 24/07.",
-                oQueTem: "O histórico necessário se acumula sozinho a cada noite de coleta.")
-            CoberturaInsuficiente(
                 titulo: "Novidades por cluster",
                 explicacao: "Depende do primeiro avistamento por produto ao longo de várias semanas.",
-                oQueTem: nil)
+                oQueTem: "O histórico necessário se acumula sozinho a cada noite de coleta.")
         }
     }
 
@@ -106,6 +153,8 @@ struct Explorar: View {
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca")
             todos = try await i
             rotulos = Dictionary(uniqueKeysWithValues: try await t.map { ($0.id, $0.rotulo) })
+            eventos = try await Supabase.shared.buscar(
+                "eventos_da_semana", "select=*&order=data.desc&limit=60")
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

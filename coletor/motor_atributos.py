@@ -26,8 +26,32 @@ import sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from matcher import compilar_lista, termos_que_casam  # noqa: E402
+from matcher import compilar_lista, termos_que_casam, casa_algum  # noqa: E402
 import supabase_rest  # noqa: E402
+
+# Filtro de POPULACAO no nivel do PRODUTO.
+#
+# O filtro por departamento nao basta: a Hering organiza o catalogo por PECA
+# (Blusas, Calcas, Camisetas, Polos), sem departamento de genero. O
+# `loja_so_feminina()` nao acha nada masculino no topo, conclui "loja so
+# feminina" e entra em tudo -- e 4.386 dos 7.778 produtos dela (56%) sao de
+# outro publico. Numa marca `ancora`, isso contamina o share de atributo do
+# painel inteiro.
+#
+# O titulo do produto diz o que a arvore de categorias escondeu.
+FORA_DO_SEGMENTO = compilar_lista([
+    # outro publico
+    "masculin*", "menino*", "menina*", "infant*", "kids", "bebe*", "baby",
+    "homem", "homens", "teen", "junior",
+    # outro segmento (§8: o recorte e casual/social, nao intimo nem praia)
+    "calcinha*", "sutia*", "lingerie", "cueca*", "pijama*", "camisola*",
+    "biquini*", "maio", "maios", "sunga*", "moda praia", "beachwear",
+])
+
+
+def fora_do_segmento(texto):
+    """True quando o proprio produto se declara de outra populacao."""
+    return casa_algum(texto, FORA_DO_SEGMENTO)
 
 SEGMENTO = "feminino_casual_br"
 PAGINA = 1000
@@ -90,10 +114,9 @@ def main():
     supabase_rest.apagar("produto_termos", "origem=eq.titulo")
     print("Ligacoes anteriores de origem='titulo' apagadas.", file=sys.stderr)
 
-    total = casados = ligacoes = 0
+    total = casados = ligacoes = fora = 0
     sem_categoria = 0
-    por_dimensao = {}
-    buffer_pt, buffer_seg = [], []
+    buffer_pt, buffer_seg, buffer_fora = [], [], []
 
     for lote in produtos_em_paginas():
         for p in lote:
@@ -111,6 +134,12 @@ def main():
             # e campo estruturado, e nao prosa publicitaria.
             texto = " ".join(filter(None, [p.get("titulo"),
                                            p.get("categoria_site")]))
+            # Antes de casar atributo: este produto pertence ao segmento?
+            if fora_do_segmento(texto):
+                fora += 1
+                if p.get("segmento") is not None:
+                    buffer_fora.append(p["id"])
+                continue
             achados = termos_que_casam(texto, termos) if texto.strip() else set()
             if achados:
                 casados += 1
@@ -129,12 +158,18 @@ def main():
                 supabase_rest.upsert("produto_termos", buffer_pt,
                                      on_conflict="produto_id,termo_id,origem")
                 buffer_pt = []
-        # B4: segmento por construcao (so departamentos femininos foram descidos)
+        # B4: segmento por construcao, agora confirmado pelo proprio produto.
         for i in range(0, len(buffer_seg), 200):
             ids = ",".join(str(x) for x in buffer_seg[i:i + 200])
             supabase_rest.atualizar("produtos", "id=in.({})".format(ids),
                                     {"segmento": SEGMENTO})
-        buffer_seg = []
+        # Produto de outra populacao sai do segmento: com segmento nulo ele
+        # deixa de entrar na serie de varejo e no portao de cobertura.
+        for i in range(0, len(buffer_fora), 200):
+            ids = ",".join(str(x) for x in buffer_fora[i:i + 200])
+            supabase_rest.atualizar("produtos", "id=in.({})".format(ids),
+                                    {"segmento": None})
+        buffer_seg, buffer_fora = [], []
         print("  {} produtos processados, {} com atributo, {} ligacoes".format(
             total, casados, ligacoes), file=sys.stderr)
 
@@ -147,6 +182,8 @@ def main():
         total, casados, pct, ligacoes), file=sys.stderr)
     print("Com atributo mas sem categoria: {} (ficam fora da leitura do §11)".format(
         sem_categoria), file=sys.stderr)
+    print("FORA do segmento por populacao (masculino, infantil, intimo, praia): {}".format(
+        fora), file=sys.stderr)
     return 0
 
 

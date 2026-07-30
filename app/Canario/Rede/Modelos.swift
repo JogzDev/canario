@@ -160,3 +160,65 @@ struct Cobertura: Decodable, Hashable {
         return partes.isEmpty ? "cobertura abaixo do mínimo" : partes.joined(separator: "; ")
     }
 }
+
+// MARK: - Eventos
+
+/// Um evento de varejo (§23). Reposição é o sinal mais forte do painel: é a
+/// marca decidindo repor com o próprio dinheiro, não uma ruptura que pode ser
+/// só estoque acabando.
+struct EventoVarejo: Decodable, Identifiable, Hashable {
+    let id: Int
+    let tipo: String
+    let data: String
+    let semana: String
+    let marca: String
+    let peca: String?
+    let urlDaPeca: String?
+    let detalhe: Detalhe?
+
+    struct Detalhe: Decodable, Hashable {
+        let tamanhos: [String]?
+        // Vem como NUMERO no jsonb; declarar String derrubava a decodificacao
+        // e a tela mostrava "nao consegui consultar" como se fosse rede.
+        let quedaPct: Double?
+        let precoDe: Double?
+        let precoPara: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case tamanhos
+            case quedaPct = "queda_pct"
+            case precoDe = "preco_de"
+            case precoPara = "preco_para"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, tipo, data, semana, marca, peca, detalhe
+        case urlDaPeca = "url_da_peca"
+    }
+
+    /// Uma linha de leitura humana. Fato observado, nunca projeção.
+    var resumo: String {
+        switch tipo {
+        case "reposicao":
+            let t = detalhe?.tamanhos?.joined(separator: ", ") ?? "—"
+            return "Tamanho \(t) voltou e permaneceu disponível"
+        case "remarcacao":
+            if let pct = detalhe?.quedaPct { return String(format: "Preço caiu %.1f%%", pct) }
+            return "Preço caiu"
+        case "saida_de_linha":
+            return "Saiu do catálogo"
+        default:
+            return tipo
+        }
+    }
+
+    var icone: String {
+        switch tipo {
+        case "reposicao": return "arrow.clockwise"
+        case "remarcacao": return "tag"
+        case "saida_de_linha": return "xmark.circle"
+        default: return "circle"
+        }
+    }
+}
