@@ -116,7 +116,7 @@ struct LinhaTermo: View {
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             if let indice {
-                LinhaInsumo(texto: Perna.frase(indice.pernasAtivas) + " · semana de \(indice.semana)")
+                LinhaInsumo(texto: Perna.frase(indice.pernasAtivas) + " · semana de \(Formato.data(indice.semana))")
             }
         }
         .padding(.vertical, Tokens.Espaco.xs)

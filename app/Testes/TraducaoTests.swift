@@ -188,3 +188,38 @@ final class ConsultaTests: XCTestCase {
         }
     }
 }
+
+/// Formato de data e hora (regra do JP, 30/07): data sempre em dd/MM/aaaa e
+/// horário sempre de Brasília, no app e no código.
+final class FormatoTests: XCTestCase {
+
+    func testDataSaiNoFormatoBrasileiro() {
+        XCTAssertEqual(Formato.data("2026-07-27"), "27/07/2026")
+        XCTAssertEqual(Formato.data("2026-01-05"), "05/01/2026")
+        // A entrada pode vir com hora junto; só a parte da data importa aqui.
+        XCTAssertEqual(Formato.data("2026-12-31T23:00:00Z"), "31/12/2026")
+    }
+
+    func testNenhumaDataISOVazaParaATela() {
+        // Uma data ISO na tela é o sintoma que este teste existe para pegar.
+        let saida = Formato.data("2026-07-27")
+        XCTAssertFalse(saida.contains("-"), "ISO não pode chegar à interface")
+    }
+
+    func testEntradaMalformadaNaoViraTraco() {
+        // Esconder dado ruim atrás de "—" é pior que mostrá-lo: some o sintoma.
+        XCTAssertEqual(Formato.data("sem data"), "sem data")
+    }
+
+    func testHoraEmBrasiliaNaoEmUTC() {
+        // O servidor grava UTC (cron em UTC, Postgres em UTC). Sem conversão, a
+        // "última coleta" apareceria três horas adiantada.
+        let saida = Formato.dataEHora("2026-07-27T23:30:00Z")
+        XCTAssertTrue(saida.hasPrefix("27/07/2026"), "23:30 UTC ainda é dia 27 em Brasília")
+        XCTAssertTrue(saida.contains("20:30"), "UTC-3: 23:30 UTC = 20:30 em Brasília")
+    }
+
+    func testFusoEDeBrasiliaNaoDoAparelho() {
+        XCTAssertEqual(Formato.brasilia.identifier, "America/Sao_Paulo")
+    }
+}

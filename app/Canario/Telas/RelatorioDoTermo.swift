@@ -87,9 +87,9 @@ struct RelatorioDoTermo: View {
         }
         let pernas = Perna.frase(atual.pernasAtivas)
         if let bruto = atual.estado, let e = Estado(rawValue: bruto) {
-            return "\(termo.rotulo) está \(e.rotulo.lowercased()) e \(Leitura.emPalavras(valor)) na semana de \(atual.semana). Leitura \(pernas)."
+            return "\(termo.rotulo) está \(e.rotulo.lowercased()) e \(Leitura.emPalavras(valor)) na semana de \(Formato.data(atual.semana)). Leitura \(pernas)."
         }
-        return "\(termo.rotulo) tem índice \(fmt(valor)) na semana de \(atual.semana), mas não há cobertura para declarar um estado: isso exige duas fontes concordando. Leitura \(pernas)."
+        return "\(termo.rotulo) tem índice \(fmt(valor)) na semana de \(Formato.data(atual.semana)), mas não há cobertura para declarar um estado: isso exige duas fontes concordando. Leitura \(pernas)."
     }
 
     /// §29.3 — índice, estado e as pernas ativas declaradas.
@@ -158,7 +158,7 @@ struct RelatorioDoTermo: View {
                         media: mediaDaJanela(pontos)) {
                         Text(v).font(Tokens.Fonte.apoio)
                     }
-                    LinhaInsumo(texto: "\(pontos.count) semanas · mais recente em \(pontos.first?.semana ?? "—")")
+                    LinhaInsumo(texto: "\(pontos.count) semanas · mais recente em \(Formato.data(pontos.first?.semana ?? "—"))")
                 }
                 .padding(.vertical, Tokens.Espaco.xs)
             }

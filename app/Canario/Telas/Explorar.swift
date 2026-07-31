@@ -76,7 +76,7 @@ struct Explorar: View {
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                             SeloEstado(estado: i.estado, motivo: nil)
                         }
-                        LinhaInsumo(texto: Perna.frase(i.pernasAtivas) + " · semana de \(i.semana)")
+                        LinhaInsumo(texto: Perna.frase(i.pernasAtivas) + " · semana de \(Formato.data(i.semana))")
                     }
                 }
             }
@@ -114,7 +114,7 @@ struct Explorar: View {
                             Label(e.marca, systemImage: e.icone)
                                 .font(Tokens.Fonte.apoio.weight(.semibold))
                             Spacer()
-                            Text(e.data).font(Tokens.Fonte.miudo)
+                            Text(Formato.data(e.data)).font(Tokens.Fonte.miudo)
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                         }
                         Text(e.peca ?? "—").font(Tokens.Fonte.corpo)

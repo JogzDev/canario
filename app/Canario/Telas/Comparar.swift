@@ -107,7 +107,7 @@ struct Comparar: View {
         }
         let pernas = Perna.frase(indice.pernasAtivas)
         let direcao = valor >= 0 ? "acima" : "abaixo"
-        return "Índice \(direcao) da própria média histórica, \(pernas), semana de \(indice.semana)."
+        return "Índice \(direcao) da própria média histórica, \(pernas), semana de \(Formato.data(indice.semana))."
     }
 
     private func alternar(_ id: String) {

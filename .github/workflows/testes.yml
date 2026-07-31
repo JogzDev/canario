@@ -1,0 +1,58 @@
+name: Testes
+
+# Roda a cada push e em cada PR. Existe porque suite que so roda quando alguem
+# lembra e suite que falha em silencio -- e o projeto ja teve tres bugs que os
+# testes teriam pego se estivessem rodando sozinhos.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coletores:
+    name: Coletores (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar pyyaml (usado pelo teste de workflows)
+        run: pip install --quiet pyyaml
+      - name: Matcher compartilhado
+        run: python3 coletor/teste_matcher.py
+      - name: Classificador de categorias
+        run: python3 coletor/teste_classificador.py
+      - name: Lista negra de vocabulario (§6)
+        run: python3 coletor/teste_vocabulario.py
+      - name: Workflows do Actions
+        run: python3 coletor/teste_workflows.py
+      - name: Modulos compilam
+        run: python3 -m py_compile coletor/*.py
+
+  app:
+    name: App (Swift)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Logica pura em macOS
+        working-directory: app
+        run: swift test
+      # O Config.xcconfig real esta no .gitignore (contem a chave). Para o CI
+      # so precisamos que o arquivo EXISTA, porque o projeto o referencia como
+      # base de configuracao -- sem ele o build falha antes de compilar. Os
+      # valores de exemplo bastam: aqui nao se conecta a servidor nenhum.
+      - name: Config de exemplo para o build
+        working-directory: app
+        run: cp ../Config.xcconfig.example ../Config.xcconfig
+
+      - name: Compilar para o simulador
+        working-directory: app
+        run: |
+          xcodebuild -project Canario.xcodeproj -target Canario \
+            -sdk iphonesimulator -configuration Debug build \
+            CODE_SIGNING_ALLOWED=NO | tail -5
