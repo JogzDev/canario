@@ -150,7 +150,7 @@ struct Explorar: View {
                 "indices_semanais",
                 "select=*&estado=in.(\"em alta\",\"em queda\",pico)&order=semana.desc&limit=200")
             async let t: [Termo] = Supabase.shared.buscar(
-                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca")
+                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en")
             todos = try await i
             rotulos = Dictionary(uniqueKeysWithValues: try await t.map { ($0.id, $0.rotulo) })
             eventos = try await Supabase.shared.buscar(

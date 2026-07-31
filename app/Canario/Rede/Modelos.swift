@@ -14,17 +14,30 @@ struct Termo: Decodable, Identifiable, Hashable {
     let exclusiva: Bool
     let sinonimos: String?
     let semPernaBusca: String?
+    /// As mesmas listas que o coletor usa para etiquetar produto.
+    let palavrasPt: String?
+    let palavrasEn: String?
 
     enum CodingKeys: String, CodingKey {
         case id, rotulo, dimensao, exclusiva, sinonimos
         case semPernaBusca = "sem_perna_busca"
+        case palavrasPt = "palavras_pt"
+        case palavrasEn = "palavras_en"
     }
 
-    /// Rótulo + sinônimos, para a tradução da busca do usuário (§11).
+    /// Tudo que identifica o termo, para a tradução da busca (§11).
+    ///
+    /// Inclui `palavras_pt` e `palavras_en` DE PROPÓSITO: sem elas o app teria
+    /// um vocabulário mais pobre que o do coletor para a mesma taxonomia. O
+    /// teste da entrada por arquivo pegou isso — "Preta" num print não casava
+    /// `preto`, porque o rótulo é "Preto" e a flexão só existe em
+    /// `palavras_pt` ("preto|preta"). Vocabulário é um só, e é o da taxonomia.
     var termosDeBusca: [String] {
         var lista = [rotulo, id.replacingOccurrences(of: "_", with: " ")]
-        if let s = sinonimos, !s.isEmpty {
-            lista.append(contentsOf: s.split(separator: "|").map(String.init))
+        for campo in [sinonimos, palavrasPt, palavrasEn] {
+            if let c = campo, !c.isEmpty {
+                lista.append(contentsOf: c.split(separator: "|").map(String.init))
+            }
         }
         return lista
     }

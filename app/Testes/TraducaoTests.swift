@@ -11,7 +11,7 @@ final class TraducaoTests: XCTestCase {
     private func termo(_ id: String, _ rotulo: String, _ dimensao: String,
                        _ sinonimos: String? = nil) -> Termo {
         Termo(id: id, rotulo: rotulo, dimensao: dimensao, exclusiva: true,
-              sinonimos: sinonimos, semPernaBusca: nil)
+              sinonimos: sinonimos, semPernaBusca: nil, palavrasPt: nil, palavrasEn: nil)
     }
 
     // MARK: A regressão crítica
@@ -109,7 +109,7 @@ extension TraducaoTests {
 
     private func t(_ id: String, _ rotulo: String, _ sin: String? = nil) -> Termo {
         Termo(id: id, rotulo: rotulo, dimensao: "categoria", exclusiva: true,
-              sinonimos: sin, semPernaBusca: nil)
+              sinonimos: sin, semPernaBusca: nil, palavrasPt: nil, palavrasEn: nil)
     }
 
     /// Rótulo enumerado: cada lado do "e" vale sozinho.
@@ -221,5 +221,79 @@ final class FormatoTests: XCTestCase {
 
     func testFusoEDeBrasiliaNaoDoAparelho() {
         XCTAssertEqual(Formato.brasilia.identifier, "America/Sao_Paulo")
+    }
+}
+
+/// Entrada por arquivo (§28): o texto lido do print vira atributo pelo MESMO
+/// tradutor que converte título de produto. Estes casos usam títulos reais do
+/// banco, como o OCR os entregaria.
+final class ImportacaoTests: XCTestCase {
+
+    private var taxonomia: [Termo] {
+        [t("vestido", "Vestido", "categoria", "vestidinho"),
+         t("midi", "Midi", "comprimento"),
+         t("longo", "Longo", "comprimento", "maxi"),
+         t("floral", "Floral", "estampa", "estampa floral|florido|flores"),
+         t("branco_cru", "Branco e cru", "cor", "off white|areia|bege claro"),
+         t("preto", "Preto", "cor", "preta"),
+         t("reta_wide", "Reta e wide", "silhueta", "wide leg|pantalona reta"),
+         t("calca", "Calca", "categoria", "pantalona"),
+         t("alfaiataria", "Alfaiataria", "estetica", "tailoring|social"),
+         t("cintura_alta", "Cintura alta", "cintura", "cos alto")]
+    }
+
+    private func t(_ id: String, _ rotulo: String, _ dim: String,
+                   _ sin: String? = nil) -> Termo {
+        Termo(id: id, rotulo: rotulo, dimensao: dim, exclusiva: true,
+              sinonimos: sin, semPernaBusca: nil, palavrasPt: nil, palavrasEn: nil)
+    }
+
+    /// Print de página de produto: o OCR entrega o título junto de preço e
+    /// navegação. O ruído em volta não pode virar atributo.
+    func testPrintDePaginaDeProduto() {
+        let ocr = """
+        Início / Vestidos / Midi
+        VESTIDO MIDI FLORAL OFF WHITE
+        R$ 799,00 em até 6x sem juros
+        Adicionar à sacola
+        """
+        let ids = Set(Traducao.termos(para: ocr, em: taxonomia).map(\.id))
+        XCTAssertTrue(ids.contains("vestido"))
+        XCTAssertTrue(ids.contains("midi"))
+        XCTAssertTrue(ids.contains("floral"))
+        XCTAssertTrue(ids.contains("branco_cru"), "'off white' é sinônimo de branco e cru")
+        XCTAssertFalse(ids.contains("longo"), "midi não é longo")
+        XCTAssertFalse(ids.contains("preto"))
+    }
+
+    func testFichaEmPDF() {
+        let pdf = """
+        FICHA TÉCNICA
+        Referência: 5CMVLNNEN
+        Descrição: Calça Wide Leg Alfaiataria Cintura Alta Preta
+        Composição: 63% poliéster
+        """
+        let ids = Set(Traducao.termos(para: pdf, em: taxonomia).map(\.id))
+        XCTAssertTrue(ids.contains("calca"))
+        XCTAssertTrue(ids.contains("reta_wide"))
+        XCTAssertTrue(ids.contains("alfaiataria"))
+        XCTAssertTrue(ids.contains("cintura_alta"))
+        XCTAssertTrue(ids.contains("preto"))
+    }
+
+    /// A regressão crítica atravessa a entrada por arquivo também: um print de
+    /// peça preta não pode marcar a silhueta reta.
+    func testRegressaoRetaPretaNoTextoLido() {
+        let ocr = "VESTIDO LONGO PRETO\nR$ 459,00"
+        let ids = Set(Traducao.termos(para: ocr, em: taxonomia).map(\.id))
+        XCTAssertTrue(ids.contains("preto"))
+        XCTAssertFalse(ids.contains("reta_wide"), "'preta' não pode virar silhueta reta")
+    }
+
+    /// Arquivo sem nenhum termo: a tela precisa saber que não achou nada, para
+    /// dizer isso em vez de abrir um formulário vazio sem explicação.
+    func testArquivoSemTermoDaTaxonomia() {
+        let ocr = "Recibo de pagamento\nValor total: R$ 1.200,00"
+        XCTAssertTrue(Traducao.termos(para: ocr, em: taxonomia).isEmpty)
     }
 }
