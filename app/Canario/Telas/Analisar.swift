@@ -15,6 +15,7 @@ struct Analisar: View {
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var carregando = true
     @State private var erro: String?
+    @State private var importando = false
 
     /// A tradução vive em `Traducao`, que é testada. Aqui a tela só consome.
     private var casados: [Termo] {
@@ -34,6 +35,19 @@ struct Analisar: View {
             }
             .navigationTitle("Analisar")
             .searchable(text: $texto, prompt: "Descreva a peça: vestido floral midi…")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        importando = true
+                    } label: {
+                        Label("Importar arquivo", systemImage: "doc.badge.plus")
+                    }
+                    .disabled(termos.isEmpty)
+                }
+            }
+            .sheet(isPresented: $importando) {
+                ImportarPeca(termos: termos)
+            }
         }
         .task { await carregar() }
     }
@@ -47,6 +61,16 @@ struct Analisar: View {
                         .font(Tokens.Fonte.corpo)
                     Text("Acompanho \(termos.count) termos. O que você digitar é traduzido para eles — não é filtro de texto livre.")
                         .font(Tokens.Fonte.apoio)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                    Divider()
+                    Button {
+                        importando = true
+                    } label: {
+                        Label("Importar print, foto ou PDF", systemImage: "doc.badge.plus")
+                    }
+                    .buttonStyle(.bordered)
+                    Text("Leio o texto do arquivo no próprio aparelho e marco os atributos. Nada é enviado nem guardado.")
+                        .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -86,7 +110,7 @@ struct Analisar: View {
         erro = nil
         do {
             termos = try await Supabase.shared.buscar(
-                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca&order=dimensao,id")
+                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
             let recentes: [IndiceSemanal] = try await Supabase.shared.buscar(
                 "indices_semanais", "select=*&order=semana.desc&limit=400")
             var mapa: [String: IndiceSemanal] = [:]

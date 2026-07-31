@@ -9,7 +9,7 @@ dívida que mais apareceu, e sempre no meio de outra conversa.
 decisão nova nasce com uma linha aqui. Atualizado a cada commit que mexe no
 estado de algum item.
 
-Última varredura: **30/07/2026**.
+Última varredura: **30/07/2026** (atualizado ao fim de cada etapa).
 
 ---
 
@@ -46,6 +46,9 @@ coleção.
 | A3 | Forma descritiva do marco de demo 2 | 🔴 Não feito |
 | A6 | Cards de similar com identidade visual própria | 🔴 Não feito — depende do design |
 | A7 | Visão e referências internas fora da v1 | ✅ Feito (entrada por arquivo voltou em 30/07) |
+| §28 | Entrada por arquivo (print, foto, PDF) com OCR, sem câmera | ✅ Feito — `LeitorDeArquivo.swift` |
+| §28 | Formulário de confirmação de atributos (humano no circuito) | ✅ Feito — `ImportarPeca.swift` |
+| §28 | Retenção zero: arquivo processado e descartado | ✅ Feito — lido em memória, nada em disco |
 | A8 | Vocabulário interno nunca vira produto | ✅ Feito — `teste_vocabulario.py` |
 | A9 | Roadmap v1.1 | ⚪ Registrado, sem código |
 
@@ -68,7 +71,7 @@ coleção.
 
 | O que | Estado |
 |---|---|
-| Testes rodando no CI a cada push | 🔴 Não feito — as 6 suítes só rodam quando alguém lembra |
+| Testes rodando no CI a cada push | ✅ Feito — `.github/workflows/testes.yml`, verde nos dois jobs |
 | Aba Comparar verificada visualmente | 🔴 Não feito |
 | Backfill do Trends completo | 🟡 20 de 41 termos; avança sozinho a cada noite |
 | `artigo_termos` | ⚪ Tabela existe e não é usada; contagem vai direto para `series_semanais` |

@@ -120,7 +120,7 @@ struct Comparar: View {
         erro = nil
         do {
             termos = try await Supabase.shared.buscar(
-                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca&order=dimensao,id")
+                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
             let recentes: [IndiceSemanal] = try await Supabase.shared.buscar(
                 "indices_semanais", "select=*&order=semana.desc&limit=400")
             var mapa: [String: IndiceSemanal] = [:]

@@ -10,12 +10,15 @@
 		5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */; };
 		E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1ACCCE153B6FA384A39863 /* Formato.swift */; };
 		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
+		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
 		4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F27BA6A40F86F6D498DA29B /* Modelos.swift */; };
 		4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCED70ADF52E633975D5BF1 /* Supabase.swift */; };
 		C72E0F744301265B0597C210 /* Traducao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CF3CC6A070433478308663E /* Traducao.swift */; };
 		E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907420D533A7734E5A3F0DE7 /* Analisar.swift */; };
 		88385EED03003FB44A18542E /* Comparar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4913E2A3FAD2255EF6E66096 /* Comparar.swift */; };
 		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
+		2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */; };
+		60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */; };
 		BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */; };
 /* End PBXBuildFile section */
 
@@ -25,12 +28,15 @@
 		D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Componentes.swift"; sourceTree = "<group>"; };
 		CD1ACCCE153B6FA384A39863 /* Formato.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Formato.swift"; sourceTree = "<group>"; };
 		7D66F3CA4E705669DD73EF9B /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tokens.swift"; sourceTree = "<group>"; };
+		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
 		6F27BA6A40F86F6D498DA29B /* Modelos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Modelos.swift"; sourceTree = "<group>"; };
 		5DCED70ADF52E633975D5BF1 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Supabase.swift"; sourceTree = "<group>"; };
 		1CF3CC6A070433478308663E /* Traducao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Traducao.swift"; sourceTree = "<group>"; };
 		907420D533A7734E5A3F0DE7 /* Analisar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Analisar.swift"; sourceTree = "<group>"; };
 		4913E2A3FAD2255EF6E66096 /* Comparar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparar.swift"; sourceTree = "<group>"; };
 		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
+		330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportarPeca.swift"; sourceTree = "<group>"; };
+		7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDaPeca.swift"; sourceTree = "<group>"; };
 		13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDoTermo.swift"; sourceTree = "<group>"; };
 		461A5A3F9FDD134BC064B0B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8AB286CF60DF319C5A6A8541 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Config.xcconfig; path = "../Config.xcconfig"; sourceTree = SOURCE_ROOT; };
@@ -88,6 +94,7 @@
 		D5AB6A142F723C9CAC621013 /* Rede */ = {
 			isa = PBXGroup;
 			children = (
+				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
 				6F27BA6A40F86F6D498DA29B /* Modelos.swift */,
 				5DCED70ADF52E633975D5BF1 /* Supabase.swift */,
 				1CF3CC6A070433478308663E /* Traducao.swift */,
@@ -101,6 +108,8 @@
 				907420D533A7734E5A3F0DE7 /* Analisar.swift */,
 				4913E2A3FAD2255EF6E66096 /* Comparar.swift */,
 				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
+				330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */,
+				7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */,
 				13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */,
 			);
 			path = "Telas";
@@ -163,12 +172,15 @@
 				5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */,
 				E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */,
 				90BBD61C629F5B7911560245 /* Tokens.swift in Sources */,
+				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
 				4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */,
 				4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */,
 				C72E0F744301265B0597C210 /* Traducao.swift in Sources */,
 				E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */,
 				88385EED03003FB44A18542E /* Comparar.swift in Sources */,
 				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
+				2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */,
+				60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */,
 				BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
