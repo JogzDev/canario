@@ -87,7 +87,7 @@ struct RelatorioDoTermo: View {
         }
         let pernas = Perna.frase(atual.pernasAtivas)
         if let bruto = atual.estado, let e = Estado(rawValue: bruto) {
-            return "\(termo.rotulo) está \(e.rotulo.lowercased()), com índice \(fmt(valor)) na semana de \(atual.semana). Leitura \(pernas)."
+            return "\(termo.rotulo) está \(e.rotulo.lowercased()) e \(Leitura.emPalavras(valor)) na semana de \(atual.semana). Leitura \(pernas)."
         }
         return "\(termo.rotulo) tem índice \(fmt(valor)) na semana de \(atual.semana), mas não há cobertura para declarar um estado: isso exige duas fontes concordando. Leitura \(pernas)."
     }
@@ -96,11 +96,21 @@ struct RelatorioDoTermo: View {
     private var indiceEEstado: some View {
         Cartao {
             HStack(alignment: .firstTextBaseline) {
-                Text(atual?.indice.map(fmt) ?? "—")
-                    .font(Tokens.Fonte.numero)
+                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                    // K6: a leitura vem primeiro; o número técnico fica ao lado,
+                    // menor, e nunca é apresentado como se fosse porcentagem.
+                    Text(atual?.indice.map { Leitura.emPalavras($0) } ?? "sem leitura")
+                        .font(Tokens.Fonte.secao)
+                    Text(atual?.indice.map(fmt) ?? "—")
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
                 Spacer()
                 SeloEstado(estado: atual?.estado,
                            motivo: "A §22 exige duas fontes concordando para declarar estado.")
+            }
+            if let z = atual?.indice {
+                LinhaInsumo(texto: Leitura.explicacao(z))
             }
             LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
             if atual?.estado == nil {
@@ -143,6 +153,11 @@ struct RelatorioDoTermo: View {
             ForEach(porFonte, id: \.0) { fonte, pontos in
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                     Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.apoio)
+                    if let v = Leitura.variacao(
+                        recente: pontos.first?.valorBruto,
+                        media: mediaDaJanela(pontos)) {
+                        Text(v).font(Tokens.Fonte.apoio)
+                    }
                     LinhaInsumo(texto: "\(pontos.count) semanas · mais recente em \(pontos.first?.semana ?? "—")")
                 }
                 .padding(.vertical, Tokens.Espaco.xs)
@@ -169,6 +184,14 @@ struct RelatorioDoTermo: View {
     }
 
     // MARK: Dados
+
+    /// Média das 12 semanas anteriores à mais recente — a mesma janela do
+    /// z-score (§21), para o percentual e o desvio falarem da mesma coisa.
+    private func mediaDaJanela(_ pontos: [PontoSerie]) -> Double? {
+        let janela = pontos.dropFirst().prefix(12).compactMap(\.valorBruto)
+        guard !janela.isEmpty else { return nil }
+        return janela.reduce(0, +) / Double(janela.count)
+    }
 
     private func fmt(_ v: Double) -> String {
         String(format: "%+.2f", v)

@@ -222,3 +222,44 @@ struct EventoVarejo: Decodable, Identifiable, Hashable {
         }
     }
 }
+
+// MARK: - Leitura humana do índice
+
+/// Traduz o z-score para linguagem de quem compra coleção.
+///
+/// O número cru é desvio-padrão contra a própria história do termo (§21). Isso
+/// é preciso e ilegível: "−1,29" não diz nada para quem decide coleção.
+///
+/// A constante K6 da auditoria já mandava fazer assim — "variação percentual do
+/// valor bruto na janela, com o z entre parênteses; nunca apresentar z como se
+/// fosse porcentagem" — e não tinha sido implementada.
+enum Leitura {
+
+    /// Frase curta para o número principal.
+    static func emPalavras(_ z: Double) -> String {
+        switch z {
+        case 2.0...:        return "muito acima do normal"
+        case 1.0..<2.0:     return "acima do normal"
+        case 0.35..<1.0:    return "levemente acima"
+        case -0.35..<0.35:  return "no normal"
+        case -1.0 ..< -0.35: return "levemente abaixo"
+        case -2.0 ..< -1.0: return "abaixo do normal"
+        default:            return "muito abaixo do normal"
+        }
+    }
+
+    /// O que o número é, dito por extenso. Vai na letra miúda, sempre.
+    static func explicacao(_ z: Double) -> String {
+        let magnitude = String(format: "%.1f", abs(z))
+        let lado = z >= 0 ? "acima" : "abaixo"
+        return "\(magnitude) desvios \(lado) da média das últimas 12 semanas deste mesmo atributo"
+    }
+
+    /// Variação percentual entre o valor mais recente e a média da janela.
+    /// É a unidade que K6 pede como principal para cada perna.
+    static func variacao(recente: Double?, media: Double?) -> String? {
+        guard let recente, let media, media > 0 else { return nil }
+        let pct = 100.0 * (recente - media) / media
+        return String(format: "%+.0f%% vs. a média da janela", pct)
+    }
+}
