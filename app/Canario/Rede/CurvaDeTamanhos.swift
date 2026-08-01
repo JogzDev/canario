@@ -111,25 +111,58 @@ enum CurvaDeTamanhos {
 
     // MARK: A leitura
 
+    /// Erro-padrão de uma taxa de quebra, em pontos percentuais.
+    static func erroPadrao(_ f: Faixa) -> Double {
+        guard let t = f.taxaQuebra, f.nEmRisco > 0 else { return .infinity }
+        let p = t / 100
+        return 100 * (p * (1 - p) / Double(f.nEmRisco)).squareRoot()
+    }
+
+    /// Duas taxas são indistinguíveis quando a diferença cabe em dois
+    /// erros-padrão da diferença.
+    ///
+    /// **Existe porque a tela me pegou.** Depois da limpeza dos atributos, o
+    /// painel mostrou M com 5,4% e P com 5,3% — e a manchete declarou o M
+    /// campeão. Em onze mil amostras cada, um décimo de ponto é ruído: os dois
+    /// erros-padrão somam 0,6 ponto. Eleger vencedor ali é afirmar o que não
+    /// foi medido, que é o que a regra 2 proíbe.
+    static func empatados(_ a: Faixa, _ b: Faixa) -> Bool {
+        guard let ta = a.taxaQuebra, let tb = b.taxaQuebra else { return false }
+        let margem = 2 * (erroPadrao(a) * erroPadrao(a) + erroPadrao(b) * erroPadrao(b)).squareRoot()
+        return abs(ta - tb) < margem
+    }
+
     /// A frase principal, construída só sobre o que foi medido.
     ///
-    /// Nomeia o tamanho de pico em vez de dizer "os menores", porque no painel
-    /// o pico é P e não PP — e "os menores quebram mais" levaria o comprador a
-    /// reforçar justamente o tamanho que menos quebra.
+    /// Nomeia o tamanho em vez de dizer "os menores": no painel, PP é dos que
+    /// MENOS saem, e "os menores quebram mais" levaria o comprador a reforçar
+    /// justamente a ponta mais lenta da grade.
     static func manchete(porRotulo linhas: [Faixa]) -> String? {
-        let comTaxa = linhas.filter { $0.rotulo != nil && $0.taxaQuebra != nil }
-        guard comTaxa.count >= 3,
-              let pico = comTaxa.max(by: { ($0.taxaQuebra ?? 0) < ($1.taxaQuebra ?? 0) }),
-              let vale = comTaxa.min(by: { ($0.taxaQuebra ?? 0) < ($1.taxaQuebra ?? 0) }),
+        let ordenado = linhas
+            .filter { $0.rotulo != nil && $0.taxaQuebra != nil }
+            .sorted { ($0.taxaQuebra ?? 0) > ($1.taxaQuebra ?? 0) }
+        guard ordenado.count >= 3, let pico = ordenado.first, let vale = ordenado.last,
               let taxaPico = pico.taxaQuebra, let taxaVale = vale.taxaQuebra,
-              taxaVale > 0, let rotuloPico = pico.rotulo, let rotuloVale = vale.rotulo
+              taxaVale > 0, let rotuloVale = vale.rotulo
         else { return nil }
 
+        // Quem empata com o primeiro entra na manchete junto.
+        let noTopo = ordenado.filter { $0.id == pico.id || empatados(pico, $0) }
+        let nomes = noTopo.compactMap(\.rotulo)
         let vezes = Leitura.numero(taxaPico / taxaVale, casas: 1)
-        return "O tamanho \(rotuloPico) é o que mais sai de linha no painel: "
-             + "\(Leitura.numero(taxaPico, casas: 1))% dos \(rotuloPico) que estavam disponíveis "
-             + "ficaram indisponíveis na janela, contra \(Leitura.numero(taxaVale, casas: 1))% do \(rotuloVale). "
-             + "É \(vezes) vez\(vezes == "1,0" ? "" : "es") a taxa do \(rotuloVale)."
+
+        let sujeito: String
+        if nomes.count == 1 {
+            sujeito = "O tamanho \(nomes[0]) é o que mais sai de linha no painel"
+        } else {
+            let lista = nomes.dropLast().joined(separator: ", ") + " e " + (nomes.last ?? "")
+            sujeito = "Os tamanhos \(lista) saem de linha no mesmo ritmo, e são os mais rápidos do painel"
+        }
+
+        return sujeito + ": "
+             + "\(Leitura.numero(taxaPico, casas: 1))% dos que estavam disponíveis ficaram "
+             + "indisponíveis na janela, contra \(Leitura.numero(taxaVale, casas: 1))% do \(rotuloVale) — "
+             + "\(vezes) vez\(vezes == "1,0" ? "" : "es") a taxa dele."
     }
 
     /// O formato da quebra, que é o que a §24 chama de "à esquerda" ou "à direita".
@@ -154,14 +187,23 @@ enum CurvaDeTamanhos {
     /// A frase é condicional de propósito. O painel não conhece a modelagem nem
     /// a clientela de quem lê.
     static func composicao(porRotulo linhas: [Faixa]) -> String? {
-        let comTaxa = linhas.filter { $0.rotulo != nil && $0.taxaQuebra != nil }
-        guard comTaxa.count >= 3,
-              let pico = comTaxa.max(by: { ($0.taxaQuebra ?? 0) < ($1.taxaQuebra ?? 0) }),
-              let vale = comTaxa.min(by: { ($0.taxaQuebra ?? 0) < ($1.taxaQuebra ?? 0) }),
-              let rPico = pico.rotulo, let rVale = vale.rotulo
+        let ordenado = linhas
+            .filter { $0.rotulo != nil && $0.taxaQuebra != nil }
+            .sorted { ($0.taxaQuebra ?? 0) > ($1.taxaQuebra ?? 0) }
+        guard ordenado.count >= 3, let pico = ordenado.first, let vale = ordenado.last,
+              let rVale = vale.rotulo
         else { return nil }
+        // Sem diferença que se sustente, não há composição a sugerir. Mandar
+        // deslocar grade sobre ruído seria pior que não dizer nada.
+        guard !empatados(pico, vale) else {
+            return "Nesta seleção os tamanhos saem em ritmo parecido, dentro da margem de erro. "
+                 + "Não há deslocamento de grade que este dado sustente."
+        }
+        let noTopo = ordenado.filter { $0.id == pico.id || empatados(pico, $0) }
+            .compactMap(\.rotulo)
+        let destino = noTopo.count == 1 ? noTopo[0] : noTopo.joined(separator: " e ")
         return "Se a sua grade hoje for uniforme e o seu público se parecer com o do painel, "
-             + "o que este dado sugere é deslocar participação de \(rVale) para \(rPico) — "
+             + "o que este dado sugere é deslocar participação de \(rVale) para \(destino) — "
              + "trocando proporção entre tamanhos, sem mexer no total de peças. "
              + "Quantas peças comprar depende do seu custo, do seu prazo e do seu histórico, que não estão aqui."
     }

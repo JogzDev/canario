@@ -22,11 +22,13 @@ Idempotente: pode rodar todo dia. A chave de produto_termos e
 """
 
 import os
+import re
 import sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from matcher import compilar_lista, termos_que_casam, casa_algum  # noqa: E402
+from matcher import (compilar_lista, termos_que_casam, casa_algum,  # noqa: E402
+                     normalizar)
 import supabase_rest  # noqa: E402
 
 # Filtro de POPULACAO no nivel do PRODUTO.
@@ -53,9 +55,104 @@ def fora_do_segmento(texto):
     """True quando o proprio produto se declara de outra populacao."""
     return casa_algum(texto, FORA_DO_SEGMENTO)
 
+
+# Acessorio e calcado, reconhecidos pelo INICIO do titulo.
+#
+# Por que no inicio, e nao em qualquer posicao: medido no painel em 01/08/2026,
+# a palavra `cinto` aparece em 1.117 titulos, e so 127 deles sao cintos -- os
+# outros 990 sao vestidos e macacoes "com cinto". `lenco` aparece em 207, e 158
+# sao "Calca Lenco" e "Saia Lenco". Uma regra que valesse em qualquer posicao
+# jogaria fora quase mil pecas de roupa.
+#
+# No outro sentido a ancora quase nao custa: `bolsa` casa 509 titulos e 499
+# comecam com ela; `brinco`, 341 contra 336. Titulo de e-commerce brasileiro
+# comeca pelo tipo do produto, e e nisso que a regra se apoia.
+#
+# Isto entrou porque 1.425 acessorios (2,3% do painel) estavam sendo tratados
+# como roupa, e 281 ja tinham recebido categoria de vestuario -- um colar
+# apareceria como "peca parecida" com um vestido no bloco de similares (§29).
+# O filtro por arvore de categoria nao pega: a Shopify nao expoe arvore, entao
+# a PatBo entrava inteira, com 256 bolsas, 70 sandalias e 66 brincos.
+ACESSORIO = [
+    # calcado
+    "sandalia", "sapato", "sapatilha", "tenis", "tamanco", "mule", "scarpin",
+    "rasteira", "rasteirinha", "bota", "botas", "botina", "coturno", "chinelo",
+    "papete", "mocassim", "slide", "sapatenis",
+    # bolsa e afins
+    "bolsa", "bolsas", "bolsinha", "clutch", "mochila", "carteira", "necessaire",
+    "pochete", "shopper",
+    # joia e bijuteria
+    "brinco", "brincos", "colar", "colares", "anel", "aneis", "pulseira",
+    "pulseiras", "bracelete", "tornozeleira", "choker", "piercing", "corrente",
+    "argola", "argolas",
+    # outros acessorios
+    "cinto", "cintos", "oculos", "chapeu", "bone", "lenco", "echarpe", "luva",
+    "luvas", "meia", "meias", "gravata", "viseira", "bandana", "tiara",
+    "presilha", "guarda-chuva",
+    # beleza, que aparece em marca de grupo
+    "perfume", "hidratante", "batom", "esmalte", "sabonete",
+]
+
+# A mesma lista para o campo de categoria do site, onde a palavra pode estar em
+# qualquer posicao: ali o texto e estruturado ("/Feminino/Brincos/", "BOLSA"),
+# nao e frase, e o risco de falso positivo nao existe.
+_ACESSORIO_NO_INICIO = re.compile(
+    r"^(?:" + "|".join(re.escape(p) for p in ACESSORIO) + r")s?\b",
+    re.IGNORECASE)
+_ACESSORIO_NA_CATEGORIA = compilar_lista(
+    [p + "*" for p in ACESSORIO] + ["acessorio*", "joia", "joias", "bijuteria*",
+                                    "calcado*", "sapatos"],
+    flexionar=False)
+
+
+def e_acessorio(titulo, categoria_site):
+    """True quando o produto nao e peca de roupa.
+
+    Duas portas, e basta uma: o titulo COMECA com o tipo do acessorio, ou a
+    categoria do site o nomeia. A segunda existe para o item mal titulado; a
+    primeira, para a loja que nao expoe categoria.
+    """
+    if titulo and _ACESSORIO_NO_INICIO.match(normalizar(titulo).lstrip()):
+        return True
+    if categoria_site and casa_algum(normalizar(categoria_site),
+                                     _ACESSORIO_NA_CATEGORIA):
+        return True
+    return False
+
 SEGMENTO = "feminino_casual_br"
 PAGINA = 1000
 BLOCO_ESCRITA = 500
+
+
+def limpar_nome_da_marca(texto, nome_marca):
+    """Tira o nome da marca do texto antes de casar atributo.
+
+    MEDIDO EM 01/08/2026, e o estrago era grande:
+
+      * O caminho de categoria da Dress To e `/dress to/Bazar/Blusas/`, e
+        `dress` esta em `vestido.palavras_en`. Resultado: **os 6.895 produtos
+        da marca inteira** viraram `vestido` -- calca, blusa, saia e bolsa
+        junto. Eram 41,3% de todas as ligacoes de `vestido` no painel.
+      * "Morena Rosa" no titulo dava `vermelho_rosa` a 612 produtos, 11,2% das
+        ligacoes daquele termo.
+
+    E o mesmo erro de origem que ja apareceu duas vezes neste projeto: texto que
+    nao descreve a peca entrando como se descrevesse. Antes foi a descricao de
+    marketing (30/07), depois o `content:encoded` do editorial. Agora e o nome
+    de quem vende.
+
+    A limpeza vale para toda marca, e nao so para as duas que colidem hoje: uma
+    marca nova chamada "Linho" ou "Preta" reintroduziria o problema em silencio.
+    """
+    if not texto or not nome_marca:
+        return texto or ""
+    alvo = normalizar(nome_marca)
+    if not alvo:
+        return texto
+    # Palavra inteira, para "NV" nao comer o "nv" de outra palavra e para
+    # "Farm" nao comer "farmacia".
+    padrao = r"\b" + re.escape(alvo).replace(r"\ ", r"\s+") + r"\b"
+    return re.sub(padrao, " ", normalizar(texto))
 
 
 def carregar_termos():
@@ -85,7 +182,7 @@ def produtos_em_paginas():
     while True:
         lote = supabase_rest.selecionar(
             "produtos",
-            "?id=gt.{}&select=id,titulo,descricao,categoria_site,segmento"
+            "?id=gt.{}&select=id,titulo,descricao,categoria_site,segmento,marca_id"
             "&order=id.asc&limit={}".format(ultimo, PAGINA))
         if not lote:
             return
@@ -116,6 +213,10 @@ def main():
 
     total = casados = ligacoes = fora = 0
     sem_categoria = 0
+    # id -> nome, para tirar o nome da marca do texto antes de casar.
+    marcas = {m["id"]: m.get("nome")
+              for m in supabase_rest.selecionar("marcas", "?select=id,nome")}
+
     buffer_pt, buffer_seg, buffer_fora = [], [], []
 
     for lote in produtos_em_paginas():
@@ -134,8 +235,16 @@ def main():
             # e campo estruturado, e nao prosa publicitaria.
             texto = " ".join(filter(None, [p.get("titulo"),
                                            p.get("categoria_site")]))
+            # O nome de quem vende nao descreve o que se vende.
+            texto = limpar_nome_da_marca(texto, marcas.get(p.get("marca_id")))
             # Antes de casar atributo: este produto pertence ao segmento?
-            if fora_do_segmento(texto):
+            #
+            # Duas perguntas diferentes. `fora_do_segmento` pergunta se e OUTRA
+            # POPULACAO (masculino, infantil, praia, intimo). `e_acessorio`
+            # pergunta se e OUTRO TIPO DE PRODUTO -- bolsa, sandalia, brinco --
+            # que e roupa de ninguem. As duas tiram o produto do segmento.
+            if fora_do_segmento(texto) or e_acessorio(p.get("titulo"),
+                                                      p.get("categoria_site")):
                 fora += 1
                 if p.get("segmento") is not None:
                     buffer_fora.append(p["id"])

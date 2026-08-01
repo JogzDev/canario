@@ -31,6 +31,8 @@ jobs:
         run: python3 coletor/teste_vocabulario.py
       - name: Normalizador de tamanhos (§24)
         run: python3 coletor/teste_tamanhos.py
+      - name: Filtro de populacao (nome da marca, acessorio)
+        run: python3 coletor/teste_populacao.py
       - name: Workflows do Actions
         run: python3 coletor/teste_workflows.py
       - name: Modulos compilam

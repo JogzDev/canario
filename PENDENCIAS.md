@@ -110,7 +110,8 @@ coleção.
 |---|---|
 | Grade da Amaro com nome de COR no lugar de tamanho | 🟡 Coletor corrigido em 01/08; **os 335 produtos no banco só se corrigem na próxima coleta pelo runner residencial**. O normalizador já os descarta, então não contaminam a curva |
 | Escada plus size da C&A (GG1–GG6, X1, XGGG) | ⚪ Fica fora da curva de propósito: é outra escada, e encaixá-la à força inventaria degraus. Decidir se ganha leitura própria |
-| Calçado da PatBô (`34BR/36EU`) com `segmento` preenchido | 🔴 O classificador deixou passar. Baixo volume (47 peças), mas é população errada no painel |
+| Acessório e calçado no painel | ✅ Feito — 2.057 produtos fora do segmento; filtro pelo início do título, calibrado por medição |
+| Nome da marca virando atributo | ✅ Feito — 5.710 ligações erradas apagadas; `motor_atributos.py` limpa o nome antes de casar |
 | Janela de 14 dias com 8 dias de coleta | 🟡 A janela é maior que a história; ela se preenche sozinha até o Demo Day |
 
 ### O que a entrada por arquivo ainda deve

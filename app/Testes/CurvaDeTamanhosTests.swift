@@ -63,21 +63,79 @@ final class CurvaDeTamanhosTests: XCTestCase {
         XCTAssertEqual(junto.compactMap(\.rotulo), ["PP"])
     }
 
+    // MARK: A margem de erro, que a tela me obrigou a respeitar
+
+    /// O painel depois da limpeza dos atributos (01/08, à tarde): M e P estão
+    /// separados por um décimo de ponto, em onze mil amostras cada.
+    private var painelComEmpate: [CurvaDeTamanhos.Faixa] {
+        [faixa("PP", "menores", emRisco: 9392,  quebrou: 360, taxa: 3.83),
+         faixa("P",  "menores", emRisco: 11327, quebrou: 597, taxa: 5.27),
+         faixa("M",  "meio",    emRisco: 11058, quebrou: 598, taxa: 5.41),
+         faixa("G",  "maiores", emRisco: 11279, quebrou: 458, taxa: 4.06),
+         faixa("GG", "maiores", emRisco: 8915,  quebrou: 329, taxa: 3.69)]
+    }
+
+    func testDiferencaDentroDaMargemNaoEleceVencedor() {
+        // A primeira versão declarava "o tamanho M é o que mais sai" com 5,4%
+        // contra 5,3% do P. Dois erros-padrão da diferença somam ~0,6 ponto:
+        // a diferença de 0,14 cabe inteira dentro do ruído.
+        let m = painelComEmpate[2], p = painelComEmpate[1]
+        XCTAssertTrue(CurvaDeTamanhos.empatados(m, p))
+
+        let frase = CurvaDeTamanhos.manchete(porRotulo: painelComEmpate) ?? ""
+        XCTAssertTrue(frase.contains("P e M") || frase.contains("M e P"),
+                      "empate tem de nomear os dois, não coroar um")
+        XCTAssertTrue(frase.contains("mesmo ritmo"))
+    }
+
+    func testDiferencaRealContinuaSendoDeclarada() {
+        let m = painelComEmpate[2], gg = painelComEmpate[4]
+        XCTAssertFalse(CurvaDeTamanhos.empatados(m, gg),
+                       "5,4% contra 3,7% é diferença de verdade, e some se a margem for frouxa")
+    }
+
+    func testComposicaoSeCalaQuandoNaoHaDiferenca() {
+        // Mandar deslocar grade sobre ruído é pior que não dizer nada.
+        let chapado = [faixa("P", "menores", emRisco: 10000, quebrou: 400, taxa: 4.00),
+                       faixa("M", "meio",    emRisco: 10000, quebrou: 402, taxa: 4.02),
+                       faixa("G", "maiores", emRisco: 10000, quebrou: 398, taxa: 3.98)]
+        let frase = CurvaDeTamanhos.composicao(porRotulo: chapado) ?? ""
+        XCTAssertTrue(frase.contains("margem de erro"))
+        XCTAssertFalse(frase.contains("deslocar participação"))
+    }
+
     // MARK: A manchete nomeia o tamanho, e isso não é estilo
 
     func testMancheteNomeiaOTamanhoDePico() {
+        // Com o painel de 01/08 pela manhã, P (3,57%) e M (3,26%) também
+        // empatam: a margem da diferença é 0,51 ponto e a distância é 0,31.
+        //
+        // Registrado assim de propósito. A manchete que escrevi de manhã dizia
+        // "o tamanho P é o que mais sai de linha", e essa afirmação nunca se
+        // sustentou — faltava a margem, não o dado. Quando ela entrou, o
+        // próprio teste antigo quebrou e apontou o exagero.
         let frase = CurvaDeTamanhos.manchete(porRotulo: painel)
         XCTAssertNotNil(frase)
-        XCTAssertTrue(frase!.contains("tamanho P é"),
-                      "o pico do painel é P, e é ele que tem de ser nomeado")
-        XCTAssertTrue(frase!.contains("3,6%"))
+        XCTAssertTrue(frase!.contains("P e M") || frase!.contains("M e P"),
+                      "P e M empatam dentro da margem; nomear só um exagera o achado")
         XCTAssertTrue(frase!.contains("2,2%"), "o vale entra junto, senão a taxa não tem contra o quê")
     }
 
+    func testAsPontasDaGradeSaemMenos() {
+        // O que o dado sustenta em TODAS as versões medidas até agora, e que é
+        // o achado de verdade: PP e GG são os mais lentos da grade.
+        for conjunto in [painel, painelComEmpate] {
+            let ordenado = conjunto.sorted { ($0.taxaQuebra ?? 0) > ($1.taxaQuebra ?? 0) }
+            let doisUltimos = Set(ordenado.suffix(2).compactMap(\.rotulo))
+            XCTAssertEqual(doisUltimos, ["PP", "GG"],
+                           "as pontas da grade são as mais lentas, e é isso que se pode afirmar")
+        }
+    }
+
     func testMancheteNaoDizQueOsMenoresQuebramMais() {
-        // A armadilha desta tela. No painel, PP é o SEGUNDO que menos quebra
-        // (2,35%), atrás só do GG. Um comprador que lesse "os menores quebram
-        // mais" e reforçasse PP estaria agindo sobre uma leitura errada.
+        // A armadilha desta tela. No painel, PP é o SEGUNDO que menos quebra,
+        // atrás só do GG. Um comprador que lesse "os menores quebram mais" e
+        // reforçasse PP estaria agindo sobre uma leitura errada.
         let frase = CurvaDeTamanhos.manchete(porRotulo: painel) ?? ""
         XCTAssertFalse(frase.lowercased().contains("menores"),
                        "a manchete tem de nomear o tamanho, não generalizar a ponta da grade")
