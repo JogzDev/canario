@@ -25,6 +25,8 @@
 		2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */; };
 		60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */; };
 		BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */; };
+		0D84DC35CA70B3050CF0ECA0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00CF251BD47C47E7D73F68E0 /* Assets.xcassets */; };
+		B5F4296D54E2C90E4074A18A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +51,8 @@
 		7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDaPeca.swift"; sourceTree = "<group>"; };
 		13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDoTermo.swift"; sourceTree = "<group>"; };
 		461A5A3F9FDD134BC064B0B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		00CF251BD47C47E7D73F68E0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 		8AB286CF60DF319C5A6A8541 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Config.xcconfig; path = "../Config.xcconfig"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -85,6 +89,8 @@
 				799A1BDA5D4B143D5515FC08 /* Design */,
 				D5AB6A142F723C9CAC621013 /* Rede */,
 				3292BE3A6EAD8B36569AC07C /* Telas */,
+				00CF251BD47C47E7D73F68E0 /* Assets.xcassets */,
+				810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */,
 				461A5A3F9FDD134BC064B0B7 /* Info.plist */,
 				8AB286CF60DF319C5A6A8541 /* Config.xcconfig */,
 			);
@@ -173,7 +179,10 @@
 		B1A0F0CB489E589610C83B54 = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (
+				0D84DC35CA70B3050CF0ECA0 /* Assets.xcassets in Resources */,
+				B5F4296D54E2C90E4074A18A /* PrivacyInfo.xcprivacy in Resources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */

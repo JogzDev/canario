@@ -33,6 +33,12 @@
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 
+	<!-- Conformidade de exportação. O app só faz HTTPS com o Supabase, que é
+	     criptografia isenta pelas regras da Apple. Declarar aqui evita a
+	     pergunta a cada envio ao TestFlight — e a resposta é a mesma sempre. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- Lidos pelo Supabase.swift. Vêm do Config.xcconfig, que está no
 	     .gitignore: nenhum valor real entra no repositório. -->
 	<key>SUPABASE_URL</key>

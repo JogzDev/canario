@@ -30,16 +30,36 @@ def fontes():
     base = os.path.join(RAIZ, NOME)
     achados = []
     for atual, _dirs, nomes in os.walk(base):
+        # Nao desce dentro do catalogo de assets: ele entra inteiro como um
+        # recurso so, e os PNGs de dentro nao sao arquivos do projeto.
+        if ".xcassets" in atual:
+            continue
         for n in sorted(nomes):
             if n.endswith(".swift"):
                 achados.append(os.path.relpath(os.path.join(atual, n), RAIZ))
     return sorted(achados)
 
 
+# Recursos que precisam ser EMPACOTADOS no .app, e nao compilados.
+#
+# Existe porque o gerador so conhecia `.swift`, e sem isto o TestFlight recusa
+# o envio: a validacao da Apple exige icone, e `ASSETCATALOG_COMPILER_APPICON_NAME`
+# ja apontava para um `AppIcon` que nao existia em lugar nenhum.
+def recursos():
+    achados = []
+    for nome, tipo in (("Assets.xcassets", "folder.assetcatalog"),
+                       ("PrivacyInfo.xcprivacy", "text.plist.xml")):
+        caminho = os.path.join(RAIZ, NOME, nome)
+        if os.path.exists(caminho):
+            achados.append((os.path.join(NOME, nome), nome, tipo))
+    return achados
+
+
 def main():
     arquivos = fontes()
     if not arquivos:
         raise SystemExit("Nenhum .swift encontrado em {}/".format(NOME))
+    pacote = recursos()
 
     proj = ident("projeto")
     alvo = ident("alvo")
@@ -75,6 +95,9 @@ def main():
     for a in arquivos:
         A("\t\t{} /* {} in Sources */ = {{isa = PBXBuildFile; fileRef = {} /* {} */; }};".format(
             ident("build", a), os.path.basename(a), ident("ref", a), os.path.basename(a)))
+    for caminho, nome, _tipo in pacote:
+        A("\t\t{} /* {} in Resources */ = {{isa = PBXBuildFile; fileRef = {} /* {} */; }};".format(
+            ident("build", caminho), nome, ident("ref", caminho), nome))
     A("/* End PBXBuildFile section */")
 
     # --- PBXFileReference ---
@@ -88,6 +111,10 @@ def main():
               ident("ref", a), os.path.basename(a), os.path.basename(a)))
     A('\t\t{} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; '
       'path = Info.plist; sourceTree = "<group>"; }};'.format(ident("ref", "Info.plist")))
+    for caminho, nome, tipo in pacote:
+        A('\t\t{} /* {} */ = {{isa = PBXFileReference; lastKnownFileType = {}; '
+          'path = "{}"; sourceTree = "<group>"; }};'.format(
+              ident("ref", caminho), nome, tipo, nome))
     # O Config.xcconfig vive na raiz do repositorio (fora de app/), porque e
     # ele que o README manda copiar do .example. Sem esta referencia, o
     # $(SUPABASE_URL) do Info.plist nunca e substituido e o app sobe sem
@@ -137,6 +164,8 @@ def main():
         A("\t\t\t\t{} /* {} */,".format(ident("ref", a), os.path.basename(a)))
     for p in pastas:
         A("\t\t\t\t{} /* {} */,".format(grupos_pasta[p], os.path.basename(p)))
+    for caminho, nome, _tipo in pacote:
+        A("\t\t\t\t{} /* {} */,".format(ident("ref", caminho), nome))
     A("\t\t\t\t{} /* Info.plist */,".format(ident("ref", "Info.plist")))
     A("\t\t\t\t{} /* Config.xcconfig */,".format(ident("ref", "Config.xcconfig")))
     A("\t\t\t);")
@@ -200,7 +229,13 @@ def main():
     A("\t\t{} = {{".format(fase_recursos))
     A("\t\t\tisa = PBXResourcesBuildPhase;")
     A("\t\t\tbuildActionMask = 2147483647;")
-    A("\t\t\tfiles = ();")
+    if pacote:
+        A("\t\t\tfiles = (")
+        for caminho, nome, _tipo in pacote:
+            A("\t\t\t\t{} /* {} in Resources */,".format(ident("build", caminho), nome))
+        A("\t\t\t);")
+    else:
+        A("\t\t\tfiles = ();")
     A("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
     A("\t\t};")
     A("/* End PBXResourcesBuildPhase section */")

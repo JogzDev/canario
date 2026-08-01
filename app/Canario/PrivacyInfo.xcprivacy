@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Manifesto de privacidade exigido pela Apple.
+
+	  As três respostas abaixo são verdadeiras e verificáveis no código:
+
+	  * NÃO coletamos dado nenhum do usuário. O app lê `termos`,
+	    `indices_semanais`, `series_semanais`, `eventos_da_semana` e
+	    `curva_tamanhos` do Supabase, e não escreve em nada — a RLS do banco
+	    garante isso do lado do servidor, não só do nosso lado.
+
+	  * NÃO rastreamos. Não há SDK de terceiro, nem analytics, nem identificador
+	    de publicidade.
+
+	  * NENHUMA API de "motivo obrigatório" é usada. Verificado por varredura:
+	    o app não toca em UserDefaults, em data de arquivo, em espaço em disco
+	    nem em tempo de atividade do sistema.
+
+	  A entrada por arquivo (§28) merece nota, porque é o ponto em que alguém
+	  poderia supor coleta: o print, a foto ou o PDF são lidos em memória pelo
+	  seletor de documentos do iOS, o texto e a cor são extraídos no próprio
+	  aparelho e nada é copiado, salvo ou enviado. Não há câmera, não há
+	  fototeca e o app não pede permissão nenhuma.
+	-->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>
