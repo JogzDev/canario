@@ -26,7 +26,15 @@ def configurado():
     return bool(URL and KEY)
 
 
-def _requisicao(metodo, caminho, corpo=None, prefer=None, params="", tentativas=3):
+def _requisicao(metodo, caminho, corpo=None, prefer=None, params="",
+                tentativas=3, timeout=None):
+    """Uma chamada ao PostgREST, com retry para erro transitorio.
+
+    `timeout` sobrescreve o padrao de 30s. Existe para o motor: uma funcao de
+    lote como `computar_curva_tamanhos()` leva mais de um minuto, e o cliente
+    desistia antes do servidor terminar -- com o agravante de que o retry
+    mandava o Postgres refazer o trabalho inteiro a cada tentativa.
+    """
     if not configurado():
         raise SupabaseErro("SUPABASE_URL ou SUPABASE_SECRET_KEY ausentes no ambiente")
 
@@ -41,11 +49,12 @@ def _requisicao(metodo, caminho, corpo=None, prefer=None, params="", tentativas=
         cabecalhos["Prefer"] = prefer
     dados = json.dumps(corpo).encode("utf-8") if corpo is not None else None
 
+    espera = timeout or TIMEOUT
     ultimo_erro = None
     for tentativa in range(tentativas):
         req = urllib.request.Request(endereco, data=dados, headers=cabecalhos, method=metodo)
         try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            with urllib.request.urlopen(req, timeout=espera) as resp:
                 bruto = resp.read()
                 texto = bruto.decode("utf-8", "replace") if bruto else ""
                 return resp.status, (json.loads(texto) if texto else None)

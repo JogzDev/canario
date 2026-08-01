@@ -4,6 +4,12 @@ name: Motor (atributos, eventos, indice)
 # tocar em site nenhum. Nao sofre rate-limit e nao precisa do runner do Mac.
 on:
   workflow_dispatch:
+    inputs:
+      backfill_editorial:
+        description: 'Refazer o backfill editorial de 5 anos (demorado)'
+        type: boolean
+        required: false
+        default: false
   schedule:
     # 04:10 BRT = 07:10 UTC, depois de todas as coletas (varejo 03:00,
     # shopify 03:20, editorial 03:40). Servidor calcula, app consulta (§33).
@@ -33,8 +39,14 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python3 coletor/motor_atributos.py
 
+      # OPT-IN, e nao "todo disparo manual".
+      #
+      # Era `github.event_name == 'workflow_dispatch'`, o que tornava impossivel
+      # testar o motor a mao sem varrer 5 anos de arquivo de 6 veiculos. Em
+      # 01/08 isso custou 25 minutos para descobrir se um `statement_timeout`
+      # tinha sido corrigido -- e o passo que interessava era o ultimo.
       - name: Backfill editorial (coorte fixa, 5 anos)
-        if: github.event_name == 'workflow_dispatch'
+        if: inputs.backfill_editorial
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
