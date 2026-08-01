@@ -32,6 +32,8 @@ PASSOS = [
      "z-score em janela movel de 12 semanas (§21)"),
     ("computar_indice",
      "indice e estado por termo/semana (§22)"),
+    ("computar_curva_tamanhos",
+     "onde a grade quebra, por posicao na grade (§24, marco de demo 1)"),
 ]
 
 

@@ -54,12 +54,14 @@ struct RelatorioDoTermo: View {
                         explicacao: "A §8 exige \(coberturaDaSemana?.minimoPecas ?? 30) peças na célula e \(coberturaDaSemana?.minimoMarcas ?? 8) marcas externas coletando para exibir índice e estado. Aqui: \(coberturaDaSemana?.oQueFalta ?? "não há medição de cobertura para esta semana").",
                         oQueTem: "Prefiro dizer que não sei a mostrar um número que não se sustenta.")
                     grafico
+                    curva
                     insumos
                     limites
                 } else {
                     resumo
                     indiceEEstado
                     grafico
+                    curva
                     insumos
                     limites
                 }
@@ -72,6 +74,32 @@ struct RelatorioDoTermo: View {
     }
 
     // MARK: Blocos
+
+    /// §24 no relatório do atributo.
+    ///
+    /// Fica **abaixo do gráfico e acima dos insumos** de propósito: é camada
+    /// descritiva de varejo (B1.3), não entra no índice, e misturar as duas
+    /// coisas faria parecer que a curva de tamanhos move o z-score. Não move.
+    private var curva: some View {
+        NavigationLink {
+            CurvaDeTamanhosView(termo: termo)
+        } label: {
+            Cartao {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Curva de tamanhos").font(Tokens.Fonte.secao)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+                Text("Onde a grade quebra nas peças do painel que têm \(termo.rotulo.lowercased()).")
+                    .font(Tokens.Fonte.apoio)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                LinhaInsumo(texto: "Descritivo de varejo: não entra no índice nem no estado.")
+            }
+        }
+        .buttonStyle(.plain)
+    }
 
     /// §29.1 — template determinístico. Cada frase só existe se o número que a
     /// sustenta existir; nada é preenchido com valor plausível.

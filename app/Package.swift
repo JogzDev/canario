@@ -20,7 +20,7 @@ let package = Package(
             sources: ["Rede/Traducao.swift", "Rede/Modelos.swift", "Rede/Supabase.swift",
                       "Rede/CorDaPeca.swift", "Rede/LeitorDeArquivo.swift",
                       "Rede/Importacao.swift", "Rede/Explicacao.swift",
-                      "Design/Formato.swift"]
+                      "Rede/CurvaDeTamanhos.swift", "Design/Formato.swift"]
         ),
         .testTarget(
             name: "CanarioLogicaTests",

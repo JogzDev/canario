@@ -58,6 +58,7 @@ struct Explorar: View {
     private var conteudo: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                curvaDoPainel
                 movimento(titulo: "Reposições", tipo: "reposicao",
                           vazio: "Nenhuma reposição confirmada nesta janela. Ela exige ver um tamanho sair e voltar, e depois continuar disponível.")
                 movimento(titulo: "Remarcações", tipo: "remarcacao",
@@ -108,6 +109,29 @@ struct Explorar: View {
                 }
             }
         }
+    }
+
+    /// §24 na abertura da aba: é o bloco de maior valor por esforço zero, e o
+    /// único que responde a uma pergunta que o comprador já tem na cabeça antes
+    /// de abrir o app.
+    private var curvaDoPainel: some View {
+        NavigationLink {
+            CurvaDeTamanhosView(termo: nil)
+        } label: {
+            Cartao {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Curva de tamanhos").font(Tokens.Fonte.secao)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+                Text("Onde a grade do painel está quebrando ao longo da escada de tamanhos.")
+                    .font(Tokens.Fonte.apoio)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     /// A data do dado, sempre explícita.

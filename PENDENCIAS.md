@@ -67,7 +67,7 @@ coleção.
 |---|---|---|
 | §20 | Alerta quando uma fonte cai mais de 70% vs. média de 7 dias | 🔴 Não feito — só existe alerta de marca zerada |
 | §22 | Índice do cluster (conjunto de atributos de uma peça) | 🔴 Não feito — só existe índice por atributo |
-| §24 | Curva de tamanhos (velocidade relativa por tamanho) | 🔴 Não feito — é o marco de demo 1 |
+| §24 | Curva de tamanhos | ✅ Feito — migração 0008, no motor, com tela própria. **Marco de demo 1 fechado** |
 | §29 | Bloco de similares com preço, remarcação e estado da grade | 🔴 Não feito |
 | §31 | Termômetro (validação retroativa) | ⚪ Depende dos dados do Pedro |
 | B5 | `anexos/mapa_categorias.csv` | 🟡 Substituído na prática por `departamentos_vtex.json` — decidir se descarta formalmente |
@@ -101,6 +101,17 @@ coleção.
 | PDF de imagem não era lido | ✅ Feito — rasteriza e passa pelo OCR |
 | Aceitar JPG | ✅ Feito — tipos nomeados um a um |
 | "Entender do que se trata e classificar a peça principal" | 🟡 **Parcial e declarado.** Cor sai do pixel (`cinza`, 94% de cobertura, no arquivo dele). **Nomear a peça exige modelo treinado e não existe** |
+
+---
+
+## Curva de tamanhos (01/08) — o que ficou de dívida nova
+
+| O que | Estado |
+|---|---|
+| Grade da Amaro com nome de COR no lugar de tamanho | 🟡 Coletor corrigido em 01/08; **os 335 produtos no banco só se corrigem na próxima coleta pelo runner residencial**. O normalizador já os descarta, então não contaminam a curva |
+| Escada plus size da C&A (GG1–GG6, X1, XGGG) | ⚪ Fica fora da curva de propósito: é outra escada, e encaixá-la à força inventaria degraus. Decidir se ganha leitura própria |
+| Calçado da PatBô (`34BR/36EU`) com `segmento` preenchido | 🔴 O classificador deixou passar. Baixo volume (47 peças), mas é população errada no painel |
+| Janela de 14 dias com 8 dias de coleta | 🟡 A janela é maior que a história; ela se preenche sozinha até o Demo Day |
 
 ### O que a entrada por arquivo ainda deve
 

@@ -500,3 +500,31 @@ O JP abriu o app com os prints na mão e listou nove problemas. Três eram de te
 *Dois erros de paginação, encontrados na tela e não no teste*
 
 - `ADITIVA` | Com 681 remarcações em 31/07, uma consulta única ordenada por data enchia a página inteira e **o bloco de reposições aparecia vazio havendo 217 no banco** — sumindo justamente com o sinal mais forte do painel (§23). Passou a ser uma consulta por tipo. O mesmo erro atingiu as séries do digest, onde um cartão dizia "vários desvios" em vez do número por não ter recebido a linha do editorial. Registrado porque a causa é a mesma nos dois: **teto de linhas com ordenação única esconde a minoria**, e a minoria costuma ser o que interessa.
+
+**01/08/2026 | Curva de tamanhos (§24) no ar — marco de demo 1.**
+
+*O problema que decidiu o método*
+
+- `ADITIVA` | **Nada é convertido entre marcas.** Medido no painel: a Hering usa `XP · P · M · G · XG · XXG` e não tem PP nem GG; a Zinzane usa `PP · P · M · G · GG · XG · XGG`, onde XG fica **acima** do GG. O mesmo rótulo é o maior tamanho de uma marca e um degrau intermediário de outra, então **uma tabela global rótulo→tamanho seria demonstravelmente errada**. Converter 38 para M seria pior ainda: a equivalência número↔letra varia por marca e não temos como aferir. O que se faz é ordenar os rótulos **dentro da grade de cada produto** e usar a **posição relativa** — 0 = o menor que aquela marca oferece, 1 = o maior. Numa grade de cinco degraus isso recorta exatamente o que a §24 pede (menores = PP/P, meio = M, maiores = G/GG) e funciona igual na Hering, sem ninguém afirmar que XP "é" PP. A leitura **por rótulo** existe, mas só nas grades da escada padrão `{PP,P,M,G,GG}`, que é a única forma de nomear tamanho sem misturar sentido.
+- `ADITIVA` | **`coletor/tamanhos.py` + `teste_tamanhos.py`**, espelhando a função `ordem_do_tamanho()` do Postgres. O normalizador é a peça que decide se a curva compara coisas comparáveis, e um erro nele não apareceria como erro: apareceria como uma curva plausível e errada. Todos os casos do teste vieram do painel real.
+
+*Uma correção de método, no meio do caminho*
+
+- `REVOGATÓRIA` | **A medida principal passou a ser a dinâmica, não a foto.** A primeira versão usava `share_indisponivel` (estado de hoje) como manchete, porque tem N maior. Isso contraria a §23, que é explícita: *"Usar dinâmica (velocidade de quebra, percentual da grade ao longo do tempo), **nunca a foto de um dia**"*. E as duas medidas **discordam de verdade**:
+  - pela foto: GG é o que mais quebra (62,5%), com curva em U;
+  - pela dinâmica: **P é o que mais quebra (3,57%) e GG é o que menos (2,16%)**.
+  
+  A foto carrega toda a indisponibilidade antiga e a profundidade de compra da marca, que não observamos — como se compra menos PP e menos GG, as pontas aparecem esgotadas por construção. A especificação já tinha decidido isso antes; o erro foi meu, e foi corrigido antes de virar tela.
+
+*O achado*
+
+- `ADITIVA` | **Painel inteiro, escada de letra, janela de 14 dias:** PP 2,35% · **P 3,57%** · M 3,26% · G 2,68% · GG 2,16%. A quebra tem **pico em P**, e os menores saem 1,18 vez mais que os maiores. Na escada numérica o formato é ainda mais limpo e monotônico: menores 4,23% · meio 3,51% · maiores 3,13%.
+- `ADITIVA` | **A tela nomeia o tamanho de pico, e não a ponta da grade.** É decisão de produto com teste próprio: no painel, PP é o **segundo que menos quebra**. Um comprador que lesse "os menores quebram mais" e reforçasse PP estaria agindo sobre uma leitura errada. Dizer "o tamanho P é o que mais sai de linha" é ao mesmo tempo mais verdadeiro e mais acionável.
+- `ADITIVA` | **Por atributo**, a diferença é muito maior que no agregado: Alfaiataria 2,39x, Flare e evasê 1,57x, Casaco e jaqueta 1,44x, Vestido 1,33x. É aí que a curva vira decisão de compra.
+- `ADITIVA` | **Composição de grade (soma zero) implementada e testada** como a §24 autoriza, em linguagem condicional, com as ressalvas obrigatórias na mesma tela. O teste barra explicitamente as formas de recomendação de volume, que a regra 1 proíbe.
+
+*Dívidas que a curva expôs*
+
+- `ADITIVA` | **Bug no coletor Shopify:** `shopify_extrair` pegava `option1` às cegas como tamanho. Na Amaro a primeira opção é **cor**, e 335 produtos entraram com a grade preenchida de "PRETO", "MARROM", "BEGE". O caminho VTEX já fazia certo — procurava a variação cujo nome contém "tam" — e o Shopify não. Corrigido lendo `options` por nome. O dado velho continua no banco até a próxima coleta residencial; o normalizador já o descarta, então não contamina a curva.
+- `ADITIVA` | **Calçado da PatBô entrou no painel** com `segmento` preenchido (`34BR/36EU`, 47 peças por numeração). O classificador deixou passar. Volume baixo, mas é população errada.
+- `ADITIVA` | **Consolidação por rótulo**, encontrada na tela e não no teste: o banco guarda a curva por (faixa, rótulo) e **o mesmo rótulo cai em faixas diferentes conforme o formato da grade** — `M` é meio numa grade de cinco degraus e maiores numa que vai de PP a M. A tela mostrava `M` três vezes e elegeu como destaque uma linha de 727 amostras na frente de uma de 11 mil. A consolidação é ponderada pelo risco, e há piso de amostra por tamanho. É o terceiro defeito desta natureza em dois dias — **agregação com grão errado escondida atrás de um número plausível** —, e os três só apareceram olhando a tela.

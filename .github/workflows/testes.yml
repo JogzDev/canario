@@ -29,6 +29,8 @@ jobs:
         run: python3 coletor/teste_classificador.py
       - name: Lista negra de vocabulario (§6)
         run: python3 coletor/teste_vocabulario.py
+      - name: Normalizador de tamanhos (§24)
+        run: python3 coletor/teste_tamanhos.py
       - name: Workflows do Actions
         run: python3 coletor/teste_workflows.py
       - name: Modulos compilam

@@ -455,11 +455,35 @@ def shopify_todos(dominio, estado):
             return
 
 
+def _posicao_do_tamanho(produto):
+    """Qual das opcoes do produto e o TAMANHO.
+
+    Shopify entrega `options: [{name, position}, ...]` e as variantes trazem
+    `option1..3` alinhadas a essas posicoes. Nao ha garantia de que a primeira
+    seja tamanho.
+
+    Isto existe porque o coletor pegava `option1` as cegas. Na Amaro a primeira
+    opcao e COR, e 335 produtos entraram no banco com a grade preenchida de
+    "PRETO", "MARROM", "BEGE" no lugar dos tamanhos. O caminho VTEX ja fazia
+    certo -- procurava a variacao cujo nome contem "tam" -- e o Shopify nao.
+    """
+    for op in (produto.get("options") or []):
+        nome = (op.get("name") or "").strip().lower()
+        if "tam" in nome or nome in ("size", "talla"):
+            pos = op.get("position")
+            if isinstance(pos, int) and 1 <= pos <= 3:
+                return pos
+    # Sem opcao de tamanho declarada: produto de tamanho unico, ou loja que nao
+    # nomeia as opcoes. Melhor nao ter grade do que ter grade de cor.
+    return None
+
+
 def shopify_extrair(p):
     grade = {}
     preco_atual = preco_orig = None
+    posicao = _posicao_do_tamanho(p)
     for v in (p.get("variants") or []):
-        tamanho = v.get("option1")
+        tamanho = v.get("option{}".format(posicao)) if posicao else None
         if tamanho:
             chave = str(tamanho)
             grade[chave] = grade.get(chave, False) or bool(v.get("available"))
