@@ -51,7 +51,7 @@ coleção.
 | A1 | `flag_tipo` presumido por categoria e palavra-chave | 🔴 Não feito — schema aceita os valores, nada preenche |
 | A2 | Coletar amplo, classificar depois | ✅ Feito |
 | A3 | Forma descritiva do marco de demo 2 | 🔴 Não feito |
-| A6 | Cards de similar com identidade visual própria | 🔴 Não feito — depende do design |
+| A6 | Cards de similar com identidade visual própria | 🟡 Funcional feito, **sem foto de terceiro**: bloco cuja altura mostra o estado da grade. A identidade visual é da Bianca e troca em `MarcaVisual` |
 | A7 | Visão e referências internas fora da v1 | ✅ Feito (entrada por arquivo voltou em 30/07) |
 | §28 | Entrada por arquivo (print, foto, PDF) com OCR, sem câmera | ✅ Feito — `LeitorDeArquivo.swift` |
 | §28 | Formulário de confirmação de atributos (humano no circuito) | ✅ Feito — `ImportarPeca.swift` |
@@ -68,7 +68,7 @@ coleção.
 | §20 | Alerta quando uma fonte cai mais de 70% vs. média de 7 dias | 🟡 Parcial — as 3 pernas agora gravam `saude` (busca entrou em 01/08); falta o limiar dos 70% |
 | §22 | Índice do cluster (conjunto de atributos de uma peça) | 🔴 Não feito — só existe índice por atributo |
 | §24 | Curva de tamanhos | ✅ Feito — migração 0008, no motor, com tela própria. **Marco de demo 1 fechado** |
-| §29 | Bloco de similares com preço, remarcação e estado da grade | 🔴 Não feito |
+| §29 | Bloco de similares com preço, remarcação e estado da grade | ✅ Feito — migração 0009, `similares_da_peca()`, com o parágrafo-resumo da §29.1 e o percentil de preço da §29.5 |
 | §31 | Termômetro (validação retroativa) | ⚪ Depende dos dados do Pedro |
 | B5 | `anexos/mapa_categorias.csv` | 🟡 Substituído na prática por `departamentos_vtex.json` — decidir se descarta formalmente |
 

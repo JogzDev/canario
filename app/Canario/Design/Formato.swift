@@ -68,6 +68,22 @@ enum Formato {
         return data(texto)
     }
 
+    /// Preço em real, com vírgula decimal e separador de milhar.
+    static func dinheiro(_ v: Double) -> String {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.numberStyle = .currency
+        f.currencyCode = "BRL"
+        // Centavos só abaixo de cem: "R$ 1.199" lê melhor que "R$ 1.199,00" numa
+        // lista, e o centavo de uma peça de mil reais não muda decisão nenhuma.
+        f.maximumFractionDigits = v >= 100 ? 0 : 2
+        let bruto = f.string(from: NSNumber(value: v)) ?? "R$ \(Int(v))"
+        // O `NumberFormatter` separa "R$" do número com espaço NÃO-QUEBRÁVEL
+        // (U+00A0). Ele imprime igual a um espaço comum, e por isso o teste que
+        // procurava "R$ 130" falhava sem que a tela mostrasse nada de errado.
+        return bruto.replacingOccurrences(of: "\u{00A0}", with: " ")
+    }
+
     /// Duração em linguagem de quem compra coleção: "menos de 2 meses" diz mais
     /// que "54 dias" quando o assunto é ritmo de reposição.
     static func periodo(dias: Int) -> String {

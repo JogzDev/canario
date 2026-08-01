@@ -20,6 +20,20 @@ struct ImportarPeca: View {
     @State private var confirmou = false
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
+    @State private var precoDigitado = ""
+
+    /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
+    /// funciona igual, e com ele entra o percentil de preço que a §5 autoriza
+    /// como substituto da previsão proibida.
+    private var precoAlvo: Double? {
+        let limpo = precoDigitado
+            .replacingOccurrences(of: "R$", with: "")
+            .replacingOccurrences(of: ".", with: "")
+            .replacingOccurrences(of: ",", with: ".")
+            .trimmingCharacters(in: .whitespaces)
+        guard let v = Double(limpo), v > 0 else { return nil }
+        return v
+    }
 
     @Environment(\.dismiss) private var dismiss
 
@@ -36,7 +50,8 @@ struct ImportarPeca: View {
                 if lendo {
                     Carregando()
                 } else if confirmou {
-                    RelatorioDaPeca(termos: termos.filter { detectados.contains($0.id) })
+                    RelatorioDaPeca(termos: termos.filter { detectados.contains($0.id) },
+                                    precoAlvo: precoAlvo)
                 } else {
                     formulario
                 }
@@ -72,6 +87,7 @@ struct ImportarPeca: View {
                 }
                 if !procedencia.isEmpty { oQueLi }
                 atributos
+                precoOpcional
                 if !detectados.isEmpty {
                     Button {
                         confirmou = true
@@ -139,6 +155,19 @@ struct ImportarPeca: View {
                         marcados: $detectados)
                 }
             }
+        }
+    }
+
+    /// §29.5 — o único campo que o usuário digita, e ele é opcional.
+    private var precoOpcional: some View {
+        Cartao {
+            Text("Preço que você pretende praticar").font(Tokens.Fonte.secao)
+            Text("Opcional. Se preencher, mostro onde ele cai entre as peças parecidas do painel — é posição de preço, não julgamento do seu preço.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+            TextField("R$ 0,00", text: $precoDigitado)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(.roundedBorder)
         }
     }
 

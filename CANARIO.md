@@ -567,3 +567,32 @@ O JP pediu relatório operacional e firmou o acordo de que "relatório" passa a 
 *Limitação de observação, registrada para não se repetir*
 
 - `ADITIVA` | O repositório é privado, o `gh` CLI não está instalado na máquina do JP (que também não tem Homebrew) e a API pública devolve 404. **O agente não enxerga o Actions diretamente** — infere pelos commits do `CanarioBot` e pela tabela `saude`. Um workflow que falha sem gravar nada é invisível. Foi exatamente o caso. Enquanto o `gh` não existir, `saude` é o único instrumento, e é por isso que toda perna precisa gravar nela.
+
+**01/08/2026 (noite) | Bloco de similares (§29) no ar.**
+
+É o que a §5 lista como **substituto aprovado** da previsão que o projeto proíbe: *"análogos descritivos — as 3 peças mais parecidas e o desfecho delas"*. E é o que sustenta o bloco 1 da §29, o parágrafo-resumo, que vem antes do índice do cluster (bloco 3, ainda não feito).
+
+*Decisões de método*
+
+- `ADITIVA` | **O resumo é sobre TODOS os similares; a lista é amostra.** Uma peça "vestido + floral + midi" tem 230 similares. Calcular a porcentagem sobre os 8 cartões exibidos seria estatística de vitrine. A tela declara quantos são contra quantos aparecem.
+- `ADITIVA` | **Limiar de semelhança: 70% dos atributos, arredondado para cima.** A primeira versão exigia "todos menos um" e devolveu **3.989** similares para três atributos — porque tolerar uma diferença em três deixa entrar todo vestido midi liso e todo floral curto. Com 70%, três atributos exigem os três: 230 peças. Aperta onde cada atributo pesa muito e afrouxa onde há muitos. A tela declara o limiar aplicado.
+- `ADITIVA` | **A amostra é espalhada pelas marcas**, uma peça de cada primeiro. Ordenar por id devolveu três peças da PatBô, todas esgotadas e com 50–70% de desconto, num conjunto onde 22% estão a preço cheio — a amostra contava outra história que o resumo.
+- `ADITIVA` | **Porcentagem só acima de 12 similares.** Com 4, "25% a preço cheio" é uma peça.
+
+*Desempenho, que mandou no desenho*
+
+- `ADITIVA` | A função é chamada **ao vivo pelo app**, que entra como `anon` com `statement_timeout` de **3 segundos** — diferente da curva de tamanhos, que é lote noturno e leva 64s. A primeira versão levava **11,3 segundos** numa busca por "vestido" sozinho, porque formatava o estado da grade de 11.579 peças só para agregar. Duas correções: o formato caro passou a rodar só nas peças que viram cartão, e as duas perguntas sobre a grade passaram a caber num lateral só. Ficou em **0,14s no pior caso**, com o índice `produto_termos_por_termo` como pré-requisito — a chave primária começa por `produto_id` e a pergunta do §29 é a inversa.
+
+*Uma decisão de segurança, registrada por extenso*
+
+- `ADITIVA` | **A função é `security definer`, e isso não afrouxa a RLS.** O app entra como `anon`, que por desenho não enxerga `produtos`, `marcas` nem `produto_termos` — e o primeiro teste na tela devolveu **401** justamente por isso. Em vez de expor as tabelas, a função virou uma **janela controlada**: devolve exatamente o que a §29 manda mostrar (marca, título, url pública, preço, remarcação, estado da grade) de no máximo 24 peças, com o teto imposto pela própria função e não pelo cliente. O app continua sem poder listar as tabelas, filtrar por marca ou paginar o catálogo. O dado devolvido é público por natureza — peças à venda em loja aberta — e o cartão leva o link para a página original, que é o que a regra 3 exige.
+
+*A6, parcialmente cumprida*
+
+- `ADITIVA` | O cartão **não republica foto de produto de terceiro**, como a A6 exige. A representação é gerada: um bloco cuja altura preenchida mostra o estado da grade, mais marca em texto, preço, remarcação e o desfecho em uma linha. A identidade visual definitiva é tarefa da Bianca e troca em `MarcaVisual`, sem tocar na tela.
+
+*O que o painel diz hoje, para "vestido + floral + midi"*
+
+> No painel de 9 marcas, encontrei 230 peças. 22% seguem a preço cheio. 88% estão com a grade quebrada, e 72% já sem nenhum tamanho. O preço do meio é R$ 130.
+
+E a amostra mostra a matriz preço × grade da §23 ao vivo: Cantão a R$ 1.199 com grade cheia e preço cheio, Dress To a R$ 429 remarcada 50% e esgotada.

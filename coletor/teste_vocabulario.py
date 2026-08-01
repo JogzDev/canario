@@ -158,6 +158,16 @@ def main():
                 # O proprio teste contem as palavras proibidas, por definicao.
                 if nome == os.path.basename(__file__):
                     continue
+                # SUITE DE TESTES NAO E INTERFACE.
+                #
+                # A §6 fala de "textos da interface", e um teste que garante a
+                # ausencia de uma palavra precisa poder nomea-la. O
+                # `SimilaresTests` afirma que o paragrafo da §29 nao contem
+                # "vai vender", "probabilidade" nem "previsao" -- e por isso as
+                # tres aparecem no arquivo. Barrar isso trocaria um teste que
+                # protege a regra 1 por um que atrapalha.
+                if (os.sep + "Testes" + os.sep) in (atual + os.sep):
+                    continue
                 caminho = os.path.join(atual, nome)
                 arquivos += 1
                 for trecho in linhas_de_texto(caminho):

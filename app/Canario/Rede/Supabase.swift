@@ -110,4 +110,39 @@ actor Supabase {
             throw Falha.rede(error)
         }
     }
+
+    /// Chama uma função do banco (`rpc/`) e decodifica a resposta.
+    ///
+    /// Existe para o bloco de similares (§29). Poderia ter sido feito com
+    /// várias consultas `GET` e a agregação no dispositivo, e seria errado: a
+    /// §33 diz **servidor calcula, app consulta**, e trazer 18 mil peças pela
+    /// rede para contar quantas estão remarcadas é exatamente o oposto.
+    ///
+    /// A função roda com o papel `anon`, cujo `statement_timeout` é de 3
+    /// segundos — o que restringiu o desenho dela do lado do banco.
+    func chamar<T: Decodable>(_ funcao: String, _ argumentos: [String: Any]) async throws -> T {
+        guard configurado else { throw Falha.semConfiguracao }
+        let endereco = url.appendingPathComponent("rest/v1/rpc/\(funcao)")
+
+        var req = URLRequest(url: endereco)
+        req.httpMethod = "POST"
+        req.setValue(chave, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(chave)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.httpBody = try JSONSerialization.data(withJSONObject: argumentos)
+
+        do {
+            let (dados, resposta) = try await sessao.data(for: req)
+            let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
+            guard (200..<300).contains(codigo) else {
+                throw Falha.resposta(codigo, String(data: dados, encoding: .utf8) ?? "")
+            }
+            return try JSONDecoder().decode(T.self, from: dados)
+        } catch let falha as Falha {
+            throw falha
+        } catch {
+            throw Falha.rede(error)
+        }
+    }
 }

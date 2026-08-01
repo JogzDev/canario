@@ -10,9 +10,13 @@ import SwiftUI
 /// pouco, "floral" pesa muito).
 struct RelatorioDaPeca: View {
     let termos: [Termo]
+    /// Preço que o usuário pretende praticar, se informou. §29.5 chama isso de
+    /// contexto condicional, e a §5 autoriza o percentil de preço que sai dele.
+    var precoAlvo: Double?
 
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
+    @State private var similares: Similares.Resposta?
     @State private var carregando = true
     @State private var erro: String?
 
@@ -24,7 +28,10 @@ struct RelatorioDaPeca: View {
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else {
+                    // §29, na ordem que ela manda: o parágrafo vem primeiro, e
+                    // ele é feito de similares — não do índice.
                     resumo
+                    blocoDeSimilares
                     porAtributo
                     clusterPendente
                     limites
@@ -36,9 +43,30 @@ struct RelatorioDaPeca: View {
     }
 
     /// §29.1 — template determinístico. Só conta o que foi medido.
+    ///
+    /// O parágrafo do painel vem PRIMEIRO, e o da taxonomia depois: é o que a
+    /// §29 pede, e faz sentido — "encontrei 230 peças parecidas, 22% a preço
+    /// cheio" responde a uma pergunta que o comprador tem; "3 atributos, 2 com
+    /// leitura" responde a uma pergunta que ele não fez.
     private var resumo: some View {
         Cartao {
-            Text(frase).font(Tokens.Fonte.corpo)
+            if let r = similares?.resumo {
+                Text(Similares.paragrafo(r, atributos: termos))
+                    .font(Tokens.Fonte.corpo)
+                Divider()
+            }
+            Text(frase).font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+        }
+    }
+
+    /// §29.4 — o bloco de insumos de varejo: similares com preço, remarcação e
+    /// estado da grade, sempre.
+    @ViewBuilder
+    private var blocoDeSimilares: some View {
+        if let s = similares, let r = s.resumo, !s.pecas.isEmpty {
+            BlocoDeSimilares(resumo: r, pecas: s.pecas,
+                             atributos: termos, precoAlvo: precoAlvo)
         }
     }
 
@@ -146,6 +174,12 @@ struct RelatorioDaPeca: View {
                 mapaC[x.termoId] = x
             }
             coberturas = mapaC
+
+            // §33: servidor calcula, app consulta. Trazer 18 mil peças pela
+            // rede para contar quantas estão remarcadas seria o oposto disso.
+            var args: [String: Any] = ["termos": termos.map(\.id), "limite": 8]
+            if let precoAlvo { args["preco_alvo"] = precoAlvo }
+            similares = try await Supabase.shared.chamar("similares_da_peca", args)
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

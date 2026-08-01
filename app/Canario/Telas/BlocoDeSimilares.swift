@@ -1,0 +1,123 @@
+import SwiftUI
+
+/// O bloco de similares da §29, e os cartões que a A6 exige.
+///
+/// **Por que o cartão não tem foto do produto.** A A6 decidiu, quando a
+/// publicação na App Store virou requisito, que o binário submetido **não
+/// republica foto de produto de terceiro**. Cada cartão é representação gerada
+/// dos atributos — bloco na família de cor, glifo de silhueta — mais marca em
+/// texto, preço, remarcação e estado da grade. O toque abre a página original,
+/// que é o que cumpre a rastreabilidade da regra 3.
+///
+/// O desenho definitivo é tarefa da Bianca. O que está aqui usa só os tokens
+/// neutros e existe para a função rodar antes do design — trocar depois é mexer
+/// em `MarcaVisual`, não na tela.
+struct BlocoDeSimilares: View {
+    let resumo: Similares.Resumo
+    let pecas: [Similares.Peca]
+    let atributos: [Termo]
+    var precoAlvo: Double?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            Text("Peças parecidas no painel").font(Tokens.Fonte.secao)
+            LinhaInsumo(texto: Similares.criterio(resumo))
+
+            if let leitura = Similares.leituraDoPreco(resumo, alvo: precoAlvo) {
+                Cartao {
+                    Text("Onde o seu preço cai").font(Tokens.Fonte.miudo.weight(.semibold))
+                    Text(leitura).font(Tokens.Fonte.apoio)
+                }
+            }
+
+            ForEach(pecas) { peca in
+                CartaoDeSimilar(peca: peca)
+            }
+
+            if resumo.nSimilares > pecas.count {
+                LinhaInsumo(texto: "Mostrando \(pecas.count) de \(resumo.nSimilares), "
+                          + "uma das mais parecidas por marca. As porcentagens acima são sobre as \(resumo.nSimilares).")
+            }
+        }
+    }
+}
+
+/// Um similar. Sem foto de terceiro (A6): a identidade é gerada.
+struct CartaoDeSimilar: View {
+    let peca: Similares.Peca
+
+    var body: some View {
+        Cartao {
+            HStack(alignment: .top, spacing: Tokens.Espaco.m) {
+                MarcaVisual(peca: peca)
+                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(peca.marca).font(Tokens.Fonte.apoio.weight(.semibold))
+                        Spacer()
+                        preco
+                    }
+                    Text(peca.titulo ?? "—")
+                        .font(Tokens.Fonte.corpo)
+                        .fixedSize(horizontal: false, vertical: true)
+                    LinhaInsumo(texto: Similares.desfecho(peca))
+                    if let u = peca.url, let link = URL(string: u) {
+                        Link("ver no site da marca", destination: link)
+                            .font(Tokens.Fonte.miudo)
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(peca.marca), \(peca.titulo ?? ""). \(Similares.desfecho(peca))")
+    }
+
+    @ViewBuilder
+    private var preco: some View {
+        if let p = peca.preco {
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(Formato.dinheiro(p)).font(Tokens.Fonte.numero)
+                if let q = peca.quedaPct {
+                    Text("−\(Leitura.numero(q, casas: 0))%")
+                        .font(Tokens.Fonte.miudo.weight(.semibold))
+                        .foregroundStyle(Tokens.Cor.queda)
+                }
+            }
+        }
+    }
+}
+
+/// A representação gerada da peça (A6).
+///
+/// Um bloco cuja **altura preenchida** mostra o estado da grade: cheia quando
+/// todos os tamanhos estão disponíveis, vazando conforme quebra. É a leitura
+/// que o comprador faz de relance, e não depende de cor — a §32 proíbe
+/// comunicar estado só por cor, então o número vai ao lado, no texto.
+///
+/// Placeholder para a Bianca: a família de cor da peça e o glifo de silhueta
+/// entram aqui quando o design existir.
+struct MarcaVisual: View {
+    let peca: Similares.Peca
+
+    private var preenchido: Double {
+        guard let g = peca.grade, g.degraus > 0 else { return 1 }
+        return Double(g.disponiveis) / Double(g.degraus)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta)
+                    .fill(Tokens.Cor.superficie)
+                RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta)
+                    .fill(Tokens.Cor.tintaFraca.opacity(0.45))
+                    .frame(height: max(2, geo.size.height * preenchido))
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta)
+                    .strokeBorder(Tokens.Cor.semDado.opacity(0.35), lineWidth: 1)
+            )
+        }
+        .frame(width: 34, height: 52)
+        .accessibilityHidden(true)   // o texto ao lado já diz a grade
+    }
+}

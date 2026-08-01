@@ -16,9 +16,11 @@
 		BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
 		4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F27BA6A40F86F6D498DA29B /* Modelos.swift */; };
+		578ADA6A037865606BC6408A /* Similares.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */; };
 		4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCED70ADF52E633975D5BF1 /* Supabase.swift */; };
 		C72E0F744301265B0597C210 /* Traducao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CF3CC6A070433478308663E /* Traducao.swift */; };
 		E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907420D533A7734E5A3F0DE7 /* Analisar.swift */; };
+		BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2112E929103203C6F4819581 /* BlocoDeSimilares.swift */; };
 		88385EED03003FB44A18542E /* Comparar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4913E2A3FAD2255EF6E66096 /* Comparar.swift */; };
 		8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */; };
 		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
@@ -41,9 +43,11 @@
 		F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Importacao.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
 		6F27BA6A40F86F6D498DA29B /* Modelos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Modelos.swift"; sourceTree = "<group>"; };
+		C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Similares.swift"; sourceTree = "<group>"; };
 		5DCED70ADF52E633975D5BF1 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Supabase.swift"; sourceTree = "<group>"; };
 		1CF3CC6A070433478308663E /* Traducao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Traducao.swift"; sourceTree = "<group>"; };
 		907420D533A7734E5A3F0DE7 /* Analisar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Analisar.swift"; sourceTree = "<group>"; };
+		2112E929103203C6F4819581 /* BlocoDeSimilares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BlocoDeSimilares.swift"; sourceTree = "<group>"; };
 		4913E2A3FAD2255EF6E66096 /* Comparar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparar.swift"; sourceTree = "<group>"; };
 		F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhosView.swift"; sourceTree = "<group>"; };
 		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
@@ -116,6 +120,7 @@
 				F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
 				6F27BA6A40F86F6D498DA29B /* Modelos.swift */,
+				C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */,
 				5DCED70ADF52E633975D5BF1 /* Supabase.swift */,
 				1CF3CC6A070433478308663E /* Traducao.swift */,
 			);
@@ -126,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				907420D533A7734E5A3F0DE7 /* Analisar.swift */,
+				2112E929103203C6F4819581 /* BlocoDeSimilares.swift */,
 				4913E2A3FAD2255EF6E66096 /* Comparar.swift */,
 				F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */,
 				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
@@ -202,9 +208,11 @@
 				BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
 				4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */,
+				578ADA6A037865606BC6408A /* Similares.swift in Sources */,
 				4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */,
 				C72E0F744301265B0597C210 /* Traducao.swift in Sources */,
 				E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */,
+				BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */,
 				88385EED03003FB44A18542E /* Comparar.swift in Sources */,
 				8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */,
 				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
