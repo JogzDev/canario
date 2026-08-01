@@ -550,3 +550,20 @@ Fui checar de onde vinham os similares antes de construir o bloco da §29, e o d
 *Uma superafirmação minha, encontrada pelo teste*
 
 - `REVOGATÓRIA` | **A manchete da curva de tamanhos elegia um vencedor onde havia empate.** Depois da limpeza, o painel deu M com 5,4% e P com 5,3%, e a tela declarou o M campeão. Em onze mil amostras cada, dois erros-padrão da diferença somam 0,6 ponto: a distância de 0,14 cabe inteira no ruído. Entrou `empatados()` com o erro-padrão binomial, e a manchete passou a nomear os dois. **Ao ligar a margem, o teste antigo quebrou e mostrou que a afirmação de ontem — "o tamanho P é o que mais sai de linha" — também nunca se sustentou**: P e M já empatavam então (3,57% contra 3,26%, margem de 0,51). O achado que o dado sustenta, e que vale em todas as versões medidas, é outro e mais simples: **as pontas da grade (PP e GG) são as mais lentas**. A composição de grade também passou a se calar quando a diferença não se sustenta — mandar deslocar grade sobre ruído é pior que não dizer nada.
+
+**01/08/2026 (noite) | A perna de busca estava parada há 19 dias, e nada avisou.**
+
+O JP pediu relatório operacional e firmou o acordo de que "relatório" passa a significar **o estado de tudo** — GitHub, coletores, servidor, Mac i7 —, e não um resumo do que foi feito. O primeiro relatório já achou o problema.
+
+- `ADITIVA` | **A série de busca congelou em 13/07/2026**, com 20 de 40 termos. Três causas empilhadas, e a terceira é a que deixou as outras duas invisíveis:
+  1. **O cron era semanal** (segunda 04:00), mas a lógica de retomada foi escrita pensando em avanço noturno — o próprio comentário no código dizia "algumas noites cobrem a taxonomia inteira". Com 429 do Google em 7 de 10 grupos, uma tentativa por semana nunca fecha.
+  2. **A retomada era permanente.** Ela pula todo termo que já tem série, o que é certo no backfill e errado na coleta semanal: os 20 termos com série **nunca mais eram consultados**. O coletor virou um backfill de uma vez só, e a cadência semanal da §19 simplesmente não acontecia.
+  3. **O coletor não gravava linha de `saude`.** Só `varejo` e `editorial` gravavam. Por isso ninguém viu por 19 dias — nem eu, que passei três dias construindo em cima.
+- `REVOGATÓRIA` | **O cron passa de semanal para diário** (04:30 BRT). A série continua semanal (§19): o Trends devolve ponto por semana e a gravação é idempotente na chave (termo, segmento, fonte, semana). Rodar todo dia só aumenta a chance de a semana corrente ser preenchida. **A regra 7 continua intacta**: o volume por execução não muda, o teto é de 1 req/s e a espera entre grupos segue em 45 segundos.
+- `ADITIVA` | **Dois modos explícitos**, escolhidos pela cobertura e não por variável de ambiente: `backfill` enquanto faltar termo sem série, `semanal` quando todos tiverem. `TRENDS_MODO` força a mão quando preciso.
+- `ADITIVA` | **A execução falha com código diferente de zero quando nenhum grupo responde**, em vez de terminar verde em silêncio. Verde silencioso foi o que escondeu isto por 19 dias.
+- `ADITIVA` | **Consequência a registrar, e ela é de produto:** enquanto a busca não voltar, o índice da §22 é a média de **duas pernas editoriais** (BR e internacional). Atende ao mínimo de duas fontes, mas as duas são imprensa — é uma concordância mais fraca do que "editorial + busca", e eu vinha descrevendo as três pernas como se as três estivessem ativas.
+
+*Limitação de observação, registrada para não se repetir*
+
+- `ADITIVA` | O repositório é privado, o `gh` CLI não está instalado na máquina do JP (que também não tem Homebrew) e a API pública devolve 404. **O agente não enxerga o Actions diretamente** — infere pelos commits do `CanarioBot` e pela tabela `saude`. Um workflow que falha sem gravar nada é invisível. Foi exatamente o caso. Enquanto o `gh` não existir, `saude` é o único instrumento, e é por isso que toda perna precisa gravar nela.

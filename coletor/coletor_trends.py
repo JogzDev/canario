@@ -231,24 +231,43 @@ def main():
         print("Nenhum termo aprovado com termo_busca. Nada a coletar.", file=sys.stderr)
         return 0
 
-    # RETOMAVEL: pula termo que ja tem serie de busca, salvo TRENDS_REFAZER=1.
-    # Com o 429 do Google, uma execucao raramente fecha os 10 grupos; assim cada
-    # execucao avanca e algumas noites cobrem a taxonomia inteira, em vez de
-    # bater sempre nos mesmos primeiros grupos e nunca chegar ao fim.
-    if os.environ.get("TRENDS_REFAZER") != "1":
-        ja_tem = set()
-        for r in supabase_rest.selecionar(
-                "series_semanais", "?fonte=eq.busca&select=termo_id"):
-            ja_tem.add(r["termo_id"])
-        if ja_tem:
-            antes = len(aprovados)
-            aprovados = [t for t in aprovados if t["id"] not in ja_tem]
-            print("Pulando {} termos que ja tem serie de busca; restam {}.".format(
-                antes - len(aprovados), len(aprovados)), file=sys.stderr)
-        if not aprovados:
-            print("Todos os termos aprovados ja tem serie. Use TRENDS_REFAZER=1 "
-                  "para refazer o backfill.", file=sys.stderr)
-            return 0
+    # DOIS MODOS, e a diferenca entre eles custou 19 dias de serie.
+    #
+    # `backfill`  -- pula termo que JA TEM serie, para cada execucao avancar
+    #                sobre os que faltam. Com o 429 do Google uma execucao
+    #                raramente fecha os 10 grupos, entao a retomada e o que
+    #                permite cobrir a taxonomia em varias tentativas.
+    #
+    # `semanal`   -- consulta TODOS os termos aprovados, sempre. E o que a §19
+    #                pede: cadencia semanal.
+    #
+    # O QUE QUEBROU: so existia o primeiro. Como o filtro e permanente, os 20
+    # termos que ja tinham serie nunca mais eram consultados -- e a perna de
+    # busca congelou em 13/07/2026, sem ninguem ver, porque este coletor
+    # tambem nao gravava linha de `saude`. Descoberto em 01/08, 19 dias depois.
+    #
+    # O modo e escolhido pela cobertura, e nao por variavel de ambiente: enquanto
+    # faltar termo sem serie, o certo e correr atras dele; quando todos tiverem,
+    # o certo e atualizar todos. `TRENDS_MODO` existe para forcar a mao.
+    total_aprovados = len(aprovados)
+    modo = os.environ.get("TRENDS_MODO", "").strip().lower()
+    ja_tem = set()
+    for r in supabase_rest.selecionar(
+            "series_semanais", "?fonte=eq.busca&select=termo_id"):
+        ja_tem.add(r["termo_id"])
+    faltando = [t for t in aprovados if t["id"] not in ja_tem]
+
+    if modo not in ("backfill", "semanal"):
+        modo = "backfill" if faltando else "semanal"
+
+    if modo == "backfill" and faltando:
+        print("Modo BACKFILL: {} de {} termos ainda sem serie de busca.".format(
+            len(faltando), len(aprovados)), file=sys.stderr)
+        aprovados = faltando
+    else:
+        modo = "semanal"
+        print("Modo SEMANAL (§19): consultando os {} termos aprovados.".format(
+            len(aprovados)), file=sys.stderr)
 
     grupos = grupos_de_termos(aprovados)
     print("Termos aprovados: {} | grupos de {}: {} | ancora fixa: {!r}".format(
@@ -313,11 +332,46 @@ def main():
         print("  ancora {!r}: {} pontos gravados".format(ANCORA, gravados),
               file=sys.stderr)
 
+    # --- saude (§20): UMA linha por dia para a fonte de busca ---
+    #
+    # ISTO NAO EXISTIA, e e por isso que a perna de busca pode congelar em
+    # 13/07 e ninguem perceber ate 01/08. `saude` so tinha `varejo` e
+    # `editorial`; o que nao se mede nao se sabe que parou.
+    #
+    # `visitados` = grupos tentados, `gravados` = grupos que responderam.
+    # A divergencia entre os dois E o alerta: com 429 do Google, um dia em que
+    # nenhum grupo passa fica visivel na hora.
+    tentados = len(grupos)
+    responderam = tentados - len(falhas)
+    cobertura = len(ja_tem | {t["id"] for t in aprovados}) if modo == "semanal" else len(ja_tem)
+    supabase_rest.upsert("saude", [{
+        "data": hoje.isoformat(), "fonte": "busca", "marca_id": None,
+        "visitados": tentados,
+        "gravados": responderam,
+        "itens": total_pontos,
+        "pct_campos_ok": (round(responderam / float(tentados), 3)
+                          if tentados else None),
+        "alertas": {
+            "modo": modo,
+            "grupos_que_falharam": falhas or None,
+            "termos_sem_perna_de_busca": sorted(mortos) or None,
+            "termos_com_serie": cobertura,
+            "termos_aprovados": total_aprovados,
+            "semana_mais_recente": hoje.isoformat(),
+        },
+    }], on_conflict="data,fonte,marca_id")
+
     print("\nTotal: {} pontos de serie.".format(total_pontos), file=sys.stderr)
     print("Sem perna de busca ({}): {}".format(
         len(mortos), ", ".join(sorted(mortos)) or "nenhum"), file=sys.stderr)
     if falhas:
         print("Grupos que falharam: {}".format(falhas), file=sys.stderr)
+    # Codigo de saida diferente de zero quando NENHUM grupo passou: assim o
+    # Actions marca a execucao como falha em vez de verde silencioso.
+    if tentados and not responderam:
+        print("ERRO: nenhum grupo respondeu. A perna de busca nao avancou hoje.",
+              file=sys.stderr)
+        return 1
     return 0
 
 

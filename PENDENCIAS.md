@@ -65,7 +65,7 @@ coleção.
 
 | Onde | O que exige | Estado |
 |---|---|---|
-| §20 | Alerta quando uma fonte cai mais de 70% vs. média de 7 dias | 🔴 Não feito — só existe alerta de marca zerada |
+| §20 | Alerta quando uma fonte cai mais de 70% vs. média de 7 dias | 🟡 Parcial — as 3 pernas agora gravam `saude` (busca entrou em 01/08); falta o limiar dos 70% |
 | §22 | Índice do cluster (conjunto de atributos de uma peça) | 🔴 Não feito — só existe índice por atributo |
 | §24 | Curva de tamanhos | ✅ Feito — migração 0008, no motor, com tela própria. **Marco de demo 1 fechado** |
 | §29 | Bloco de similares com preço, remarcação e estado da grade | 🔴 Não feito |
@@ -80,7 +80,7 @@ coleção.
 |---|---|
 | Testes rodando no CI a cada push | ✅ Feito — `.github/workflows/testes.yml`, verde nos dois jobs |
 | Aba Comparar verificada visualmente | ✅ Feito — refeita em 31/07 e conferida no simulador |
-| Backfill do Trends completo | 🟡 20 de 41 termos; avança sozinho a cada noite |
+| Backfill do Trends completo | 🟡 20 de 40 termos. **Estava parado há 19 dias** — cron semanal + retomada permanente. Corrigido em 01/08: cron diário, modo semanal, e linha de `saude` |
 | `artigo_termos` | ⚪ Tabela existe e não é usada; os veículos passaram a viver em `series_semanais.meta`, que é onde o app lê |
 
 ---

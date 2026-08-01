@@ -8,10 +8,26 @@ name: Coleta de busca (Google Trends)
 # termo de uma vez. As seguintes sao incrementais e baratas.
 on:
   workflow_dispatch:
+    inputs:
+      modo:
+        description: 'backfill (so termos sem serie) ou semanal (todos)'
+        required: false
+        default: ''
   schedule:
-    # Semanal (§19: cadencia semanal), segunda 04:00 BRT = 07:00 UTC. Depois das
-    # coletas de varejo, para nao competir por janela.
-    - cron: '0 7 * * 1'
+    # DIARIA, 04:30 BRT = 07:30 UTC. Depois das coletas de varejo, para nao
+    # competir por janela.
+    #
+    # Era SEMANAL (segunda), e nao funcionava. O Google devolve 429 em 7 de 10
+    # grupos mesmo do IP residencial, entao uma tentativa por semana nunca
+    # fecha a taxonomia -- a perna de busca ficou 19 dias parada em 13/07/2026
+    # e so foi notada em 01/08. Com tentativa diaria a cobertura converge, e o
+    # volume POR EXECUCAO nao muda: a regra 7 continua respeitada, porque o
+    # teto e de 1 req/s e a espera entre grupos e de 45 segundos.
+    #
+    # A serie continua sendo SEMANAL (§19): o Trends devolve ponto por semana,
+    # e a gravacao e idempotente na chave (termo, segmento, fonte, semana).
+    # Rodar todo dia so aumenta a chance de a semana corrente ser preenchida.
+    - cron: '30 7 * * *'
 
 permissions:
   contents: write
@@ -29,10 +45,13 @@ jobs:
 
       - uses: ./.github/actions/python-mac
 
-      - name: Coletar Trends (backfill 5 anos, geo BR)
+      - name: Coletar Trends (geo BR, ancora fixa)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          # Vazio = o proprio coletor escolhe: backfill enquanto faltar termo
+          # sem serie, semanal quando todos tiverem.
+          TRENDS_MODO: ${{ inputs.modo }}
         run: "$PY coletor/coletor_trends.py"
 
       # O git deste Mac tambem e atalho do Xcode e nao funciona; o dado ja esta
