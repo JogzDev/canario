@@ -9,7 +9,14 @@ dívida que mais apareceu, e sempre no meio de outra conversa.
 decisão nova nasce com uma linha aqui. Atualizado a cada commit que mexe no
 estado de algum item.
 
-Última varredura: **30/07/2026** (atualizado ao fim de cada etapa).
+Última varredura: **31/07/2026** (atualizado ao fim de cada etapa).
+
+**Lição de 31/07, que mudou como este arquivo é lido:** K1 e K4 estavam marcados
+como ✅ porque `computar_eventos()` existia e estava correta. Só que **nada a
+chamava** — não estava no motor. A tabela de eventos ficou parada um dia inteiro
+enquanto a coleta rodava, e quem descobriu foi o JP olhando a tela, não o placar.
+Daqui em diante, uma linha só fica verde quando existe **o caminho inteiro**:
+função escrita, chamada por alguém, e o resultado visível onde deveria estar.
 
 ---
 
@@ -17,10 +24,10 @@ estado de algum item.
 
 | id | O que exige | Onde vive | Estado |
 |---|---|---|---|
-| K1 | Saída de linha: 14 dias ausente **com a marca coletando** | `computar_eventos()` | ✅ Feito |
+| K1 | Saída de linha: 14 dias ausente **com a marca coletando** | `computar_eventos()`, chamada pelo `motor_computar.py` | ✅ Feito |
 | K2 | Continuativo: idade ≥ 26 semanas | — | 🔴 Não feito |
 | K3 | Continuativo: 3 reposições em 12 semanas | — | 🔴 Não feito |
-| K4 | Remarcação só com queda ≥ 5% | `computar_eventos()` | ✅ Feito |
+| K4 | Remarcação só com queda ≥ 5% | `computar_eventos()`, chamada pelo `motor_computar.py` | ✅ Feito |
 | K5 | Índice do cluster ponderado por raridade (IDF) | — | 🔴 Não feito |
 | K6 | Variação % como unidade principal, z entre parênteses | `Leitura.swift` | ✅ Feito |
 | K7 | Trends em grupos de 5 com âncora fixa | `coletor_trends.py` | ✅ Feito |
@@ -72,9 +79,35 @@ coleção.
 | O que | Estado |
 |---|---|
 | Testes rodando no CI a cada push | ✅ Feito — `.github/workflows/testes.yml`, verde nos dois jobs |
-| Aba Comparar verificada visualmente | 🔴 Não feito |
+| Aba Comparar verificada visualmente | ✅ Feito — refeita em 31/07 e conferida no simulador |
 | Backfill do Trends completo | 🟡 20 de 41 termos; avança sozinho a cada noite |
-| `artigo_termos` | ⚪ Tabela existe e não é usada; contagem vai direto para `series_semanais` |
+| `artigo_termos` | ⚪ Tabela existe e não é usada; os veículos passaram a viver em `series_semanais.meta`, que é onde o app lê |
+
+---
+
+## Bloco de reclamações do JP (31/07)
+
+| O que ele apontou | Estado |
+|---|---|
+| Reposições e remarcações mostrando dado de anteontem | ✅ Feito — `computar_eventos()` entrou no motor; roda todo dia às 04:10 |
+| "*3ª reposição dos tamanhos PP/P em menos de 2 meses" | ✅ Feito — ordinal na view; **só acende com história**, hoje todo evento é o 1º |
+| Agrupar eventos por marca | ✅ Feito |
+| Número sem unidade ("1,15 o quê?") | ✅ Feito — `Explicacao.numeroComUnidade` |
+| Explicar ao usuário por que é "pico" | ✅ Feito — `Explicacao.porQue`, testado contra `computar_indice()` |
+| Nome dos sites que sustentam a conclusão | 🟡 Coletor grava `meta.veiculos` a partir de 01/08; as linhas já no banco só ganham os nomes na próxima coleta editorial |
+| Aba Comparar sem propósito claro | ✅ Feito — dois eixos (painel × editorial) e a distância entre eles |
+| Atalho de importar aparecendo duas vezes | ✅ Feito — o do canto superior direito saiu |
+| Busca "vestido de bolinha" devolvendo só "Vestido" | ✅ Feito — `bolinha` no vocabulário + leitura do conjunto |
+| PDF de imagem não era lido | ✅ Feito — rasteriza e passa pelo OCR |
+| Aceitar JPG | ✅ Feito — tipos nomeados um a um |
+| "Entender do que se trata e classificar a peça principal" | 🟡 **Parcial e declarado.** Cor sai do pixel (`cinza`, 94% de cobertura, no arquivo dele). **Nomear a peça exige modelo treinado e não existe** |
+
+### O que a entrada por arquivo ainda deve
+
+| O que falta | Por quê |
+|---|---|
+| Calibrar a cor no catálogo inteiro | Hoje são 5 fotos. Temos 180 mil imagens rotuladas, mas os CDNs devolvem 429 para o datacenter — **precisa do runner residencial**, a 1 req/s (regra 7) |
+| Classificar categoria a partir da imagem | Exige modelo treinado. O conjunto rotulado já existe (título → `produto_termos`); falta baixar as imagens e treinar |
 
 ---
 

@@ -5,11 +5,11 @@ import UniformTypeIdentifiers
 ///
 /// O desenho segue o v0 da §28 — **formulário primeiro**: o arquivo pré-preenche
 /// os atributos e o usuário confirma ou corrige. É o humano no circuito que
-/// derruba a exigência de acurácia da leitura, e por isso o app pode usar OCR
-/// simples em vez de um modelo treinado.
+/// derruba a exigência de acurácia da leitura, e por isso o app pode usar OCR e
+/// medição de cor em vez de um modelo treinado.
 ///
 /// Sem câmera, sem fototeca, sem retenção: o seletor de documentos entrega o
-/// arquivo, o texto é extraído em memória e nada é guardado.
+/// arquivo, o conteúdo é lido em memória e nada é guardado.
 struct ImportarPeca: View {
     let termos: [Termo]
 
@@ -19,8 +19,16 @@ struct ImportarPeca: View {
     @State private var detectados: Set<String> = []
     @State private var confirmou = false
     @State private var nomeDoArquivo: String?
+    @State private var procedencia: [String] = []
 
     @Environment(\.dismiss) private var dismiss
+
+    /// Tipos aceitos, nomeados um a um.
+    ///
+    /// `.image` sozinho cobre JPG em tese, mas arquivo vindo de WhatsApp e de
+    /// Arquivos às vezes chega declarado como tipo genérico, e aí o seletor
+    /// deixava o item cinza. Nomear os tipos concretos resolve o caso real.
+    private let tiposAceitos: [UTType] = [.pdf, .jpeg, .png, .heic, .heif, .tiff, .image]
 
     var body: some View {
         NavigationStack {
@@ -43,8 +51,7 @@ struct ImportarPeca: View {
         }
         .fileImporter(
             isPresented: $mostrandoSeletor,
-            // Só o que dá para ler: imagem e PDF. Nada de câmera.
-            allowedContentTypes: [.image, .pdf],
+            allowedContentTypes: tiposAceitos,
             allowsMultipleSelection: false
         ) { resultado in
             Task { await processar(resultado) }
@@ -63,8 +70,9 @@ struct ImportarPeca: View {
                         explicacao: erro,
                         oQueTem: "Você pode marcar os atributos à mão abaixo — o resultado é o mesmo.")
                 }
+                if !procedencia.isEmpty { oQueLi }
                 atributos
-                if detectados.count >= 1 {
+                if !detectados.isEmpty {
                     Button {
                         confirmou = true
                     } label: {
@@ -81,7 +89,7 @@ struct ImportarPeca: View {
     private var importador: some View {
         Cartao {
             Text("Print, foto ou PDF").font(Tokens.Fonte.secao)
-            Text("Leio o texto do arquivo no próprio aparelho e marco os atributos que reconhecer. Nada é enviado nem guardado.")
+            Text("Leio o arquivo no próprio aparelho e marco os atributos que reconhecer. Nada é enviado nem guardado.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             Button {
@@ -94,6 +102,17 @@ struct ImportarPeca: View {
             if let nomeDoArquivo {
                 LinhaInsumo(texto: "Lido: \(nomeDoArquivo)")
             }
+        }
+    }
+
+    /// Regra 3: o usuário precisa saber de onde saiu cada marcação. Sem isto,
+    /// uma cor sugerida pelo pixel parece um fato tão firme quanto um título
+    /// lido por extenso, e as duas não têm a mesma força.
+    private var oQueLi: some View {
+        Cartao {
+            Text("O que eu li deste arquivo").font(Tokens.Fonte.secao)
+            ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
+            LinhaInsumo(texto: "Confira e corrija o que estiver errado: é a sua marcação que vale.")
         }
     }
 
@@ -135,15 +154,15 @@ struct ImportarPeca: View {
         guard case .success(let urls) = resultado, let url = urls.first else { return }
         lendo = true
         erro = nil
+        procedencia = []
         nomeDoArquivo = url.lastPathComponent
         do {
-            let texto = try await LeitorDeArquivo.texto(de: url)
-            // O MESMO tradutor que converte título de produto em atributo. O
-            // print de uma página de produto tem exatamente esse texto.
-            let achados = Traducao.termos(para: texto, em: termos)
-            detectados = Set(achados.map(\.id))
-            if detectados.isEmpty {
-                erro = "Li o arquivo, mas nenhum termo da taxonomia apareceu no texto."
+            let leitura = try await LeitorDeArquivo.ler(url)
+            let achado = Importacao.atributos(de: leitura, em: termos)
+            detectados = achado.marcados
+            procedencia = achado.procedencia
+            if achado.marcados.isEmpty {
+                erro = "Abri o arquivo, mas nada dele bateu com a taxonomia."
             }
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"

@@ -67,4 +67,44 @@ enum Formato {
         if let d = semFracao.date(from: texto) { return diaEHora.string(from: d) }
         return data(texto)
     }
+
+    /// Duração em linguagem de quem compra coleção: "menos de 2 meses" diz mais
+    /// que "54 dias" quando o assunto é ritmo de reposição.
+    static func periodo(dias: Int) -> String {
+        switch dias {
+        case ..<0:   return "—"
+        case 0...13: return "\(max(dias, 1)) dia\(dias == 1 ? "" : "s")"
+        case 14...44:
+            let semanas = Int((Double(dias) / 7).rounded())
+            return "\(semanas) semanas"
+        default:
+            // `dias/30 + 1` e não `ceil`: com ceil, 90 dias viraria "menos de 3
+            // meses", que é falso — 90 dias são três meses cravados. Somar um ao
+            // piso deixa a frase sempre verdadeira, que é o que a regra 2 pede.
+            let meses = dias / 30 + 1
+            return "menos de \(meses) meses"
+        }
+    }
+
+    /// Hoje em Brasília, no formato ISO do banco. Serve para a tela comparar a
+    /// data de um dado com o dia corrente sem depender do fuso do aparelho.
+    static func hojeEmBrasilia() -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = brasilia
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: Date())
+    }
+
+    /// "31/07/2026 às 04:12" → só a hora, para o carimbo de atualização.
+    static func hora(_ texto: String) -> String? {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.timeZone = brasilia
+        f.dateFormat = "HH:mm"
+        if let d = isoComHora.date(from: texto) { return f.string(from: d) }
+        let semFracao = ISO8601DateFormatter()
+        if let d = semFracao.date(from: texto) { return f.string(from: d) }
+        return nil
+    }
 }

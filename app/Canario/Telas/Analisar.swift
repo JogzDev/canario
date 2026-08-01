@@ -3,12 +3,26 @@ import SwiftUI
 /// Aba **Analisar** (§27): entrada por busca textual.
 ///
 /// A §11 é explícita: "a barra de busca do app nunca vira filtro de texto cru".
-/// A string do usuário é traduzida para termos da taxonomia via rótulos e
-/// sinônimos; o que não casar gera resposta honesta com sugestão dos termos
-/// próximos, em vez de silêncio ou de resultado vazio.
+/// A string do usuário é traduzida para termos da taxonomia via rótulos,
+/// sinônimos e as mesmas palavras que o coletor usa; o que não casar gera
+/// resposta honesta, em vez de silêncio ou de resultado vazio.
 ///
-/// A entrada por foto saiu da v1 (A7), então a busca textual é a única — o que
-/// já era o padrão por decisão de privacidade.
+/// ## O que o JP apontou em 31/07
+///
+/// Ele buscou **"vestido de bolinha"** e recebeu só "Vestido". Dois defeitos
+/// diferentes no mesmo resultado:
+///
+/// 1. `bolinha` não estava no vocabulário. A taxonomia tinha `poá`, que é o
+///    nome técnico, e não o nome que o comprador usa. Corrigido no termo
+///    `geometrica`, que agora responde aos dois.
+/// 2. Mesmo com as duas palavras reconhecidas, a tela listaria dois termos
+///    soltos — e, como ele disse, vestido de bolinha "claramente não é a mesma
+///    coisa que vestido, e não teria as mesmas estatísticas". Uma busca que
+///    descreve **uma peça** tem de responder sobre a peça, não sobre cada
+///    palavra dela em separado.
+///
+/// Por isso a busca com dois ou mais atributos passa a oferecer a leitura do
+/// conjunto — o mesmo caminho da entrada por arquivo, que já funcionava assim.
 struct Analisar: View {
     @State private var termos: [Termo] = []
     @State private var texto = ""
@@ -20,6 +34,11 @@ struct Analisar: View {
     /// A tradução vive em `Traducao`, que é testada. Aqui a tela só consome.
     private var casados: [Termo] {
         Traducao.termos(para: texto, em: termos)
+    }
+
+    /// Quando a busca descreve uma peça, e não um atributo isolado.
+    private var descreveUmaPeca: Bool {
+        Set(casados.map(\.dimensao)).count >= 2
     }
 
     var body: some View {
@@ -34,17 +53,7 @@ struct Analisar: View {
                 }
             }
             .navigationTitle("Analisar")
-            .searchable(text: $texto, prompt: "Descreva a peça: vestido floral midi…")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        importando = true
-                    } label: {
-                        Label("Importar arquivo", systemImage: "doc.badge.plus")
-                    }
-                    .disabled(termos.isEmpty)
-                }
-            }
+            .searchable(text: $texto, prompt: "Descreva a peça: vestido de bolinha, saia midi…")
             .sheet(isPresented: $importando) {
                 ImportarPeca(termos: termos)
             }
@@ -55,27 +64,7 @@ struct Analisar: View {
     @ViewBuilder
     private var lista: some View {
         if texto.isEmpty {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
-                    Text("Busque por um atributo ou categoria.")
-                        .font(Tokens.Fonte.corpo)
-                    Text("Acompanho \(termos.count) termos. O que você digitar é traduzido para eles — não é filtro de texto livre.")
-                        .font(Tokens.Fonte.apoio)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                    Divider()
-                    Button {
-                        importando = true
-                    } label: {
-                        Label("Importar print, foto ou PDF", systemImage: "doc.badge.plus")
-                    }
-                    .buttonStyle(.bordered)
-                    Text("Leio o texto do arquivo no próprio aparelho e marco os atributos. Nada é enviado nem guardado.")
-                        .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(Tokens.Espaco.m)
-            }
+            abertura
         } else if casados.isEmpty {
             ScrollView {
                 CoberturaInsuficiente(
@@ -86,14 +75,59 @@ struct Analisar: View {
                 .padding(Tokens.Espaco.m)
             }
         } else {
-            List(casados) { termo in
-                NavigationLink {
-                    RelatorioDoTermo(termo: termo)
-                } label: {
-                    LinhaTermo(termo: termo, indice: indices[termo.id])
+            List {
+                if descreveUmaPeca {
+                    Section("Você descreveu uma peça") {
+                        NavigationLink {
+                            RelatorioDaPeca(termos: casados)
+                        } label: {
+                            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                                Text(casados.map(\.rotulo).joined(separator: " + "))
+                                    .font(Tokens.Fonte.corpo)
+                                LinhaInsumo(texto: "Ler como conjunto, e não como \(casados.count) atributos soltos.")
+                            }
+                        }
+                    }
+                }
+                Section(descreveUmaPeca ? "Ou atributo por atributo" : "Atributos") {
+                    ForEach(casados) { termo in
+                        NavigationLink {
+                            RelatorioDoTermo(termo: termo)
+                        } label: {
+                            LinhaTermo(termo: termo, indice: indices[termo.id])
+                        }
+                    }
                 }
             }
-            .listStyle(.plain)
+            .listStyle(.insetGrouped)
+        }
+    }
+
+    private var abertura: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
+                Text("Busque por um atributo ou descreva a peça.")
+                    .font(Tokens.Fonte.corpo)
+                Text("Acompanho \(termos.count) termos. O que você digitar é traduzido para eles — não é filtro de texto livre.")
+                    .font(Tokens.Fonte.apoio)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                Divider()
+                // O único atalho de importação da tela. O que ficava no canto
+                // superior direito saiu: aquele lugar é de configurações, e o
+                // mesmo botão em dois lugares só divide a atenção.
+                Button {
+                    importando = true
+                } label: {
+                    Label("Importar print, foto ou PDF", systemImage: "doc.badge.plus")
+                }
+                .buttonStyle(.bordered)
+                .disabled(termos.isEmpty)
+                Text("Leio o arquivo no próprio aparelho: título por reconhecimento de texto, cor pelo pixel. Nada é enviado nem guardado.")
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Tokens.Espaco.m)
         }
     }
 

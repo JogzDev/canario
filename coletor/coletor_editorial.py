@@ -200,6 +200,13 @@ def main():
     artigos_novos = []
     # (termo_id, fonte, semana) -> numero de artigos distintos
     contagem = defaultdict(set)
+    # (termo_id, fonte, semana) -> {veiculo: n}. O app precisa NOMEAR as fontes:
+    # "baseado em: editorial BR" nao diz nada a quem compra colecao, "Elle
+    # Brasil (4) e Vogue Brasil (2)" diz. A regra 3 pede o caminho ate a origem,
+    # e ate agora a origem parava no rotulo da perna.
+    veiculos_por_celula = defaultdict(lambda: defaultdict(int))
+    # Ate 3 manchetes por celula, para a tela mostrar o que o bot leu.
+    exemplos = defaultdict(list)
     por_veiculo = {}
 
     for v in veiculos:
@@ -225,7 +232,14 @@ def main():
             for termo_id in achados:
                 # §11: conjunto de artigos, entao o mesmo artigo conta 1 por
                 # termo mesmo que varias palavras do termo aparecam.
-                contagem[(termo_id, fonte, semana)].add(link)
+                celula = (termo_id, fonte, semana)
+                if link not in contagem[celula]:
+                    veiculos_por_celula[celula][v["veiculo"]] += 1
+                    if len(exemplos[celula]) < 3:
+                        exemplos[celula].append({"veiculo": v["veiculo"],
+                                                 "titulo": titulo[:160],
+                                                 "url": link})
+                contagem[celula].add(link)
         por_veiculo[v["veiculo"]] = {"itens": len(itens), "casados": casados,
                                      "erro": None, "fonte": fonte}
         print("  {:24} {:4} itens, {:4} com termo  ({})".format(
@@ -258,6 +272,11 @@ def main():
             "z": None, "n_amostra": sum(janela),
             "meta": {"janela_semanas": JANELA_SEMANAS,
                      "contagem_semana_crua": crua[(termo_id, fonte, semana)],
+                     "unidade": "materias que citaram o termo",
+                     "veiculos": dict(sorted(
+                         veiculos_por_celula[(termo_id, fonte, semana)].items(),
+                         key=lambda kv: (-kv[1], kv[0]))),
+                     "exemplos": exemplos[(termo_id, fonte, semana)],
                      "obs": "valor_bruto e a media da janela de 4 semanas (§18); "
                             "a semana crua serve ao estado `pico` (C4)",
                      "coletado_em": agora},

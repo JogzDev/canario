@@ -1,13 +1,37 @@
 import SwiftUI
 
-/// Aba **Comparar** (§27): ranking relativo entre os termos que o usuário
-/// escolhe, com uma linha de motivo por item — nunca só o número.
+/// Aba **Comparar** (§27).
 ///
-/// O disclaimer da §27 é fixo na tela e não é decoração: é a regra inviolável 1
-/// aparecendo onde ela mais pode ser violada, que é justamente num ranking.
+/// ## Por que ela foi refeita em 31/07
+///
+/// O JP: "a seção que mais tem me intrigado até agora é a de comparar, pra que
+/// exatamente ela serve? Acho que ela ficou meio aquém do resto do projeto."
+///
+/// Ele estava certo, e o defeito era de concepção, não de acabamento. A versão
+/// anterior ordenava os termos escolhidos por um único número — o índice — e
+/// chamava aquilo de ranking. Isso não ajuda ninguém a decidir nada: quem está
+/// escolhendo entre floral e xadrez para o verão já sabe qual dos dois a
+/// imprensa citou mais. **A pergunta que falta é outra:** o painel já está
+/// cheio disso, ou ainda não?
+///
+/// Então a aba passa a comparar em dois eixos que vêm de pernas diferentes:
+///
+/// * **Presença no varejo** — quanto do sortimento do painel já tem o atributo,
+///   em % e em número de peças. É descritivo e não leva z-score (decisão B1).
+/// * **Movimento editorial** — para onde a imprensa está indo, com o índice e
+///   o estado da §22.
+///
+/// O que interessa é a **distância entre os dois**. Um atributo que a imprensa
+/// citou muito e que o painel quase não tem é uma coisa; um que está em toda
+/// vitrine e sumiu do editorial é outra bem diferente. Nenhuma das duas é
+/// recomendação: a tela mostra a distância e para aí, porque quem decide compra
+/// tem custo, prazo de produção e histórico próprio que o app não conhece
+/// (regra 1).
 struct Comparar: View {
     @State private var termos: [Termo] = []
     @State private var indices: [String: IndiceSemanal] = [:]
+    @State private var varejo: [String: PontoSerie] = [:]
+    @State private var coberturas: [String: Cobertura] = [:]
     @State private var escolhidos: Set<String> = []
     @State private var carregando = true
     @State private var erro: String?
@@ -31,83 +55,90 @@ struct Comparar: View {
     }
 
     private var conteudo: some View {
-        VStack(spacing: 0) {
-            aviso
-            List {
-                if escolhidos.count >= 2 {
-                    Section("Ranking relativo") {
-                        ForEach(Array(ranking.enumerated()), id: \.element.id) { posicao, termo in
-                            linhaRanking(posicao: posicao + 1, termo: termo)
-                        }
-                    }
-                }
-                Section(escolhidos.count >= 2 ? "Trocar seleção" : "Escolha de 2 a \(maximo)") {
-                    ForEach(termos) { termo in
-                        Button {
-                            alternar(termo.id)
-                        } label: {
-                            HStack {
-                                Image(systemName: escolhidos.contains(termo.id)
-                                      ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(escolhidos.contains(termo.id)
-                                                     ? Tokens.Cor.tinta : Tokens.Cor.semDado)
-                                Text(termo.rotulo).foregroundStyle(Tokens.Cor.tinta)
-                                Spacer()
-                                Text(termo.dimensao)
-                                    .font(Tokens.Fonte.miudo)
-                                    .foregroundStyle(Tokens.Cor.tintaFraca)
-                            }
-                        }
-                        .disabled(!escolhidos.contains(termo.id) && escolhidos.count >= maximo)
-                    }
-                }
-            }
-            .listStyle(.insetGrouped)
-        }
-    }
-
-    /// §27: disclaimer fixo. "Não é previsão de venda" está aqui porque um
-    /// ranking é exatamente onde o usuário mais tende a ler previsão.
-    private var aviso: some View {
-        Text("Ranking relativo entre os termos que você escolheu, calculado agora sobre dados já coletados. Não é previsão de venda.")
-            .font(Tokens.Fonte.miudo)
-            .foregroundStyle(Tokens.Cor.tintaFraca)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(Tokens.Espaco.m)
-            .background(Tokens.Cor.superficie)
-    }
-
-    /// Ordena pelo índice. Quem não tem índice vai para o fim, e a linha de
-    /// motivo diz o porquê — em vez de aparecer como se fosse o pior colocado.
-    private var ranking: [Termo] {
-        termos.filter { escolhidos.contains($0.id) }
-            .sorted { (indices[$0.id]?.indice ?? -.infinity) > (indices[$1.id]?.indice ?? -.infinity) }
-    }
-
-    private func linhaRanking(posicao: Int, termo: Termo) -> some View {
-        let i = indices[termo.id]
-        return VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-            HStack {
-                Text("\(posicao)").font(Tokens.Fonte.numero)
+        List {
+            Section {
+                Text("Para que serve").font(Tokens.Fonte.secao)
+                Text("Escolha de 2 a \(maximo) atributos que disputam o mesmo espaço na coleção. Mostro quanto do painel já tem cada um e o que a imprensa fez com eles na mesma semana.")
+                    .font(Tokens.Fonte.apoio)
+                Text("A comparação é entre os atributos que você escolheu, sobre dados já coletados. Não é previsão de venda, e não considera seu custo, seu prazo nem seu histórico.")
+                    .font(Tokens.Fonte.miudo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
-                Text(termo.rotulo).font(Tokens.Fonte.corpo)
-                Spacer()
-                Text(i?.indice.map { String(format: "%+.2f", $0) } ?? "—")
-                    .font(Tokens.Fonte.numero)
             }
-            // §27: uma linha de motivo por item, nunca só o número.
-            LinhaInsumo(texto: motivo(termo: termo, indice: i))
+
+            if escolhidos.count >= 2 {
+                Section("Lado a lado") {
+                    ForEach(comparados) { termo in
+                        LinhaComparada(termo: termo,
+                                       indice: indices[termo.id],
+                                       varejo: varejo[termo.id],
+                                       cobertura: coberturas[termo.id])
+                    }
+                }
+                if let leitura = leituraDaDistancia {
+                    Section("Onde eles se separam") {
+                        Text(leitura).font(Tokens.Fonte.apoio)
+                    }
+                }
+            } else {
+                Section {
+                    Text("Escolha pelo menos 2 atributos abaixo.")
+                        .font(Tokens.Fonte.apoio)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+            }
+
+            Section(escolhidos.count >= 2 ? "Trocar seleção" : "Atributos") {
+                ForEach(termos) { termo in
+                    Button {
+                        alternar(termo.id)
+                    } label: {
+                        HStack {
+                            Image(systemName: escolhidos.contains(termo.id)
+                                  ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(escolhidos.contains(termo.id)
+                                                 ? Tokens.Cor.tinta : Tokens.Cor.semDado)
+                            Text(termo.rotulo).foregroundStyle(Tokens.Cor.tinta)
+                            Spacer()
+                            Text(termo.dimensao)
+                                .font(Tokens.Fonte.miudo)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                    }
+                    .disabled(!escolhidos.contains(termo.id) && escolhidos.count >= maximo)
+                }
+            }
         }
-        .padding(.vertical, Tokens.Espaco.xs)
+        .listStyle(.insetGrouped)
     }
 
-    private func motivo(termo: Termo, indice: IndiceSemanal?) -> String {
-        guard let indice, let valor = indice.indice else {
-            return "Sem índice: nenhuma perna deste termo atingiu o mínimo de história."
+    /// Ordena pela presença no varejo, que é o eixo com dado para todos. O
+    /// índice editorial falta em parte dos termos, e ordenar por um campo vazio
+    /// jogaria termos para o fim como se fossem os piores.
+    private var comparados: [Termo] {
+        termos.filter { escolhidos.contains($0.id) }
+            .sorted { (varejo[$0.id]?.valorBruto ?? -1) > (varejo[$1.id]?.valorBruto ?? -1) }
+    }
+
+    /// A frase que dá sentido à tabela: onde os dois eixos discordam.
+    private var leituraDaDistancia: String? {
+        let comOsDois = comparados.compactMap { t -> (Termo, Double, Double)? in
+            guard let share = varejo[t.id]?.valorBruto,
+                  let indice = indices[t.id]?.indice else { return nil }
+            return (t, share, indice)
         }
-        let pernas = Perna.frase(indice.pernasAtivas)
-        let direcao = valor >= 0 ? "acima" : "abaixo"
-        return "Índice \(direcao) da própria média histórica, \(pernas), semana de \(Formato.data(indice.semana))."
+        guard comOsDois.count >= 2 else {
+            return "Ainda não dá para ler a distância: nem todos os escolhidos têm as duas pernas nesta semana."
+        }
+        guard let maisEditorial = comOsDois.max(by: { $0.2 < $1.2 }),
+              let maisVarejo = comOsDois.max(by: { $0.1 < $1.1 }) else { return nil }
+
+        let pctE = Leitura.numero(maisEditorial.1, casas: 1)
+        let pctV = Leitura.numero(maisVarejo.1, casas: 1)
+
+        if maisEditorial.0.id == maisVarejo.0.id {
+            return "\(maisEditorial.0.rotulo) lidera nos dois eixos: é o mais citado pela imprensa e o mais presente no painel (\(pctE)% do sortimento). Quando os dois andam juntos, a leitura é de atributo já estabelecido, não de movimento novo."
+        }
+        return "\(maisEditorial.0.rotulo) é o que a imprensa mais moveu nesta semana, e ocupa \(pctE)% do sortimento do painel. \(maisVarejo.0.rotulo) é o mais presente nas vitrines, com \(pctV)%. Essa distância entre o que a imprensa cita e o que as marcas já penduraram é o que esta tela existe para mostrar — o que fazer com ela depende do seu custo e do seu prazo, que eu não conheço."
     }
 
     private func alternar(_ id: String) {
@@ -121,14 +152,83 @@ struct Comparar: View {
         do {
             termos = try await Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
-            let recentes: [IndiceSemanal] = try await Supabase.shared.buscar(
+            async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_semanais", "select=*&order=semana.desc&limit=400")
-            var mapa: [String: IndiceSemanal] = [:]
-            for i in recentes where mapa[i.termoId] == nil { mapa[i.termoId] = i }
-            indices = mapa
+            async let v: [PontoSerie] = Supabase.shared.buscar(
+                "series_semanais", "select=*&fonte=eq.varejo&order=semana.desc&limit=400")
+            async let c: [Cobertura] = Supabase.shared.buscar(
+                "cobertura_por_celula", "select=*&order=semana.desc&limit=400")
+
+            var mapaI: [String: IndiceSemanal] = [:]
+            for x in try await i where mapaI[x.termoId] == nil { mapaI[x.termoId] = x }
+            indices = mapaI
+
+            var mapaV: [String: PontoSerie] = [:]
+            for x in try await v where mapaV[x.termoId] == nil { mapaV[x.termoId] = x }
+            varejo = mapaV
+
+            // §8: a cobertura tem de ser a da MESMA semana do share exibido.
+            var mapaC: [String: Cobertura] = [:]
+            for x in try await c {
+                guard let ponto = mapaV[x.termoId], ponto.semana == x.semana else { continue }
+                if mapaC[x.termoId] == nil { mapaC[x.termoId] = x }
+            }
+            coberturas = mapaC
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }
         carregando = false
+    }
+}
+
+/// Uma linha da comparação: os dois eixos, com unidade em cada um.
+struct LinhaComparada: View {
+    let termo: Termo
+    let indice: IndiceSemanal?
+    let varejo: PontoSerie?
+    let cobertura: Cobertura?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            HStack {
+                Text(termo.rotulo).font(Tokens.Fonte.corpo)
+                Spacer()
+                SeloEstado(estado: indice?.estado, motivo: "Menos de duas pernas nesta semana.")
+            }
+
+            if let cobertura, !cobertura.suficiente {
+                // §8: sem cobertura, nem índice nem share.
+                LinhaInsumo(texto: "Cobertura insuficiente: \(cobertura.oQueFalta).")
+            } else {
+                HStack(alignment: .top, spacing: Tokens.Espaco.g) {
+                    eixo(titulo: "No painel",
+                         valor: varejo?.valorBruto.map {
+                             Leitura.numero($0, casas: 1) + "%"
+                         } ?? "—",
+                         detalhe: varejo?.nAmostra.map { "\($0) peças" } ?? "sem dado")
+                    eixo(titulo: "No editorial",
+                         valor: Explicacao.numeroComUnidade(indice?.indice),
+                         detalhe: indice?.indice.map { Leitura.emPalavras($0) } ?? "sem índice")
+                }
+                LinhaInsumo(texto: "No painel: \(Explicacao.unidade(daFonte: "varejo")). No editorial: \(Explicacao.unidadeDoIndice).")
+            }
+            if let semana = varejo?.semana ?? indice?.semana {
+                LinhaInsumo(texto: "Semana de \(Formato.data(semana)).")
+            }
+        }
+        .padding(.vertical, Tokens.Espaco.xs)
+    }
+
+    private func eixo(titulo: String, valor: String, detalhe: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(titulo)
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+            Text(valor).font(Tokens.Fonte.numero)
+            Text(detalhe)
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

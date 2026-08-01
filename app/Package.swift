@@ -17,7 +17,10 @@ let package = Package(
         .target(
             name: "CanarioLogica",
             path: "Canario",
-            sources: ["Rede/Traducao.swift", "Rede/Modelos.swift", "Rede/Supabase.swift", "Design/Formato.swift"]
+            sources: ["Rede/Traducao.swift", "Rede/Modelos.swift", "Rede/Supabase.swift",
+                      "Rede/CorDaPeca.swift", "Rede/LeitorDeArquivo.swift",
+                      "Rede/Importacao.swift", "Rede/Explicacao.swift",
+                      "Design/Formato.swift"]
         ),
         .testTarget(
             name: "CanarioLogicaTests",

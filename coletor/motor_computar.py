@@ -15,6 +15,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import supabase_rest  # noqa: E402
 
 PASSOS = [
+    # Eventos primeiro, e de proposito: dependem so de `snapshots` e `saude`,
+    # entao um erro no calculo de indice nao pode impedir que a §23 do dia seja
+    # registrada.
+    #
+    # Este passo FALTAVA. A funcao foi criada no banco em 30/07 e nunca entrou
+    # aqui: a tabela `eventos` congelou naquele dia enquanto as coletas seguiam
+    # gravando snapshot todo dia, e a tela mostrava "Remarcacoes da semana" com
+    # o dado de anteontem. Ao ser ligada, a primeira chamada gerou 894 eventos
+    # atrasados de uma vez -- todos reais, nenhum novo.
+    ("computar_eventos",
+     "reposicao, remarcacao e saida de linha (§23, K1, K4)"),
     ("computar_serie_varejo",
      "serie semanal de varejo (share do sortimento, §15/§21)"),
     ("computar_z",

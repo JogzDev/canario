@@ -194,7 +194,7 @@ struct RelatorioDoTermo: View {
     }
 
     private func fmt(_ v: Double) -> String {
-        String(format: "%+.2f", v)
+        Leitura.numero(v, casas: 2, sinal: true)
     }
 
     private func carregar() async {

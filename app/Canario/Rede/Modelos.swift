@@ -57,12 +57,30 @@ struct IndiceSemanal: Decodable, Identifiable, Hashable {
     let estado: String?
     let pernasAtivas: [String]?
     let nPernas: Int?
+    let meta: Meta?
+    let computadoEm: String?
+
+    /// O que a §22 registrou junto do número. Existe para a tela poder
+    /// **explicar o estado ao usuário**, e não só exibi-lo: "pico" sem motivo é
+    /// um rótulo que o comprador não sabe se deve seguir ou ignorar.
+    struct Meta: Decodable, Hashable {
+        let indiceSemanaAnterior: Double?
+        let pernasAcimaDe1: Int?
+        let pernasAbaixoDe1: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case indiceSemanaAnterior = "indice_semana_anterior"
+            case pernasAcimaDe1 = "pernas_acima_de_1"
+            case pernasAbaixoDe1 = "pernas_abaixo_de_-1"
+        }
+    }
 
     enum CodingKeys: String, CodingKey {
-        case id, segmento, semana, indice, estado
+        case id, segmento, semana, indice, estado, meta
         case termoId = "termo_id"
         case pernasAtivas = "pernas_ativas"
         case nPernas = "n_pernas"
+        case computadoEm = "computado_em"
     }
 }
 
@@ -105,9 +123,46 @@ struct PontoSerie: Decodable, Identifiable, Hashable {
     let valorBruto: Double?
     let z: Double?
     let nAmostra: Int?
+    let meta: Meta?
+
+    /// O que a coleta guardou junto da contagem.
+    ///
+    /// `veiculos` e `exemplos` foram acrescentados em 31/07 porque a tela dizia
+    /// só "baseado em: editorial BR", e o JP apontou o óbvio: isso não nomeia
+    /// nada. A regra 3 pede o caminho até a origem, e a origem parava no rótulo
+    /// da perna em vez de chegar no site que publicou.
+    struct Meta: Decodable, Hashable {
+        let unidade: String?
+        let veiculos: [String: Int]?
+        let exemplos: [Exemplo]?
+        let contagemSemanaCrua: Int?
+        let metrica: String?
+        let nTotalSortimento: Double?
+
+        struct Exemplo: Decodable, Hashable {
+            let veiculo: String
+            let titulo: String
+            let url: String?
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case unidade, veiculos, exemplos, metrica
+            case contagemSemanaCrua = "contagem_semana_crua"
+            case nTotalSortimento = "n_total_sortimento"
+        }
+
+        /// "Elle Brasil (4), Vogue Brasil (2)", do maior para o menor.
+        var veiculosEmTexto: String? {
+            guard let veiculos, !veiculos.isEmpty else { return nil }
+            return veiculos.sorted { ($0.value, $1.key) > ($1.value, $0.key) }
+                .prefix(4)
+                .map { "\($0.key) (\($0.value))" }
+                .joined(separator: ", ")
+        }
+    }
 
     enum CodingKeys: String, CodingKey {
-        case id, fonte, semana, z
+        case id, fonte, semana, z, meta
         case termoId = "termo_id"
         case valorBruto = "valor_bruto"
         case nAmostra = "n_amostra"
@@ -188,6 +243,10 @@ struct EventoVarejo: Decodable, Identifiable, Hashable {
     let peca: String?
     let urlDaPeca: String?
     let detalhe: Detalhe?
+    /// Quantas vezes isto já aconteceu com esta peça, contando esta.
+    let ordinal: Int?
+    /// Dias entre a primeira ocorrência e esta. Nulo quando é a primeira.
+    let diasDesdeAPrimeira: Int?
 
     struct Detalhe: Decodable, Hashable {
         let tamanhos: [String]?
@@ -206,8 +265,9 @@ struct EventoVarejo: Decodable, Identifiable, Hashable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, tipo, data, semana, marca, peca, detalhe
+        case id, tipo, data, semana, marca, peca, detalhe, ordinal
         case urlDaPeca = "url_da_peca"
+        case diasDesdeAPrimeira = "dias_desde_a_primeira"
     }
 
     /// Uma linha de leitura humana. Fato observado, nunca projeção.
@@ -224,6 +284,34 @@ struct EventoVarejo: Decodable, Identifiable, Hashable {
         default:
             return tipo
         }
+    }
+
+    /// A repetição, que é onde mora o sinal.
+    ///
+    /// O JP pediu "*1ª reposição" e "*3ª reposição dos tamanhos PP/P em menos
+    /// de 2 meses", e a segunda frase é muito mais forte: repor três vezes o
+    /// mesmo tamanho em dois meses é a marca dizendo que aquele tamanho vende.
+    ///
+    /// A **1ª vem ancorada na data em que passamos a olhar**, e não solta. Dizer
+    /// "1ª reposição" com oito dias de coleta afirmaria que nunca houve outra
+    /// antes, que é coisa que não medimos — e a regra 2 proíbe afirmar o que não
+    /// foi medido.
+    func repeticao(desde inicioDaColeta: String) -> String? {
+        guard let ordinal else { return nil }
+        let coisa = tipo == "reposicao" ? "reposição" : (tipo == "remarcacao" ? "remarcação" : nil)
+        guard let coisa else { return nil }
+
+        if ordinal == 1 {
+            return "1ª \(coisa) desde \(Formato.data(inicioDaColeta))"
+        }
+        var frase = "\(ordinal)ª \(coisa)"
+        if tipo == "reposicao", let t = detalhe?.tamanhos, !t.isEmpty {
+            frase += " do tamanho \(t.joined(separator: "/"))"
+        }
+        if let dias = diasDesdeAPrimeira {
+            frase += " em \(Formato.periodo(dias: dias))"
+        }
+        return frase
     }
 
     var icone: String {
@@ -263,9 +351,8 @@ enum Leitura {
 
     /// O que o número é, dito por extenso. Vai na letra miúda, sempre.
     static func explicacao(_ z: Double) -> String {
-        let magnitude = String(format: "%.1f", abs(z))
         let lado = z >= 0 ? "acima" : "abaixo"
-        return "\(magnitude) desvios \(lado) da média das últimas 12 semanas deste mesmo atributo"
+        return "\(numero(abs(z), casas: 1)) desvios \(lado) da média das últimas 12 semanas deste mesmo atributo"
     }
 
     /// Variação percentual entre o valor mais recente e a média da janela.
@@ -273,6 +360,16 @@ enum Leitura {
     static func variacao(recente: Double?, media: Double?) -> String? {
         guard let recente, let media, media > 0 else { return nil }
         let pct = 100.0 * (recente - media) / media
-        return String(format: "%+.0f%% vs. a média da janela", pct)
+        return "\(numero(pct, casas: 0, sinal: true))% vs. a média da janela"
+    }
+
+    /// Número em português: **vírgula decimal**.
+    ///
+    /// O app já tinha regra de data em dd/mm/aaaa e de horário de Brasília, e
+    /// esta é da mesma família — estava faltando. A tela mostrava "-2.18" e
+    /// "2.2 desvios", que é notação de código, não de quem lê em português.
+    static func numero(_ v: Double, casas: Int, sinal: Bool = false) -> String {
+        let formato = sinal ? "%+.\(casas)f" : "%.\(casas)f"
+        return String(format: formato, v).replacingOccurrences(of: ".", with: ",")
     }
 }

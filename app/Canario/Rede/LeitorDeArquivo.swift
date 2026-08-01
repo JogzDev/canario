@@ -2,48 +2,75 @@ import Foundation
 import PDFKit
 import Vision
 
-/// Extrai texto de um print, foto ou PDF, **no dispositivo**.
+/// Extrai o que dá para extrair de um print, foto ou PDF, **no dispositivo**.
 ///
-/// Por que este caminho, e não visão computacional:
+/// ## O caminho, e por que ele tem três degraus
 ///
-/// A Vision da Apple reconhece TEXTO muito bem e de graça, mas classifica
-/// imagem em rótulos genéricos ("roupa", "vestido") — ela não sabe dizer
-/// *midi*, *manga bufante* ou *wide leg*. Atributo de moda exigiria um modelo
-/// treinado, que é o que a §28 planejava com Create ML e segue revogado.
+/// 1. **Texto embutido no PDF.** Se existe, é o melhor dado possível: já é
+///    exato, não passa por reconhecimento e sai instantâneo.
+/// 2. **OCR da imagem.** Print de página de produto tem o título escrito, e o
+///    título vira atributo pelo mesmo `Traducao` que converte título de
+///    e-commerce. É o que a §28 chama de "etiqueta quase pronta".
+/// 3. **Cor medida no pixel.** Quando não há letra nenhuma — foto de produto
+///    pura — ainda dá para recuperar uma dimensão inteira da taxonomia, sem
+///    modelo treinado e sem rede.
 ///
-/// O caso real de uso, porém, é print de página de produto — e aí o texto está
-/// lá. O título do produto vira atributo pelo mesmo `Traducao` que já converte
-/// título de e-commerce, que é o que a §28 chama de "etiqueta quase pronta".
+/// ## O que quebrou, e virou o degrau 3
 ///
-/// **Retenção zero** (decisão do JP, 30/07): o arquivo é lido para a memória,
-/// o texto é extraído e nada é copiado, salvo ou enviado. Não há cópia em
-/// disco, não há upload, não há miniatura.
+/// Em 31/07 o JP mandou uma foto de produto da Hering salva em PDF. O arquivo
+/// tem `/Image` e `DCTDecode` e **nenhum `/Font`**: é uma foto dentro de um
+/// PDF, sem uma letra. A versão anterior chamava `PDFDocument.page.string`,
+/// recebia vazio e desistia com "não encontrei texto neste arquivo" — sem nem
+/// tentar olhar a imagem que estava ali.
 ///
-/// **Sem câmera e sem fototeca**: o seletor de documentos do iOS entrega o
-/// arquivo já autorizado pelo usuário, então o app não pede permissão nenhuma —
-/// e a ficha de privacidade da App Store continua trivial, que era o ganho que
-/// motivou o corte da câmera no A7.
+/// Eram dois buracos de uma vez: PDF de imagem nunca era rasterizado para OCR,
+/// e imagem sem texto não tinha caminho nenhum. Os dois estão fechados aqui.
+///
+/// ## Retenção zero
+///
+/// Decisão do JP em 30/07: o arquivo é lido para a memória, o que interessa é
+/// extraído e nada é copiado, salvo ou enviado. Sem cópia em disco, sem upload,
+/// sem miniatura. Sem câmera e sem fototeca: o seletor de documentos entrega o
+/// arquivo já autorizado, então o app não pede permissão nenhuma.
 enum LeitorDeArquivo {
+
+    /// Tudo que o arquivo entregou, com a procedência de cada parte.
+    struct Leitura {
+        var texto: String = ""
+        var cor: CorDaPeca.Leitura?
+        var origem: Origem = .semNada
+
+        enum Origem: Equatable {
+            case textoDoPDF        // texto embutido, sem reconhecimento
+            case ocr               // texto reconhecido da imagem
+            case somenteCor        // não havia letra; sobrou o pixel
+            case semNada
+        }
+
+        var vazia: Bool {
+            texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && cor == nil
+        }
+    }
 
     enum Falha: LocalizedError {
         case semAcesso
         case formatoNaoSuportado
-        case semTexto
+        case nadaReconhecido
 
         var errorDescription: String? {
             switch self {
             case .semAcesso:
                 return "Não consegui abrir o arquivo."
             case .formatoNaoSuportado:
-                return "Formato não suportado. Envie um print, uma foto ou um PDF."
-            case .semTexto:
-                return "Não encontrei texto neste arquivo."
+                return "Formato não suportado. Envie um print, uma foto (JPG, PNG, HEIC) ou um PDF."
+            case .nadaReconhecido:
+                return "Abri o arquivo, mas não reconheci texto nem cor de peça nele."
             }
         }
     }
 
-    /// Lê o arquivo e devolve o texto encontrado. Nada persiste.
-    static func texto(de url: URL) async throws -> String {
+    /// Lê o arquivo. Nada persiste.
+    static func ler(_ url: URL) async throws -> Leitura {
         // Arquivo vindo do seletor chega com escopo de segurança: sem isto a
         // leitura falha silenciosamente.
         let precisaLiberar = url.startAccessingSecurityScopedResource()
@@ -52,50 +79,88 @@ enum LeitorDeArquivo {
         let dados: Data
         do { dados = try Data(contentsOf: url) } catch { throw Falha.semAcesso }
 
-        if url.pathExtension.lowercased() == "pdf" {
-            return try textoDePDF(dados)
-        }
-        return try await textoDeImagem(dados)
+        let leitura = url.pathExtension.lowercased() == "pdf"
+            ? try await dePDF(dados)
+            : try await deImagem(dados)
+
+        if leitura.vazia { throw Falha.nadaReconhecido }
+        return leitura
     }
 
     // MARK: PDF
 
-    /// PDF com texto não precisa de OCR: o texto já está lá, e extraí-lo é mais
-    /// exato e mais rápido que reconhecê-lo de novo a partir do desenho.
-    private static func textoDePDF(_ dados: Data) throws -> String {
+    private static func dePDF(_ dados: Data) async throws -> Leitura {
         guard let doc = PDFDocument(data: dados) else { throw Falha.formatoNaoSuportado }
+
+        // 1) Texto embutido. Quando existe, é exato e acaba aqui.
         var partes: [String] = []
         for i in 0..<min(doc.pageCount, 10) {   // 10 páginas basta para uma ficha
             if let p = doc.page(at: i), let t = p.string { partes.append(t) }
         }
         let texto = partes.joined(separator: "\n")
-        guard !texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            // PDF de imagem escaneada: sem texto embutido. Poderia cair no OCR,
-            // mas dizer o que houve é mais útil que tentar em silêncio.
-            throw Falha.semTexto
+        if !texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return Leitura(texto: texto, cor: nil, origem: .textoDoPDF)
         }
-        return texto
+
+        // 2) PDF sem fonte é foto dentro de um envelope. Rasteriza e trata como
+        //    imagem — que é exatamente o arquivo que o JP mandou.
+        guard let pagina = doc.page(at: 0), let img = rasterizar(pagina) else {
+            throw Falha.formatoNaoSuportado
+        }
+        return await deCGImage(img)
+    }
+
+    /// Desenha a página num bitmap. 2x do tamanho natural: abaixo disso o OCR
+    /// perde legenda pequena, que é justamente onde mora o nome do produto.
+    private static func rasterizar(_ pagina: PDFPage) -> CGImage? {
+        let caixa = pagina.bounds(for: .mediaBox)
+        let escala: CGFloat = 2
+        let w = Int(caixa.width * escala), h = Int(caixa.height * escala)
+        guard w > 0, h > 0, w * h < 40_000_000,
+              let ctx = CGContext(data: nil, width: w, height: h,
+                                  bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        // Fundo branco: PDF sem fundo desenharia sobre preto e inverteria a cor
+        // lida — e a cor é metade do que esta função existe para recuperar.
+        ctx.setFillColor(gray: 1, alpha: 1)
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.scaleBy(x: escala, y: escala)
+        ctx.translateBy(x: -caixa.minX, y: -caixa.minY)
+        pagina.draw(with: .mediaBox, to: ctx)
+        return ctx.makeImage()
     }
 
     // MARK: Imagem
 
-    private static func textoDeImagem(_ dados: Data) async throws -> String {
+    private static func deImagem(_ dados: Data) async throws -> Leitura {
+        // Aceita tudo que o ImageIO decodifica: JPG, PNG, HEIC, TIFF.
         guard let fonte = CGImageSourceCreateWithData(dados as CFData, nil),
               let imagem = CGImageSourceCreateImageAtIndex(fonte, 0, nil) else {
             throw Falha.formatoNaoSuportado
         }
+        return await deCGImage(imagem)
+    }
 
-        return try await withCheckedThrowingContinuation { cont in
+    private static func deCGImage(_ img: CGImage) async -> Leitura {
+        let texto = (try? await ocr(img)) ?? ""
+        let temTexto = !texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        // A cor é lida sempre, inclusive quando há texto: o título costuma
+        // trazer a cor comercial ("areia", "off white"), mas nem todo título
+        // traz, e medir custa milissegundos.
+        let cor = CorDaPeca.ler(img)
+        let origem: Leitura.Origem = temTexto ? .ocr : (cor != nil ? .somenteCor : .semNada)
+        return Leitura(texto: texto, cor: cor, origem: origem)
+    }
+
+    private static func ocr(_ imagem: CGImage) async throws -> String {
+        try await withCheckedThrowingContinuation { cont in
             let pedido = VNRecognizeTextRequest { req, erro in
                 if let erro { cont.resume(throwing: erro); return }
                 let linhas = (req.results as? [VNRecognizedTextObservation] ?? [])
                     .compactMap { $0.topCandidates(1).first?.string }
-                let texto = linhas.joined(separator: "\n")
-                if texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    cont.resume(throwing: Falha.semTexto)
-                } else {
-                    cont.resume(returning: texto)
-                }
+                cont.resume(returning: linhas.joined(separator: "\n"))
             }
             // Português primeiro: o catálogo é brasileiro. Inglês junto porque
             // muita ficha de produto mistura ("puff sleeve", "wide leg").

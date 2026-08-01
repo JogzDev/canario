@@ -464,3 +464,39 @@ Se os arquivos CSV não estiverem presentes junto deste documento, o agente os c
 *Pendência de demo aberta (RESOLVIDA em 28/07, ver acima)*
 
 - **Marco de demo 3 (§10) precisa de decisão.** O roteiro era "verde e lilás no masculino", com as pernas de busca e editorial respondendo e o varejo declarando cobertura insuficiente. Mas o `termo_busca` de `verde` e `lilas_roxo` é `vestido verde` / `vestido lilas`, ou seja, moda feminina: a perna de busca **também** não responde à pergunta do masculino, e a demo mostraria duas pernas vazias — o que parece defeito, não honestidade. Ver seção 10.
+
+**31/07/2026 | Bloco de reclamações do JP sobre o app, e o que ele expôs no motor.**
+
+O JP abriu o app com os prints na mão e listou nove problemas. Três eram de tela; os outros seis apontavam defeito real embaixo. Registrados aqui pela mesma razão que os anteriores: o que o teste não pega, o documento tem de pegar.
+
+*Defeito de motor, não de interface*
+
+- `ADITIVA` | **`computar_eventos()` nunca esteve no motor.** A função foi criada no banco em 30/07, está correta, e não entrou em `motor_computar.py` nem em migração. Resultado: a tabela `eventos` congelou em 30/07 enquanto as coletas seguiram gravando snapshot todo dia, e a tela mostrava "Remarcações da semana" com o dado de anteontem — que foi exatamente a reclamação. Ao ser ligada, a primeira chamada gerou **894 eventos atrasados de uma vez**, todos reais. Corrigido na migração `0007` (a função passa a existir em arquivo) e no `motor_computar.py`, como **primeiro** passo, para que um erro no cálculo de índice não impeça o registro da §23 do dia. **O `PENDENCIAS.md` marcava K1 e K4 como feitos** — a função existia. É a mesma classe de dívida que o placar foi criado para pegar, agora com uma lição: *função criada não é função chamada*.
+- `ADITIVA` | **Ordinal do evento por produto** (`eventos_da_semana`). O JP pediu "*1ª reposição" e "*3ª reposição dos tamanhos PP/P em menos de 2 meses". A segunda frase é muito mais forte que a primeira — repor três vezes o mesmo tamanho em dois meses é a marca dizendo que aquele tamanho vende — e as duas apareciam iguais na tela. A **1ª vem ancorada na data de início da coleta** ("1ª reposição desde 24/07/2026"), porque afirmar "primeira" com oito dias de história seria afirmar o que não foi medido (regra 2).
+- `ADITIVA` | **A perna editorial passa a guardar quem publicou.** `series_semanais.meta` ganha `veiculos` (contagem por veículo) e `exemplos` (até 3 manchetes com link). O JP: *"quero o nome dos sites que fizeram o bot chegar a essa conclusão"*. A regra 3 pede o caminho até a origem, e a origem parava no rótulo da perna. Vale para o coletor diário e para o backfill — os dois fazem upsert na mesma chave, e sem mexer nos dois o backfill sobrescreveria a meta com uma versão mais pobre.
+
+*Vocabulário*
+
+- `ADITIVA` | **`bolinha` entra no termo `geometrica`.** O JP buscou "vestido de bolinha" e recebeu só "Vestido". A taxonomia tinha `poá`, que é o nome técnico, e não o nome que o comprador usa. Nenhum termo criado, nenhum `id` alterado: é vocabulário de um termo existente, e `poá` continua funcionando (está nos títulos do catálogo).
+
+*Interface*
+
+- `ADITIVA` | **Todo número sai com unidade colada.** O cartão mostrava "+1,15" sozinho, e o JP perguntou: *"1,15 o quê? Paçoquitas?"*. Agora sai "+1,15 desvios" com a definição por extenso abaixo, e cada perna declara o que conta (matérias, % do sortimento, índice do Trends de 0 a 100).
+- `ADITIVA` | **O estado explica a própria regra ao usuário.** *"Por que isso é considerado pico? Não é pra mim que você tem que explicar, é pro usuário."* O `Explicacao.swift` espelha `computar_indice()` linha a linha e é testado contra ela — se um dos dois mudar sem o outro, o teste quebra. "Pico" passa a dizer que a imprensa disparou e **nenhuma outra fonte acompanhou**, que é a condição que o separa de "em alta" e o que o comprador precisa saber antes de agir.
+- `ADITIVA` | **Eventos agrupados por marca**, com a lista de peças abrindo no toque. Vinte cartões soltos viravam uma parede.
+- `ADITIVA` | **Vírgula decimal.** A tela mostrava "-2.18" e "2.2 desvios". Mesma família da regra de data em dd/mm/aaaa e do horário de Brasília, e estava faltando.
+- `REVOGATÓRIA` | **§27, aba Comparar.** O JP: *"pra que exatamente ela serve? Acho que ela ficou meio aquém do resto do projeto."* Estava certo, e o defeito era de concepção: ordenar termos por um único número e chamar aquilo de ranking não ajuda a decidir nada. A aba passa a comparar em **dois eixos de pernas diferentes** — presença no painel (share do sortimento, descritivo, sem z-score por B1) e movimento editorial (índice da §22) — e a mostrar **a distância entre eles**. O que fazer com a distância continua sendo do comprador, que tem custo e prazo que o app não conhece (regra 1).
+- `ADITIVA` | **Atalho de importação em um lugar só.** O botão do canto superior direito saiu; aquele lugar é de configurações.
+
+*Entrada por arquivo (§28)*
+
+- `ADITIVA` | **PDF de imagem passa a ser rasterizado e lido.** O arquivo que o JP mandou é uma foto de produto da Hering salva em PDF, com `/Image` e `DCTDecode` e **nenhum `/Font`**. O leitor chamava `PDFDocument.page.string`, recebia vazio e desistia sem olhar a imagem que estava ali. Agora a página vira bitmap a 2x e segue para o OCR.
+- `ADITIVA` | **Cor medida no pixel** (`CorDaPeca.swift`), quando o arquivo não tem letra nenhuma. Medido antes de prometer: a classificação genérica da Vision devolve `clothing` com 0,53 de confiança e mais nada — sabe que é roupa, não sabe que peça. **Cor, porém, é medível direto do pixel**, e é uma dimensão inteira da taxonomia recuperada de uma foto muda. No arquivo do JP, o app agora marca `cinza` com 94% de cobertura útil. A cor entra **marcada no formulário como sugestão**, com a procedência dita ("medida no próprio pixel, é a marcação que mais pede conferência"), e **o texto ganha do pixel** quando os dois falam de cor: o título é a cor que a marca declarou, o pixel é a cor sob a luz do estúdio.
+  - **Limite declarado:** os limiares foram calibrados em 5 fotos e acertaram as 5. É amostra pequena. A calibração definitiva sai do catálogo inteiro — temos 180 mil imagens já rotuladas pelo próprio coletor —, e depende do **runner residencial**: os CDNs das marcas devolvem `429` para o datacenter, e a regra 7 proíbe contornar isso.
+  - **Nomear a peça a partir da imagem continua não existindo.** Exige modelo treinado, e o caminho está aberto (nosso catálogo já é o conjunto rotulado). Fica registrado como próximo passo, não como feito.
+- `ADITIVA` | **Formatos nomeados um a um** no seletor (`pdf`, `jpeg`, `png`, `heic`, `heif`, `tiff`), porque arquivo vindo de WhatsApp às vezes chega declarado como tipo genérico e o item ficava cinza.
+- `ADITIVA` | **Busca com dois ou mais atributos oferece a leitura do conjunto.** O JP: *"vestido de bolinha claramente não é a mesma coisa que vestido, e não teria as mesmas estatísticas"*. Uma busca que descreve uma peça responde sobre a peça. **O índice do conjunto (K5) continua não implementado** e a tela segue declarando isso — o que existe hoje é a leitura atributo por atributo, junta na mesma tela.
+
+*Dois erros de paginação, encontrados na tela e não no teste*
+
+- `ADITIVA` | Com 681 remarcações em 31/07, uma consulta única ordenada por data enchia a página inteira e **o bloco de reposições aparecia vazio havendo 217 no banco** — sumindo justamente com o sinal mais forte do painel (§23). Passou a ser uma consulta por tipo. O mesmo erro atingiu as séries do digest, onde um cartão dizia "vários desvios" em vez do número por não ter recebido a linha do editorial. Registrado porque a causa é a mesma nos dois: **teto de linhas com ordenação única esconde a minoria**, e a minoria costuma ser o que interessa.

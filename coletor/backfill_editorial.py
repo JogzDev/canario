@@ -111,6 +111,11 @@ def main():
 
     coorte = []
     artigos, contagem = [], defaultdict(set)
+    # Mesma razao do coletor diario: o app precisa nomear quem publicou, nao so
+    # contar. Sem isto o backfill sobrescreveria a meta do diario com uma versao
+    # mais pobre, porque os dois fazem upsert na mesma chave.
+    veiculos_por_celula = defaultdict(lambda: defaultdict(int))
+    exemplos = defaultdict(list)
     por_veiculo = {}
 
     for v in veiculos:
@@ -138,7 +143,14 @@ def main():
             if achados:
                 semana = semana_de(quando)
                 for termo_id in achados:
-                    contagem[(termo_id, fonte, semana)].add(link)
+                    celula = (termo_id, fonte, semana)
+                    if link not in contagem[celula]:
+                        veiculos_por_celula[celula][v["veiculo"]] += 1
+                        if len(exemplos[celula]) < 3:
+                            exemplos[celula].append({"veiculo": v["veiculo"],
+                                                     "titulo": titulo[:160],
+                                                     "url": link})
+                    contagem[celula].add(link)
             n += 1
         coorte.append({"veiculo": v["veiculo"], "fonte": fonte,
                        "arquivo_desde": inicio.isoformat(), "artigos": n})
@@ -174,6 +186,11 @@ def main():
             "z": None, "n_amostra": sum(janela),
             "meta": {"janela_semanas": JANELA_SEMANAS,
                      "contagem_semana_crua": crua[(termo_id, fonte, semana)],
+                     "unidade": "materias que citaram o termo",
+                     "veiculos": dict(sorted(
+                         veiculos_por_celula[(termo_id, fonte, semana)].items(),
+                         key=lambda kv: (-kv[1], kv[0]))),
+                     "exemplos": exemplos[(termo_id, fonte, semana)],
                      "coorte_fixa": nomes,
                      "obs": "coorte FIXA de veiculos com arquivo profundo: sem isso "
                             "o passado teria 4 veiculos e o presente 19, e o z leria "
