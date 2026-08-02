@@ -1,18 +1,18 @@
 # SAÚDE — coletores do Canário
 
-**Última coleta (UTC):** 2026-08-02T08:35:57.284140+00:00
+**Última coleta (UTC):** 2026-08-02T08:41:22.826908+00:00
 
 
 ## Varejo
 
-- Produtos **visitados**: 53128
+- Produtos **visitados**: 53378
 
-- Snapshots **gravados** (delta, B3): 2951
+- Snapshots **gravados** (delta, B3): 2957
 
-- Marcas coletando: 13 de 14
+- Marcas coletando: 14 de 16
 
 
-> ⚠️ Zero itens (alerta imediato, §20): Fabula
+> ⚠️ Zero itens (alerta imediato, §20): PatBo, Fabula
 
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
@@ -30,6 +30,8 @@
 | NV | vtex | 1141 | 48 | 1737 | 1.0 | {"divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 1141, "paginavel": 1737}} |
 | Cantao | vtex | 883 | 361 | 883 | 1.0 | — |
 | Bo.Bo | vtex | 820 | 38 | 820 | 1.0 | — |
+| Amaro | shopify | 250 | 6 | — | 1.0 | {"erro": "http 500"} |
+| PatBo | shopify | 0 | 0 | — | — | {"erro": "http 429 (persistiu apos backoff longo)"} |
 | Fabula | vtex | 0 | 0 | — | — | — |
 
 ---
