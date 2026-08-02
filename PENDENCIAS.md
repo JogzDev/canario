@@ -176,3 +176,17 @@ errado **na tela, agora**.
 | V13 | **`outras_cores` tem 0 peças** | Criado em 28/07 para ser preenchido por exclusão pelo motor; o motor nunca o preenche. 38,6% das peças seguem sem nenhum termo de cor |
 | V14 | **`_vocabulario_por_termo` é legível pelo `anon`** | View sem RLS e sem policy, exposta pelo PostgREST. O app nunca a lê; ela publica o vocabulário do matcher |
 | V15 | **3 views passam por cima da RLS sem estar documentado** | `cobertura_por_celula`, `eventos_da_semana` e `_vocabulario_por_termo` rodam como dono (padrão do Postgres, `security_invoker` desligado). Para as duas primeiras é intencional e correto — é a mesma janela controlada da §29 — mas não está escrito em lugar nenhum |
+
+### O que a madrugada de 02/08 fechou dessa lista
+
+| # | Estado |
+|---|---|
+| V1 | 🟡 **Os 4 picos falsos saíram da tela**, mas por um portão de cobertura, não porque o método esteja certo. Ver V6 |
+| V2 | ✅ Zeros materializados. `z` do editorial BR passou de negativo em 13/13 semanas para média −0,03 |
+| V3 | ✅ Janela virou calendário (`range interval '84 days'`). A frase "últimas 12 semanas" na tela voltou a ser verdade |
+| V5 | ✅ Share of voice de verdade, e no motor (§33), porque o coletor só vê o feed recente |
+| **V16** | 🔴 **NOVO, achado ao consertar:** `computar_indice()` fazia upsert e **nunca apagava**. Leitura que perdia a base ficava na tela para sempre. Corrigido — mas vale perguntar onde mais o projeto tem upsert sem delete |
+| **V17** | 🔴 **NOVO, e é o que sobra de maior:** z-score é o modelo errado para contagem esparsa. Com os zeros, `azul` deu z = 10,27 com 5 matérias. Resíduo de Poisson **piorou** (desvio observado 1,74 = variância 3× a de Poisson): a contagem editorial é superdispersa porque matéria de moda vem em rajada. Modelo correto: **binomial negativa**. Decisão de método, do JP |
+| V4, V6–V15 | 🔴 Seguem abertos |
+
+**Decisão pendente e ela é de produto:** o piso de 10 matérias esvazia a tela — na semana de 27/07 sobram 6 termos com leitura e nenhum estado. Alternativas medidas: piso 5 → 2.823 leituras, maior |z| 10,3 · piso 10 → 1.410 leituras, maior 6,8 · piso 20 → 499 leituras, maior 6,8. Nenhum valor conserta o modelo; o piso só evita publicar o pior.
