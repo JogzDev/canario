@@ -268,9 +268,29 @@ def main():
         linhas.append({
             "termo_id": termo_id, "segmento": SEGMENTO, "fonte": fonte,
             "semana": semana.isoformat(),
-            "valor_bruto": sum(janela) / float(JANELA_SEMANAS),
+            # VALOR DE PASSAGEM, e' o motor que normaliza (§33).
+            #
+            # Aqui havia `sum(janela) / JANELA_SEMANAS` -- divisao pelo numero
+            # de SEMANAS -- e isso e' contagem absoluta, nao share de coisa
+            # nenhuma, apesar de o docstring deste arquivo e o nome do workflow
+            # dizerem "share of voice" desde sempre.
+            #
+            # O estrago era mensuravel: quando Marie Claire, Vogue Brasil e
+            # Glamour entraram entre 23 e 27/07, o denominador BR foi de ~460
+            # para 896 materias em uma semana (+90%). Todo termo subiu junto
+            # sem o mercado ter se mexido, e quatro `pico` acenderam. Nos
+            # veiculos que ja eram medidos, a cobertura daqueles termos naquela
+            # semana caiu para 1 artigo -- o menor de toda a serie.
+            #
+            # O share NAO e' calculado aqui de proposito: o denominador e o
+            # total de materias da perna na janela de 4 semanas, e o coletor so
+            # enxerga o feed recente. Quem tem a serie inteira e o banco, entao
+            # quem divide e `computar_serie_editorial()`, no motor. Enquanto
+            # ela nao roda, este campo e a contagem crua.
+            "valor_bruto": sum(janela),
             "z": None, "n_amostra": sum(janela),
             "meta": {"janela_semanas": JANELA_SEMANAS,
+                     "normalizacao": "pendente: computar_serie_editorial()",
                      "contagem_semana_crua": crua[(termo_id, fonte, semana)],
                      "unidade": "materias que citaram o termo",
                      "veiculos": dict(sorted(

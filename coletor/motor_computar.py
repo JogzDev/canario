@@ -29,6 +29,12 @@ PASSOS = [
      "reposicao, remarcacao e saida de linha (§23, K1, K4)"),
     ("computar_serie_varejo",
      "serie semanal de varejo (share do sortimento, §15/§21)"),
+    # ANTES do z, e nao depois: ela materializa os zeros e normaliza o
+    # editorial. Rodar na ordem errada faria o z ler a serie crua e produzir o
+    # mesmo vies que existia ate 02/08 -- editorial_br com z medio negativo em
+    # 13 de 13 semanas, e `em alta` impossivel.
+    ("computar_serie_editorial",
+     "zeros materializados + share of voice de verdade (§18/§21)"),
     ("computar_z",
      "z-score em janela movel de 12 semanas (§21)"),
     ("computar_indice",
