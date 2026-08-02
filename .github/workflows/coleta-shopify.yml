@@ -9,17 +9,19 @@ name: Coleta Shopify (runner residencial)
 # Amaro e nucleo e o termometro mais sensivel do painel: e a marca que mais
 # justifica o Mac existir no projeto.
 on:
+  workflow_call:
+    secrets:
+      SUPABASE_URL:
+        required: true
+      SUPABASE_SECRET_KEY:
+        required: true
   workflow_dispatch:
-  schedule:
-    # 03:20 BRT, 20 minutos depois da VTEX, para as duas coletas nao disputarem
-    # o mesmo minuto nem o mesmo teto de requisicao.
-    - cron: '20 6 * * *'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: coleta-shopify
+  group: canario-dados
   cancel-in-progress: false
 
 jobs:
@@ -37,20 +39,3 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           COLETA_PLATAFORMA: shopify
         run: "$PY coletor/coletor_varejo.py"
-
-      # O `git` deste Mac tambem e um atalho do Xcode e nao funciona (o
-      # `checkout` passa porque ele tem plano B via tarball da API, mas commit
-      # exige git de verdade). Nao e bloqueador: a coleta ja gravou no Supabase,
-      # e o SAUDE.md e renderizado A PARTIR DO BANCO -- entao a execucao de VTEX
-      # no datacenter, que tem git, publica o relatorio completo incluindo estas
-      # marcas. Mac coleta, GitHub relata.
-      #
-      # Quando as Command Line Tools forem instaladas (`xcode-select --install`),
-      # este passo passa a funcionar sozinho e o relatorio sai daqui tambem.
-      - name: Commitar SAUDE.md (opcional neste runner)
-        if: always()
-        continue-on-error: true
-        run: >-
-          bash .github/commitar.sh
-          "SAUDE.md anexos/departamentos_vtex.json"
-          "Relatorio de saude - Shopify no runner residencial"

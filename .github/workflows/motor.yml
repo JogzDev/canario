@@ -3,6 +3,18 @@ name: Motor (atributos, eventos, indice)
 # Roda no datacenter: e computacao sobre dado que ja esta no Supabase, sem
 # tocar em site nenhum. Nao sofre rate-limit e nao precisa do runner do Mac.
 on:
+  workflow_call:
+    inputs:
+      backfill_editorial:
+        description: 'Refazer o backfill editorial de 5 anos'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SUPABASE_URL:
+        required: true
+      SUPABASE_SECRET_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       backfill_editorial:
@@ -10,16 +22,12 @@ on:
         type: boolean
         required: false
         default: false
-  schedule:
-    # 04:10 BRT = 07:10 UTC, depois de todas as coletas (varejo 03:00,
-    # shopify 03:20, editorial 03:40). Servidor calcula, app consulta (§33).
-    - cron: '10 7 * * *'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: motor
+  group: canario-dados
   cancel-in-progress: false
 
 jobs:

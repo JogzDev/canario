@@ -1,0 +1,92 @@
+name: Pipeline diario (coletas, motor e saude)
+
+# Um unico disparo fixa o mesmo commit e expressa dependencias reais. Horario
+# deixa de ser mecanismo de coordenacao: se uma coleta atrasar, a seguinte
+# espera; se falhar, o motor nao publica uma semana parcial.
+on:
+  workflow_dispatch:
+  schedule:
+    # 03:00 BRT = 06:00 UTC (Brasil sem horario de verao desde 2019).
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pipeline-diario
+  cancel-in-progress: false
+
+jobs:
+  varejo-vtex:
+    uses: ./.github/workflows/coleta.yml
+    with:
+      marca: ''
+    secrets: inherit
+
+  varejo-shopify:
+    needs: varejo-vtex
+    uses: ./.github/workflows/coleta-shopify.yml
+    secrets: inherit
+
+  editorial:
+    needs: varejo-shopify
+    uses: ./.github/workflows/coleta-editorial.yml
+    secrets: inherit
+
+  busca:
+    needs: editorial
+    uses: ./.github/workflows/coleta-trends.yml
+    with:
+      modo: ''
+    secrets: inherit
+
+  saude:
+    # Roda mesmo se uma coleta falhar ou for pulada: ausência é dado de saúde
+    # e precisa aparecer, não sumir junto com a perna que falhou. O motor
+    # depende deste job e, portanto, nunca publica uma semana parcial.
+    if: ${{ always() }}
+    needs: [varejo-vtex, varejo-shopify, editorial, busca]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Consolidar fontes e aplicar portao de saude
+        id: portao
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python3 coletor/gerar_saude.py
+
+      - name: Validar execucao das quatro coletas
+        id: dependencias
+        if: >-
+          ${{ !(needs.varejo-vtex.result == 'success' &&
+                needs.varejo-shopify.result == 'success' &&
+                needs.editorial.result == 'success' &&
+                needs.busca.result == 'success') }}
+        continue-on-error: true
+        run: exit 1
+
+      - name: Publicar relatorio unico
+        if: ${{ always() && github.ref_name == 'main' }}
+        run: >-
+          bash .github/commitar.sh "SAUDE.md" "Saude consolidada do pipeline"
+
+      - name: Bloquear publicacao do motor
+        if: >-
+          ${{ steps.portao.outcome == 'failure' ||
+              steps.dependencias.outcome == 'failure' }}
+        run: exit 1
+
+  motor:
+    needs: saude
+    uses: ./.github/workflows/motor.yml
+    with:
+      backfill_editorial: false
+    secrets: inherit
