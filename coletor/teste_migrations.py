@@ -1,0 +1,85 @@
+"""Guarda invariantes do estado FINAL das migrations.
+
+Migrations antigas contam a historia e podem conter definicoes revogadas. O
+teste procura a ultima redefinicao de cada RPC para verificar o contrato que
+um banco reconstruido termina servindo.
+"""
+
+import glob
+import os
+import re
+import sys
+
+
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PASTA = os.path.join(RAIZ, "supabase", "migrations")
+
+
+def falhar(mensagem):
+    print("FALHOU: {}".format(mensagem))
+    return 1
+
+
+def ultima_definicao(arquivos, assinatura):
+    for caminho in reversed(arquivos):
+        texto = open(caminho, encoding="utf-8").read()
+        posicao = texto.lower().rfind(assinatura.lower())
+        if posicao >= 0:
+            return caminho, texto[posicao:]
+    return None, ""
+
+
+def main():
+    arquivos = sorted(glob.glob(os.path.join(PASTA, "*.sql")))
+    if not arquivos:
+        return falhar("nenhuma migration encontrada")
+
+    nomes_invalidos = [
+        os.path.basename(c) for c in arquivos
+        if not re.match(r"^\d{14}_[a-z0-9_]+\.sql$", os.path.basename(c))
+    ]
+    if nomes_invalidos:
+        return falhar("migration fora do formato remoto: {}".format(
+            ", ".join(nomes_invalidos)))
+
+    _, cluster = ultima_definicao(
+        arquivos, "create or replace function public.indice_do_cluster")
+    exigencias_cluster = [
+        "coalesce(c.suficiente, false)",
+        "c.segmento = u.segmento",
+        "i.segmento = 'feminino_casual_br'",
+        "t.status = 'aprovado'",
+    ]
+    for trecho in exigencias_cluster:
+        if trecho not in cluster:
+            return falhar("cluster final nao garante: {}".format(trecho))
+
+    _, similares = ultima_definicao(
+        arquivos, "create or replace function public.similares_da_peca")
+    exigencias_similares = [
+        "t.status = 'aprovado'",
+        "limit 12",
+        "p.segmento = 'feminino_casual_br'",
+        "least(greatest(coalesce($2, 12), 1), 24)",
+    ]
+    for trecho in exigencias_similares:
+        if trecho not in similares:
+            return falhar("similares final nao garante: {}".format(trecho))
+
+    estado_final = open(arquivos[-1], encoding="utf-8").read().lower()
+    exigencias_finais = [
+        "unique nulls not distinct (data, fonte, marca_id)",
+        "revoke execute on functions from public, anon, authenticated",
+        "revoke select on table public.raridade_do_atributo",
+    ]
+    for trecho in exigencias_finais:
+        if trecho not in estado_final:
+            return falhar("hardening final ausente: {}".format(trecho))
+
+    print("{} migrations: historico timestampado e estado final protegido".format(
+        len(arquivos)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
