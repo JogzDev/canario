@@ -1,0 +1,19 @@
+-- O motor roda em lote e nao cabe no tempo limite de requisicao web.
+--
+-- MEDIDO EM 01/08/2026: `computar_curva_tamanhos()` leva 61 segundos, e o papel
+-- `authenticator` (que o PostgREST usa) tem `statement_timeout = 8s`. O
+-- `service_role` herdava esse limite por nao ter configuracao propria, e o
+-- motor falhava toda madrugada com:
+--
+--   HTTP 500 {"code":"57014","message":"canceling statement due to statement timeout"}
+--
+-- Os passos anteriores (eventos, serie, z, indice) passavam, entao a tabela de
+-- eventos crescia e o problema ficava parecendo resolvido de fora. Descoberto
+-- so quando o `gh` foi instalado e deu para ler o log do Actions.
+--
+-- Por que mexer no papel e nao so otimizar: a otimizacao e bem-vinda, mas nao
+-- fecha o vao entre 61s e 8s. O `service_role` e usado APENAS pelos coletores
+-- com a chave secreta, do lado do servidor -- nunca pelo app, que entra como
+-- `anon` e continua com o limite de 3 segundos. Aumentar aqui nao afrouxa nada
+-- do lado do cliente.
+alter role service_role set statement_timeout = '300s';;

@@ -16,4 +16,4 @@ alter table termos
   add column volume_detalhe text;
 
 comment on column termos.volume_verificado_em is
-  'C3: data em que a coleta do Trends afericou o volume. sem_perna_busca deixa de ser `pendente` a partir daqui.';
+  'C3: data em que a coleta do Trends afericou o volume. sem_perna_busca deixa de ser `pendente` a partir daqui.';;

@@ -1,6 +1,0 @@
--- Motor, passo 2: agrega snapshots diarios em serie semanal de varejo (§21).
--- A metrica e SHARE, nao contagem: §15 define oferta como "presenca do atributo
--- no sortimento do painel". Contagem cresceria so porque uma marca grande
--- entrou no painel; share mede composicao.
--- Roda no servidor (§33). Varejo NAO recebe z (decisao B1).
--- (corpo aplicado via migracao f3_serie_semanal_de_varejo)

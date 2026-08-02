@@ -7,4 +7,4 @@ alter table produtos
   add column ultimo_snapshot_em    date;
 
 comment on column produtos.ultima_grade is
-  'Último estado conhecido da grade. O delta (B3) compara o coletado com isto; snapshot só quando muda ou no batimento semanal.';
+  'Último estado conhecido da grade. O delta (B3) compara o coletado com isto; snapshot só quando muda ou no batimento semanal.';;

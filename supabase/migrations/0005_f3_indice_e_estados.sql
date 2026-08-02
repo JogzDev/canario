@@ -1,7 +1,0 @@
--- Motor, passo 3: tabela indices_semanais + computar_z() + computar_indice().
--- z contra a propria historia em janela movel de 12 semanas (§21), minimo de 8
--- semanas (§8) com editorial em 6 pela EXCECAO PONTUAL do JP de 30/07.
--- Indice = media dos z das pernas ativas, pesos iguais fixados antes de olhar
--- resultado (§22). Estados com a regra anti-ruido de 2 semanas; `pico` sobre o
--- editorial isolado (C4).
--- (corpo aplicado via migracoes f3_indice_e_estados e f3_computar_indice)
