@@ -121,6 +121,24 @@ def checar_orquestracao(workflows):
                "workflow deve ter uma unica publicacao atomica do motor")
     if backfill and atributos and backfill[0] > atributos[0]:
         falhar("motor.yml", "backfill deve acontecer antes da publicacao")
+
+    acao = os.path.join(RAIZ, ".github", "actions", "python-mac",
+                        "action.yml")
+    try:
+        texto_acao = open(acao, encoding="utf-8").read()
+    except OSError as ex:
+        falhas.append((acao, "acao local ilegivel: {}".format(ex)))
+    else:
+        checksum = "dc3174666a30f4c38d04e79a80c3159b4b3aa69597c4676701c8386696811611"
+        exigencias = [checksum, "shasum -a 256 -c -", "--proto '=https'",
+                      "--tlsv1.2"]
+        for trecho in exigencias:
+            if trecho not in texto_acao:
+                falhas.append((acao,
+                               "Python portatil sem protecao `{}`".format(
+                                   trecho)))
+        if texto_acao.find("shasum -a 256 -c -") > texto_acao.find("tar xzf"):
+            falhas.append((acao, "tarball e extraido antes de validar SHA-256"))
     return falhas
 
 
@@ -145,6 +163,26 @@ def checar_a_mao(arquivos):
     return falhas
 
 
+def checar_actions_fixadas(arquivos):
+    """Código externo com segredo só pode entrar por commit imutável."""
+    falhas = []
+    padrao = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)")
+    for arquivo in arquivos:
+        for numero, linha in enumerate(open(arquivo, encoding="utf-8"), 1):
+            achado = padrao.match(linha)
+            if not achado:
+                continue
+            referencia = achado.group(1)
+            if referencia.startswith("./"):
+                continue
+            if not re.search(r"@[0-9a-f]{40}$", referencia):
+                falhas.append((
+                    arquivo,
+                    "linha {}: action externa sem SHA completo: {}".format(
+                        numero, referencia)))
+    return falhas
+
+
 def main():
     arquivos = sorted(glob.glob(WORKFLOWS))
     if not arquivos:
@@ -158,6 +196,8 @@ def main():
     except ImportError:
         falhas = checar_a_mao(arquivos)
         modo = "verificacao manual (pyyaml ausente)"
+
+    falhas.extend(checar_actions_fixadas(arquivos))
 
     for f, erro in falhas:
         print("FALHOU {}: {}".format(os.path.basename(f), erro))
