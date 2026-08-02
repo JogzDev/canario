@@ -2,12 +2,13 @@ import SwiftUI
 
 /// Leitura de uma peça a partir dos atributos confirmados pelo usuário (§29).
 ///
-/// **O que esta tela ainda NÃO faz, e declara:** o índice do cluster ponderado
-/// por raridade (§22 e K5) não está implementado. Sem ele, não existe um número
-/// único da peça — existe o número de cada atributo. Mostrar uma média simples
-/// seria pior que não mostrar: daria ao usuário um número com aparência de
-/// síntese e sem o peso de raridade que o torna significativo ("vestido" pesa
-/// pouco, "floral" pesa muito).
+/// **A ordem desta tela é a da §29, e ela é deliberada:** primeiro o parágrafo
+/// dos similares (o substituto aprovado da previsão, §5), depois os similares,
+/// depois cada atributo, e só então o número do conjunto (§22, K5).
+///
+/// O conjunto vem por último de propósito. Um número único no topo é lido como
+/// veredito; o mesmo número depois das partes é lido como resumo delas. E ele
+/// se cala quando os atributos discordam entre si — ver `Cluster.haDirecao`.
 struct RelatorioDaPeca: View {
     let termos: [Termo]
     /// Preço que o usuário pretende praticar, se informou. §29.5 chama isso de
@@ -17,6 +18,7 @@ struct RelatorioDaPeca: View {
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
     @State private var similares: Similares.Resposta?
+    @State private var cluster: Cluster.Resposta?
     @State private var carregando = true
     @State private var erro: String?
 
@@ -33,7 +35,7 @@ struct RelatorioDaPeca: View {
                     resumo
                     blocoDeSimilares
                     porAtributo
-                    clusterPendente
+                    blocoDoCluster
                     limites
                 }
             }
@@ -131,13 +133,54 @@ struct RelatorioDaPeca: View {
         }
     }
 
-    /// Honestidade sobre o que falta, no lugar onde o usuário esperaria o
-    /// número da peça inteira.
-    private var clusterPendente: some View {
-        CoberturaInsuficiente(
-            titulo: "Ainda não há um número único da peça",
-            explicacao: "O índice do conjunto exige ponderar os atributos por raridade — \"vestido\" pesa pouco porque quase toda peça é vestido, \"floral\" pesa muito. Esse cálculo ainda não está implementado.",
-            oQueTem: "Até lá, a leitura honesta é atributo por atributo, acima.")
+    /// §22 / K5 — o número da peça inteira, com os pesos abertos.
+    ///
+    /// Esta tela declarava, até 02/08, que o cálculo não existia. Agora existe,
+    /// e a honestidade mudou de lugar: em vez de dizer "não há número", ela diz
+    /// **de que o número é feito** e, quando os atributos discordam entre si,
+    /// se recusa a dar direção.
+    @ViewBuilder
+    private var blocoDoCluster: some View {
+        if let c = cluster, c.nAtributos > 0 {
+            Cartao {
+                Text("O conjunto").font(Tokens.Fonte.secao)
+                Text(Cluster.manchete(c)).font(Tokens.Fonte.corpo)
+                if let e = Cluster.explicacao(c) { LinhaInsumo(texto: e) }
+                if let k = Cluster.concentracao(c) { LinhaInsumo(texto: k) }
+
+                Divider()
+                Text("De onde vem esse número").font(Tokens.Fonte.miudo.weight(.semibold))
+                LinhaInsumo(texto: Cluster.criterioDaRaridade(c))
+                ForEach(Cluster.dentro(c)) { a in
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(a.rotulo).font(Tokens.Fonte.miudo)
+                        Spacer()
+                        if let i = a.indice {
+                            Text(Leitura.numero(i, casas: 2, sinal: true))
+                                .font(Tokens.Fonte.miudo.monospacedDigit())
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                    }
+                    if let p = Cluster.porQuePesa(a) { LinhaInsumo(texto: p) }
+                }
+                if let s = Cluster.ressalvaDeSemana(c) { LinhaInsumo(texto: s) }
+
+                // Regra 6: o que ficou de fora aparece, e diz por quê.
+                let fora = Cluster.deFora(c)
+                if !fora.isEmpty {
+                    Divider()
+                    Text("Fora da conta").font(Tokens.Fonte.miudo.weight(.semibold))
+                    ForEach(fora) { a in
+                        LinhaInsumo(texto: "\(a.rotulo): \(a.foraPor ?? "sem motivo registrado")")
+                    }
+                }
+            }
+        } else {
+            CoberturaInsuficiente(
+                titulo: "Ainda não há número do conjunto para esta peça",
+                explicacao: "Nenhum dos atributos marcados tem leitura com cobertura suficiente neste recorte, então não existe média a fazer.",
+                oQueTem: "A leitura honesta é atributo por atributo, acima.")
+        }
     }
 
     /// §29.6 — limites declarados, sempre.
@@ -180,6 +223,12 @@ struct RelatorioDaPeca: View {
             var args: [String: Any] = ["termos": termos.map(\.id), "limite": 8]
             if let precoAlvo { args["preco_alvo"] = precoAlvo }
             similares = try await Supabase.shared.chamar("similares_da_peca", args)
+
+            // §22/K5. Chamada separada de propósito: se o cluster falhar, os
+            // similares — que são o substituto aprovado da previsão (§5) —
+            // continuam na tela. O contrário também vale.
+            cluster = try? await Supabase.shared.chamar(
+                "indice_do_cluster", ["termos": termos.map(\.id)])
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

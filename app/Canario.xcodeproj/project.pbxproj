@@ -10,6 +10,7 @@
 		5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */; };
 		E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1ACCCE153B6FA384A39863 /* Formato.swift */; };
 		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
+		17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAE067E291E7143C7B5D2FD /* Cluster.swift */; };
 		9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */; };
 		26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */; };
 		D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C677A09E80A10C666280510 /* Explicacao.swift */; };
@@ -37,6 +38,7 @@
 		D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Componentes.swift"; sourceTree = "<group>"; };
 		CD1ACCCE153B6FA384A39863 /* Formato.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Formato.swift"; sourceTree = "<group>"; };
 		7D66F3CA4E705669DD73EF9B /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tokens.swift"; sourceTree = "<group>"; };
+		8EAE067E291E7143C7B5D2FD /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cluster.swift"; sourceTree = "<group>"; };
 		CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CorDaPeca.swift"; sourceTree = "<group>"; };
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhos.swift"; sourceTree = "<group>"; };
 		3C677A09E80A10C666280510 /* Explicacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explicacao.swift"; sourceTree = "<group>"; };
@@ -114,6 +116,7 @@
 		D5AB6A142F723C9CAC621013 /* Rede */ = {
 			isa = PBXGroup;
 			children = (
+				8EAE067E291E7143C7B5D2FD /* Cluster.swift */,
 				CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */,
 				94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */,
 				3C677A09E80A10C666280510 /* Explicacao.swift */,
@@ -202,6 +205,7 @@
 				5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */,
 				E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */,
 				90BBD61C629F5B7911560245 /* Tokens.swift in Sources */,
+				17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */,
 				9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */,
 				26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */,
 				D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */,

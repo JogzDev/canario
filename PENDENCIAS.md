@@ -28,7 +28,7 @@ função escrita, chamada por alguém, e o resultado visível onde deveria estar
 | K2 | Continuativo: idade ≥ 26 semanas | — | 🔴 Não feito |
 | K3 | Continuativo: 3 reposições em 12 semanas | — | 🔴 Não feito |
 | K4 | Remarcação só com queda ≥ 5% | `computar_eventos()`, chamada pelo `motor_computar.py` | ✅ Feito |
-| K5 | Índice do cluster ponderado por raridade (IDF) | — | 🔴 Não feito |
+| K5 | Índice do cluster ponderado por raridade (IDF) | `computar_raridade()` + `indice_do_cluster()`, migração 0010, no motor e na tela | ✅ Feito — **e a fórmula da §22 teve de ser corrigida em 3 pontos** (dimensão, categoria, encolhimento). Ver changelog de 02/08 |
 | K6 | Variação % como unidade principal, z entre parênteses | `Leitura.swift` | ✅ Feito |
 | K7 | Trends em grupos de 5 com âncora fixa | `coletor_trends.py` | ✅ Feito |
 | K8 | Editorial casa só título + resumo | `coletor_editorial.py` | ✅ Feito |
@@ -66,7 +66,7 @@ coleção.
 | Onde | O que exige | Estado |
 |---|---|---|
 | §20 | Alerta quando uma fonte cai mais de 70% vs. média de 7 dias | 🟡 Parcial — as 3 pernas agora gravam `saude` (busca entrou em 01/08); falta o limiar dos 70% |
-| §22 | Índice do cluster (conjunto de atributos de uma peça) | 🔴 Não feito — só existe índice por atributo |
+| §22 | Índice do cluster (conjunto de atributos de uma peça) | ✅ Feito — migração 0010, com dispersão e recusa de direção quando os atributos discordam |
 | §24 | Curva de tamanhos | ✅ Feito — migração 0008, no motor, com tela própria. **Marco de demo 1 fechado** |
 | §29 | Bloco de similares com preço, remarcação e estado da grade | ✅ Feito — migração 0009, `similares_da_peca()`, com o parágrafo-resumo da §29.1 e o percentil de preço da §29.5 |
 | §31 | Termômetro (validação retroativa) | ⚪ Depende dos dados do Pedro |

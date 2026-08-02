@@ -596,3 +596,45 @@ O JP pediu relatório operacional e firmou o acordo de que "relatório" passa a 
 > No painel de 9 marcas, encontrei 230 peças. 22% seguem a preço cheio. 88% estão com a grade quebrada, e 72% já sem nenhum tamanho. O preço do meio é R$ 130.
 
 E a amostra mostra a matriz preço × grade da §23 ao vivo: Cantão a R$ 1.199 com grade cheia e preço cheio, Dress To a R$ 429 remarcada 50% e esgotada.
+
+---
+
+### 02/08/2026 — K5, o índice do cluster: a fórmula da §22 não sobreviveu ao próprio dado
+
+*O que a §22 manda, e o que o IDF cru devolveu*
+
+- `ADITIVA` | **§22 / K5 implementado** (migração 0010). A §22 pede "média dos índices dos atributos ponderada por raridade (lógica IDF)". Rodei o IDF cru **antes de escrever qualquer código**, e ele coroou `liso` como o atributo mais pesado de toda a taxonomia: **6,87 contra 1,17 de "blusa e top"**. `liso` tem 61 peças — não porque peça lisa seja rara, mas porque **90,7% das peças não têm nenhum termo de estampa detectado**. As 61 são as que escreveram a palavra no título. Raridade medida sobre não-medição, e premiada com o maior peso do sistema.
+
+*Por que o df é medido errado, e por que o resto do sistema sobrevive a isso*
+
+- `ADITIVA` | **O viés de detecção depende da marca, e isso está medido.** % de peças com algum termo de estampa: C&A 14,2% · Farm 9,0% · PatBô 4,8% · Le Lis Blanc 0,4% · **Morena Rosa 0,0% em 812 peças** — e a Morena Rosa vende estampa. A cor vai de **0,1% (Lança Perfume) a 88,6% (PatBô)**, 900× com a mesma taxonomia e o mesmo matcher. A detecção é função da convenção de nomenclatura da marca, não da roupa. Na literatura isso é a violação da hipótese SCAR de Elkan & Noto (KDD 2008): o caso SNAR de Bekker & Davis.
+- `ADITIVA` | **A consequência boa, e ela precisa ficar registrada porque protege o que já está no ar:** um viés de detecção aproximadamente constante no tempo **se cancela no z-score**, porque z é desvio contra a própria história — o viés desloca a média e a observação juntos. Ele **não** se cancela no IDF, porque IDF é um nível comparado *entre* termos. Por isso `series_semanais` e `indices_semanais` não precisam de conserto, e só o peso de raridade precisava.
+
+*Três correções, cada uma com procedência*
+
+- `ADITIVA` | **Raridade dentro da dimensão** (BM25F: Robertson, Zaragoza & Taylor, CIKM 2004). Resolve a cardinalidade variável que o **C2 já tinha registrado como dívida do K5**: `cintura` tem 1 termo e o IDF cru lhe dava 2,92, mais que a `vestido`; agora cai para o piso ln(2)=0,69, que é o correto — uma dimensão de um termo não distingue nada.
+- `ADITIVA` | **Raridade condicionada à categoria** (o MAVE, WSDM 2022, registra que atributos são definidos por categoria). Medido: **`jeans` é 23,7% dentro de `calça` e 1,8% dentro de `vestido` — 13×**. `midi` é 9,7% no painel e 35,8% dentro de `saia`. **Efeito colateral que fecha um círculo:** ao condicionar, o próprio termo de categoria vira 100% do seu denominador e cai para o piso. Ou seja, *"vestido pesa pouco"* — o exemplo escrito na §22 — sai de graça, mas por um mecanismo diferente do que a §22 nomeou.
+- `ADITIVA` | **Encolhimento contínuo** (Micci-Barreca, SIGKDD Explorations 3(1), 2001, na forma empírico-bayesiana do `TargetEncoder` do scikit-learn): λ = n/(m+n) com m = σ²/τ². Substitui o portão de preenchimento que eu ia usar — limiar é penhasco arbitrário, isto degrada suavemente. **Nenhum número escolhido a dedo entra no cálculo.**
+- `ADITIVA` | **Forma não-negativa** ln(1+1/p), família ATIRE/Lucene. Kamphuis et al. (ECIR 2020) testaram 8 variantes de BM25 em 3 coleções TREC e não acharam diferença significativa — mas registram que vale usar uma que não produza valor negativo. Ao condicionar à categoria, `jeans` dentro de `calça` está em 54,3% e `reta_wide` em 78,6%, então o caso `df > N/2` deixou de ser hipotético.
+
+*Uma tentativa medida e descartada, registrada para ninguém repetir*
+
+- `ADITIVA` | O encolhimento conserta **contagem baixa**, não **detecção enviesada** — são dois problemas e eu tratei como um. Com ele ligado, `liso` continuou o mais pesado (3,65). Testei então sobredispersão de Pearson entre marcas (φ = χ²/gl, correção quase-verossimilhança). **Não discrimina:** `vestido` deu o maior φ de todos (**305**), porque marcas de fato diferem em sortimento, e `liso` nem aparece no top 22. φ mede heterogeneidade real e não separa isso de viés de detecção. Descartado.
+
+*A correção que funcionou já estava escrita na taxonomia*
+
+- `ADITIVA` | **`termos.papel`**, espelhando `marcas.papel`. O campo `motivo` de `liso` diz, desde a construção da taxonomia: *"Denominador da dimensão estampa: sem ele o share de floral perde base de comparação"*. `liso` **nunca foi um atributo a medir** — e o IDF transformou o denominador no atributo mais pesado do sistema. O mesmo vale para `outras_cores`: *"balde residual... atribuído por exclusão pelo motor, nunca por casamento de palavra"*. Um termo `denominador` fica fora do denominador da própria dimensão, não conta para o k do prior, e recebe o **peso médio dos atributos medidos da sua dimensão** — nem prior (que depende de k, e k é arbitrário) nem zero (o termo tem índice válido vindo de busca e editorial; só a contagem no painel é que não é medição). `liso` foi de **3,65 para 1,97**, e o topo virou `lilás e roxo` (2,1% das peças com cor), que é raridade de verdade.
+
+*O que o índice do cluster NÃO faz*
+
+- `ADITIVA` | **Não cria estado do cluster.** A §22 define `em alta`/`em queda`/`pico`/`estável` para a série semanal de um TERMO, com regra anti-ruído de 2 semanas e 2 pernas concordando. Nada disso está definido para um conjunto, e inventar seria a regra 2 ao contrário.
+- `ADITIVA` | **Não afirma direção quando os atributos discordam.** Devolve `dispersao` (desvio ponderado dos índices em torno da média) e `ha_direcao`, verdadeiro só quando |índice| ≥ dispersão. Medido no caso real: *vestido+floral+midi* dá índice **−0,77 com dispersão 1,28**, porque `vestido` está em −3,10 e `floral` em +0,29. A tela diz *"os atributos desta peça não apontam para o mesmo lado"* e mostra o número mesmo assim. É a mesma lição da manchete da curva de tamanhos, corrigida em 01/08.
+- `ADITIVA` | **Tamanho efetivo de amostra de Kish** ((Σw)²/Σw²) na saída: diz quantos atributos *realmente* sustentam o número. Se um carrega quase todo o peso, o "índice do conjunto" é um atributo só usando roupa de conjunto, e a tela avisa.
+
+*Honestidade sobre a fundação, porque ela não transfere inteira*
+
+- `ADITIVA` | Spärck Jones (1972) propôs a especificidade do termo como **heurística**. Robertson (2004) mostra que as derivações por Teoria da Informação são problemáticas e que a justificativa boa está no modelo probabilístico (RSJ) — que é sobre **discriminar documentos relevantes de não-relevantes**. O Canário não tem consulta nem conjunto relevante, então a justificativa probabilística **não transfere**; o que transfere é a intuição heurística. Isso não invalida usar IDF: significa que a escolha se decide por comportamento medido, e que o código não deve fingir princípio onde há heurística.
+
+*Dívida nova, achada de passagem*
+
+- `ADITIVA` | **`outras_cores` tem 0 peças.** Foi criado em 28/07 para ser o balde residual da dimensão `cor`, preenchido **por exclusão pelo motor** — e o motor nunca o preenche. O buraco que ele existia para tapar (produto de cor inclassificável sumindo do denominador) continua aberto: 38,6% das peças não têm nenhum termo de cor.

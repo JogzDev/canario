@@ -35,6 +35,12 @@ PASSOS = [
      "indice e estado por termo/semana (§22)"),
     ("computar_curva_tamanhos",
      "onde a grade quebra, por posicao na grade (§24, marco de demo 1)"),
+    # Raridade DEPOIS dos atributos e ANTES de qualquer leitura de cluster: ela
+    # conta `produto_termos`, entao so faz sentido depois que o dia de coleta ja
+    # entrou. E precisa estar no motor, nao so no banco -- foi exatamente esse o
+    # erro do `computar_eventos` em 30/07: funcao criada nao e funcao chamada.
+    ("computar_raridade",
+     "peso de raridade por (categoria, termo) para o indice do cluster (§22, K5)"),
 ]
 
 
