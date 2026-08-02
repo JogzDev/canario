@@ -122,6 +122,15 @@ def checar_orquestracao(workflows):
     if backfill and atributos and backfill[0] > atributos[0]:
         falhar("motor.yml", "backfill deve acontecer antes da publicacao")
 
+    sonda = workflows.get("sonda.yml", {}).get("jobs", {}).get("sondar", {})
+    passos_sonda = sonda.get("steps", [])
+    publicadores = [p for p in passos_sonda
+                    if "commitar.sh" in str(p.get("run", ""))]
+    if len(publicadores) != 1 or "github.ref_name == 'main'" not in str(
+            publicadores[0].get("if", "") if publicadores else ""):
+        falhar("sonda.yml",
+               "sonda so pode commitar relatorio na branch main")
+
     acao = os.path.join(RAIZ, ".github", "actions", "python-mac",
                         "action.yml")
     try:

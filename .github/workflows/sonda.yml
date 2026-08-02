@@ -35,8 +35,10 @@ jobs:
         run: python3 coletor/sonda_actions.py
 
       # `always()`: se a sonda quebrar no meio, o diagnostico parcial ainda
-      # tem valor e precisa chegar ao repositorio.
+      # tem valor e precisa chegar ao repositorio. Em branch de PR ela so
+      # reporta o check: commit gerado mudaria o head depois do CI e apagaria
+      # a associacao dos checks com o SHA revisado.
       - name: Commitar o resultado
-        if: always()
+        if: ${{ always() && github.ref_name == 'main' }}
         run: >-
           bash .github/commitar.sh "SONDA_ACTIONS.md" "Sonda do Actions - diagnostico"
