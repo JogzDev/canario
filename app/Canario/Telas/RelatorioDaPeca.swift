@@ -73,7 +73,11 @@ struct RelatorioDaPeca: View {
     }
 
     private var frase: String {
-        let comLeitura = termos.filter { indices[$0.id]?.indice != nil }
+        let comLeitura = termos.filter {
+            let indice = indices[$0.id]
+            return indice?.indice != nil
+                && Elegibilidade.indice(indice, cobertura: coberturas[$0.id])
+        }
         if comLeitura.isEmpty {
             return "Marquei \(termos.count) atributo\(termos.count == 1 ? "" : "s"), mas nenhum tem leitura disponível neste recorte."
         }
@@ -106,8 +110,13 @@ struct RelatorioDaPeca: View {
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                         }
                         Spacer()
-                        SeloEstado(estado: indices[termo.id]?.estado,
-                                   motivo: "A §22 exige duas fontes concordando.")
+                        let indice = indices[termo.id]
+                        let podeMostrar = Elegibilidade.indice(
+                            indice, cobertura: coberturas[termo.id])
+                        SeloEstado(estado: podeMostrar ? indice?.estado : nil,
+                                   motivo: podeMostrar
+                                       ? "A §22 exige duas fontes concordando."
+                                       : "Sem cobertura suficiente da mesma semana.")
                     }
                     conteudo(de: termo)
                 }
@@ -119,10 +128,12 @@ struct RelatorioDaPeca: View {
     private func conteudo(de termo: Termo) -> some View {
         let i = indices[termo.id]
         let c = coberturas[termo.id]
-        if let c, !c.suficiente {
+        if c == nil {
+            LinhaInsumo(texto: "Não há medição de cobertura para este atributo nesta semana.")
+        } else if !Elegibilidade.indice(i, cobertura: c) {
             // §8: sem cobertura, nem índice nem estado. O mesmo portão da
             // outra tela, aplicado atributo a atributo.
-            LinhaInsumo(texto: "Cobertura insuficiente: \(c.oQueFalta).")
+            LinhaInsumo(texto: "Cobertura insuficiente: \(c?.oQueFalta ?? "sem medição").")
         } else if let valor = i?.indice {
             Text(Leitura.emPalavras(valor)).font(Tokens.Fonte.apoio)
             LinhaInsumo(texto: Leitura.explicacao(valor))
@@ -201,10 +212,10 @@ struct RelatorioDaPeca: View {
         do {
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_semanais",
-                "select=*&termo_id=in.(\(ids))&order=semana.desc&limit=400")
+                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=400")
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",
-                "select=*&termo_id=in.(\(ids))&order=semana.desc&limit=400")
+                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=400")
 
             var mapaI: [String: IndiceSemanal] = [:]
             for x in try await i where mapaI[x.termoId] == nil { mapaI[x.termoId] = x }

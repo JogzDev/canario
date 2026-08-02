@@ -33,6 +33,8 @@ jobs:
         run: python3 coletor/teste_tamanhos.py
       - name: Filtro de populacao (nome da marca, acessorio)
         run: python3 coletor/teste_populacao.py
+      - name: Materializacao nao apaga estado medido
+        run: python3 coletor/teste_materializacao.py
       - name: Workflows do Actions
         run: python3 coletor/teste_workflows.py
       - name: Modulos compilam

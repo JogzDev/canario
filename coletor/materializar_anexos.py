@@ -26,6 +26,29 @@ def _val(linha, chave):
     return v or None
 
 
+def registro_do_termo(linha):
+    """Campos de configuracao cujo dono e o CSV aprovado.
+
+    `sem_perna_busca`, `volume_verificado_em` e `volume_detalhe` nao entram
+    aqui de proposito: sao estado medido pelo coletor de Trends. Reaplicar o
+    CSV diariamente sobre esses campos apagava verificacoes ja feitas e fazia
+    termos medidos voltarem para `pendente`.
+    """
+    return {
+        "id": linha["id"].strip(),
+        "rotulo": _val(linha, "rotulo"),
+        "dimensao": _val(linha, "dimensao"),
+        "exclusiva": (_val(linha, "exclusiva") or "").lower() == "sim",
+        "sinonimos": _val(linha, "sinonimos"),
+        "termo_busca": _val(linha, "termo_busca"),
+        "palavras_pt": _val(linha, "palavras_pt"),
+        "palavras_en": _val(linha, "palavras_en"),
+        "exemplo": _val(linha, "exemplo"),
+        "status": _val(linha, "status") or "proposto",
+        "motivo": _val(linha, "motivo"),
+    }
+
+
 def materializar_marcas():
     linhas = list(csv.DictReader(open(PAINEL, encoding="utf-8")))
     registros = []
@@ -50,22 +73,7 @@ def materializar_marcas():
 
 def materializar_termos():
     linhas = list(csv.DictReader(open(TAXONOMIA, encoding="utf-8")))
-    registros = []
-    for l in linhas:
-        registros.append({
-            "id": l["id"].strip(),
-            "rotulo": _val(l, "rotulo"),
-            "dimensao": _val(l, "dimensao"),
-            "exclusiva": (_val(l, "exclusiva") or "").lower() == "sim",
-            "sinonimos": _val(l, "sinonimos"),
-            "termo_busca": _val(l, "termo_busca"),
-            "palavras_pt": _val(l, "palavras_pt"),
-            "palavras_en": _val(l, "palavras_en"),
-            "exemplo": _val(l, "exemplo"),
-            "status": _val(l, "status") or "proposto",
-            "sem_perna_busca": _val(l, "sem_perna_busca") or "pendente",
-            "motivo": _val(l, "motivo"),
-        })
+    registros = [registro_do_termo(l) for l in linhas]
     supabase_rest.upsert("termos", registros, on_conflict="id")
     return len(registros)
 

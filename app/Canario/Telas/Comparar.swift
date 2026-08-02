@@ -122,8 +122,13 @@ struct Comparar: View {
     /// A frase que dá sentido à tabela: onde os dois eixos discordam.
     private var leituraDaDistancia: String? {
         let comOsDois = comparados.compactMap { t -> (Termo, Double, Double)? in
-            guard let share = varejo[t.id]?.valorBruto,
-                  let indice = indices[t.id]?.indice else { return nil }
+            let ponto = varejo[t.id]
+            let indiceSemanal = indices[t.id]
+            guard Elegibilidade.comparacao(
+                    indice: indiceSemanal, varejo: ponto,
+                    cobertura: coberturas[t.id]),
+                  let share = ponto?.valorBruto,
+                  let indice = indiceSemanal?.indice else { return nil }
             return (t, share, indice)
         }
         guard comOsDois.count >= 2 else {
@@ -153,26 +158,36 @@ struct Comparar: View {
             termos = try await Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_semanais", "select=*&order=semana.desc&limit=400")
+                "indices_semanais", "select=*&segmento=eq.\(Recorte.segmento)&order=semana.desc&limit=400")
             async let v: [PontoSerie] = Supabase.shared.buscar(
-                "series_semanais", "select=*&fonte=eq.varejo&order=semana.desc&limit=400")
+                "series_semanais", "select=*&segmento=eq.\(Recorte.segmento)&fonte=eq.varejo&order=semana.desc&limit=400")
             async let c: [Cobertura] = Supabase.shared.buscar(
-                "cobertura_por_celula", "select=*&order=semana.desc&limit=400")
+                "cobertura_por_celula", "select=*&segmento=eq.\(Recorte.segmento)&order=semana.desc&limit=400")
+
+            let dadosI = try await i
+            let dadosV = try await v
+            let dadosC = try await c
+            guard let semana = Elegibilidade.semanaComum(
+                    indices: dadosI, varejo: dadosV, coberturas: dadosC) else {
+                indices = [:]
+                varejo = [:]
+                coberturas = [:]
+                carregando = false
+                return
+            }
 
             var mapaI: [String: IndiceSemanal] = [:]
-            for x in try await i where mapaI[x.termoId] == nil { mapaI[x.termoId] = x }
+            for x in dadosI where x.semana == semana { mapaI[x.termoId] = x }
             indices = mapaI
 
             var mapaV: [String: PontoSerie] = [:]
-            for x in try await v where mapaV[x.termoId] == nil { mapaV[x.termoId] = x }
+            for x in dadosV where x.semana == semana { mapaV[x.termoId] = x }
             varejo = mapaV
 
-            // §8: a cobertura tem de ser a da MESMA semana do share exibido.
+            // §8: todos os termos usam o mesmo recorte semanal. Ausência não
+            // libera leitura; ela fica explícita na linha do atributo.
             var mapaC: [String: Cobertura] = [:]
-            for x in try await c {
-                guard let ponto = mapaV[x.termoId], ponto.semana == x.semana else { continue }
-                if mapaC[x.termoId] == nil { mapaC[x.termoId] = x }
-            }
+            for x in dadosC where x.semana == semana { mapaC[x.termoId] = x }
             coberturas = mapaC
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
@@ -189,16 +204,23 @@ struct LinhaComparada: View {
     let cobertura: Cobertura?
 
     var body: some View {
+        let podeMostrar = Elegibilidade.comparacao(
+            indice: indice, varejo: varejo, cobertura: cobertura)
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack {
                 Text(termo.rotulo).font(Tokens.Fonte.corpo)
                 Spacer()
-                SeloEstado(estado: indice?.estado, motivo: "Menos de duas pernas nesta semana.")
+                SeloEstado(estado: podeMostrar ? indice?.estado : nil,
+                           motivo: podeMostrar
+                               ? "Menos de duas pernas nesta semana."
+                               : "Sem cobertura suficiente da mesma semana.")
             }
 
-            if let cobertura, !cobertura.suficiente {
+            if cobertura == nil {
+                LinhaInsumo(texto: "Não há medição de cobertura para este atributo nesta semana.")
+            } else if !podeMostrar {
                 // §8: sem cobertura, nem índice nem share.
-                LinhaInsumo(texto: "Cobertura insuficiente: \(cobertura.oQueFalta).")
+                LinhaInsumo(texto: "Cobertura insuficiente ou fora do mesmo recorte: \(cobertura?.oQueFalta ?? "sem medição").")
             } else {
                 HStack(alignment: .top, spacing: Tokens.Espaco.g) {
                     eixo(titulo: "No painel",
