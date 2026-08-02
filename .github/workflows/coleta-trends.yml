@@ -7,33 +7,30 @@ name: Coleta de busca (Google Trends)
 # A primeira execucao e o backfill de 5 anos (§19) e traz ~261 semanas por
 # termo de uma vez. As seguintes sao incrementais e baratas.
 on:
+  workflow_call:
+    inputs:
+      modo:
+        description: 'backfill, semanal ou vazio para escolha automatica'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      SUPABASE_URL:
+        required: true
+      SUPABASE_SECRET_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       modo:
         description: 'backfill (so termos sem serie) ou semanal (todos)'
         required: false
         default: ''
-  schedule:
-    # DIARIA, 04:30 BRT = 07:30 UTC. Depois das coletas de varejo, para nao
-    # competir por janela.
-    #
-    # Era SEMANAL (segunda), e nao funcionava. O Google devolve 429 em 7 de 10
-    # grupos mesmo do IP residencial, entao uma tentativa por semana nunca
-    # fecha a taxonomia -- a perna de busca ficou 19 dias parada em 13/07/2026
-    # e so foi notada em 01/08. Com tentativa diaria a cobertura converge, e o
-    # volume POR EXECUCAO nao muda: a regra 7 continua respeitada, porque o
-    # teto e de 1 req/s e a espera entre grupos e de 45 segundos.
-    #
-    # A serie continua sendo SEMANAL (§19): o Trends devolve ponto por semana,
-    # e a gravacao e idempotente na chave (termo, segmento, fonte, semana).
-    # Rodar todo dia so aumenta a chance de a semana corrente ser preenchida.
-    - cron: '30 7 * * *'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: coleta-trends
+  group: canario-dados
   cancel-in-progress: false
 
 jobs:
@@ -41,7 +38,7 @@ jobs:
     runs-on: [self-hosted, macOS]
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - uses: ./.github/actions/python-mac
 
@@ -53,11 +50,3 @@ jobs:
           # sem serie, semanal quando todos tiverem.
           TRENDS_MODO: ${{ inputs.modo }}
         run: "$PY coletor/coletor_trends.py"
-
-      # O git deste Mac tambem e atalho do Xcode e nao funciona; o dado ja esta
-      # no Supabase. Ver a nota em coleta-shopify.yml.
-      - name: Commitar relatorio (opcional neste runner)
-        if: always()
-        continue-on-error: true
-        run: >-
-          bash .github/commitar.sh "SAUDE.md" "Relatorio de saude - busca"

@@ -231,13 +231,13 @@ struct RelatorioDoTermo: View {
         do {
             async let s: [PontoSerie] = Supabase.shared.buscar(
                 "series_semanais",
-                "select=*&termo_id=eq.\(termo.id)&order=semana.desc&limit=600")
+                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=600")
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_semanais",
-                "select=*&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
+                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",
-                "select=*&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
+                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
             serie = try await s
             indices = try await i
             coberturas = try await c

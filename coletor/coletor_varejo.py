@@ -688,49 +688,160 @@ def escrever_saude(hoje, metricas):
             "total_declarado": m["declarado"], "pct_campos_ok": m["pct_campos_ok"],
             "alertas": m["alertas"],
         }], on_conflict="data,fonte,marca_id")
+    renderizar_saude(hoje, metricas)
 
-    nomes = {m["id"]: (m["nome"], m.get("plataforma") or "?")
-             for m in supabase_rest.selecionar(
-                 "marcas", "?select=id,nome,plataforma")}
-    do_dia = supabase_rest.selecionar(
-        "saude", "?data=eq.{}&fonte=eq.varejo&select=marca_id,visitados,"
-                 "gravados,total_declarado,pct_campos_ok,alertas".format(hoje.isoformat()))
-    metricas = [{
-        "marca_id": r["marca_id"],
-        "nome": nomes.get(r["marca_id"], ("(id {})".format(r["marca_id"]), "?"))[0],
-        "plataforma": nomes.get(r["marca_id"], ("", "?"))[1],
-        "visitados": r["visitados"] or 0, "gravados": r["gravados"] or 0,
-        "declarado": r["total_declarado"], "pct_campos_ok": r["pct_campos_ok"],
-        "alertas": r["alertas"],
-    } for r in do_dia] or metricas
 
+def _valor_de_saude(linha):
+    """Métrica de volume comparável dentro de cada fonte."""
+    if linha.get("fonte") == "varejo":
+        return linha.get("visitados") or 0
+    if linha.get("itens") is not None:
+        return linha.get("itens") or 0
+    return linha.get("gravados") or 0
+
+
+def alertas_criticos(registros, marcas_ativas, hoje):
+    """Detecta ausência, zero e queda >70% contra os sete dias anteriores."""
+    hoje_iso = hoje.isoformat()
+    atuais = {}
+    anteriores = {}
+    for r in sorted(registros,
+                    key=lambda x: (x.get("criado_em") or "", x.get("id") or 0)):
+        chave = (r.get("fonte"), r.get("marca_id"))
+        if r.get("data") == hoje_iso:
+            atuais[chave] = r
+        else:
+            anteriores.setdefault(chave, []).append(_valor_de_saude(r))
+
+    esperadas = {("editorial", None), ("busca", None)}
+    esperadas.update(("varejo", m["id"]) for m in marcas_ativas)
+    criticos = []
+    for chave in sorted(esperadas, key=lambda x: (x[0], x[1] or 0)):
+        fonte, marca_id = chave
+        atual = atuais.get(chave)
+        nome = next((m["nome"] for m in marcas_ativas
+                     if m["id"] == marca_id), None)
+        rotulo = "varejo/{}".format(nome) if nome else fonte
+        if atual is None:
+            criticos.append("{} sem observacao hoje".format(rotulo))
+            continue
+        valor = _valor_de_saude(atual)
+        if valor <= 0:
+            criticos.append("{} retornou zero".format(rotulo))
+            continue
+        base = [v for v in anteriores.get(chave, []) if v > 0]
+        if base:
+            media = sum(base) / float(len(base))
+            if valor < media * 0.30:
+                criticos.append(
+                    "{} caiu {:.0f}% contra a media de 7 dias ({} vs {:.0f})".format(
+                        rotulo, 100 * (1 - valor / media), valor, media))
+    return criticos
+
+
+def renderizar_saude(hoje, fallback_varejo=None):
+    """Renderiza uma visão única depois de todas as pernas da coleta."""
+    inicio = hoje - timedelta(days=7)
+    marcas = supabase_rest.selecionar(
+        "marcas", "?select=id,nome,plataforma,status_teste,ativa&order=nome")
+    marcas_ativas = [m for m in marcas
+                     if m.get("ativa")
+                     and m.get("status_teste") in ("vtex", "shopify")]
+    nomes = {m["id"]: (m["nome"], m.get("plataforma") or "?") for m in marcas}
+    registros = supabase_rest.selecionar(
+        "saude", "?data=gte.{}&data=lte.{}&select=id,data,fonte,marca_id,"
+                 "visitados,gravados,itens,total_declarado,pct_campos_ok,"
+                 "alertas,criado_em&order=criado_em.asc".format(
+                     inicio.isoformat(), hoje.isoformat()))
+
+    hoje_iso = hoje.isoformat()
+    atuais = {}
+    for r in registros:
+        if r.get("data") == hoje_iso:
+            atuais[(r.get("fonte"), r.get("marca_id"))] = r
+
+    metricas = []
+    for (fonte, marca_id), r in atuais.items():
+        if fonte != "varejo":
+            continue
+        nome, plataforma = nomes.get(
+            marca_id, ("(id {})".format(marca_id), "?"))
+        metricas.append({
+            "marca_id": marca_id, "nome": nome, "plataforma": plataforma,
+            "visitados": r.get("visitados") or 0,
+            "gravados": r.get("gravados") or 0,
+            "declarado": r.get("total_declarado"),
+            "pct_campos_ok": r.get("pct_campos_ok"),
+            "alertas": r.get("alertas"),
+        })
+    if not metricas and fallback_varejo:
+        metricas = fallback_varejo
+
+    criticos = alertas_criticos(registros, marcas_ativas, hoje)
     tot_vis = sum(m["visitados"] for m in metricas)
     tot_grav = sum(m["gravados"] for m in metricas)
-    zero = [m for m in metricas if m["visitados"] == 0]
+    presentes = {m["marca_id"] for m in metricas}
+    faltantes = [m["nome"] for m in marcas_ativas if m["id"] not in presentes]
 
     linhas = ["# SAÚDE — coletores do Canário\n",
-              "**Última coleta (UTC):** {}\n".format(datetime.now(timezone.utc).isoformat()),
-              "\n## Varejo\n",
-              "- Produtos **visitados**: {}\n".format(tot_vis),
-              "- Snapshots **gravados** (delta, B3): {}\n".format(tot_grav),
-              "- Marcas coletando: {} de {}\n".format(len(metricas) - len(zero), len(metricas))]
-    if zero:
-        linhas.append("\n> ⚠️ Zero itens (alerta imediato, §20): {}\n".format(
-            ", ".join(m["nome"] for m in zero)))
-    linhas.append("\n| Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |")
+              "**Gerado (UTC):** {}\n".format(
+                  datetime.now(timezone.utc).isoformat()),
+              "**Data observada:** {}\n".format(hoje_iso),
+              "**Estado:** {}\n".format(
+                  "ATENÇÃO" if criticos else "sem alerta crítico"),
+              "\n## Portão operacional\n"]
+    if criticos:
+        linhas.extend("- ⚠️ {}\n".format(c) for c in criticos)
+    else:
+        linhas.append(
+            "- Todas as fontes obrigatórias registraram volume sem queda superior a 70%.\n")
+
+    linhas.extend(["\n## Varejo\n",
+                   "- Produtos **visitados**: {}\n".format(tot_vis),
+                   "- Snapshots **gravados** (delta, B3): {}\n".format(tot_grav),
+                   "- Marcas coletando: {} de {}\n".format(
+                       len(presentes), len(marcas_ativas))])
+    if faltantes:
+        linhas.append("\n> ⚠️ Sem observação hoje: {}\n".format(
+            ", ".join(faltantes)))
+    linhas.append(
+        "\n| Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |")
     linhas.append("|---|---|---|---|---|---|---|")
     for m in sorted(metricas, key=lambda x: -x["visitados"]):
+        alerta = (json.dumps(m["alertas"], ensure_ascii=False)
+                  if m["alertas"] else "—").replace("|", "\\|")
         linhas.append("| {} | {} | {} | {} | {} | {} | {} |".format(
             m["nome"], m["plataforma"], m["visitados"], m["gravados"],
             m["declarado"] if m["declarado"] else "—",
             m["pct_campos_ok"] if m["pct_campos_ok"] is not None else "—",
-            json.dumps(m["alertas"], ensure_ascii=False) if m["alertas"] else "—"))
+            alerta))
+
+    linhas.extend(["\n## Outras fontes\n",
+                   "| Fonte | Tentativas | Respostas | Itens/pontos | % ok | Alertas |",
+                   "|---|---:|---:|---:|---:|---|"])
+    for fonte in ("editorial", "busca"):
+        r = atuais.get((fonte, None))
+        if not r:
+            linhas.append(
+                "| {} | — | — | — | — | sem observação hoje |".format(fonte))
+            continue
+        alerta = (json.dumps(r.get("alertas"), ensure_ascii=False)
+                  if r.get("alertas") else "—").replace("|", "\\|")
+        linhas.append("| {} | {} | {} | {} | {} | {} |".format(
+            fonte, r.get("visitados") or 0, r.get("gravados") or 0,
+            r.get("itens") or 0,
+            r.get("pct_campos_ok")
+            if r.get("pct_campos_ok") is not None else "—",
+            alerta))
+
     linhas.append("\n---\n")
-    linhas.append("*Declarado* é a soma dos totais de departamento no header `resources` da VTEX; "
-                  "*visitados* são produtos distintos após dedup. Divergência acima de 2% vira alerta (condição 2.3). "
-                  "Se *visitados* e *gravados* convergirem dia após dia, é bug no delta (B3).\n")
+    linhas.append(
+        "Queda crítica = volume do dia abaixo de 30% da média das observações "
+        "positivas dos sete dias anteriores. Ausência e zero também bloqueiam. "
+        "O motor só deve publicar depois de todas as fontes obrigatórias.\n")
     with open(SAUDE_MD, "w", encoding="utf-8") as f:
         f.write("\n".join(linhas))
+    return criticos
 
 
 def main():

@@ -3,6 +3,18 @@ name: Motor (atributos, eventos, indice)
 # Roda no datacenter: e computacao sobre dado que ja esta no Supabase, sem
 # tocar em site nenhum. Nao sofre rate-limit e nao precisa do runner do Mac.
 on:
+  workflow_call:
+    inputs:
+      backfill_editorial:
+        description: 'Refazer o backfill editorial de 5 anos'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SUPABASE_URL:
+        required: true
+      SUPABASE_SECRET_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       backfill_editorial:
@@ -10,16 +22,12 @@ on:
         type: boolean
         required: false
         default: false
-  schedule:
-    # 04:10 BRT = 07:10 UTC, depois de todas as coletas (varejo 03:00,
-    # shopify 03:20, editorial 03:40). Servidor calcula, app consulta (§33).
-    - cron: '10 7 * * *'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: motor
+  group: canario-dados
   cancel-in-progress: false
 
 jobs:
@@ -27,17 +35,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.11'
-
-      - name: Ligar produtos aos termos da taxonomia
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python3 coletor/motor_atributos.py
 
       # OPT-IN, e nao "todo disparo manual".
       #
@@ -52,8 +54,10 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python3 coletor/backfill_editorial.py
 
-      - name: Computar séries, z-score, índice e estados
+      # Fica por ultimo inclusive no modo backfill: a mesma transacao publica
+      # atributos e recalcula todas as leituras já com o editorial atualizado.
+      - name: Preparar atributos e publicar todo o motor atomicamente
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python3 coletor/motor_computar.py
+        run: python3 coletor/motor_atributos.py

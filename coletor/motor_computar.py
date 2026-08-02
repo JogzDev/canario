@@ -1,11 +1,12 @@
-"""Motor, passos 2 e 3: dispara o calculo que vive no Postgres.
+"""Motor, passos 2 e 3: publica o calculo transacional do Postgres.
 
 O calculo pesado fica no banco de proposito (§33: "servidor calcula, app
 consulta"). Trazer 65 mil produtos e 190 mil ligacoes pela rede para somar em
 Python seria lento e fragil; a agregacao e window function, que e o que o
 Postgres faz melhor.
 
-Este script so orquestra: chama as funcoes na ordem certa e relata.
+Este script chama uma unica RPC. A ordem continua definida no banco, mas todas
+as escritas pertencem a mesma transacao: falha tardia preserva a leitura antiga.
 """
 
 import os
@@ -59,8 +60,9 @@ PASSOS = [
 # ela termina, ou o problema e outro e repetir nao resolve.
 #
 # As funcoes sao idempotentes (upsert na chave), entao repetir nao corrompe.
-# O que repetir faz e desperdicar, e mascarar o tempo real de cada passo.
-ESPERA_DO_LOTE = 600
+# Agora elas tambem sao atomicas, mas um retry ainda pode refazer minutos de
+# trabalho depois de uma resposta perdida. A confirmacao deve ser explicita.
+ESPERA_DO_LOTE = 900
 TENTATIVAS_DO_LOTE = 1
 
 
@@ -68,16 +70,17 @@ def main():
     if not supabase_rest.configurado():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
         return 1
+    inicio = time.monotonic()
+    _, resultados = supabase_rest._requisicao(
+        "POST", "rpc/computar_motor", corpo={},
+        tentativas=TENTATIVAS_DO_LOTE, timeout=ESPERA_DO_LOTE)
+    duracao = time.monotonic() - inicio
     for funcao, descricao in PASSOS:
-        inicio = time.monotonic()
-        _, resultado = supabase_rest._requisicao(
-            "POST", "rpc/" + funcao, corpo={},
-            tentativas=TENTATIVAS_DO_LOTE, timeout=ESPERA_DO_LOTE)
-        # O tempo de cada passo vai para o log: e o que teria mostrado, sem
-        # precisar de investigacao, que a curva de tamanhos era a lenta.
-        print("  {:26} -> {:>6} linhas em {:5.1f}s   ({})".format(
-            funcao, resultado, time.monotonic() - inicio, descricao),
+        print("  {:26} -> {:>6} linhas   ({})".format(
+            funcao, (resultados or {}).get(funcao, "?"), descricao),
             file=sys.stderr)
+    print("Motor publicado atomicamente em {:.1f}s.".format(duracao),
+          file=sys.stderr)
     return 0
 
 

@@ -17,13 +17,15 @@ como vestuario feminino, em TODO nivel da arvore. Entao todo produto que ele
 trouxe esta no segmento por construcao, e nao por suposicao -- e o que o B4
 queria derivar do mapa de categorias ja esta garantido pelo caminho da coleta.
 
-Idempotente: pode rodar todo dia. A chave de produto_termos e
-(produto_id, termo_id, origem), entao recasar nao duplica.
+Idempotente: pode rodar todo dia. O casamento inteiro vai para um stage
+invisivel; so depois de todos os produtos chegarem uma RPC troca o estado vivo
+em uma transacao. Uma queda no meio preserva a taxonomia anterior.
 """
 
 import os
 import re
 import sys
+import uuid
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -202,14 +204,9 @@ def main():
     print("Termos aprovados: {} ({} categorias)".format(
         len(termos), len(categorias)), file=sys.stderr)
 
-    # Apaga as ligacoes de origem='titulo' antes de recomputar. Sem isto o
-    # upsert so ACRESCENTA, e uma ligacao criada por uma versao antiga do
-    # matcher (ou por uma palavra que saiu da taxonomia) ficaria para sempre.
-    # Aconteceu em 30/07: 375 mil ligacoes computadas a partir da descricao
-    # continuariam no banco depois da correcao. So mexe em origem='titulo';
-    # 'visao' e 'manual' sao de outra procedencia e nao se apagam aqui.
-    supabase_rest.apagar("produto_termos", "origem=eq.titulo")
-    print("Ligacoes anteriores de origem='titulo' apagadas.", file=sys.stderr)
+    execucao = str(uuid.uuid4())
+    print("Preparando atributos na execucao {}.".format(execucao),
+          file=sys.stderr)
 
     total = casados = ligacoes = fora = 0
     sem_categoria = 0
@@ -217,7 +214,7 @@ def main():
     marcas = {m["id"]: m.get("nome")
               for m in supabase_rest.selecionar("marcas", "?select=id,nome")}
 
-    buffer_pt, buffer_seg, buffer_fora = [], [], []
+    buffer_pt, buffer_produtos = [], []
 
     for lote in produtos_em_paginas():
         for p in lote:
@@ -246,8 +243,11 @@ def main():
             if fora_do_segmento(texto) or e_acessorio(p.get("titulo"),
                                                       p.get("categoria_site")):
                 fora += 1
-                if p.get("segmento") is not None:
-                    buffer_fora.append(p["id"])
+                buffer_produtos.append({
+                    "execucao": execucao,
+                    "produto_id": p["id"],
+                    "segmento": None,
+                })
                 continue
             achados = termos_que_casam(texto, termos) if texto.strip() else set()
             if achados:
@@ -257,34 +257,44 @@ def main():
                     # invisivel na leitura do §11 ("categoria e filtro").
                     sem_categoria += 1
                 for termo_id in achados:
-                    buffer_pt.append({"produto_id": p["id"], "termo_id": termo_id,
-                                      "origem": "titulo"})
+                    buffer_pt.append({
+                        "execucao": execucao,
+                        "produto_id": p["id"],
+                        "termo_id": termo_id,
+                    })
                     ligacoes += 1
-            if p.get("segmento") != SEGMENTO:
-                buffer_seg.append(p["id"])
+            buffer_produtos.append({
+                "execucao": execucao,
+                "produto_id": p["id"],
+                "segmento": SEGMENTO,
+            })
 
             if len(buffer_pt) >= BLOCO_ESCRITA:
-                supabase_rest.upsert("produto_termos", buffer_pt,
-                                     on_conflict="produto_id,termo_id,origem")
+                supabase_rest.upsert(
+                    "motor_termos_stage", buffer_pt,
+                    on_conflict="execucao,produto_id,termo_id")
                 buffer_pt = []
-        # B4: segmento por construcao, agora confirmado pelo proprio produto.
-        for i in range(0, len(buffer_seg), 200):
-            ids = ",".join(str(x) for x in buffer_seg[i:i + 200])
-            supabase_rest.atualizar("produtos", "id=in.({})".format(ids),
-                                    {"segmento": SEGMENTO})
-        # Produto de outra populacao sai do segmento: com segmento nulo ele
-        # deixa de entrar na serie de varejo e no portao de cobertura.
-        for i in range(0, len(buffer_fora), 200):
-            ids = ",".join(str(x) for x in buffer_fora[i:i + 200])
-            supabase_rest.atualizar("produtos", "id=in.({})".format(ids),
-                                    {"segmento": None})
-        buffer_seg, buffer_fora = [], []
+        # Todos os produtos recebem uma linha, inclusive os fora do segmento.
+        # A RPC usa essa cardinalidade para rejeitar stage parcial antes de
+        # tocar nas tabelas vivas.
+        supabase_rest.upsert(
+            "motor_produtos_stage", buffer_produtos,
+            on_conflict="execucao,produto_id")
+        buffer_produtos = []
         print("  {} produtos processados, {} com atributo, {} ligacoes".format(
             total, casados, ligacoes), file=sys.stderr)
 
     if buffer_pt:
-        supabase_rest.upsert("produto_termos", buffer_pt,
-                             on_conflict="produto_id,termo_id,origem")
+        supabase_rest.upsert(
+            "motor_termos_stage", buffer_pt,
+            on_conflict="execucao,produto_id,termo_id")
+
+    _, publicado = supabase_rest._requisicao(
+        "POST", "rpc/publicar_motor",
+        corpo={"p_execucao": execucao, "p_total": total},
+        tentativas=1, timeout=900)
+    print("Atributos e calculos publicados atomicamente: {}.".format(publicado),
+          file=sys.stderr)
 
     pct = (100.0 * casados / total) if total else 0
     print("\n{} produtos, {} com pelo menos um termo ({:.1f}%), {} ligacoes.".format(

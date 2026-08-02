@@ -1,6 +1,0 @@
--- CORRECAO de honestidade: `estavel` estava sendo afirmado com UMA perna ativa.
--- A §22 exige 2 fontes concordando; com uma perna nenhum estado e alcancavel, e
--- cair no else 'estavel' faz o sistema AFIRMAR estabilidade que nao mediu --
--- valor plausivel no lugar de nulo declarado, que a regra 2 proibe.
--- Agora o estado fica nulo, com o motivo em meta.estado_indisponivel_por.
--- (corpo aplicado via migracao f3_estado_nulo_quando_uma_perna_so)

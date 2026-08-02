@@ -24,9 +24,11 @@ WORKFLOWS = os.path.join(RAIZ, ".github", "workflows", "*.yml")
 def checar_com_pyyaml(arquivos):
     import yaml
     falhas = []
+    carregados = {}
     for f in arquivos:
         try:
-            dados = yaml.safe_load(open(f, encoding="utf-8"))
+            with open(f, encoding="utf-8") as entrada:
+                dados = yaml.safe_load(entrada)
         except Exception as ex:
             falhas.append((f, str(ex).replace("\n", " ")[:200]))
             continue
@@ -38,6 +40,114 @@ def checar_com_pyyaml(arquivos):
             falhas.append((f, "sem a chave `jobs`"))
         if "on" not in dados and True not in dados:
             falhas.append((f, "sem a chave `on`"))
+        carregados[os.path.basename(f)] = dados
+
+    falhas.extend(checar_orquestracao(carregados))
+    return falhas
+
+
+def checar_orquestracao(workflows):
+    """Impede cron concorrente e regressão na ordem coleta -> saúde -> motor."""
+    falhas = []
+
+    def falhar(arquivo, mensagem):
+        falhas.append((os.path.join(os.path.dirname(WORKFLOWS), arquivo),
+                       mensagem))
+
+    individuais = {
+        "coleta.yml": "./.github/workflows/coleta.yml",
+        "coleta-shopify.yml": "./.github/workflows/coleta-shopify.yml",
+        "coleta-editorial.yml": "./.github/workflows/coleta-editorial.yml",
+        "coleta-trends.yml": "./.github/workflows/coleta-trends.yml",
+        "motor.yml": "./.github/workflows/motor.yml",
+    }
+    for arquivo in individuais:
+        dados = workflows.get(arquivo, {})
+        gatilhos = dados.get("on", dados.get(True, {})) or {}
+        if "workflow_call" not in gatilhos:
+            falhar(arquivo, "workflow individual sem `workflow_call`")
+        if "schedule" in gatilhos:
+            falhar(arquivo, "workflow individual voltou a ter cron proprio")
+
+    pipeline = workflows.get("pipeline-diario.yml", {})
+    gatilhos = pipeline.get("on", pipeline.get(True, {})) or {}
+    if "schedule" not in gatilhos:
+        falhar("pipeline-diario.yml", "pipeline unico sem `schedule`")
+
+    jobs = pipeline.get("jobs", {})
+    cadeia = {
+        "varejo-vtex": (None, individuais["coleta.yml"]),
+        "varejo-shopify": ("varejo-vtex", individuais["coleta-shopify.yml"]),
+        "editorial": ("varejo-shopify", individuais["coleta-editorial.yml"]),
+        "busca": ("editorial", individuais["coleta-trends.yml"]),
+        "motor": ("saude", individuais["motor.yml"]),
+    }
+    for job, (dependencia, reutilizavel) in cadeia.items():
+        definicao = jobs.get(job, {})
+        if definicao.get("uses") != reutilizavel:
+            falhar("pipeline-diario.yml",
+                   "job `{}` nao chama `{}`".format(job, reutilizavel))
+        if definicao.get("needs") != dependencia:
+            falhar("pipeline-diario.yml",
+                   "job `{}` deveria depender de `{}`".format(
+                       job, dependencia))
+
+    saude = jobs.get("saude", {})
+    if set(saude.get("needs", [])) != {
+            "varejo-vtex", "varejo-shopify", "editorial", "busca"}:
+        falhar("pipeline-diario.yml",
+               "saude deve observar as quatro coletas")
+    if "always()" not in str(saude.get("if", "")):
+        falhar("pipeline-diario.yml",
+               "saude deve rodar mesmo quando uma coleta falhar")
+
+    passos = saude.get("steps", [])
+    ids = {p.get("id"): p for p in passos if p.get("id")}
+    if not {"portao", "dependencias"}.issubset(ids):
+        falhar("pipeline-diario.yml",
+               "saude nao valida dados e resultado dos jobs")
+
+    motor = workflows.get("motor.yml", {}).get("jobs", {}).get(
+        "computar", {})
+    comandos = [str(p.get("run", "")) for p in motor.get("steps", [])]
+    atributos = [i for i, comando in enumerate(comandos)
+                 if "motor_atributos.py" in comando]
+    legado = [comando for comando in comandos
+              if "motor_computar.py" in comando]
+    backfill = [i for i, comando in enumerate(comandos)
+                if "backfill_editorial.py" in comando]
+    if len(atributos) != 1 or legado:
+        falhar("motor.yml",
+               "workflow deve ter uma unica publicacao atomica do motor")
+    if backfill and atributos and backfill[0] > atributos[0]:
+        falhar("motor.yml", "backfill deve acontecer antes da publicacao")
+
+    sonda = workflows.get("sonda.yml", {}).get("jobs", {}).get("sondar", {})
+    passos_sonda = sonda.get("steps", [])
+    publicadores = [p for p in passos_sonda
+                    if "commitar.sh" in str(p.get("run", ""))]
+    if len(publicadores) != 1 or "github.ref_name == 'main'" not in str(
+            publicadores[0].get("if", "") if publicadores else ""):
+        falhar("sonda.yml",
+               "sonda so pode commitar relatorio na branch main")
+
+    acao = os.path.join(RAIZ, ".github", "actions", "python-mac",
+                        "action.yml")
+    try:
+        texto_acao = open(acao, encoding="utf-8").read()
+    except OSError as ex:
+        falhas.append((acao, "acao local ilegivel: {}".format(ex)))
+    else:
+        checksum = "dc3174666a30f4c38d04e79a80c3159b4b3aa69597c4676701c8386696811611"
+        exigencias = [checksum, "shasum -a 256 -c -", "--proto '=https'",
+                      "--tlsv1.2"]
+        for trecho in exigencias:
+            if trecho not in texto_acao:
+                falhas.append((acao,
+                               "Python portatil sem protecao `{}`".format(
+                                   trecho)))
+        if texto_acao.find("shasum -a 256 -c -") > texto_acao.find("tar xzf"):
+            falhas.append((acao, "tarball e extraido antes de validar SHA-256"))
     return falhas
 
 
@@ -62,6 +172,26 @@ def checar_a_mao(arquivos):
     return falhas
 
 
+def checar_actions_fixadas(arquivos):
+    """Código externo com segredo só pode entrar por commit imutável."""
+    falhas = []
+    padrao = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)")
+    for arquivo in arquivos:
+        for numero, linha in enumerate(open(arquivo, encoding="utf-8"), 1):
+            achado = padrao.match(linha)
+            if not achado:
+                continue
+            referencia = achado.group(1)
+            if referencia.startswith("./"):
+                continue
+            if not re.search(r"@[0-9a-f]{40}$", referencia):
+                falhas.append((
+                    arquivo,
+                    "linha {}: action externa sem SHA completo: {}".format(
+                        numero, referencia)))
+    return falhas
+
+
 def main():
     arquivos = sorted(glob.glob(WORKFLOWS))
     if not arquivos:
@@ -75,6 +205,8 @@ def main():
     except ImportError:
         falhas = checar_a_mao(arquivos)
         modo = "verificacao manual (pyyaml ausente)"
+
+    falhas.extend(checar_actions_fixadas(arquivos))
 
     for f, erro in falhas:
         print("FALHOU {}: {}".format(os.path.basename(f), erro))

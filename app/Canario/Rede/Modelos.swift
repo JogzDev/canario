@@ -3,6 +3,12 @@ import Foundation
 /// O que o app lê do Supabase. Nada aqui é calculado no dispositivo:
 /// **servidor calcula, app consulta** (§33).
 
+/// O único recorte servido pela v1. Centralizar evita que uma tela consulte
+/// silenciosamente outro segmento quando o banco passar a ter mais de um.
+enum Recorte {
+    static let segmento = "feminino_casual_br"
+}
+
 // MARK: - Taxonomia
 
 /// Um termo aprovado. O app só recebe `status='aprovado'` — a regra inviolável 4
@@ -226,6 +232,36 @@ struct Cobertura: Decodable, Hashable {
             partes.append("\(m) marcas externas coletando, mínimo \(minimoMarcas)")
         }
         return partes.isEmpty ? "cobertura abaixo do mínimo" : partes.joined(separator: "; ")
+    }
+}
+
+/// Aplica a §8 em um único lugar. A ausência de cobertura reprova a leitura:
+/// `nil` quer dizer "não foi medido", nunca "pode mostrar".
+enum Elegibilidade {
+    static func indice(_ indice: IndiceSemanal?, cobertura: Cobertura?) -> Bool {
+        guard let indice, let cobertura else { return false }
+        return cobertura.suficiente
+            && cobertura.termoId == indice.termoId
+            && cobertura.segmento == indice.segmento
+            && cobertura.semana == indice.semana
+    }
+
+    static func comparacao(indice: IndiceSemanal?, varejo: PontoSerie?,
+                           cobertura: Cobertura?) -> Bool {
+        guard let indice, let varejo, let cobertura else { return false }
+        return self.indice(indice, cobertura: cobertura)
+            && indice.termoId == varejo.termoId
+            && indice.semana == varejo.semana
+    }
+
+    /// A aba Comparar precisa de um recorte comum; "o mais recente de cada"
+    /// pode juntar semanas diferentes numa frase só.
+    static func semanaComum(indices: [IndiceSemanal], varejo: [PontoSerie],
+                            coberturas: [Cobertura]) -> String? {
+        let semanasI = Set(indices.filter { $0.segmento == Recorte.segmento }.map(\.semana))
+        let semanasV = Set(varejo.map(\.semana))
+        let semanasC = Set(coberturas.filter { $0.segmento == Recorte.segmento }.map(\.semana))
+        return semanasI.intersection(semanasV).intersection(semanasC).max()
     }
 }
 

@@ -26,16 +26,35 @@ runs:
           echo "PY=python3" >> "$GITHUB_ENV"
           exit 0
         fi
-        PORTATIL="$HOME/.canario-python/bin/python3"
-        if [ ! -x "$PORTATIL" ]; then
-          echo "Sem Python utilizavel; instalando um portatil (uma vez so)."
+        if [ "$(uname -m)" != "x86_64" ]; then
+          echo "Runner sem Python e arquitetura nao suportada: $(uname -m)" >&2
+          exit 1
+        fi
+
+        DESTINO="$HOME/.canario-python"
+        PORTATIL="$DESTINO/bin/python3"
+        MARCADOR="$DESTINO/.canario-sha256"
+        ARQUIVO="$HOME/.canario-python-dl/py.tar.gz"
+        SHA256="dc3174666a30f4c38d04e79a80c3159b4b3aa69597c4676701c8386696811611"
+        URL="https://github.com/astral-sh/python-build-standalone/releases/download/20240726/cpython-3.11.9%2B20240726-x86_64-apple-darwin-install_only.tar.gz"
+
+        if [ ! -x "$PORTATIL" ] || [ ! -f "$MARCADOR" ] || \
+           [ "$(tr -d '[:space:]' < "$MARCADOR" 2>/dev/null || true)" != "$SHA256" ]; then
+          echo "Sem Python portatil verificado; instalando uma copia autenticada."
           mkdir -p "$HOME/.canario-python-dl"
-          curl -fsSL -o "$HOME/.canario-python-dl/py.tar.gz" \
-            "https://github.com/astral-sh/python-build-standalone/releases/download/20240726/cpython-3.11.9+20240726-x86_64-apple-darwin-install_only.tar.gz"
-          rm -rf "$HOME/.canario-python"
-          mkdir -p "$HOME/.canario-python"
-          tar xzf "$HOME/.canario-python-dl/py.tar.gz" \
-            -C "$HOME/.canario-python" --strip-components=1
+          curl --proto '=https' --tlsv1.2 -fsSL -o "$ARQUIVO.tmp" "$URL"
+          echo "$SHA256  $ARQUIVO.tmp" | shasum -a 256 -c -
+          mv "$ARQUIVO.tmp" "$ARQUIVO"
+
+          # O alvo e deliberadamente fixo e validado antes da remocao.
+          if [ "$DESTINO" != "$HOME/.canario-python" ]; then
+            echo "Destino inesperado: $DESTINO" >&2
+            exit 1
+          fi
+          rm -rf -- "$DESTINO"
+          mkdir -p "$DESTINO"
+          tar xzf "$ARQUIVO" -C "$DESTINO" --strip-components=1
+          echo "$SHA256" > "$MARCADOR"
         fi
         "$PORTATIL" --version
         "$PORTATIL" -c "import json,urllib.request; print('stdlib ok')"

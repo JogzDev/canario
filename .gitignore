@@ -35,3 +35,6 @@ VERIFICACAO_TRENDS.html
 
 # SwiftPM
 .build/
+
+# Estado local da CLI Supabase (referencia do projeto e versoes remotas)
+supabase/.temp/
