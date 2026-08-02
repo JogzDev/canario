@@ -41,12 +41,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Ligar produtos aos termos da taxonomia
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python3 coletor/motor_atributos.py
-
       # OPT-IN, e nao "todo disparo manual".
       #
       # Era `github.event_name == 'workflow_dispatch'`, o que tornava impossivel
@@ -60,8 +54,10 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python3 coletor/backfill_editorial.py
 
-      - name: Computar séries, z-score, índice e estados
+      # Fica por ultimo inclusive no modo backfill: a mesma transacao publica
+      # atributos e recalcula todas as leituras já com o editorial atualizado.
+      - name: Preparar atributos e publicar todo o motor atomicamente
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python3 coletor/motor_computar.py
+        run: python3 coletor/motor_atributos.py

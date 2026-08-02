@@ -66,7 +66,8 @@ def main():
         if trecho not in similares:
             return falhar("similares final nao garante: {}".format(trecho))
 
-    estado_final = open(arquivos[-1], encoding="utf-8").read().lower()
+    estado_final = "\n".join(
+        open(c, encoding="utf-8").read().lower() for c in arquivos)
     exigencias_finais = [
         "unique nulls not distinct (data, fonte, marca_id)",
         "revoke execute on functions from public, anon, authenticated",
@@ -75,6 +76,47 @@ def main():
     for trecho in exigencias_finais:
         if trecho not in estado_final:
             return falhar("hardening final ausente: {}".format(trecho))
+
+    _, publicar = ultima_definicao(
+        arquivos, "create or replace function public.publicar_atributos")
+    exigencias_publicacao = [
+        "stage incompleto",
+        "produtos_vivos <> p_total",
+        "delete from public.produto_termos where origem = 'titulo'",
+        "produtos_publicados <> p_total",
+        "pg_advisory_xact_lock",
+    ]
+    for trecho in exigencias_publicacao:
+        if trecho not in publicar:
+            return falhar("publicacao de atributos nao garante: {}".format(
+                trecho))
+
+    _, motor = ultima_definicao(
+        arquivos, "create or replace function public.computar_motor")
+    passos_motor = [
+        "r_eventos := public.computar_eventos()",
+        "r_varejo := public.computar_serie_varejo()",
+        "r_editorial := public.computar_serie_editorial()",
+        "r_z := public.computar_z()",
+        "r_indice := public.computar_indice()",
+        "r_curva := public.computar_curva_tamanhos()",
+        "r_raridade := public.computar_raridade()",
+    ]
+    posicoes = [motor.find(p) for p in passos_motor]
+    if any(p < 0 for p in posicoes) or posicoes != sorted(posicoes):
+        return falhar("computar_motor nao preserva a ordem dos sete passos")
+    if "revoke execute on function public.computar_motor()" not in motor:
+        return falhar("computar_motor ficou executavel publicamente")
+
+    _, lote = ultima_definicao(
+        arquivos, "create or replace function public.publicar_motor")
+    publicar_pos = lote.find(
+        "atributos := public.publicar_atributos(p_execucao, p_total)")
+    computar_pos = lote.find("calculos := public.computar_motor()")
+    if publicar_pos < 0 or computar_pos <= publicar_pos:
+        return falhar("publicar_motor nao une atributos e calculos na ordem")
+    if "revoke execute on function public.publicar_motor(uuid, integer)" not in lote:
+        return falhar("publicar_motor ficou executavel publicamente")
 
     print("{} migrations: historico timestampado e estado final protegido".format(
         len(arquivos)))

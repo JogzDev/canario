@@ -106,6 +106,21 @@ def checar_orquestracao(workflows):
     if not {"portao", "dependencias"}.issubset(ids):
         falhar("pipeline-diario.yml",
                "saude nao valida dados e resultado dos jobs")
+
+    motor = workflows.get("motor.yml", {}).get("jobs", {}).get(
+        "computar", {})
+    comandos = [str(p.get("run", "")) for p in motor.get("steps", [])]
+    atributos = [i for i, comando in enumerate(comandos)
+                 if "motor_atributos.py" in comando]
+    legado = [comando for comando in comandos
+              if "motor_computar.py" in comando]
+    backfill = [i for i, comando in enumerate(comandos)
+                if "backfill_editorial.py" in comando]
+    if len(atributos) != 1 or legado:
+        falhar("motor.yml",
+               "workflow deve ter uma unica publicacao atomica do motor")
+    if backfill and atributos and backfill[0] > atributos[0]:
+        falhar("motor.yml", "backfill deve acontecer antes da publicacao")
     return falhas
 
 

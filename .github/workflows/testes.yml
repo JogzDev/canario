@@ -37,6 +37,8 @@ jobs:
         run: python3 coletor/teste_materializacao.py
       - name: Estado final das migrations
         run: python3 coletor/teste_migrations.py
+      - name: Publicacao atomica do motor
+        run: python3 coletor/teste_publicacao_motor.py
       - name: Portao operacional de saude
         run: python3 coletor/teste_saude.py
       - name: Workflows do Actions
