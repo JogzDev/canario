@@ -1,21 +1,36 @@
 # SAÚDE — coletores do Canário
 
-**Última coleta (UTC):** 2026-08-01T08:38:36.988033+00:00
+**Última coleta (UTC):** 2026-08-02T08:35:57.284140+00:00
 
 
 ## Varejo
 
-- Produtos **visitados**: 7722
+- Produtos **visitados**: 53128
 
-- Snapshots **gravados** (delta, B3): 497
+- Snapshots **gravados** (delta, B3): 2951
 
-- Marcas coletando: 2 de 2
+- Marcas coletando: 13 de 14
+
+
+> ⚠️ Zero itens (alerta imediato, §20): Fabula
 
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
-| PatBo | shopify | 7392 | 167 | — | 1.0 | — |
-| Amaro | shopify | 330 | 330 | — | 1.0 | — |
+| C&A | vtex | 22333 | 724 | 22333 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "faixas_truncadas": [{"faixa": "0-1", "existem": 41146, "coletados": 2500}, {"faixa": "0-1", "existem": 11352, "coletados": 2500}, {"faixa": "0-1", "existem": 7252, "coletados": 2500}, {"faixa": "0-1", "existem": 3466, "coletados": 2500}, {"faixa": "0-1", "existem": 6902, "coletados": 2500}]} |
+| Hering | vtex | 7776 | 317 | 7776 | 0.983 | — |
+| Dress To | vtex | 6526 | 119 | 6526 | 1.0 | — |
+| Farm | vtex | 2786 | 303 | 2786 | 0.985 | — |
+| Lanca Perfume | vtex | 2632 | 206 | 2634 | 1.0 | — |
+| Zinzane | vtex | 2439 | 106 | 2506 | 1.0 | {"divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 2439, "paginavel": 2506}} |
+| Le Lis Blanc | vtex | 1674 | 140 | 1674 | 1.0 | — |
+| Animale | vtex | 1605 | 71 | 1605 | 1.0 | — |
+| Maria Filo | vtex | 1341 | 509 | 1344 | 1.0 | — |
+| Morena Rosa | vtex | 1172 | 9 | 1172 | 1.0 | — |
+| NV | vtex | 1141 | 48 | 1737 | 1.0 | {"divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 1141, "paginavel": 1737}} |
+| Cantao | vtex | 883 | 361 | 883 | 1.0 | — |
+| Bo.Bo | vtex | 820 | 38 | 820 | 1.0 | — |
+| Fabula | vtex | 0 | 0 | — | — | — |
 
 ---
 
