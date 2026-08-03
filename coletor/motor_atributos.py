@@ -228,6 +228,18 @@ def publicar_e_aguardar(execucao, total, intervalo=10, limite=1800):
         time.sleep(intervalo)
 
 
+def preparar_stage():
+    """Descarta preparacao orfa antes de escrever um novo lote.
+
+    A RPC recusa agir se houver uma publicacao queued/running. Isso torna o
+    `TRUNCATE` seguro e recupera tambem uma queda do runner que aconteca antes
+    de a execucao chegar a `motor_execucoes`.
+    """
+    _, resultado = supabase_rest._requisicao(
+        "POST", "rpc/preparar_stage_motor", corpo={}, tentativas=1)
+    print("Stage do motor: {}.".format(resultado), file=sys.stderr)
+
+
 def main():
     if not supabase_rest.configurado():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
@@ -239,6 +251,8 @@ def main():
         return 0
     print("Termos aprovados: {} ({} categorias)".format(
         len(termos), len(categorias)), file=sys.stderr)
+
+    preparar_stage()
 
     execucao = str(uuid.uuid4())
     print("Preparando atributos na execucao {}.".format(execucao),

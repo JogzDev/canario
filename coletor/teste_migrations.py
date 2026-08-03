@@ -130,6 +130,19 @@ def main():
         if trecho not in assinc:
             return falhar("fila assincrona nao garante: {}".format(trecho))
 
+    _, preparo = ultima_definicao(
+        arquivos, "create or replace function public.preparar_stage_motor")
+    exigencias_preparo = [
+        "interval '20 minutes'",
+        "where status in ('queued', 'running')",
+        "ja existe uma publicacao do motor em andamento",
+        "truncate table public.motor_termos_stage, public.motor_produtos_stage",
+        "revoke execute on function public.preparar_stage_motor()",
+    ]
+    for trecho in exigencias_preparo:
+        if trecho not in preparo:
+            return falhar("preparo reconstruivel nao garante: {}".format(trecho))
+
     _, worker = ultima_definicao(
         arquivos, "create or replace function public.executar_publicacao_motor")
     exigencias_worker = [

@@ -45,6 +45,8 @@ def testar_atributos():
 
     def rpc(metodo, caminho, corpo=None, **kwargs):
         rpcs.append((metodo, caminho, dict(corpo or {})))
+        if caminho == "rpc/preparar_stage_motor":
+            return 200, {"stage": "limpo", "execucoes_expiradas": 0}
         return 200, {"status": "queued"}
 
     motor_atributos.supabase_rest.upsert = upsert
@@ -75,9 +77,10 @@ def testar_atributos():
               if tabela == "motor_termos_stage" for x in linhas]
     if len(termos) != 1 or termos[0]["termo_id"] != "vestido":
         return falhar("stage de termos incorreto")
-    if len(rpcs) != 1 or rpcs[0][1] != "rpc/solicitar_publicacao_motor":
-        return falhar("motor nao agenda a publicacao atomica")
-    if rpcs[0][2].get("p_total") != 2:
+    if [chamada[1] for chamada in rpcs] != [
+            "rpc/preparar_stage_motor", "rpc/solicitar_publicacao_motor"]:
+        return falhar("motor nao recupera stage antes de agendar a publicacao")
+    if rpcs[1][2].get("p_total") != 2:
         return falhar("RPC nao recebeu a cardinalidade completa")
     return 0
 
