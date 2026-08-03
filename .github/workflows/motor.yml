@@ -54,8 +54,8 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python3 coletor/backfill_editorial.py
 
-      # Fica por ultimo inclusive no modo backfill: a mesma transacao publica
-      # atributos e recalcula todas as leituras já com o editorial atualizado.
+      # Fica por ultimo inclusive no modo backfill: o script prepara o stage,
+      # agenda a transacao dentro do Postgres e acompanha ate o COMMIT.
       - name: Preparar atributos e publicar todo o motor atomicamente
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

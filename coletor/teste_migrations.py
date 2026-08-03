@@ -118,6 +118,30 @@ def main():
     if "revoke execute on function public.publicar_motor(uuid, integer)" not in lote:
         return falhar("publicar_motor ficou executavel publicamente")
 
+    _, assinc = ultima_definicao(
+        arquivos, "create or replace function public.solicitar_publicacao_motor")
+    exigencias_assincronas = [
+        "cron.schedule(",
+        "public.executar_publicacao_motor",
+        "ja existe uma publicacao do motor em andamento",
+        "stage incompleto",
+    ]
+    for trecho in exigencias_assincronas:
+        if trecho not in assinc:
+            return falhar("fila assincrona nao garante: {}".format(trecho))
+
+    _, worker = ultima_definicao(
+        arquivos, "create or replace function public.executar_publicacao_motor")
+    exigencias_worker = [
+        "set statement_timeout to '900s'",
+        "v_resultado := public.publicar_motor(p_execucao, p_total)",
+        "status = 'failed'",
+        "cron.unschedule",
+    ]
+    for trecho in exigencias_worker:
+        if trecho not in worker:
+            return falhar("worker assincrono nao garante: {}".format(trecho))
+
     print("{} migrations: historico timestampado e estado final protegido".format(
         len(arquivos)))
     return 0
