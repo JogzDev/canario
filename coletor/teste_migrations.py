@@ -157,6 +157,25 @@ def main():
     if ("set statement_timeout = '900s';" not in estado_final
             or "select public.executar_proxima_publicacao_motor();" not in estado_final):
         return falhar("timeout do cron nao e configurado antes do dispatcher")
+    if "set work_mem = '64mb';" not in estado_final:
+        return falhar("dispatcher nao reserva memoria para evitar spill")
+
+    _, curva = ultima_definicao(
+        arquivos, "create or replace function public.computar_curva_tamanhos")
+    if "_curva_com_termo" in curva:
+        return falhar("curva final ainda materializa a expansao larga")
+    if "por_termo as not materialized" not in curva:
+        return falhar("curva final ainda pode materializar a expansao por termo")
+    if "join produto_termos pt on pt.produto_id = c.produto_id" not in curva:
+        return falhar("curva final perdeu o recorte por termo")
+
+    if ("alter table public.motor_termos_stage set unlogged" not in estado_final
+            or "alter table public.motor_produtos_stage set unlogged" not in estado_final):
+        return falhar("stage temporario ainda gera WAL desnecessario")
+
+    if ("delete from public.motor_termos_stage where execucao = p_execucao" not in worker
+            or "delete from public.motor_produtos_stage where execucao = p_execucao" not in worker):
+        return falhar("worker nao limpa stage depois de falha")
 
     print("{} migrations: historico timestampado e estado final protegido".format(
         len(arquivos)))
