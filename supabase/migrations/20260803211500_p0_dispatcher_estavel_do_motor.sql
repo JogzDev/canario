@@ -15,7 +15,10 @@ begin
     where jobname like 'canario-motor-%'
       and jobname <> 'canario-motor-dispatcher'
   loop
-    perform cron.unschedule(v_job.jobid);
+    -- Desativar e nao apagar e deliberado: `unschedule` espera uma instancia
+    -- ativa terminar e travou a migration de recuperacao. Inativo, o job nao
+    -- ganha novas execucoes; o worker que ja existe pode concluir com seguranca.
+    perform cron.alter_job(v_job.jobid, active := false);
   end loop;
 end;
 $block$;
