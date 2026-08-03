@@ -121,8 +121,8 @@ def main():
     _, assinc = ultima_definicao(
         arquivos, "create or replace function public.solicitar_publicacao_motor")
     exigencias_assincronas = [
-        "cron.schedule(",
-        "public.executar_publicacao_motor",
+        "canario-motor-dispatcher",
+        "dispatcher do motor nao esta instalado",
         "ja existe uma publicacao do motor em andamento",
         "stage incompleto",
     ]
@@ -136,11 +136,21 @@ def main():
         "set statement_timeout to '900s'",
         "v_resultado := public.publicar_motor(p_execucao, p_total)",
         "status = 'failed'",
-        "cron.unschedule",
     ]
     for trecho in exigencias_worker:
         if trecho not in worker:
             return falhar("worker assincrono nao garante: {}".format(trecho))
+
+    _, dispatcher = ultima_definicao(
+        arquivos, "create or replace function public.executar_proxima_publicacao_motor")
+    exigencias_dispatcher = [
+        "where status = 'queued'",
+        "order by solicitado_em",
+        "perform public.executar_publicacao_motor(v_execucao, v_total)",
+    ]
+    for trecho in exigencias_dispatcher:
+        if trecho not in dispatcher:
+            return falhar("dispatcher nao garante: {}".format(trecho))
 
     print("{} migrations: historico timestampado e estado final protegido".format(
         len(arquivos)))
