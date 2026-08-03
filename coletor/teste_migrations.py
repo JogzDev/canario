@@ -152,6 +152,12 @@ def main():
         if trecho not in dispatcher:
             return falhar("dispatcher nao garante: {}".format(trecho))
 
+    estado_final = "\n".join(
+        open(c, encoding="utf-8").read().lower() for c in arquivos)
+    if ("set statement_timeout = '900s';" not in estado_final
+            or "select public.executar_proxima_publicacao_motor();" not in estado_final):
+        return falhar("timeout do cron nao e configurado antes do dispatcher")
+
     print("{} migrations: historico timestampado e estado final protegido".format(
         len(arquivos)))
     return 0
