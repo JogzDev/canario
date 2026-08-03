@@ -1,4 +1,4 @@
-"""Garante que o Python prepara em stage e publica o motor por RPC unica."""
+"""Garante stage completo e publicação atômica fora do timeout HTTP."""
 
 import sys
 
@@ -35,15 +35,24 @@ def testar_atributos():
         gravacoes.append((tabela, [dict(x) for x in linhas], on_conflict))
         return []
 
+    estados = iter([
+        [{"status": "queued", "resultado": None, "erro": None}],
+        [{"status": "success", "resultado": {
+            "atributos": {"produtos": 2, "ligacoes": 1},
+            "calculos": {nome: 1 for nome, _ in motor_computar.PASSOS}},
+          "erro": None}],
+    ])
+
     def rpc(metodo, caminho, corpo=None, **kwargs):
         rpcs.append((metodo, caminho, dict(corpo or {})))
-        return 200, {
-            "atributos": {"produtos": 2, "ligacoes": 1},
-            "calculos": {nome: 1 for nome, _ in motor_computar.PASSOS},
-        }
+        return 200, {"status": "queued"}
 
     motor_atributos.supabase_rest.upsert = upsert
     motor_atributos.supabase_rest._requisicao = rpc
+    motor_atributos.supabase_rest.selecionar = (
+        lambda tabela, params="": [{"id": 10, "nome": "Marca X"}]
+        if tabela == "marcas" else next(estados))
+    motor_atributos.time.sleep = lambda _: None
     motor_atributos.supabase_rest.apagar = (
         lambda *args, **kwargs: (_ for _ in ()).throw(
             AssertionError("nao pode apagar tabela viva pelo REST")))
@@ -66,8 +75,8 @@ def testar_atributos():
               if tabela == "motor_termos_stage" for x in linhas]
     if len(termos) != 1 or termos[0]["termo_id"] != "vestido":
         return falhar("stage de termos incorreto")
-    if len(rpcs) != 1 or rpcs[0][1] != "rpc/publicar_motor":
-        return falhar("atributos e calculos nao usam uma RPC unica")
+    if len(rpcs) != 1 or rpcs[0][1] != "rpc/solicitar_publicacao_motor":
+        return falhar("motor nao agenda a publicacao atomica")
     if rpcs[0][2].get("p_total") != 2:
         return falhar("RPC nao recebeu a cardinalidade completa")
     return 0
@@ -91,12 +100,31 @@ def testar_computacao():
     return 0
 
 
+def testar_falha_observavel():
+    motor_atributos.supabase_rest._requisicao = (
+        lambda *args, **kwargs: (200, {"status": "queued"}))
+    motor_atributos.supabase_rest.selecionar = (
+        lambda *args, **kwargs: [{
+            "status": "failed", "resultado": None,
+            "erro": "57014: statement timeout",
+        }])
+    try:
+        motor_atributos.publicar_e_aguardar("00000000-0000-0000-0000-000000000001", 2)
+    except motor_atributos.supabase_rest.SupabaseErro as ex:
+        if "57014: statement timeout" not in str(ex):
+            return falhar("erro do worker perdeu o diagnostico SQL")
+    else:
+        return falhar("falha do worker foi tratada como sucesso")
+    return 0
+
+
 def main():
-    return testar_atributos() or testar_computacao() or imprimir_sucesso()
+    return (testar_atributos() or testar_falha_observavel()
+            or testar_computacao() or imprimir_sucesso())
 
 
 def imprimir_sucesso():
-    print("Motor: stage completo e publicacao transacional unica, sem escrita viva parcial")
+    print("Motor: stage completo e job transacional unico, sem escrita viva parcial")
     return 0
 
 

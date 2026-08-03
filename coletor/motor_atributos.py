@@ -18,13 +18,15 @@ trouxe esta no segmento por construcao, e nao por suposicao -- e o que o B4
 queria derivar do mapa de categorias ja esta garantido pelo caminho da coleta.
 
 Idempotente: pode rodar todo dia. O casamento inteiro vai para um stage
-invisivel; so depois de todos os produtos chegarem uma RPC troca o estado vivo
-em uma transacao. Uma queda no meio preserva a taxonomia anterior.
+invisivel; so depois de todos os produtos chegarem um job interno troca o
+estado vivo em uma transacao. Uma queda no meio preserva a taxonomia anterior.
 """
 
 import os
 import re
 import sys
+import time
+import urllib.parse
 import uuid
 from datetime import datetime, timezone
 
@@ -192,6 +194,40 @@ def produtos_em_paginas():
         ultimo = lote[-1]["id"]
 
 
+def publicar_e_aguardar(execucao, total, intervalo=10, limite=1800):
+    """Agenda a transacao no Postgres e acompanha sem segurar uma RPC longa."""
+    _, fila = supabase_rest._requisicao(
+        "POST", "rpc/solicitar_publicacao_motor",
+        corpo={"p_execucao": execucao, "p_total": total}, tentativas=1)
+    print("Publicacao atomica agendada: {}.".format(fila), file=sys.stderr)
+
+    inicio = time.monotonic()
+    ultimo_status = None
+    filtro = ("?execucao=eq.{}&select=status,resultado,erro,solicitado_em,"
+              "iniciado_em,concluido_em&limit=1").format(
+                  urllib.parse.quote(execucao))
+    while True:
+        linhas = supabase_rest.selecionar("motor_execucoes", filtro)
+        if not linhas:
+            raise supabase_rest.SupabaseErro(
+                "publicacao {} desapareceu da fila".format(execucao))
+        estado = linhas[0]
+        status = estado.get("status")
+        if status != ultimo_status:
+            print("Publicacao do motor: {}.".format(status), file=sys.stderr)
+            ultimo_status = status
+        if status == "success":
+            return estado.get("resultado")
+        if status == "failed":
+            raise supabase_rest.SupabaseErro(
+                "publicacao atomica falhou: {}".format(
+                    estado.get("erro") or "erro nao informado"))
+        if time.monotonic() - inicio >= limite:
+            raise supabase_rest.SupabaseErro(
+                "publicacao {} nao concluiu em {}s".format(execucao, limite))
+        time.sleep(intervalo)
+
+
 def main():
     if not supabase_rest.configurado():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
@@ -289,10 +325,7 @@ def main():
             "motor_termos_stage", buffer_pt,
             on_conflict="execucao,produto_id,termo_id")
 
-    _, publicado = supabase_rest._requisicao(
-        "POST", "rpc/publicar_motor",
-        corpo={"p_execucao": execucao, "p_total": total},
-        tentativas=1, timeout=900)
+    publicado = publicar_e_aguardar(execucao, total)
     print("Atributos e calculos publicados atomicamente: {}.".format(publicado),
           file=sys.stderr)
 
