@@ -739,6 +739,26 @@ def alertas_criticos(registros, marcas_ativas, hoje):
     return criticos
 
 
+def metricas_varejo_ativas(atuais, nomes, marcas_ativas):
+    """Mantem o relatorio do dia coerente com o escopo operacional atual."""
+    ids_ativos = {m["id"] for m in marcas_ativas}
+    metricas = []
+    for (fonte, marca_id), r in atuais.items():
+        if fonte != "varejo" or marca_id not in ids_ativos:
+            continue
+        nome, plataforma = nomes.get(
+            marca_id, ("(id {})".format(marca_id), "?"))
+        metricas.append({
+            "marca_id": marca_id, "nome": nome, "plataforma": plataforma,
+            "visitados": r.get("visitados") or 0,
+            "gravados": r.get("gravados") or 0,
+            "declarado": r.get("total_declarado"),
+            "pct_campos_ok": r.get("pct_campos_ok"),
+            "alertas": r.get("alertas"),
+        })
+    return metricas
+
+
 def renderizar_saude(hoje, fallback_varejo=None):
     """Renderiza uma visão única depois de todas as pernas da coleta."""
     inicio = hoje - timedelta(days=7)
@@ -760,20 +780,7 @@ def renderizar_saude(hoje, fallback_varejo=None):
         if r.get("data") == hoje_iso:
             atuais[(r.get("fonte"), r.get("marca_id"))] = r
 
-    metricas = []
-    for (fonte, marca_id), r in atuais.items():
-        if fonte != "varejo":
-            continue
-        nome, plataforma = nomes.get(
-            marca_id, ("(id {})".format(marca_id), "?"))
-        metricas.append({
-            "marca_id": marca_id, "nome": nome, "plataforma": plataforma,
-            "visitados": r.get("visitados") or 0,
-            "gravados": r.get("gravados") or 0,
-            "declarado": r.get("total_declarado"),
-            "pct_campos_ok": r.get("pct_campos_ok"),
-            "alertas": r.get("alertas"),
-        })
+    metricas = metricas_varejo_ativas(atuais, nomes, marcas_ativas)
     if not metricas and fallback_varejo:
         metricas = fallback_varejo
 

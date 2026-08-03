@@ -3,7 +3,7 @@
 import sys
 from datetime import date, timedelta
 
-from coletor_varejo import alertas_criticos
+from coletor_varejo import alertas_criticos, metricas_varejo_ativas
 
 
 HOJE = date(2026, 8, 2)
@@ -45,7 +45,15 @@ def main():
         print("FALHOU: queda maior que 70% nao bloqueou")
         return 1
 
-    print("Saude: ausencia, zero e queda >70% bloqueiam; volume normal passa")
+    metricas = metricas_varejo_ativas(
+        {("varejo", 1): linha("varejo", 100, marca_id=1),
+         ("varejo", 2): linha("varejo", 0, marca_id=2)},
+        {1: ("Marca A", "vtex"), 2: ("Marca inativa", "vtex")}, MARCAS)
+    if len(metricas) != 1 or metricas[0]["marca_id"] != 1:
+        print("FALHOU: relatorio incluiu observacao de marca fora do escopo ativo")
+        return 1
+
+    print("Saude: ausencia, zero e queda >70% bloqueiam; escopo ativo filtra metricas")
     return 0
 
 

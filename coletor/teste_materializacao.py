@@ -5,9 +5,10 @@ das verificacoes de busca. Misturar os dois donos fez verificacoes reais
 voltarem para `pendente` a cada materializacao diaria.
 """
 
+import csv
 import sys
 
-from materializar_anexos import registro_do_termo
+from materializar_anexos import PAINEL, registro_da_marca, registro_do_termo
 
 
 def main():
@@ -35,7 +36,23 @@ def main():
         print("FALHOU: campos de configuracao deixaram de ser materializados")
         return 1
 
-    print("Materializacao: configuracao preservada, estado medido intocado")
+    fabula = next((l for l in csv.DictReader(open(PAINEL, encoding="utf-8"))
+                   if l["marca"] == "Fabula"), None)
+    if fabula is None:
+        print("FALHOU: Fábula sumiu do painel competitivo")
+        return 1
+    marca = registro_da_marca(fabula)
+    if (marca["status_teste"] != "nao_se_aplica" or marca["plataforma"] is not None
+            or marca["ativa"]):
+        print("FALHOU: Fábula infantil continuou ativa na coleta adulta")
+        return 1
+
+    coletavel = registro_da_marca({"marca": "Marca VTEX", "status_teste": "vtex"})
+    if coletavel["plataforma"] != "vtex" or not coletavel["ativa"]:
+        print("FALHOU: marca VTEX comprovada deixou de ser coletavel")
+        return 1
+
+    print("Materializacao: configuracao preservada, escopo adulto ativo e estado medido intocado")
     return 0
 
 

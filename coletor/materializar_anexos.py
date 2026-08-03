@@ -49,24 +49,32 @@ def registro_do_termo(linha):
     }
 
 
+def registro_da_marca(linha):
+    """Converte uma linha do painel na configuracao operacional da marca.
+
+    Apenas marcas cuja plataforma foi comprovada entram na coleta. Isso evita
+    que uma marca mantida no painel por contexto competitivo seja tratada como
+    fonte obrigatoria do recorte atual.
+    """
+    status = _val(linha, "status_teste") or "pendente"
+    plataforma = status if status in ("vtex", "shopify") else None
+    return {
+        "nome": linha["marca"].strip(),
+        "dominio": _val(linha, "dominio"),
+        "plataforma": plataforma,
+        "segmento": _val(linha, "segmento"),
+        "papel": _val(linha, "papel"),
+        "justificativa": _val(linha, "justificativa"),
+        "status_teste": status,
+        "data_teste": _val(linha, "data_teste"),
+        "detalhe_teste": _val(linha, "detalhe_teste"),
+        "ativa": plataforma is not None,
+    }
+
+
 def materializar_marcas():
     linhas = list(csv.DictReader(open(PAINEL, encoding="utf-8")))
-    registros = []
-    for l in linhas:
-        status = _val(l, "status_teste") or "pendente"
-        plataforma = status if status in ("vtex", "shopify") else None
-        registros.append({
-            "nome": l["marca"].strip(),
-            "dominio": _val(l, "dominio"),
-            "plataforma": plataforma,
-            "segmento": _val(l, "segmento"),
-            "papel": _val(l, "papel"),
-            "justificativa": _val(l, "justificativa"),
-            "status_teste": status,
-            "data_teste": _val(l, "data_teste"),
-            "detalhe_teste": _val(l, "detalhe_teste"),
-            "ativa": True,
-        })
+    registros = [registro_da_marca(l) for l in linhas]
     supabase_rest.upsert("marcas", registros, on_conflict="nome")
     return len(registros)
 

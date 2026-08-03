@@ -53,6 +53,10 @@ TZ = 180                    # minutos; BRT = UTC-3
 # execucao que pega metade deixar a outra metade para a proxima.
 ESPERA_ENTRE = 45.0
 ESPERAS_429 = [60, 180, 420]
+# Tres grupos concluiram antes do limite de janela do Google na primeira
+# madrugada integrada. Planejamos esse teto e deixamos a rotacao completar a
+# cobertura nos dias seguintes, em vez de provocar 429 e esperar em vao.
+GRUPOS_POR_EXECUCAO = 3
 
 # Abaixo disto a serie e considerada sem sinal utilizavel (C3). Media do valor
 # bruto na janela inteira: o Trends normaliza 0-100, entao media < 1 significa
@@ -154,6 +158,19 @@ def grupos_de_termos(termos_aprovados):
     fila = [t for t in termos_aprovados if t["termo_busca"] != ANCORA]
     tamanho = POR_GRUPO - 1
     return [fila[i:i + tamanho] for i in range(0, len(fila), tamanho)]
+
+
+def planejar_grupos(grupos, hoje, limite=GRUPOS_POR_EXECUCAO):
+    """Seleciona um lote diario deterministico e rotativo de grupos.
+
+    O deslocamento pelo proprio limite faz tres lotes consecutivos cobrirem
+    nove grupos sem sobreposicao. Para outros totais, permanece deterministico
+    e nunca envia mais consultas do que o orcamento medido suporta.
+    """
+    if limite <= 0 or len(grupos) <= limite:
+        return grupos
+    inicio = (hoje.toordinal() * limite) % len(grupos)
+    return [grupos[(inicio + i) % len(grupos)] for i in range(limite)]
 
 
 def _veredito(pontos, media_ancora):
@@ -269,13 +286,16 @@ def main():
         print("Modo SEMANAL (§19): consultando os {} termos aprovados.".format(
             len(aprovados)), file=sys.stderr)
 
-    grupos = grupos_de_termos(aprovados)
-    print("Termos aprovados: {} | grupos de {}: {} | ancora fixa: {!r}".format(
-        len(aprovados), POR_GRUPO, len(grupos), ANCORA), file=sys.stderr)
+    hoje = date.today()
+    grupos_totais = grupos_de_termos(aprovados)
+    grupos = planejar_grupos(grupos_totais, hoje)
+    print("Termos aprovados: {} | grupos de {}: {} planejados de {} | "
+          "ancora fixa: {!r}".format(
+              len(aprovados), POR_GRUPO, len(grupos), len(grupos_totais), ANCORA),
+          file=sys.stderr)
 
     t = Trends()
     t.aquecer()
-    hoje = date.today()
     agora = datetime.now(timezone.utc).isoformat()
 
     id_da_ancora = next((x["id"] for x in aprovados
@@ -284,6 +304,7 @@ def main():
     ancora_pontos = None
     total_pontos = 0
     mortos = []
+    termos_com_serie = set()
 
     for i, grupo in enumerate(grupos, 1):
         consulta = [ANCORA] + [x["termo_busca"] for x in grupo]
@@ -308,6 +329,8 @@ def main():
         dados_grupo = {}
         for termo_row in grupo:
             tb = termo_row["termo_busca"]
+            if series.get(tb):
+                termos_com_serie.add(termo_row["id"])
             dados_grupo[termo_row["id"]] = {
                 "termo_busca": tb, "pontos": series.get(tb) or [],
                 "grupo": i, "media_ancora": media_ancora}
@@ -325,6 +348,7 @@ def main():
     # A propria ancora e um termo da taxonomia (`floral`): a serie dela tambem
     # precisa ser gravada, senao o termo mais usado do sistema fica sem perna.
     if id_da_ancora and ancora_pontos:
+        termos_com_serie.add(id_da_ancora)
         gravados, _ = gravar_grupo(
             {id_da_ancora: {"termo_busca": ANCORA, "pontos": ancora_pontos,
                             "grupo": 0, "media_ancora": None}}, hoje, agora)
@@ -343,7 +367,7 @@ def main():
     # nenhum grupo passa fica visivel na hora.
     tentados = len(grupos)
     responderam = tentados - len(falhas)
-    cobertura = len(ja_tem | {t["id"] for t in aprovados}) if modo == "semanal" else len(ja_tem)
+    cobertura = len(ja_tem | termos_com_serie)
     supabase_rest.upsert("saude", [{
         "data": hoje.isoformat(), "fonte": "busca", "marca_id": None,
         "visitados": tentados,
@@ -354,6 +378,9 @@ def main():
         "alertas": {
             "modo": modo,
             "grupos_que_falharam": falhas or None,
+            "grupos_planejados": len(grupos),
+            "grupos_totais": len(grupos_totais),
+            "grupos_adiados_por_orcamento": len(grupos_totais) - len(grupos),
             "termos_sem_perna_de_busca": sorted(mortos) or None,
             "termos_com_serie": cobertura,
             "termos_aprovados": total_aprovados,
