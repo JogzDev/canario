@@ -190,3 +190,28 @@ errado **na tela, agora**.
 | V4, V6–V15 | 🔴 Seguem abertos |
 
 **Decisão pendente e ela é de produto:** o piso de 10 matérias esvazia a tela — na semana de 27/07 sobram 6 termos com leitura e nenhum estado. Alternativas medidas: piso 5 → 2.823 leituras, maior |z| 10,3 · piso 10 → 1.410 leituras, maior 6,8 · piso 20 → 499 leituras, maior 6,8. Nenhum valor conserta o modelo; o piso só evita publicar o pior.
+
+---
+
+## Noite de 05/08 — perna de busca destravada, e o que ficou mapeado
+
+### ✅ Resolvido
+
+| O que | Evidência |
+|---|---|
+| **Fila de busca por defasagem** | O mesmo defeito congelou a série **duas vezes** (19 e 16 dias). Causa real: **4 termos sem série prendiam 36** — em modo backfill o coletor filtrava para esses 4, sobrava 1 grupo, esse grupo apanhava de 429, e o resto ficava parado. Não existe mais modo: existe fila por defasagem. A pergunta deixou de ser "tem série?" e virou "há quanto tempo?". `teste_fila_de_busca.py` tranca, com os nomes reais dos 4 termos |
+| **Os 4 termos travados coletaram** | `reta_wide`, `romantico`, `saia`, `short` — os 40 termos agora têm série |
+| **Piso editorial: fica em 10** | Medido em 12 semanas: piso 0, 5 e 10 dão **exatamente as mesmas 109 leituras e 79 pares com 2 fontes**. O piso só corta leitura construída sobre zero matéria. Não é ele que esvazia a tela |
+| **Interface parou de falar como documentação** | `§8`, `§22`, `z-score`, `perna`, `cluster` saíram das strings de tela |
+
+### 🔴 Mapeado e NÃO resolvido — o de maior valor para amanhã
+
+| # | O que | Evidência |
+|---|---|---|
+| N1 | **FFW e Business of Fashion dão 403 no datacenter e funcionam residencial** | `saude.alertas` registra `"feed http 403"` para os dois **todo dia**. Testado local: FFW 3 itens, BoF 100 itens, sem erro. É a mesma família do Shopify, que por isso já roda em `[self-hosted, macOS]`. **O desenho certo é um job separado só para os bloqueados** — mover o editorial inteiro troca 2 veículos por 6 se o Mac dormir |
+| N2 | **Vogue Business já está sendo fundida na Vogue** | As duas linhas do `veiculos.csv` apontam para `https://www.vogue.com/feed/rss`. Com `on_conflict=url` em `artigos`, o último a escrever vence e um dos dois some. Não é risco futuro: está acontecendo |
+| N3 | **FashionNetwork BR e Lyst: abandonar** | FashionNetwork = 403 anti-bot em todos os caminhos, falha definitiva do site. Lyst = dado agregado, nunca foi feed editorial (entra pela §12) |
+| N4 | **A busca pode ter defasagem estrutural** | Mesmo com a fila destravada e 2.871 pontos gravados por execução, `ultima_semana` continua **20/07** para os 40 termos. Se a próxima execução não mover isso, o atraso é do Google e o app precisa **declarar** o lag em vez de esperar por ele |
+
+### Da lista do JP, ainda não tocado
+Erro 500 no Explorar · performance · reestruturação das abas · câmera e fototeca · MobileCLIP (A7 já autorizado a ser desfeito)
