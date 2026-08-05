@@ -40,12 +40,13 @@ jobs:
       modo: ''
     secrets: inherit
 
-  saude:
-    # Roda mesmo se uma coleta falhar ou for pulada: ausência é dado de saúde
-    # e precisa aparecer, não sumir junto com a perna que falhou. O motor
-    # depende deste job e, portanto, nunca publica uma semana parcial.
+  saude-inicial:
+    # Mede antes de recuperar, mas nao publica nem deixa a run vermelha: esse
+    # resultado decide se as fontes externas precisam de uma segunda chance.
     if: ${{ always() }}
     needs: [varejo-vtex, varejo-shopify, editorial, busca]
+    outputs:
+      saudavel: ${{ steps.resultado.outputs.saudavel }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -73,15 +74,56 @@ jobs:
         continue-on-error: true
         run: exit 1
 
+      - name: Expor resultado inicial
+        id: resultado
+        if: ${{ always() }}
+        run: |
+          echo "saudavel=${{ steps.portao.outcome == 'success' && steps.dependencias.outcome != 'failure' }}" >> "$GITHUB_OUTPUT"
+
+  recuperar-shopify:
+    needs: saude-inicial
+    if: ${{ needs.saude-inicial.outputs.saudavel != 'true' }}
+    uses: ./.github/workflows/coleta-shopify.yml
+    secrets: inherit
+
+  recuperar-busca:
+    needs: [saude-inicial, recuperar-shopify]
+    if: ${{ always() && needs.saude-inicial.outputs.saudavel != 'true' }}
+    uses: ./.github/workflows/coleta-trends.yml
+    with:
+      modo: ''
+      tentativa: 1
+    secrets: inherit
+
+  saude:
+    # O portao final continua estrito. A recuperacao melhora os dados; nao
+    # muda limiar, nao mascara ausencia e nao libera motor com fonte parcial.
+    if: ${{ always() }}
+    needs: [saude-inicial, recuperar-shopify, recuperar-busca]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.11'
+
+      - name: Consolidar fontes e aplicar portao final de saude
+        id: portao
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python3 coletor/gerar_saude.py
+
       - name: Publicar relatorio unico
         if: ${{ always() && github.ref_name == 'main' }}
         run: >-
           bash .github/commitar.sh "SAUDE.md" "Saude consolidada do pipeline"
 
       - name: Bloquear publicacao do motor
-        if: >-
-          ${{ steps.portao.outcome == 'failure' ||
-              steps.dependencias.outcome == 'failure' }}
+        if: ${{ steps.portao.outcome == 'failure' }}
         run: exit 1
 
   motor:

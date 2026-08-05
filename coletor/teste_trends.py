@@ -3,7 +3,7 @@
 import sys
 from datetime import date, timedelta
 
-from coletor_trends import planejar_grupos
+from coletor_trends import combinar_saude_busca, planejar_grupos
 
 
 def main():
@@ -23,7 +23,34 @@ def main():
         print("FALHOU: planejador nao e deterministico")
         return 1
 
-    print("Trends: tres grupos por execucao, cobertura rotativa em tres dias")
+    vistos_no_dia = set()
+    for tentativa in range(3):
+        lote = planejar_grupos(grupos, inicio, tentativa=tentativa)
+        vistos_no_dia.update(g[0] for g in lote)
+    if vistos_no_dia != set(str(i) for i in range(9)):
+        print("FALHOU: recuperacoes do dia repetiram os mesmos grupos")
+        return 1
+
+    legado = {
+        "visitados": 3, "gravados": 1, "itens": 1044,
+        "alertas": {"grupos_que_falharam": [{"grupo": 1}]},
+    }
+    atual = {
+        "visitados": 3, "gravados": 2, "itens": 1566,
+        "alertas": {"modo": "backfill", "grupos_que_falharam": [
+            {"grupo": 3}]},
+    }
+    combinada = combinar_saude_busca(legado, 1, atual)
+    if (combinada["visitados"], combinada["gravados"], combinada["itens"]) != (
+            6, 3, 2610):
+        print("FALHOU: consolidacao nao preservou a primeira tentativa")
+        return 1
+    repetida = combinar_saude_busca(combinada, 1, atual)
+    if repetida != combinada:
+        print("FALHOU: repetir tentativa duplicou os totais")
+        return 1
+
+    print("Trends: rotacao entre dias/tentativas e saude idempotente")
     return 0
 
 

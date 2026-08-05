@@ -14,6 +14,11 @@ on:
         required: false
         type: string
         default: ''
+      tentativa:
+        description: 'rotacao do lote no mesmo dia (0 na coleta, 1 na recuperacao)'
+        required: false
+        type: number
+        default: 0
     secrets:
       SUPABASE_URL:
         required: true
@@ -25,6 +30,11 @@ on:
         description: 'backfill (so termos sem serie) ou semanal (todos)'
         required: false
         default: ''
+      tentativa:
+        description: 'rotacao do lote no mesmo dia'
+        required: false
+        type: number
+        default: 0
 
 permissions:
   contents: read
@@ -49,4 +59,7 @@ jobs:
           # Vazio = o proprio coletor escolhe: backfill enquanto faltar termo
           # sem serie, semanal quando todos tiverem.
           TRENDS_MODO: ${{ inputs.modo }}
+          # Uma recuperacao no mesmo dia consulta outro lote, em vez de
+          # insistir nos grupos que acabaram de receber 429.
+          TRENDS_TENTATIVA: ${{ inputs.tentativa }}
         run: "$PY coletor/coletor_trends.py"

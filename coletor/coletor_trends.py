@@ -160,7 +160,7 @@ def grupos_de_termos(termos_aprovados):
     return [fila[i:i + tamanho] for i in range(0, len(fila), tamanho)]
 
 
-def planejar_grupos(grupos, hoje, limite=GRUPOS_POR_EXECUCAO):
+def planejar_grupos(grupos, hoje, limite=GRUPOS_POR_EXECUCAO, tentativa=0):
     """Seleciona um lote diario deterministico e rotativo de grupos.
 
     O deslocamento pelo proprio limite faz tres lotes consecutivos cobrirem
@@ -169,8 +169,62 @@ def planejar_grupos(grupos, hoje, limite=GRUPOS_POR_EXECUCAO):
     """
     if limite <= 0 or len(grupos) <= limite:
         return grupos
-    inicio = (hoje.toordinal() * limite) % len(grupos)
+    inicio = (hoje.toordinal() * limite + tentativa * limite) % len(grupos)
     return [grupos[(inicio + i) % len(grupos)] for i in range(limite)]
+
+
+def combinar_saude_busca(anterior, tentativa, atual):
+    """Acumula tentativas do dia sem duplicar uma reexecucao.
+
+    A chave da tentativa transforma a atualizacao em idempotente: repetir a
+    recuperacao 1 substitui a execucao 1, em vez de inflar os totais. Linhas
+    gravadas antes desta estrutura sao preservadas como tentativa 0.
+    """
+    anterior = anterior or {}
+    alertas_anteriores = dict(anterior.get("alertas") or {})
+    execucoes = dict(alertas_anteriores.get("execucoes") or {})
+    if anterior and not execucoes:
+        chave_anterior = str(alertas_anteriores.get("tentativa", 0))
+        execucoes[chave_anterior] = {
+            "tentados": int(anterior.get("visitados") or 0),
+            "responderam": int(anterior.get("gravados") or 0),
+            "itens": int(anterior.get("itens") or 0),
+            "grupos_que_falharam": (
+                alertas_anteriores.get("grupos_que_falharam") or []),
+        }
+
+    alertas_atuais = dict(atual.get("alertas") or {})
+    execucoes[str(tentativa)] = {
+        "tentados": int(atual.get("visitados") or 0),
+        "responderam": int(atual.get("gravados") or 0),
+        "itens": int(atual.get("itens") or 0),
+        "grupos_que_falharam": (
+            alertas_atuais.get("grupos_que_falharam") or []),
+    }
+
+    tentados = sum(int(e.get("tentados") or 0) for e in execucoes.values())
+    responderam = sum(int(e.get("responderam") or 0)
+                      for e in execucoes.values())
+    itens = sum(int(e.get("itens") or 0) for e in execucoes.values())
+    falhas = []
+    for chave in sorted(execucoes, key=lambda x: int(x)):
+        for falha in execucoes[chave].get("grupos_que_falharam") or []:
+            registro = dict(falha)
+            registro["tentativa"] = int(chave)
+            falhas.append(registro)
+
+    alertas_atuais["tentativa"] = tentativa
+    alertas_atuais["execucoes"] = execucoes
+    alertas_atuais["grupos_que_falharam"] = falhas or None
+    alertas_atuais["grupos_planejados"] = tentados
+    return {
+        "visitados": tentados,
+        "gravados": responderam,
+        "itens": itens,
+        "pct_campos_ok": (round(responderam / float(tentados), 3)
+                          if tentados else None),
+        "alertas": alertas_atuais,
+    }
 
 
 def _veredito(pontos, media_ancora):
@@ -240,6 +294,12 @@ def main():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
         return 1
 
+    try:
+        tentativa = max(0, int(os.environ.get("TRENDS_TENTATIVA", "0") or 0))
+    except ValueError:
+        print("ERRO: TRENDS_TENTATIVA deve ser um inteiro.", file=sys.stderr)
+        return 1
+
     # regra 4: so termo aprovado, e so com termo_busca preenchido.
     aprovados = [t for t in supabase_rest.selecionar(
         "termos", "?status=eq.aprovado&select=id,termo_busca,dimensao&order=id")
@@ -288,10 +348,11 @@ def main():
 
     hoje = date.today()
     grupos_totais = grupos_de_termos(aprovados)
-    grupos = planejar_grupos(grupos_totais, hoje)
+    grupos = planejar_grupos(grupos_totais, hoje, tentativa=tentativa)
     print("Termos aprovados: {} | grupos de {}: {} planejados de {} | "
-          "ancora fixa: {!r}".format(
-              len(aprovados), POR_GRUPO, len(grupos), len(grupos_totais), ANCORA),
+          "tentativa: {} | ancora fixa: {!r}".format(
+              len(aprovados), POR_GRUPO, len(grupos), len(grupos_totais),
+              tentativa, ANCORA),
           file=sys.stderr)
 
     t = Trends()
@@ -368,8 +429,7 @@ def main():
     tentados = len(grupos)
     responderam = tentados - len(falhas)
     cobertura = len(ja_tem | termos_com_serie)
-    supabase_rest.upsert("saude", [{
-        "data": hoje.isoformat(), "fonte": "busca", "marca_id": None,
+    atual = {
         "visitados": tentados,
         "gravados": responderam,
         "itens": total_pontos,
@@ -377,6 +437,7 @@ def main():
                           if tentados else None),
         "alertas": {
             "modo": modo,
+            "tentativa": tentativa,
             "grupos_que_falharam": falhas or None,
             "grupos_planejados": len(grupos),
             "grupos_totais": len(grupos_totais),
@@ -386,7 +447,18 @@ def main():
             "termos_aprovados": total_aprovados,
             "semana_mais_recente": hoje.isoformat(),
         },
-    }], on_conflict="data,fonte,marca_id")
+    }
+    anteriores = supabase_rest.selecionar(
+        "saude", "?data=eq.{}&fonte=eq.busca&marca_id=is.null&"
+        "select=visitados,gravados,itens,alertas&limit=1".format(
+            hoje.isoformat()))
+    consolidada = combinar_saude_busca(
+        anteriores[0] if anteriores else None, tentativa, atual)
+    consolidada.update({
+        "data": hoje.isoformat(), "fonte": "busca", "marca_id": None,
+    })
+    supabase_rest.upsert(
+        "saude", [consolidada], on_conflict="data,fonte,marca_id")
 
     print("\nTotal: {} pontos de serie.".format(total_pontos), file=sys.stderr)
     print("Sem perna de busca ({}): {}".format(
