@@ -1,6 +1,6 @@
 # SAÚDE — coletores do Canário
 
-**Gerado (UTC):** 2026-08-05T01:30:56.676779+00:00
+**Gerado (UTC):** 2026-08-05T01:40:18.975456+00:00
 
 **Data observada:** 2026-08-04
 
