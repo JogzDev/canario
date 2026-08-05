@@ -160,6 +160,27 @@ def grupos_de_termos(termos_aprovados):
     return [fila[i:i + tamanho] for i in range(0, len(fila), tamanho)]
 
 
+def fila_por_defasagem(aprovados, em_dia, nunca, modo=""):
+    """Ordena os termos por quanto tempo faz que a serie de busca nao anda.
+
+    Devolve `(fila, modo)`. Termo sem serie nenhuma vem primeiro (defasagem
+    infinita), mas NAO bloqueia os demais -- foi exatamente esse o defeito que
+    congelou a perna duas vezes. Quando todo mundo esta em dia, a fila volta a
+    ser a taxonomia inteira, que e a cadencia semanal que a §19 pede.
+    """
+    if modo == "semanal":
+        return sorted(aprovados, key=lambda t: t["id"]), "semanal"
+
+    alvos = [t for t in aprovados if t["id"] not in em_dia]
+    if not alvos:
+        return sorted(aprovados, key=lambda t: t["id"]), "semanal"
+
+    # Sem serie na frente; entre os demais, ordem estavel por id para o lote do
+    # dia ser deterministico e auditavel.
+    alvos.sort(key=lambda t: (t["id"] not in nunca, t["id"]))
+    return alvos, "defasagem"
+
+
 def planejar_grupos(grupos, hoje, limite=GRUPOS_POR_EXECUCAO, tentativa=0):
     """Seleciona um lote diario deterministico e rotativo de grupos.
 
@@ -308,45 +329,53 @@ def main():
         print("Nenhum termo aprovado com termo_busca. Nada a coletar.", file=sys.stderr)
         return 0
 
-    # DOIS MODOS, e a diferenca entre eles custou 19 dias de serie.
+    # PRIORIDADE POR DEFASAGEM, e nao dois modos exclusivos.
     #
-    # `backfill`  -- pula termo que JA TEM serie, para cada execucao avancar
-    #                sobre os que faltam. Com o 429 do Google uma execucao
-    #                raramente fecha os 10 grupos, entao a retomada e o que
-    #                permite cobrir a taxonomia em varias tentativas.
+    # O QUE QUEBROU DUAS VEZES:
     #
-    # `semanal`   -- consulta TODOS os termos aprovados, sempre. E o que a §19
-    #                pede: cadencia semanal.
+    # 1o (13/07, descoberto 19 dias depois): so existia o modo `backfill`, que
+    #    pula termo que JA TEM serie. Como o filtro era permanente, os termos
+    #    ja cobertos nunca mais eram consultados e a perna congelou.
     #
-    # O QUE QUEBROU: so existia o primeiro. Como o filtro e permanente, os 20
-    # termos que ja tinham serie nunca mais eram consultados -- e a perna de
-    # busca congelou em 13/07/2026, sem ninguem ver, porque este coletor
-    # tambem nao gravava linha de `saude`. Descoberto em 01/08, 19 dias depois.
+    # 2o (20/07, descoberto em 05/08): a correcao criou o modo `semanal`, mas
+    #    condicionado a `backfill` ter terminado -- e ele nunca termina. Medido:
+    #    36 dos 40 termos ja tinham 261 pontos cada (cinco anos de historia), e
+    #    QUATRO termos sem serie (`reta_wide`, `romantico`, `saia`, `short`)
+    #    prendiam o modo em backfill. Com `aprovados` filtrado para esses
+    #    quatro, sobrava UM grupo, esse grupo apanhava de 429, e os outros 36
+    #    ficavam parados. Quatro termos travando trinta e seis.
     #
-    # O modo e escolhido pela cobertura, e nao por variavel de ambiente: enquanto
-    # faltar termo sem serie, o certo e correr atras dele; quando todos tiverem,
-    # o certo e atualizar todos. `TRENDS_MODO` existe para forcar a mao.
+    # A licao das duas vezes e a mesma: `tem serie` nao e a pergunta certa. A
+    # pergunta e HA QUANTO TEMPO. Agora nao existe modo: existe uma fila
+    # ordenada por defasagem, e o orcamento diario come dela de cima para
+    # baixo. Termo sem serie nenhuma entra na frente (defasagem infinita), mas
+    # nao BLOQUEIA -- se ele nao responde, a rotacao do dia seguinte serve
+    # outro. `TRENDS_MODO=semanal` continua existindo para forcar a mao.
     total_aprovados = len(aprovados)
     modo = os.environ.get("TRENDS_MODO", "").strip().lower()
-    ja_tem = set()
-    for r in supabase_rest.selecionar(
-            "series_semanais", "?fonte=eq.busca&select=termo_id"):
-        ja_tem.add(r["termo_id"])
-    faltando = [t for t in aprovados if t["id"] not in ja_tem]
-
-    if modo not in ("backfill", "semanal"):
-        modo = "backfill" if faltando else "semanal"
-
-    if modo == "backfill" and faltando:
-        print("Modo BACKFILL: {} de {} termos ainda sem serie de busca.".format(
-            len(faltando), len(aprovados)), file=sys.stderr)
-        aprovados = faltando
-    else:
-        modo = "semanal"
-        print("Modo SEMANAL (§19): consultando os {} termos aprovados.".format(
-            len(aprovados)), file=sys.stderr)
-
     hoje = date.today()
+
+    # Uma serie esta em dia se cobre alguma das duas ultimas semanas. Duas, e
+    # nao uma, porque o Trends fecha a semana corrente com atraso e cobrar a
+    # semana de hoje faria todo termo parecer defasado todo dia.
+    corte = (hoje - timedelta(weeks=2)).isoformat()
+    em_dia = set()
+    for r in supabase_rest.selecionar(
+            "series_semanais",
+            "?fonte=eq.busca&semana=gte.{}&select=termo_id".format(corte)):
+        em_dia.add(r["termo_id"])
+    nunca = set()
+    for t in aprovados:
+        nunca.add(t["id"])
+    for r in supabase_rest.selecionar(
+            "series_semanais", "?fonte=eq.busca&select=termo_id&limit=100000"):
+        nunca.discard(r["termo_id"])
+
+    aprovados, modo = fila_por_defasagem(aprovados, em_dia, nunca, modo)
+    print("Fila por defasagem ({}): {} de {} termos a consultar "
+          "({} sem serie nenhuma, {} em dia).".format(
+              modo, len(aprovados), total_aprovados, len(nunca),
+              len(em_dia)), file=sys.stderr)
     grupos_totais = grupos_de_termos(aprovados)
     grupos = planejar_grupos(grupos_totais, hoje, tentativa=tentativa)
     print("Termos aprovados: {} | grupos de {}: {} planejados de {} | "
@@ -405,6 +434,25 @@ def main():
                   "{:.1f}".format(media_ancora) if media_ancora else "-",
                   "  sem perna: " + ", ".join(a["id"] for a in sem_perna)
                   if sem_perna else ""), file=sys.stderr)
+
+    # TERMO SEM VOLUME DE BUSCA PARA DE CONSUMIR ORCAMENTO.
+    #
+    # `mortos` era so' reportado no log e na saude, nunca gravado -- entao um
+    # termo que o Trends nao cobre era redescoberto e esquecido toda execucao,
+    # ocupando lugar na fila para sempre. Agora a descoberta vira fato na
+    # taxonomia. Nao e' exclusao: o termo continua aprovado e continua tendo as
+    # outras pernas; so' deixa de ser cobrado da perna de busca.
+    #
+    # `nao` tambem e' gravado, e de proposito: um termo que RESPONDEU tem de
+    # sair de `pendente`, senao nunca se distingue "ja testamos e tem" de
+    # "ainda nao testamos".
+    marcados = [{"id": tid, "sem_perna_busca": "sim"} for tid in sorted(set(mortos))]
+    marcados += [{"id": tid, "sem_perna_busca": "nao"}
+                 for tid in sorted(termos_com_serie - set(mortos))]
+    if marcados:
+        supabase_rest.upsert("termos", marcados, on_conflict="id")
+        print("Perna de busca declarada em {} termos ({} sem volume).".format(
+            len(marcados), len(set(mortos))), file=sys.stderr)
 
     # A propria ancora e um termo da taxonomia (`floral`): a serie dela tambem
     # precisa ser gravada, senao o termo mais usado do sistema fica sem perna.
