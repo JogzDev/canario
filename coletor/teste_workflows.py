@@ -93,8 +93,9 @@ def checar_orquestracao(workflows):
                        job, dependencia))
 
     motor_pipeline = jobs.get("motor", {})
-    if "needs.saude.result == 'success'" not in str(
-            motor_pipeline.get("if", "")):
+    condicao_motor_pipeline = str(motor_pipeline.get("if", ""))
+    if ("always()" not in condicao_motor_pipeline or
+            "needs.saude.result == 'success'" not in condicao_motor_pipeline):
         falhar("pipeline-diario.yml",
                "motor deve ignorar recuperacoes ancestrais puladas")
 
@@ -161,8 +162,9 @@ def checar_orquestracao(workflows):
     motor_recuperacao = jobs_recuperacao.get("motor", {})
     if motor_recuperacao.get("needs") != "saude":
         falhar("recuperar-pipeline.yml", "motor manual contorna saude")
-    if "needs.saude.result == 'success'" not in str(
-            motor_recuperacao.get("if", "")):
+    condicao_motor_recuperacao = str(motor_recuperacao.get("if", ""))
+    if ("always()" not in condicao_motor_recuperacao or
+            "needs.saude.result == 'success'" not in condicao_motor_recuperacao):
         falhar("recuperar-pipeline.yml",
                "motor manual herda jobs pulados e nao publica")
     passos_saude_recuperacao = jobs_recuperacao.get("saude", {}).get(
