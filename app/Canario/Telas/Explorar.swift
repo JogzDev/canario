@@ -152,7 +152,7 @@ struct Explorar: View {
             if mudaram.isEmpty {
                 CoberturaInsuficiente(
                     titulo: "Nenhum termo mudou de estado",
-                    explicacao: "Nas semanas recentes, nenhum atributo cruzou os limiares que a §22 exige para declarar mudança.",
+                    explicacao: "Nas últimas semanas nada se moveu o suficiente para eu chamar de mudança.",
                     oQueTem: "Isso é resultado, não ausência de dado: os limiares existem justamente para uma semana isolada não virar notícia.")
             } else {
                 ForEach(mudaram) { i in
@@ -180,7 +180,7 @@ struct Explorar: View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
             Text("Ainda sem cobertura").font(Tokens.Fonte.secao)
             CoberturaInsuficiente(
-                titulo: "Novidades por cluster",
+                titulo: "Peças novas por combinação",
                 explicacao: "Depende do primeiro avistamento por produto ao longo de várias semanas.",
                 oQueTem: "O histórico necessário se acumula sozinho a cada noite de coleta.")
         }

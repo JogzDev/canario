@@ -115,7 +115,7 @@ struct RelatorioDaPeca: View {
                             indice, cobertura: coberturas[termo.id])
                         SeloEstado(estado: podeMostrar ? indice?.estado : nil,
                                    motivo: podeMostrar
-                                       ? "A §22 exige duas fontes concordando."
+                                       ? "Só afirmo uma direção quando duas fontes concordam."
                                        : "Sem cobertura suficiente da mesma semana.")
                     }
                     conteudo(de: termo)

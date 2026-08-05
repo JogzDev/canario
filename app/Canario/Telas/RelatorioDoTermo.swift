@@ -50,9 +50,9 @@ struct RelatorioDoTermo: View {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else if !temCobertura {
                     CoberturaInsuficiente(
-                        titulo: "Cobertura insuficiente neste segmento",
-                        explicacao: "A §8 exige \(coberturaDaSemana?.minimoPecas ?? 30) peças na célula e \(coberturaDaSemana?.minimoMarcas ?? 8) marcas externas coletando para exibir índice e estado. Aqui: \(coberturaDaSemana?.oQueFalta ?? "não há medição de cobertura para esta semana").",
-                        oQueTem: "Prefiro dizer que não sei a mostrar um número que não se sustenta.")
+                        titulo: "Ainda não vi peças suficientes",
+                        explicacao: "Para mostrar um número aqui eu preciso de pelo menos \(coberturaDaSemana?.minimoPecas ?? 30) peças de \(coberturaDaSemana?.minimoMarcas ?? 8) marcas diferentes nesta semana. \(coberturaDaSemana?.oQueFalta ?? "Esta semana ainda não foi medida").",
+                        oQueTem: "Prefiro dizer que não sei do que mostrar um número frágil.")
                     grafico
                     curva
                     insumos
@@ -135,14 +135,14 @@ struct RelatorioDoTermo: View {
                 }
                 Spacer()
                 SeloEstado(estado: atual?.estado,
-                           motivo: "A §22 exige duas fontes concordando para declarar estado.")
+                           motivo: "Só afirmo uma direção quando duas fontes concordam.")
             }
             if let z = atual?.indice {
                 LinhaInsumo(texto: Leitura.explicacao(z))
             }
             LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
             if atual?.estado == nil {
-                LinhaInsumo(texto: "O índice existe e é exibido; o estado fica em silêncio até uma segunda perna atingir o mínimo de história.")
+                LinhaInsumo(texto: "Mostro o número, mas ainda não digo se subiu ou caiu: por enquanto só uma fonte tem histórico suficiente.")
             }
         }
     }
@@ -153,9 +153,9 @@ struct RelatorioDoTermo: View {
         let comZ = serie.filter { $0.z != nil }
         if comZ.isEmpty {
             CoberturaInsuficiente(
-                titulo: "Sem série normalizada ainda",
-                explicacao: "Nenhuma perna deste termo atingiu o mínimo de história para z-score.",
-                oQueTem: serie.isEmpty ? nil : "Há \(serie.count) pontos de valor bruto coletados.")
+                titulo: "Ainda estou juntando histórico",
+                explicacao: "Preciso de algumas semanas seguidas de um mesmo lugar antes de dizer se algo mudou. Nenhuma fonte chegou lá ainda.",
+                oQueTem: serie.isEmpty ? nil : "Já coletei \(serie.count) medições — elas ficam guardadas até virarem histórico.")
         } else {
             Cartao {
                 Text("Histórico").font(Tokens.Fonte.secao)
@@ -164,12 +164,12 @@ struct RelatorioDoTermo: View {
                         x: .value("Semana", ponto.semana),
                         y: .value("z", ponto.z ?? 0)
                     )
-                    .foregroundStyle(by: .value("Perna", Perna.rotulo(ponto.fonte)))
+                    .foregroundStyle(by: .value("Fonte", Perna.rotulo(ponto.fonte)))
                 }
                 .chartXAxis(.hidden)
                 .frame(height: 160)
-                .accessibilityLabel("Gráfico do z-score por perna ao longo das semanas")
-                LinhaInsumo(texto: "z-score contra a própria história, janela móvel de 12 semanas.")
+                .accessibilityLabel("Histórico por fonte ao longo das semanas")
+                LinhaInsumo(texto: "Cada ponto compara a semana com as 12 anteriores deste mesmo atributo.")
             }
         }
     }
@@ -206,7 +206,7 @@ struct RelatorioDoTermo: View {
             LinhaInsumo(texto: "Não consideramos: seu histórico de vendas, seus custos, sua capacidade de produção.")
             LinhaInsumo(texto: "Sinal editorial carrega viés comercial de publicidade.")
             if termo.semPernaBusca == "sim" {
-                LinhaInsumo(texto: "Este termo não tem perna de busca: o volume aferido no Google Trends foi baixo demais para servir de série.")
+                LinhaInsumo(texto: "Não acompanho buscas para este atributo: o volume no Google é baixo demais para ser confiável.")
             }
         }
     }
