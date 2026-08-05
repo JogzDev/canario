@@ -140,6 +140,10 @@ def checar_orquestracao(workflows):
     if "schedule" in gatilhos_recuperacao:
         falhar("recuperar-pipeline.yml", "recuperacao manual ganhou cron")
     jobs_recuperacao = recuperacao.get("jobs", {})
+    entrada_recuperacao = gatilhos_recuperacao.get("workflow_dispatch") or {}
+    if "somente_validar" not in entrada_recuperacao.get("inputs", {}):
+        falhar("recuperar-pipeline.yml",
+               "recuperacao sem modo de reaproveitar coletas concluidas")
     if jobs_recuperacao.get("recuperar-shopify", {}).get(
             "uses") != individuais["coleta-shopify.yml"]:
         falhar("recuperar-pipeline.yml", "recuperacao nao chama Shopify")
@@ -150,6 +154,13 @@ def checar_orquestracao(workflows):
         falhar("recuperar-pipeline.yml", "recuperacao nao rotaciona Trends")
     if jobs_recuperacao.get("motor", {}).get("needs") != "saude":
         falhar("recuperar-pipeline.yml", "motor manual contorna saude")
+    passos_saude_recuperacao = jobs_recuperacao.get("saude", {}).get(
+        "steps", [])
+    dependencia_recuperacao = next((p for p in passos_saude_recuperacao
+                                    if p.get("id") == "dependencias"), {})
+    if "somente_validar" not in str(dependencia_recuperacao.get("if", "")):
+        falhar("recuperar-pipeline.yml",
+               "modo somente validar ainda exige jobs pulados")
 
     motor = workflows.get("motor.yml", {}).get("jobs", {}).get(
         "computar", {})
