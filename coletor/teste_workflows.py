@@ -92,20 +92,64 @@ def checar_orquestracao(workflows):
                    "job `{}` deveria depender de `{}`".format(
                        job, dependencia))
 
-    saude = jobs.get("saude", {})
-    if set(saude.get("needs", [])) != {
+    saude_inicial = jobs.get("saude-inicial", {})
+    if set(saude_inicial.get("needs", [])) != {
             "varejo-vtex", "varejo-shopify", "editorial", "busca"}:
         falhar("pipeline-diario.yml",
-               "saude deve observar as quatro coletas")
+               "saude inicial deve observar as quatro coletas")
+    if "always()" not in str(saude_inicial.get("if", "")):
+        falhar("pipeline-diario.yml",
+               "saude inicial deve rodar mesmo quando uma coleta falhar")
+
+    passos = saude_inicial.get("steps", [])
+    ids = {p.get("id"): p for p in passos if p.get("id")}
+    if not {"portao", "dependencias", "resultado"}.issubset(ids):
+        falhar("pipeline-diario.yml",
+               "saude inicial nao expoe dados e resultado dos jobs")
+
+    recuperar_shopify = jobs.get("recuperar-shopify", {})
+    if (recuperar_shopify.get("needs") != "saude-inicial" or
+            recuperar_shopify.get("uses") != individuais["coleta-shopify.yml"]):
+        falhar("pipeline-diario.yml",
+               "recuperacao Shopify deve depender da saude inicial")
+    recuperar_busca = jobs.get("recuperar-busca", {})
+    if (set(recuperar_busca.get("needs", [])) != {
+            "saude-inicial", "recuperar-shopify"} or
+            recuperar_busca.get("uses") != individuais["coleta-trends.yml"] or
+            recuperar_busca.get("with", {}).get("tentativa") != 1):
+        falhar("pipeline-diario.yml",
+               "recuperacao Trends deve usar outra rotacao apos Shopify")
+
+    saude = jobs.get("saude", {})
+    if set(saude.get("needs", [])) != {
+            "saude-inicial", "recuperar-shopify", "recuperar-busca"}:
+        falhar("pipeline-diario.yml",
+               "saude final deve aguardar todas as recuperacoes")
     if "always()" not in str(saude.get("if", "")):
         falhar("pipeline-diario.yml",
-               "saude deve rodar mesmo quando uma coleta falhar")
+               "saude final deve rodar mesmo com recuperacao falha")
+    ids_finais = {p.get("id") for p in saude.get("steps", []) if p.get("id")}
+    if "portao" not in ids_finais:
+        falhar("pipeline-diario.yml", "saude final ficou sem portao")
 
-    passos = saude.get("steps", [])
-    ids = {p.get("id"): p for p in passos if p.get("id")}
-    if not {"portao", "dependencias"}.issubset(ids):
-        falhar("pipeline-diario.yml",
-               "saude nao valida dados e resultado dos jobs")
+    recuperacao = workflows.get("recuperar-pipeline.yml", {})
+    gatilhos_recuperacao = recuperacao.get(
+        "on", recuperacao.get(True, {})) or {}
+    if "workflow_dispatch" not in gatilhos_recuperacao:
+        falhar("recuperar-pipeline.yml", "recuperacao sem disparo manual")
+    if "schedule" in gatilhos_recuperacao:
+        falhar("recuperar-pipeline.yml", "recuperacao manual ganhou cron")
+    jobs_recuperacao = recuperacao.get("jobs", {})
+    if jobs_recuperacao.get("recuperar-shopify", {}).get(
+            "uses") != individuais["coleta-shopify.yml"]:
+        falhar("recuperar-pipeline.yml", "recuperacao nao chama Shopify")
+    busca_recuperacao = jobs_recuperacao.get("recuperar-busca", {})
+    if (busca_recuperacao.get("needs") != "recuperar-shopify" or
+            busca_recuperacao.get("uses") != individuais["coleta-trends.yml"] or
+            busca_recuperacao.get("with", {}).get("tentativa") != 1):
+        falhar("recuperar-pipeline.yml", "recuperacao nao rotaciona Trends")
+    if jobs_recuperacao.get("motor", {}).get("needs") != "saude":
+        falhar("recuperar-pipeline.yml", "motor manual contorna saude")
 
     motor = workflows.get("motor.yml", {}).get("jobs", {}).get(
         "computar", {})
