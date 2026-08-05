@@ -78,7 +78,7 @@ jobs:
     needs: saude
     # No modo somente_validar as coletas sao puladas de proposito; o unico
     # criterio para publicar e o portao de saude imediatamente anterior.
-    if: ${{ needs.saude.result == 'success' }}
+    if: ${{ always() && needs.saude.result == 'success' }}
     uses: ./.github/workflows/motor.yml
     with:
       backfill_editorial: false
