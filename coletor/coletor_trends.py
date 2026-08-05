@@ -358,18 +358,19 @@ def main():
     # Uma serie esta em dia se cobre alguma das duas ultimas semanas. Duas, e
     # nao uma, porque o Trends fecha a semana corrente com atraso e cobrar a
     # semana de hoje faria todo termo parecer defasado todo dia.
+    #
+    # A cobertura vem da view `cobertura_da_busca`, uma linha por termo. Fazer
+    # isso no cliente NAO funciona: o PostgREST corta em 1000 linhas por
+    # resposta e `selecionar()` nao pagina, entao puxar `series_semanais`
+    # inteira fez o coletor concluir "36 termos sem serie" quando eram QUATRO.
     corte = (hoje - timedelta(weeks=2)).isoformat()
-    em_dia = set()
+    em_dia, nunca = set(), set()
     for r in supabase_rest.selecionar(
-            "series_semanais",
-            "?fonte=eq.busca&semana=gte.{}&select=termo_id".format(corte)):
-        em_dia.add(r["termo_id"])
-    nunca = set()
-    for t in aprovados:
-        nunca.add(t["id"])
-    for r in supabase_rest.selecionar(
-            "series_semanais", "?fonte=eq.busca&select=termo_id&limit=100000"):
-        nunca.discard(r["termo_id"])
+            "cobertura_da_busca", "?select=termo_id,ultima_semana"):
+        if not r.get("ultima_semana"):
+            nunca.add(r["termo_id"])
+        elif r["ultima_semana"] >= corte:
+            em_dia.add(r["termo_id"])
 
     aprovados, modo = fila_por_defasagem(aprovados, em_dia, nunca, modo)
     print("Fila por defasagem ({}): {} de {} termos a consultar "
@@ -446,13 +447,25 @@ def main():
     # `nao` tambem e' gravado, e de proposito: um termo que RESPONDEU tem de
     # sair de `pendente`, senao nunca se distingue "ja testamos e tem" de
     # "ainda nao testamos".
-    marcados = [{"id": tid, "sem_perna_busca": "sim"} for tid in sorted(set(mortos))]
-    marcados += [{"id": tid, "sem_perna_busca": "nao"}
-                 for tid in sorted(termos_com_serie - set(mortos))]
-    if marcados:
-        supabase_rest.upsert("termos", marcados, on_conflict="id")
+    #
+    # ATUALIZA, NUNCA FAZ UPSERT. O upsert com `{id, sem_perna_busca}` manda
+    # uma linha inteira com o resto nulo: o Postgres recusou por `rotulo` NOT
+    # NULL e a taxonomia se salvou por causa da constraint -- mas o corpo
+    # enviado ja trazia `status` no default `proposto`, ou seja, um upsert bem
+    # sucedido teria DESAPROVADO os termos. Medido em 05/08 na primeira
+    # execucao. Campo isolado se escreve com PATCH.
+    def declarar(ids, valor):
+        for tid in sorted(ids):
+            supabase_rest.atualizar(
+                "termos", "?id=eq.{}".format(tid), {"sem_perna_busca": valor})
+
+    sem_volume = set(mortos)
+    declarar(sem_volume, "sim")
+    declarar(termos_com_serie - sem_volume, "nao")
+    if sem_volume or termos_com_serie:
         print("Perna de busca declarada em {} termos ({} sem volume).".format(
-            len(marcados), len(set(mortos))), file=sys.stderr)
+            len(sem_volume | termos_com_serie), len(sem_volume)),
+            file=sys.stderr)
 
     # A propria ancora e um termo da taxonomia (`floral`): a serie dela tambem
     # precisa ser gravada, senao o termo mais usado do sistema fica sem perna.
