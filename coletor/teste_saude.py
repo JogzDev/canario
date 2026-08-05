@@ -1,8 +1,9 @@
 """Regressões do portão operacional de saúde."""
 
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
+from gerar_saude import data_operacional
 from coletor_varejo import alertas_criticos, metricas_varejo_ativas
 
 
@@ -24,6 +25,12 @@ def linha(fonte, valor, dias=0, marca_id=None):
 
 
 def main():
+    depois_da_meia_noite_utc = datetime(
+        2026, 8, 5, 1, 27, tzinfo=timezone.utc)
+    if data_operacional(depois_da_meia_noite_utc) != date(2026, 8, 4):
+        print("FALHOU: portao trocou de dia antes de Sao Paulo")
+        return 1
+
     saudavel = [linha("varejo", 100, marca_id=1),
                 linha("editorial", 80), linha("busca", 40)]
     if alertas_criticos(saudavel, MARCAS, HOJE):
@@ -53,7 +60,7 @@ def main():
         print("FALHOU: relatorio incluiu observacao de marca fora do escopo ativo")
         return 1
 
-    print("Saude: ausencia, zero e queda >70% bloqueiam; escopo ativo filtra metricas")
+    print("Saude: fuso BRT, ausencia, zero e queda >70% bloqueiam")
     return 0
 
 
