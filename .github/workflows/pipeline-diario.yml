@@ -128,6 +128,9 @@ jobs:
 
   motor:
     needs: saude
+    # Condicao explicita: `success()` implicito herda jobs ancestrais pulados
+    # (as recuperacoes quando a primeira saude passa) e pularia o motor verde.
+    if: ${{ needs.saude.result == 'success' }}
     uses: ./.github/workflows/motor.yml
     with:
       backfill_editorial: false
