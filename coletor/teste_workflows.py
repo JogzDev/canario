@@ -260,6 +260,40 @@ def checar_actions_fixadas(arquivos):
     return falhas
 
 
+def checar_suites_no_ci():
+    """Todo `teste_*.py` tem de estar no CI.
+
+    "Funcao criada nao e funcao chamada" ja custou um dia de eventos parados em
+    30/07. O mesmo vale para teste: em 05/08 o `teste_fila_de_busca.py`, escrito
+    para trancar um bug que ja tinha aparecido DUAS vezes, ficou de fora do
+    `testes.yml` e portanto nunca rodou no CI. Escrever o teste e so metade.
+    """
+    # Allowlist curta e justificada, uma linha por excecao -- mesmo formato do
+    # teste de vocabulario. Cada entrada precisa se defender.
+    fora_do_ci = {
+        # Bate em 26 sites externos a 1 req/s para descobrir plataforma. E
+        # ferramenta de descoberta, rodada a mao quando entra marca nova; no CI
+        # seria lento, instavel e deselegante com os sites (regra 7).
+        "teste_30s.py": "faz rede em 26 dominios externos",
+    }
+    ci = os.path.join(os.path.dirname(WORKFLOWS), "testes.yml")
+    if not os.path.exists(ci):
+        return [(ci, "testes.yml nao existe")]
+    conteudo = open(ci, encoding="utf-8").read()
+    pasta = os.path.dirname(os.path.abspath(__file__))
+    faltando = []
+    for nome in sorted(os.listdir(pasta)):
+        if not (nome.startswith("teste_") and nome.endswith(".py")):
+            continue
+        if nome in fora_do_ci:
+            continue
+        if "coletor/" + nome not in conteudo:
+            faltando.append((
+                ci, "{} existe e NAO roda no CI: teste escrito nao e teste "
+                    "rodado".format(nome)))
+    return faltando
+
+
 def main():
     arquivos = sorted(glob.glob(WORKFLOWS))
     if not arquivos:
@@ -275,6 +309,7 @@ def main():
         modo = "verificacao manual (pyyaml ausente)"
 
     falhas.extend(checar_actions_fixadas(arquivos))
+    falhas.extend(checar_suites_no_ci())
 
     for f, erro in falhas:
         print("FALHOU {}: {}".format(os.path.basename(f), erro))

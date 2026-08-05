@@ -352,6 +352,9 @@ def main():
     # nao BLOQUEIA -- se ele nao responde, a rotacao do dia seguinte serve
     # outro. `TRENDS_MODO=semanal` continua existindo para forcar a mao.
     total_aprovados = len(aprovados)
+    # Guardado ANTES de `aprovados` virar a fila do dia: o relatorio de saude
+    # precisa do universo inteiro, nao do lote.
+    ids_aprovados = {t["id"] for t in aprovados}
     modo = os.environ.get("TRENDS_MODO", "").strip().lower()
     hoje = date.today()
 
@@ -490,7 +493,11 @@ def main():
     # nenhum grupo passa fica visivel na hora.
     tentados = len(grupos)
     responderam = tentados - len(falhas)
-    cobertura = len(ja_tem | termos_com_serie)
+    # Quem ja tinha serie (universo menos os que nunca coletaram) mais quem
+    # coletou agora. `ja_tem` morreu junto com os dois modos; usar o nome
+    # antigo aqui passou pelo `ast.parse` e so estourou no runner, porque
+    # NameError e erro de execucao, nao de sintaxe.
+    cobertura = len((ids_aprovados - nunca) | termos_com_serie)
     atual = {
         "visitados": tentados,
         "gravados": responderam,

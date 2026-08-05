@@ -43,10 +43,18 @@ jobs:
         run: python3 coletor/teste_saude.py
       - name: Planejamento diario do Google Trends
         run: python3 coletor/teste_trends.py
+      - name: Fila da perna de busca (§19)
+        run: python3 coletor/teste_fila_de_busca.py
       - name: Workflows do Actions
         run: python3 coletor/teste_workflows.py
       - name: Modulos compilam
         run: python3 -m py_compile coletor/*.py
+      # `py_compile` acima confere SINTAXE. Nome usado e nunca definido passa
+      # limpo por ele e so estoura em execucao -- foi assim que `ja_tem` chegou
+      # ao runner em 05/08 e derrubou a coleta de busca depois de meia hora de
+      # trabalho ja feito.
+      - name: Nome usado e nunca definido
+        run: python3 coletor/teste_nomes.py
 
   app:
     name: App (Swift)
