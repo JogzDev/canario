@@ -92,6 +92,12 @@ def checar_orquestracao(workflows):
                    "job `{}` deveria depender de `{}`".format(
                        job, dependencia))
 
+    motor_pipeline = jobs.get("motor", {})
+    if "needs.saude.result == 'success'" not in str(
+            motor_pipeline.get("if", "")):
+        falhar("pipeline-diario.yml",
+               "motor deve ignorar recuperacoes ancestrais puladas")
+
     saude_inicial = jobs.get("saude-inicial", {})
     if set(saude_inicial.get("needs", [])) != {
             "varejo-vtex", "varejo-shopify", "editorial", "busca"}:
@@ -152,8 +158,13 @@ def checar_orquestracao(workflows):
             busca_recuperacao.get("uses") != individuais["coleta-trends.yml"] or
             busca_recuperacao.get("with", {}).get("tentativa") != 1):
         falhar("recuperar-pipeline.yml", "recuperacao nao rotaciona Trends")
-    if jobs_recuperacao.get("motor", {}).get("needs") != "saude":
+    motor_recuperacao = jobs_recuperacao.get("motor", {})
+    if motor_recuperacao.get("needs") != "saude":
         falhar("recuperar-pipeline.yml", "motor manual contorna saude")
+    if "needs.saude.result == 'success'" not in str(
+            motor_recuperacao.get("if", "")):
+        falhar("recuperar-pipeline.yml",
+               "motor manual herda jobs pulados e nao publica")
     passos_saude_recuperacao = jobs_recuperacao.get("saude", {}).get(
         "steps", [])
     dependencia_recuperacao = next((p for p in passos_saude_recuperacao
