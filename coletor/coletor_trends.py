@@ -456,8 +456,9 @@ def main():
     # execucao. Campo isolado se escreve com PATCH.
     def declarar(ids, valor):
         for tid in sorted(ids):
+            # O filtro vai SEM o "?": `atualizar` ja o prefixa.
             supabase_rest.atualizar(
-                "termos", "?id=eq.{}".format(tid), {"sem_perna_busca": valor})
+                "termos", "id=eq.{}".format(tid), {"sem_perna_busca": valor})
 
     sem_volume = set(mortos)
     declarar(sem_volume, "sim")
