@@ -38,6 +38,9 @@ enum LeitorDeArquivo {
     struct Leitura {
         var texto: String = ""
         var cor: CorDaPeca.Leitura?
+        /// Termos parecidos com peças do painel (§28). Vem vazio enquanto o
+        /// portão da §28 não tiver sido medido — ver `SemelhancaVisual`.
+        var semelhantes: [SemelhancaVisual.Sugestao] = []
         var origem: Origem = .semNada
 
         enum Origem: Equatable {
@@ -48,7 +51,8 @@ enum LeitorDeArquivo {
         }
 
         var vazia: Bool {
-            texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && cor == nil
+            texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && cor == nil && semelhantes.isEmpty
         }
     }
 
@@ -150,8 +154,17 @@ enum LeitorDeArquivo {
         // trazer a cor comercial ("areia", "off white"), mas nem todo título
         // traz, e medir custa milissegundos.
         let cor = CorDaPeca.ler(img)
-        let origem: Leitura.Origem = temTexto ? .ocr : (cor != nil ? .somenteCor : .semNada)
-        return Leitura(texto: texto, cor: cor, origem: origem)
+        // Terceira leitura da mesma imagem: com que peças do painel esta se
+        // parece (§28). Sai vazia enquanto o portão da §28 estiver fechado,
+        // então adicioná-la aqui não muda nada até alguém medir.
+        #if canImport(Vision)
+        let semelhantes = SemelhancaVisual.sugerir(img)
+        #else
+        let semelhantes: [SemelhancaVisual.Sugestao] = []
+        #endif
+        let temSinal = temTexto || cor != nil || !semelhantes.isEmpty
+        let origem: Leitura.Origem = temTexto ? .ocr : (temSinal ? .somenteCor : .semNada)
+        return Leitura(texto: texto, cor: cor, semelhantes: semelhantes, origem: origem)
     }
 
     private static func ocr(_ imagem: CGImage) async throws -> String {
