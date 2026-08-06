@@ -215,3 +215,30 @@ errado **na tela, agora**.
 
 ### Da lista do JP, ainda não tocado
 Erro 500 no Explorar · performance · reestruturação das abas · câmera e fototeca · MobileCLIP (A7 já autorizado a ser desfeito)
+
+---
+
+## Sessão seguinte (05–06/08) — a defasagem era rótulo, não fonte
+
+### ✅ Resolvido
+
+| O que | Evidência |
+|---|---|
+| **N4 estava errado: a defasagem era nossa** | O Trends marca a semana pelo **domingo**. O coletor fazia `quando - timedelta(days=quando.weekday())`; `weekday()` de domingo é 6, então a linha jogava o ponto para a segunda **anterior**. A semana 26/07–01/08 virava "semana de 20/07". Os 16 dias que reportei eram 6 de rótulo + ~4 de atraso real da fonte. Sonda em 5 janelas no mesmo minuto: `today 5-y` e `12-m` param em 26/07; `3-m` e `1-m` chegam em **05/08** |
+| **§22 comparava períodos diferentes** | O editorial usa `date_trunc('week')` (segunda ISO de verdade). O mesmo rótulo "20/07" significava 20–26/07 numa perna e 26/07–01/08 na outra: **1 dia em comum**. Não levantava exceção, não aparecia em log — o número existia e media outro período. `teste_semana_da_busca.py` tranca comparando com a função real do coletor editorial em 400 dias seguidos |
+| **Perna de busca montada dia a dia** | Janela de 240 dias ainda vem em **diário** (241 pontos, 34 semanas ISO completas, contra as 12 que a §21 usa). Fronteira medida: 269d ainda diário, 280d já semanal. Guarda nova estoura se o Trends mudar a granularidade, em vez de devolver série vazia |
+| **10.460 linhas de busca realinhadas (+7d)** | Migração `20260805160000`. Busca e `editorial_br` agora começam ambas em **26/07/2021** — o deslocamento estava visível ali desde o primeiro dia |
+| **Corte de "em dia" deixou de ser chute** | Era `hoje − 2 semanas`, número escolhido à mão para compensar o atraso. Virou a última semana ISO fechada: a fonte, e não o relógio, diz o teto |
+| **2 críticos do Supabase** | `cobertura_por_celula` e `eventos_da_semana` com `security_invoker=false`. Ligar o invoker sem mais nada **esvaziaria o Explorar e travaria o portão da §8 em "sem dados" para sempre**, em silêncio. Feito com permissão **coluna a coluna**: conferido como `anon` antes e depois — 3431/120/113/11, idêntico; `marcas.detalhe_teste` agora dá `permission denied` |
+| **N1: FFW e BoF não é rate-limit** | 403 do datacenter, **200 residencial** (64 KB e 116 KB), com o `CanarioBot/1.0` e o mesmo código de fetch. Regra 7 intacta. Dois endereços estavam velhos: FFW saiu da UOL (`ffw.com.br`), BoF mudou para `/arc/outboundfeeds/rss/` |
+| **N2: Vogue Business fora** | Pior que fusão: **nunca trouxe artigo nenhum**. A descoberta seguiu o link-alternate e caiu no feed da *Vogue*; o `on_conflict=url` deu tudo para a Vogue. Era fonte fantasma contando como veículo. `voguebusiness.com/feed/rss` dá 404. São **16 veículos ativos**, não 17 |
+
+### 🔴 Aberto — o de maior valor
+
+| # | O que | Evidência |
+|---|---|---|
+| M1 | **43% dos "em alta" se apoiam num par que não co-move** | Medido: `busca × editorial_br` dá r=**0,235** e **67,7%** de mesmo sinal quando ambos \|z\|≥1 (n=167) — sinal real. `busca × editorial_intl` dá r=**−0,070**, dentro de 1 erro-padrão de zero (n=179). E **49 dos 114 "em alta"** vêm do par `{busca, editorial_intl}`, contra 47 de `{busca, editorial_br}`. A ambiguidade 2 já suspeitava disso em palavras; agora tem número. **Decisão de método do JP**: imprensa internacional pode ser a perna que confirma um índice de mid-market brasileiro? |
+| M2 | **`computar_indice()` não filtra `varejo`, o meta diz que filtra** | O CTE `ativas` pega toda fonte com z não nulo. Hoje é inofensivo porque `computar_z()` não calcula z para varejo — mas o índice depende de um comportamento de outra função, não de uma regra própria. B1 diz que varejo não entra |
+| M3 | **Editorial de 4 semanas comparado com busca de semana crua** | A §18 alisa o editorial em janela móvel de 4 semanas (volume baixo, semana crua é ruído); a busca é semana fechada. A varredura de defasagem tem pico em −2 semanas, que é ~o centro de massa da janela de 4 — ou seja, é o alisamento aparecendo, não antecipação. A §22 compara grandezas de resolução temporal diferente |
+| M4 | **Coleta editorial não pode ser dividida entre runners** | O coletor calcula a série a partir dos **feeds que leu naquela execução**, não de `artigos`. Duas execuções parciais se sobrescrevem. O workflow já aceita `RUNNER_COLETA`, mas ligá-lo move a coleta inteira para o Mac — Mac dormindo = vermelho. O conserto certo é `computar_serie_editorial()` no banco, como o próprio comentário do coletor já aponta |
+| M5 | **Erro 500 do Explorar não reproduzido** | **Zero 500 em 24h de log da API.** As 5 chamadas da tela testadas contra o servidor real: todas 200. Três builds do app aparecem no log com sucesso. Hipótese não confirmada: pool de conexões durante o pipeline diário (4 requisições simultâneas + `service_role` segurando conexão por 1h17). Falta o JP dizer **quando** viu |
