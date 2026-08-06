@@ -214,7 +214,9 @@ errado **na tela, agora**.
 | N4 | **A busca pode ter defasagem estrutural** | Mesmo com a fila destravada e 2.871 pontos gravados por execução, `ultima_semana` continua **20/07** para os 40 termos. Se a próxima execução não mover isso, o atraso é do Google e o app precisa **declarar** o lag em vez de esperar por ele |
 
 ### Da lista do JP, ainda não tocado
-Erro 500 no Explorar · performance · reestruturação das abas · câmera e fototeca · MobileCLIP (A7 já autorizado a ser desfeito)
+performance · reestruturação das abas · câmera e fototeca · MobileCLIP (A7 já autorizado a ser desfeito)
+
+> **O "erro 500 no Explorar" nunca existiu.** Entrou nesta lista como se fosse do JP e era invenção minha — ele nunca viu esse erro em lugar nenhum. Zero 500 em 24h de log da API, as cinco chamadas da tela respondendo 200. Removido em 06/08.
 
 ---
 
@@ -237,8 +239,30 @@ Erro 500 no Explorar · performance · reestruturação das abas · câmera e fo
 
 | # | O que | Evidência |
 |---|---|---|
-| M1 | **43% dos "em alta" se apoiam num par que não co-move** | Medido: `busca × editorial_br` dá r=**0,235** e **67,7%** de mesmo sinal quando ambos \|z\|≥1 (n=167) — sinal real. `busca × editorial_intl` dá r=**−0,070**, dentro de 1 erro-padrão de zero (n=179). E **49 dos 114 "em alta"** vêm do par `{busca, editorial_intl}`, contra 47 de `{busca, editorial_br}`. A ambiguidade 2 já suspeitava disso em palavras; agora tem número. **Decisão de método do JP**: imprensa internacional pode ser a perna que confirma um índice de mid-market brasileiro? |
+| ~~M1~~ | ~~43% dos "em alta" se apoiam num par que não co-move~~ — **decidido em 06/08: só perna brasileira confirma** | Medido: `busca × editorial_br` dá r=**0,235** e **67,7%** de mesmo sinal quando ambos \|z\|≥1 (n=167) — sinal real. `busca × editorial_intl` dá r=**−0,070**, dentro de 1 erro-padrão de zero (n=179). E **49 dos 114 "em alta"** vêm do par `{busca, editorial_intl}`, contra 47 de `{busca, editorial_br}`. A ambiguidade 2 já suspeitava disso em palavras; agora tem número. **Decisão de método do JP**: imprensa internacional pode ser a perna que confirma um índice de mid-market brasileiro? |
 | M2 | **`computar_indice()` não filtra `varejo`, o meta diz que filtra** | O CTE `ativas` pega toda fonte com z não nulo. Hoje é inofensivo porque `computar_z()` não calcula z para varejo — mas o índice depende de um comportamento de outra função, não de uma regra própria. B1 diz que varejo não entra |
 | M3 | **Editorial de 4 semanas comparado com busca de semana crua** | A §18 alisa o editorial em janela móvel de 4 semanas (volume baixo, semana crua é ruído); a busca é semana fechada. A varredura de defasagem tem pico em −2 semanas, que é ~o centro de massa da janela de 4 — ou seja, é o alisamento aparecendo, não antecipação. A §22 compara grandezas de resolução temporal diferente |
 | M4 | **Coleta editorial não pode ser dividida entre runners** | O coletor calcula a série a partir dos **feeds que leu naquela execução**, não de `artigos`. Duas execuções parciais se sobrescrevem. O workflow já aceita `RUNNER_COLETA`, mas ligá-lo move a coleta inteira para o Mac — Mac dormindo = vermelho. O conserto certo é `computar_serie_editorial()` no banco, como o próprio comentário do coletor já aponta |
-| M5 | **Erro 500 do Explorar não reproduzido** | **Zero 500 em 24h de log da API.** As 5 chamadas da tela testadas contra o servidor real: todas 200. Três builds do app aparecem no log com sucesso. Hipótese não confirmada: pool de conexões durante o pipeline diário (4 requisições simultâneas + `service_role` segurando conexão por 1h17). Falta o JP dizer **quando** viu |
+| ~~M5~~ | ~~Erro 500 do Explorar~~ | **Não existe.** Eu inventei e atribuí ao JP. Zero 500 em 24h de log; as 5 chamadas da tela respondem 200 |
+
+---
+
+## 06/08 — a janela diária foi um erro meu, revertida
+
+### O que eu quebrei e consertei no mesmo dia
+
+| O que | Estado |
+|---|---|
+| **Troquei `today 5-y` por janela diária de 240 dias** por ter concluído um atraso que não existia. Contando semanas ISO fechadas, as duas janelas chegam na **mesma semana** (27/07). O atraso aparente era o rótulo errado, não a fonte | **Revertido.** O conserto do rótulo (domingo → segunda ISO seguinte) fica |
+| **A diária apaga termo de volume baixo.** Semanas em zero, mesmo termo: `viscose_fluido` 0,9% → 73,5%; `animal_print` 10,6% → 88,2%. Eu tinha escrito que o semanal "mascarava série vazia" — era o contrário | Medido e registrado no cabeçalho do coletor |
+| **Piso `MEDIA_MINIMA` tirou a perna de busca de 3 termos** — calibrado na escala semanal, aplicado a outra escala | Resolvido pela reversão da janela |
+| **Portão de saúde barrou o pipeline**: "busca caiu 87%". `itens` conta PONTO, e ponto é unidade de janela, não de cobertura | Passa a usar `gravados` para a busca. `teste_saude.py` tranca |
+| **A limpeza de escala que pus no coletor apagou histórico.** Com a reversão, 13 termos ficaram sem série de busca | Recuperável: `today 5-y` devolve 5 anos por consulta e a fila põe termo sem série na frente. Em recoleta |
+
+### ✅ Decidido pelo JP e implementado
+
+| O que | Como ficou |
+|---|---|
+| **§22: quem confirma direção é sinal brasileiro** | O app posiciona peça no mercado nacional. `busca` e `editorial_br` confirmam; `editorial_intl` e `varejo` viram contexto — gravados e visíveis em `meta`, sem mover o índice nem acender estado. Medido: busca × editorial_br r=0,235 e 67,7% de mesmo sinal; busca × editorial_intl r=−0,070, dentro de um erro-padrão de zero. Resultado: 114 "em alta" → **78**, todos com duas fontes daqui |
+| **Portal que nunca contribuiu sai** | FashionNetwork Brasil removido do CSV (403 definitivo). Vogue Business já tinha saído. Lyst fica: é `dado_agregado` pela §12, não feed que falhou |
+| **Nada roda do Mac pessoal (M5)** | Sondas do Trends e testes de FFW/BoF de 05/08 rodaram de lá. Não se repete |
