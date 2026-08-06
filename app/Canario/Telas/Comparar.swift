@@ -158,9 +158,9 @@ struct Comparar: View {
             termos = try await Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_semanais", "select=*&segmento=eq.\(Recorte.segmento)&order=semana.desc&limit=400")
+                "indices_do_app", "select=*&segmento=eq.\(Recorte.segmento)&order=semana.desc&limit=400")
             async let v: [PontoSerie] = Supabase.shared.buscar(
-                "series_semanais", "select=*&segmento=eq.\(Recorte.segmento)&fonte=eq.varejo&order=semana.desc&limit=400")
+                "series_do_app", "select=*&segmento=eq.\(Recorte.segmento)&fonte=eq.varejo&order=semana.desc&limit=400")
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula", "select=*&segmento=eq.\(Recorte.segmento)&order=semana.desc&limit=400")
 

@@ -146,7 +146,7 @@ struct Analisar: View {
             termos = try await Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
             let recentes: [IndiceSemanal] = try await Supabase.shared.buscar(
-                "indices_semanais", "select=*&order=semana.desc&limit=400")
+                "indices_do_app", "select=*&order=semana.desc&limit=400")
             var mapa: [String: IndiceSemanal] = [:]
             for i in recentes where mapa[i.termoId] == nil { mapa[i.termoId] = i }
             indices = mapa

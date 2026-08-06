@@ -211,7 +211,7 @@ struct RelatorioDaPeca: View {
         let ids = termos.map(\.id).joined(separator: ",")
         do {
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_semanais",
+                "indices_do_app",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=400")
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",

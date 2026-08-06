@@ -230,10 +230,10 @@ struct RelatorioDoTermo: View {
         erro = nil
         do {
             async let s: [PontoSerie] = Supabase.shared.buscar(
-                "series_semanais",
+                "series_do_app",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=600")
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_semanais",
+                "indices_do_app",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",

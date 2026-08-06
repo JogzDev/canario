@@ -191,7 +191,7 @@ struct Explorar: View {
         erro = nil
         do {
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_semanais",
+                "indices_do_app",
                 "select=*&estado=in.(\"em alta\",\"em queda\",pico)&order=semana.desc&limit=200")
             async let t: [Termo] = Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en")
@@ -224,7 +224,7 @@ struct Explorar: View {
                 // no mesmo dia, em outro lugar.
                 let semanas = Set(alvos.map(\.semana)).joined(separator: ",")
                 let pontos: [PontoSerie] = try await Supabase.shared.buscar(
-                    "series_semanais",
+                    "series_do_app",
                     "select=*&termo_id=in.(\(ids))&semana=in.(\(semanas))&limit=2000")
                 var mapa: [String: [PontoSerie]] = [:]
                 for p in pontos {
