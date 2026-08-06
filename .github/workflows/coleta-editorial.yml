@@ -1,8 +1,32 @@
 name: Coleta editorial (share of voice)
 
-# Roda no datacenter do GitHub: feed de veiculo editorial nao tem o problema de
-# rate-limit por IP que a VTEX e o Google tem. So a coleta de busca e as duas
-# Shopify precisam do runner residencial.
+# Runner: definido pela variavel de repositorio RUNNER_COLETA, igual ao varejo.
+# Sem ela, roda no datacenter do GitHub, que e o comportamento de hoje.
+#
+# A premissa antiga estava aqui: "feed de veiculo editorial nao tem o problema
+# de rate-limit por IP que a VTEX e o Google tem". Medido em 05/08 e falso para
+# dois dos 16 veiculos. Com o CanarioBot e o mesmo codigo de fetch:
+#
+#   FFW                  403 do datacenter   200 de IP residencial (64 KB)
+#   Business of Fashion  403 do datacenter   200 de IP residencial (116 KB)
+#
+# Nao e rate-limit, e bloqueio de faixa de datacenter -- os dois respondem de
+# primeira do IP de casa. Regra 7 intacta: nenhum proxy, nenhum header
+# alternativo, o mesmo User-Agent identificavel. Muda o lugar de onde se
+# telefona, nao quem diz ser.
+#
+# LIGAR ISSO TEM UM CUSTO: com RUNNER_COLETA apontando para o Mac, a coleta
+# editorial passa a depender de ele estar ligado. Mac dormindo = job na fila
+# ate estourar o timeout = vermelho no Actions. Por isso o padrao continua
+# sendo o datacenter, e a troca e uma decisao consciente, nao um efeito
+# colateral desta mudanca.
+#
+# A alternativa sem esse custo e maior: fazer a serie editorial ser calculada
+# de `artigos` no banco (`computar_serie_editorial()`), e nao dos feeds que a
+# execucao acabou de ler. Hoje ela vem da execucao, entao duas execucoes
+# parciais -- uma no datacenter, outra no Mac -- se sobrescreveriam com
+# contagem incompleta. Feito isso, os dois runners poderiam dividir os
+# veiculos e o Mac dormindo so custaria dois veiculos, e nao a coleta.
 on:
   workflow_call:
     secrets:
@@ -21,7 +45,7 @@ concurrency:
 
 jobs:
   coletar:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
