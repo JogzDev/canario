@@ -397,6 +397,37 @@ def gravar_grupo(dados_por_termo, hoje, agora):
     for i in range(0, len(linhas), 500):
         supabase_rest.upsert("series_semanais", linhas[i:i + 500],
                              on_conflict="termo_id,segmento,fonte,semana")
+
+    # UMA ESCALA POR SERIE.
+    #
+    # O upsert cobre as 34 semanas da janela e deixa intactas as anteriores,
+    # que vieram do `today 5-y`. O Trends normaliza 0-100 DENTRO de cada
+    # consulta, entao as duas partes nao estao na mesma regua e a emenda vira
+    # um degrau. Medido na primeira execucao, em `alfaiataria`:
+    #
+    #   2025-12-01  14.00  antigo      2025-12-15   3.71  novo
+    #   2025-12-08   6.00  novo        2025-12-29   0.00  novo
+    #
+    # A janela movel de 12 semanas da §21 atravessaria essa costura e leria o
+    # degrau como movimento -- "em queda" sobre uma troca de unidade, que a
+    # regra 2 proibe. O tamanho depende do volume do termo: `vestido` passa com
+    # +2%, `alfaiataria` com -70%, `algodao` com -95%.
+    #
+    # Reescalar foi medido e descartado: o fator erra 2,4% em `alfaiataria` e
+    # 20,8% (max 60%) em `vestido floral` -- a ancora do K7, regua de todos os
+    # outros. O maior erro cairia no ponto de maior consequencia.
+    #
+    # As linhas antigas ja foram para `series_busca_5y_legado` na migracao
+    # 20260805180000; aqui a limpeza continua acontecendo a cada rotacao, senao
+    # os proximos 12 termos recriam a costura.
+    for termo_id, dados in dados_por_termo.items():
+        if not dados["pontos"]:
+            continue
+        primeira = min(s for s, _ in dados["pontos"]).isoformat()
+        supabase_rest.apagar(
+            "series_semanais",
+            "termo_id=eq.{}&fonte=eq.busca&semana=lt.{}".format(
+                termo_id, primeira))
     # UPDATE, nao upsert: o termo ja existe e a linha aqui e parcial.
     for a in atualizacoes:
         supabase_rest.atualizar(
