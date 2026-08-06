@@ -34,7 +34,7 @@ from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from coletor_trends import semanas_iso, ultima_semana_fechada  # noqa: E402
+from coletor_trends import semana_iso, ultima_semana_fechada  # noqa: E402
 from coletor_editorial import semana_de  # noqa: E402
 
 falhas = []
@@ -46,62 +46,55 @@ def checar(condicao, descricao):
         falhas.append(descricao)
 
 
-def dias(inicio, quantos, valor=10.0):
-    return [(inicio + timedelta(days=i), valor) for i in range(quantos)]
-
-
 def main():
     print("A semana da busca e a semana do editorial\n")
 
-    # 1. O bug de 05/08, direto. O Trends marcava esta semana como domingo
-    #    26/07; a versao antiga gravava 20/07. O periodo medido comeca em
-    #    27/07 (segunda) e a semana ISO dele e 27/07.
-    semana_27 = semanas_iso(dias(date(2026, 7, 27), 7))
-    checar(len(semana_27) == 1 and semana_27[0][0] == date(2026, 7, 27),
-           "semana de 27/07 a 02/08 e rotulada 27/07 (e nao 20/07)")
+    # 1. O bug, direto. O Trends marca esta semana com o domingo 26/07; a
+    #    versao antiga gravava 20/07 -- seis dias ANTES do periodo medido.
+    checar(semana_iso(date(2026, 7, 26)) == date(2026, 7, 27),
+           "domingo 26/07 vira semana de 27/07 (e nao 20/07)")
+    checar(semana_iso(date(2026, 7, 26)) > date(2026, 7, 26),
+           "o ponto anda para FRENTE, nunca para tras")
 
-    # 2. O teste que importa: as duas pernas, o mesmo dia, a mesma semana.
-    #    Compara com a funcao REAL do coletor editorial, nao com uma copia --
+    # 2. O teste que importa: as duas pernas, o mesmo periodo, a mesma semana.
+    #    Compara com a funcao REAL do coletor editorial, e nao com uma copia --
     #    se um dos dois lados mudar de convencao, isto acusa.
+    #
+    #    A semana do Google vai de domingo S a sabado S+6. Os seis dias dela
+    #    que caem de segunda em diante tem que pousar na semana ISO que a busca
+    #    declara. Sobra o proprio domingo, que e a imprecisao inerente.
     desacordos = []
     for n in range(400):
-        dia = date(2025, 6, 1) + timedelta(days=n)
-        semana_da_busca = semanas_iso(dias(dia - timedelta(days=dia.weekday()), 7))
-        if not semana_da_busca:
-            desacordos.append(dia)
+        domingo = date(2025, 6, 1) + timedelta(days=n)
+        if domingo.weekday() != 6:
             continue
-        if semana_da_busca[0][0] != semana_de(dia):
-            desacordos.append(dia)
+        rotulo = semana_iso(domingo)
+        for d in range(1, 7):
+            if semana_de(domingo + timedelta(days=d)) != rotulo:
+                desacordos.append((domingo, d))
     checar(not desacordos,
-           "em 400 dias seguidos, busca e editorial caem na mesma semana"
+           "os seis dias uteis de cada semana do Google caem na semana ISO "
+           "que a busca declara"
            + ("" if not desacordos else " (falhou em {})".format(desacordos[:3])))
 
-    # 3. Toda semana devolvida e segunda-feira. Domingo entrando aqui foi
-    #    exatamente o que passou despercebido antes.
-    muitas = semanas_iso(dias(date(2026, 1, 5), 210))
-    checar(all(s.weekday() == 0 for s, _ in muitas),
-           "toda semana devolvida cai numa segunda-feira")
+    # 3. Todo rotulo e segunda-feira. Domingo entrando aqui foi exatamente o
+    #    que passou despercebido antes.
+    checar(all(semana_iso(date(2026, 1, 4) + timedelta(days=7 * k)).weekday() == 0
+               for k in range(60)),
+           "todo rotulo cai numa segunda-feira")
 
-    # 4. Semana pela metade nao entra: a media de 3 dias nao e comparavel com a
-    #    media de 7 e entraria na janela do z como se fosse.
-    checar(semanas_iso(dias(date(2026, 7, 27), 3)) == [],
-           "semana com 3 dias nao vira ponto")
-    checar(len(semanas_iso(dias(date(2026, 7, 27), 10))) == 1,
-           "10 dias dao UMA semana fechada, e nao duas")
+    # 4. Ponto que ja venha numa segunda nao pode ser empurrado uma semana.
+    checar(semana_iso(date(2026, 7, 27)) == date(2026, 7, 27),
+           "ponto que ja e segunda fica onde esta")
 
-    # 5. A media e a media dos sete dias.
-    ponto = semanas_iso([(date(2026, 7, 27) + timedelta(days=i), float(i))
-                         for i in range(7)])
-    checar(ponto and abs(ponto[0][1] - 3.0) < 1e-9,
-           "o valor da semana e a media dos sete dias")
+    # 5. O ajuste e de no maximo um dia. Se algum dia passar disso, alguem
+    #    trocou o sentido do arredondamento de novo.
+    checar(all((semana_iso(date(2026, 3, 1) + timedelta(days=n))
+                - (date(2026, 3, 1) + timedelta(days=n))).days <= 1
+               for n in range(0, 364, 7)),
+           "o ajuste nunca passa de um dia")
 
-    # 6. Ordem crescente: o calculo do z le a serie na ordem em que ela vem.
-    fora_de_ordem = dias(date(2026, 3, 2), 7) + dias(date(2026, 2, 23), 7)
-    resultado = semanas_iso(fora_de_ordem)
-    checar([s for s, _ in resultado] == sorted(s for s, _ in resultado),
-           "a serie sai ordenada mesmo com a entrada embaralhada")
-
-    # 7. A regua de "em dia" aponta para a ultima semana JA FECHADA.
+    # 6. A regua de "em dia" aponta para a ultima semana JA FECHADA.
     #    Quarta 05/08: a semana corrente (03/08) ainda corre; a ultima fechada
     #    e 27/07.
     checar(ultima_semana_fechada(date(2026, 8, 5)) == date(2026, 7, 27),

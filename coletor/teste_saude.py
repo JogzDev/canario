@@ -52,6 +52,33 @@ def main():
         print("FALHOU: queda maior que 70% nao bloqueou")
         return 1
 
+    # TROCAR A JANELA DO TRENDS NAO E COLETA QUEBRADA.
+    #
+    # Em 06/08 o portao barrou o pipeline com "busca caiu 87% (462 vs 3626)".
+    # A coleta tinha funcionado: os mesmos grupos responderam. O que mudou foi
+    # a janela -- de 5 anos semanais (261 pontos por termo) para 240 dias
+    # diarios (34). `itens` conta ponto, e ponto e unidade de janela.
+    janela_menor = [linha("varejo", 100, marca_id=1), linha("editorial", 80)]
+    hoje_busca = linha("busca", 3)
+    hoje_busca["itens"] = 462          # um oitavo do de ontem
+    janela_menor.append(hoje_busca)
+    for d in range(1, 8):
+        antiga = linha("busca", 3, dias=d)
+        antiga["itens"] = 3626         # janela de 5 anos
+        janela_menor.append(antiga)
+    if any("busca" in x for x in alertas_criticos(janela_menor, MARCAS, HOJE)):
+        print("FALHOU: troca de janela do Trends bloqueou como se fosse queda")
+        return 1
+
+    # Mas cobertura caindo de verdade continua bloqueando.
+    cobertura_caiu = [linha("varejo", 100, marca_id=1), linha("editorial", 80),
+                      linha("busca", 1)]
+    cobertura_caiu.extend(linha("busca", 8, dias=d) for d in range(1, 8))
+    if not any("busca caiu" in x
+               for x in alertas_criticos(cobertura_caiu, MARCAS, HOJE)):
+        print("FALHOU: queda real de cobertura da busca nao bloqueou")
+        return 1
+
     metricas = metricas_varejo_ativas(
         {("varejo", 1): linha("varejo", 100, marca_id=1),
          ("varejo", 2): linha("varejo", 0, marca_id=2)},

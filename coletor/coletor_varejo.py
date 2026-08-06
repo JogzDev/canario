@@ -692,9 +692,29 @@ def escrever_saude(hoje, metricas):
 
 
 def _valor_de_saude(linha):
-    """Métrica de volume comparável dentro de cada fonte."""
+    """Métrica de volume comparável dentro de cada fonte.
+
+    A métrica precisa ter UNIDADE ESTÁVEL, e não só ser um número grande.
+
+    Em 06/08 o portão bloqueou o pipeline com "busca caiu 87% contra a média
+    de 7 dias (462 vs 3626)". A coleta tinha funcionado: os mesmos 3 grupos
+    responderam, os mesmos termos foram gravados. O que mudou foi a janela do
+    Trends — de 5 anos semanais (261 pontos por termo) para 240 dias diários
+    (34 pontos por termo). Mesmo trabalho, um oitavo dos pontos.
+
+    O portão estava certo em existir e errado no que media: `itens` conta
+    PONTOS, e ponto é unidade de janela, não de cobertura. Trocar a janela é
+    decisão de método e não pode acender alarme de coleta quebrada — alarme
+    que grita quando nada está errado é alarme que se aprende a ignorar.
+
+    Para a busca a pergunta certa é quantos grupos responderam. Medido nos
+    mesmos dias em que `itens` variou de 408 a 7308, `gravados` ficou em
+    3, 3, 4, 2, 7 — sobe e desce com a rotação, não com o tamanho da janela.
+    """
     if linha.get("fonte") == "varejo":
         return linha.get("visitados") or 0
+    if linha.get("fonte") == "busca":
+        return linha.get("gravados") or 0
     if linha.get("itens") is not None:
         return linha.get("itens") or 0
     return linha.get("gravados") or 0

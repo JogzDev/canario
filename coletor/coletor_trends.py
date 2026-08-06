@@ -43,24 +43,40 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
 GEO = "BR"
 
-# JANELA DIARIA, E NAO "today 5-y". O PORQUE, MEDIDO EM 05/08:
+# JANELA SEMANAL. A DIARIA FOI TENTADA EM 05/08 E REVERTIDA EM 06/08.
 #
-# O Trends escolhe a granularidade pelo TAMANHO da janela, e nao pelo que se
-# pede. Sondando o mesmo termo em cinco janelas no mesmo minuto:
+# O que motivou a tentativa: com o rotulo errado (veja `semana_iso`), a perna
+# de busca parecia parar em 20/07 enquanto o editorial ia a 03/08, e a janela
+# diaria (`today 3-m`) entregava dado ate ONTEM. Parecia trocar dez dias de
+# atraso por zero.
 #
-#   today 5-y   semanal   ultima semana completa: 26/07
-#   today 12-m  semanal   ultima semana completa: 26/07
-#   today 3-m   DIARIO    ultimo dia completo:    05/08
-#   today 1-m   DIARIO    ultimo dia completo:    05/08
-#   240 dias    DIARIO    241 pontos, 34 semanas ISO completas
+# O que a medicao mostrou depois, e que derruba a troca:
 #
-# A janela semanal chega com ~10 dias de atraso; a diaria chega em ONTEM. E
-# 240 dias ainda vem em dias, o que da 34 semanas ISO completas -- quase tres
-# vezes as 12 que a §21 consome na janela movel do z. Entao a perna de busca
-# passa a ser montada por nos, dia a dia, em semana ISO.
+# 1. NAO HAVIA FRESCURA A GANHAR. Contando semanas ISO fechadas, que e a
+#    unidade que o app usa, as duas janelas chegam na MESMA semana -- 27/07,
+#    medido no mesmo minuto. O `today 5-y` marca a semana pelo domingo 26/07,
+#    que e a semana ISO de 27/07. O atraso aparente era o rotulo, nao a fonte.
 #
-# O GANHO MAIOR NAO E A FRESCURA, E O ALINHAMENTO. Veja `semanas_iso` abaixo.
-DIAS_DA_JANELA = 240
+# 2. A DIARIA CUSTA RESOLUCAO NO TERMO PEQUENO. O Trends normaliza 0-100 pelo
+#    maior valor da janela; num recorte diario esse maximo e o maior DIA do
+#    maior termo, e termo de volume baixo arredonda para zero na maioria dos
+#    dias. Medido no mesmo termo, semanas em zero:
+#
+#                      semanal (227 sem)   diario (34 sem)
+#      viscose_fluido        0,9%              73,5%
+#      animal_print         10,6%              88,2%
+#      algodao              54,2%              94,1%
+#
+#    Nao e que o semanal escondia serie vazia -- foi o que escrevi primeiro e
+#    estava errado. E o diario que apaga sinal que existe. `viscose_fluido`
+#    tem busca em 99% das semanas e sumiria.
+#
+# 3. E emendava mal. A janela diaria so alcanca ~269 dias, entao a serie
+#    antiga (5 anos) e a nova ficavam em reguas diferentes, com degrau de ate
+#    -95% no meio. Ver `series_busca_5y_legado`.
+#
+# Fica o semanal, com o rotulo consertado -- que era o defeito de verdade.
+INTERVALO = "today 5-y"
 ANCORA = "vestido floral"   # K7: fixa em todos os grupos
 POR_GRUPO = 5               # teto do Trends
 TZ = 180                    # minutos; BRT = UTC-3
@@ -86,19 +102,13 @@ class TrendsErro(Exception):
     pass
 
 
-def janela(hoje):
-    """Intervalo diario que o Trends aceita: 'AAAA-MM-DD AAAA-MM-DD'."""
-    return "{} {}".format((hoje - timedelta(days=DIAS_DA_JANELA)).isoformat(),
-                          hoje.isoformat())
+def semana_iso(quando):
+    """Segunda ISO da semana que o Trends marcou com a data `quando`.
 
+    ESTE E O BUG DE SEIS DIAS QUE NUNCA LEVANTOU EXCECAO.
+    ====================================================
 
-def semanas_iso(pontos_diarios):
-    """Agrega (dia, valor) em (segunda ISO, media), so com a semana fechada.
-
-    ESTA FUNCAO EXISTE POR UM ERRO DE SEIS DIAS QUE NUNCA LEVANTOU EXCECAO.
-    ================================================================
-
-    A versao antiga lia a serie SEMANAL do Trends e fazia:
+    A versao antiga fazia:
 
         semana = quando - timedelta(days=quando.weekday())   # "segunda ISO"
 
@@ -110,8 +120,8 @@ def semanas_iso(pontos_diarios):
     O estrago tem duas partes, e a segunda e a pior:
 
     1. O atraso parecia muito maior do que era. Medindo contra o rotulo
-       deslocado, a perna de busca parecia 16 dias atras do editorial. O
-       atraso real, do fim do periodo coberto ate hoje, era de 4 dias.
+       deslocado, a perna de busca parecia 16 dias atras do editorial. Contando
+       semanas ISO fechadas, as duas pernas alcancam a mesma semana.
 
     2. AS DUAS PERNAS COMPARAVAM PERIODOS DIFERENTES. O editorial usa
        `date_trunc('week')` do Postgres, que da segunda ISO de verdade: ali
@@ -121,17 +131,16 @@ def semanas_iso(pontos_diarios):
        cruzando semanas quase disjuntas -- em toda leitura do app, desde
        sempre. Nao aparece em log nenhum: o numero existe, so mede outra coisa.
 
-    Montando a semana a partir do dia, o rotulo passa a ser a segunda ISO de
-    verdade, identica a do editorial. Nao ha o que alinhar depois.
+    O conserto e andar para FRENTE ate a segunda, e nao para tras: a semana do
+    Google (domingo S a sabado S+6) e a semana ISO que comeca em S+1 dividem
+    seis dos sete dias. Antes era um.
 
-    So entra semana com os SETE dias presentes: semana pela metade tem media
-    de outra natureza e entraria na janela do z como se fosse comparavel.
+    Sobra um dia de imprecisao, e ele e inerente -- o Google conta a semana de
+    domingo a sabado e o resto do projeto de segunda a domingo. Nao da para
+    zerar sem trocar de fonte; da para nao mentir sobre ele, e por isso o
+    `meta` grava `alinhamento`.
     """
-    baldes = {}
-    for dia, valor in pontos_diarios:
-        baldes.setdefault(dia - timedelta(days=dia.weekday()), []).append(valor)
-    return sorted((seg, sum(vs) / len(vs))
-                  for seg, vs in baldes.items() if len(vs) == 7)
+    return quando + timedelta(days=(7 - quando.weekday()) % 7)
 
 
 def ultima_semana_fechada(hoje):
@@ -206,8 +215,7 @@ class Trends(object):
 
     def serie(self, termos, hoje=None):
         """Devolve {termo: [(semana_iso, valor), ...]} para o grupo."""
-        hoje = hoje or date.today()
-        token, requisicao = self.token_timeseries(termos, janela(hoje))
+        token, requisicao = self.token_timeseries(termos, INTERVALO)
         url = (BASE + "/trends/api/widgetdata/multiline"
                "?hl=pt-BR&tz={}&req={}&token={}".format(
                    TZ,
@@ -218,7 +226,7 @@ class Trends(object):
         por_termo = dict((t, []) for t in termos)
         for p in pontos:
             if p.get("isPartial"):
-                continue  # dia ainda aberto: nao entra na conta da semana
+                continue  # semana ainda aberta: nao entra na serie
             try:
                 quando = datetime.fromtimestamp(int(p["time"]), timezone.utc).date()
             except (KeyError, ValueError, OSError):
@@ -226,23 +234,25 @@ class Trends(object):
             valores = p.get("value") or []
             for i, termo in enumerate(termos):
                 if i < len(valores) and valores[i] is not None:
-                    por_termo[termo].append((quando, float(valores[i])))
+                    por_termo[termo].append((semana_iso(quando),
+                                             float(valores[i])))
 
-        # GUARDA DE GRANULARIDADE. A janela de 240 dias vem em dias hoje, mas
-        # quem decide isso e o Google, e o limiar e dele. Se ele passar a
-        # devolver semanal, `semanas_iso` acharia um ponto por balde, exigiria
-        # sete e devolveria serie vazia -- silencio, que e como o erro de seis
-        # dias sobreviveu tanto tempo. Melhor estourar dizendo o que mudou.
+        # GUARDA DE GRANULARIDADE. `today 5-y` vem em semanas hoje, mas quem
+        # decide isso e o Google. Se ele passar a devolver dias, cada ponto
+        # viraria uma "semana" e a serie ficaria sete vezes mais densa, com
+        # valores de outra natureza -- e o portao de saude leria isso como
+        # coleta melhorando. Melhor estourar dizendo o que mudou: foi o
+        # silencio que deixou o erro de seis dias sobreviver.
         amostra = sorted(next((d for d in por_termo.values() if len(d) > 1), []))
         if amostra:
             passo = (amostra[1][0] - amostra[0][0]).days
-            if passo != 1:
+            if passo != 7:
                 raise TrendsErro(
-                    "Trends devolveu passo de {} dia(s), e nao diario, para a "
-                    "janela de {} dias. A perna de busca depende do dia para "
-                    "montar a semana ISO; reveja DIAS_DA_JANELA.".format(
-                        passo, DIAS_DA_JANELA))
-        return dict((t, semanas_iso(dias)) for t, dias in por_termo.items())
+                    "Trends devolveu passo de {} dia(s), e nao semanal, para "
+                    "{!r}. A perna de busca grava semana ISO; com outro passo "
+                    "o rotulo deixa de bater com o do editorial e a §22 volta "
+                    "a comparar periodos diferentes.".format(passo, INTERVALO))
+        return dict((t, sorted(pts)) for t, pts in por_termo.items())
 
 
 def grupos_de_termos(termos_aprovados):
@@ -374,12 +384,15 @@ def gravar_grupo(dados_por_termo, hoje, agora):
     linhas, atualizacoes = [], []
     for termo_id, dados in dados_por_termo.items():
         pontos = dados["pontos"]
-        # `granularidade` fica registrado porque muda o que o numero E: a
-        # semana aqui e media de sete dias medidos, e nao o ponto semanal que
-        # o Trends entrega pronto. Regra 3: o caminho ate a origem tem que
-        # dizer tambem COMO o ponto foi montado.
-        meta = {"fonte": "google_trends", "geo": GEO, "intervalo": janela(hoje),
-                "granularidade": "diaria->semana_iso",
+        # `alinhamento` fica registrado porque a regra 3 pede o caminho ate a
+        # origem, e aqui sobra um dia de imprecisao que nao da para esconder:
+        # o Google conta a semana de domingo a sabado, o resto do projeto de
+        # segunda a domingo. O ponto e movido para a segunda seguinte, que
+        # divide seis dos sete dias com a semana medida.
+        meta = {"fonte": "google_trends", "geo": GEO, "intervalo": INTERVALO,
+                "granularidade": "semanal",
+                "alinhamento": "domingo do Trends -> segunda ISO seguinte "
+                               "(6 de 7 dias em comum)",
                 "ancora": ANCORA, "grupo": dados["grupo"],
                 "ancora_media_no_grupo": dados["media_ancora"],
                 "termo_busca": dados["termo_busca"], "coletado_em": agora}
@@ -398,36 +411,11 @@ def gravar_grupo(dados_por_termo, hoje, agora):
         supabase_rest.upsert("series_semanais", linhas[i:i + 500],
                              on_conflict="termo_id,segmento,fonte,semana")
 
-    # UMA ESCALA POR SERIE.
-    #
-    # O upsert cobre as 34 semanas da janela e deixa intactas as anteriores,
-    # que vieram do `today 5-y`. O Trends normaliza 0-100 DENTRO de cada
-    # consulta, entao as duas partes nao estao na mesma regua e a emenda vira
-    # um degrau. Medido na primeira execucao, em `alfaiataria`:
-    #
-    #   2025-12-01  14.00  antigo      2025-12-15   3.71  novo
-    #   2025-12-08   6.00  novo        2025-12-29   0.00  novo
-    #
-    # A janela movel de 12 semanas da §21 atravessaria essa costura e leria o
-    # degrau como movimento -- "em queda" sobre uma troca de unidade, que a
-    # regra 2 proibe. O tamanho depende do volume do termo: `vestido` passa com
-    # +2%, `alfaiataria` com -70%, `algodao` com -95%.
-    #
-    # Reescalar foi medido e descartado: o fator erra 2,4% em `alfaiataria` e
-    # 20,8% (max 60%) em `vestido floral` -- a ancora do K7, regua de todos os
-    # outros. O maior erro cairia no ponto de maior consequencia.
-    #
-    # As linhas antigas ja foram para `series_busca_5y_legado` na migracao
-    # 20260805180000; aqui a limpeza continua acontecendo a cada rotacao, senao
-    # os proximos 12 termos recriam a costura.
-    for termo_id, dados in dados_por_termo.items():
-        if not dados["pontos"]:
-            continue
-        primeira = min(s for s, _ in dados["pontos"]).isoformat()
-        supabase_rest.apagar(
-            "series_semanais",
-            "termo_id=eq.{}&fonte=eq.busca&semana=lt.{}".format(
-                termo_id, primeira))
+    # Nao ha limpeza de escala aqui, e isso e de proposito. A tentativa da
+    # janela diaria (05/08) precisava apagar o historico porque as duas reguas
+    # nao emendavam; com uma janela so, cada consulta cobre a serie inteira e o
+    # upsert reescreve tudo na mesma regua. Ver `series_busca_5y_legado`.
+
     # UPDATE, nao upsert: o termo ja existe e a linha aqui e parcial.
     for a in atualizacoes:
         supabase_rest.atualizar(
@@ -486,21 +474,26 @@ def main():
     modo = os.environ.get("TRENDS_MODO", "").strip().lower()
     hoje = date.today()
 
-    # Em dia = cobre a ultima semana ISO que ja fechou. A regua vem da FONTE,
-    # e nao do relogio.
+    # Em dia = cobre a ultima semana ISO fechada, com uma semana de tolerancia
+    # para o atraso de publicacao do Google.
     #
-    # O corte antigo era `hoje - 2 semanas`, escolhido a mao para compensar o
-    # atraso do Trends. Com o deslocamento de seis dias em cima (veja
-    # `semanas_iso`), a ultima semana gravada aparecia como 20/07 enquanto o
-    # corte pedia 22/07 -- todo termo parecia atrasado todos os dias, e o
-    # coletor gastava execucao inteira reconsultando quem ja estava em dia.
-    # Com a semana montada a partir do dia, a comparacao fecha exata.
+    # O corte antigo era `hoje - 2 semanas` e nao era o defeito: o defeito era
+    # o rotulo. Com o deslocamento de seis dias (veja `semana_iso`), a ultima
+    # semana gravada aparecia como 20/07 enquanto o corte pedia 22/07, entao
+    # TODO termo parecia atrasado TODO dia e o coletor gastava execucao inteira
+    # reconsultando quem ja estava em dia. Consertado o rotulo, a comparacao
+    # passa a fazer sentido.
+    #
+    # A tolerancia de uma semana fica porque o Google publica a semana fechada
+    # com alguns dias de atraso: no comeco da semana, cobrar a ultima fechada
+    # marcaria todo mundo como defasado por dois ou tres dias, sem que houvesse
+    # nada a coletar.
     #
     # A cobertura vem da view `cobertura_da_busca`, uma linha por termo. Fazer
     # isso no cliente NAO funciona: o PostgREST corta em 1000 linhas por
     # resposta e `selecionar()` nao pagina, entao puxar `series_semanais`
     # inteira fez o coletor concluir "36 termos sem serie" quando eram QUATRO.
-    corte = ultima_semana_fechada(hoje).isoformat()
+    corte = (ultima_semana_fechada(hoje) - timedelta(weeks=1)).isoformat()
     em_dia, nunca = set(), set()
     for r in supabase_rest.selecionar(
             "cobertura_da_busca", "?select=termo_id,ultima_semana"):
