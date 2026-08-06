@@ -45,6 +45,12 @@ jobs:
         run: python3 coletor/teste_trends.py
       - name: Fila da perna de busca (§19)
         run: python3 coletor/teste_fila_de_busca.py
+      # O deslocamento de seis dias entre busca e editorial nao levantava
+      # excecao e nao quebrava teste: o numero existia e parecia razoavel, so
+      # media outro periodo. Este confere que as duas pernas usam o mesmo
+      # calendario, comparando com a funcao real do coletor editorial.
+      - name: Busca e editorial na mesma semana (§22)
+        run: python3 coletor/teste_semana_da_busca.py
       - name: Workflows do Actions
         run: python3 coletor/teste_workflows.py
       - name: Modulos compilam
