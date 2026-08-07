@@ -243,7 +243,7 @@ let centroides: [CentroideSaida] = soma.keys.sorted().compactMap { termoId in
     guard let n = quantos[termoId], n > 0, let s = soma[termoId],
           let dim = dimensaoDoTermo[termoId] else { return nil }
     return CentroideSaida(termoId: termoId, dimensao: dim, nImagens: n,
-                          vetor: s.map { $0 / Double(n) })
+                          vetor: s.map { ($0 / Double(n) * 10_000).rounded() / 10_000 })
 }
 
 // MARK: - Medir o portão da §28
@@ -269,7 +269,11 @@ func concordancia(naDimensao dim: String) -> (acertos: Int, avaliadas: Int) {
     return (acertos, avaliadas)
 }
 
-let categoria = concordancia(naDimensao: "peca")
+// "categoria", e nao "peca": a dimensao no banco se chama `categoria`
+// (blusa_top, calca, camisa, casaco_jaqueta, macacao, saia, short, vestido).
+// Na primeira execucao eu filtrei por "peca", que nao existe, e a medicao
+// devolveu 0/0 -- que NAO e um resultado, e passou perto de ser lido como um.
+let categoria = concordancia(naDimensao: "categoria")
 let cor = concordancia(naDimensao: "cor")
 let taxaCategoria = categoria.avaliadas > 0
     ? Double(categoria.acertos) / Double(categoria.avaliadas) : 0
