@@ -1,0 +1,88 @@
+name: Centroides do painel (visao, §28)
+
+# Roda OBRIGATORIAMENTE no runner residencial, e nao por preferencia:
+#
+#   1. `VNGenerateImageFeaturePrintRequest` so existe em plataforma Apple. O
+#      runner do GitHub e Linux.
+#   2. Os CDNs de imagem devolvem 429 para faixa de datacenter. A regra 7 manda
+#      respeitar isso, e nao procurar outro caminho.
+#
+# So `workflow_dispatch`: baixa milhares de imagens no ritmo de 1 req/s por
+# dominio e leva horas. Nao entra no pipeline diario.
+
+on:
+  workflow_dispatch:
+    inputs:
+      por_termo:
+        description: 'Pecas por termo (150 ~ 1h40; 300 ~ 3h20)'
+        required: false
+        default: '150'
+
+permissions:
+  contents: write
+
+concurrency:
+  # Mesmo grupo das coletas: o i7 nao pode baixar imagem e catalogo ao mesmo
+  # tempo sem estourar o ritmo por dominio da regra 7.
+  group: canario-dados
+  cancel-in-progress: false
+
+jobs:
+  gerar:
+    # Fixo no self-hosted, e nao `vars.RUNNER_COLETA || ubuntu-latest`: se cair
+    # no datacenter este job nao falha, ele PRODUZ NUMERO ERRADO -- Vision
+    # ausente vira zero vetor, e 429 em massa vira centroide de meia duzia de
+    # imagens. Melhor nao existir runner do que existir o errado.
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Conferir que ha Swift e Vision
+        run: |
+          swift --version
+          echo 'import Vision; print("Vision ok")' > /tmp/vcheck.swift
+          swift /tmp/vcheck.swift
+
+      - name: Gerar centroides e medir o portao da §28
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          swift ferramentas/gerar_centroides.swift \
+            --por-termo ${{ inputs.por_termo }}
+
+      - name: Resumo na aba do Actions
+        if: always()
+        run: |
+          arquivo=app/Canario/Recursos/centroides_do_painel.json
+          {
+            echo "## Centroides do painel"
+            if [ -f "$arquivo" ]; then
+              echo ''
+              echo '```json'
+              python3 -c "
+          import json,sys
+          d=json.load(open('$arquivo'))
+          p=d['portao_28']
+          print(json.dumps({
+            'gerado_em': d['gerado_em'],
+            'dimensoes': d['dimensoes'],
+            'centroides': len(d['centroides']),
+            'portao_28': p,
+          }, indent=2, ensure_ascii=False))
+          "
+              echo '```'
+              echo ''
+              echo 'O portao da §28 abre so com >= 80% em categoria E cor, com 100+ pecas.'
+              echo 'Enquanto `passou` for false, o app nao sugere nada -- por desenho.'
+            else
+              echo 'O gerador nao produziu arquivo. Ver o log do passo anterior.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commitar o artefato
+        run: >-
+          bash .github/commitar.sh
+          "app/Canario/Recursos/centroides_do_painel.json"
+          "Centroides do painel para a sugestao visual"
