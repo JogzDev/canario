@@ -80,6 +80,12 @@ func pedirJSON(_ caminho: String) -> [[String: Any]] {
 }
 
 var ultimo: [String: Date] = [:]
+/// Intervalo por dominio. Comeca no 1s da regra 7 e SOBE a cada 429: o
+/// servidor pediu para diminuir, entao diminui. Na corrida de 07/08 eu contava
+/// o 429 e seguia batendo na mesma cadencia -- 5.411 recusas em 10.702
+/// tentativas. Isso nao e ineficiencia, e descumprir a regra 7.
+var intervalo: [String: Double] = [:]
+let tetoDoIntervalo = 30.0
 let trava = NSLock()
 var motivos: [String: Int] = [:]
 let travaMotivos = NSLock()
@@ -92,8 +98,9 @@ func baixar(_ endereco: String) -> Data? {
         anotar("url invalida"); return nil
     }
     trava.lock()
+    let meu = intervalo[host] ?? 1.0
     if let a = ultimo[host] {
-        let espera = 1.0 - Date().timeIntervalSince(a)
+        let espera = meu - Date().timeIntervalSince(a)
         if espera > 0 { Thread.sleep(forTimeInterval: espera) }
     }
     ultimo[host] = Date()
@@ -107,7 +114,18 @@ func baixar(_ endereco: String) -> Data? {
         defer { sem.signal() }
         if let e { anotar("rede: \(type(of: e))"); return }
         let codigo = (r as? HTTPURLResponse)?.statusCode ?? 0
-        guard codigo == 200 else { anotar("HTTP \(codigo)"); return }
+        guard codigo == 200 else {
+            anotar("HTTP \(codigo)")
+            if codigo == 429 {
+                // Dobra o intervalo deste dominio, ate o teto. Volta a 1s so
+                // numa proxima execucao -- dentro da mesma, o servidor ja disse
+                // o que achou do nosso ritmo.
+                trava.lock()
+                intervalo[host] = min(tetoDoIntervalo, (intervalo[host] ?? 1.0) * 2)
+                trava.unlock()
+            }
+            return
+        }
         guard let d, CGImageSourceCreateWithData(d as CFData, nil) != nil else {
             anotar("nao decodificou"); return
         }
@@ -193,6 +211,9 @@ func jaTemos(_ cat: String, _ pid: Int) -> Bool {
 // produziu numero nenhum -- so gastou o i7. Agora o download para sozinho e o
 // treino roda com o que ha, sempre. Execucao seguinte continua de onde parou,
 // porque o cache persiste.
+// `--minutos-download 0` treina SO com o que ja esta em cache, sem uma
+// requisicao sequer. E o experimento barato: responde "mais dado ajuda?" com o
+// que ja foi pago, sem gastar o i7 nem incomodar servidor de ninguem.
 let minutosDeDownload = Double(inteiro("--minutos-download", 180))
 let prazo = Date().addingTimeInterval(minutosDeDownload * 60)
 
@@ -247,7 +268,11 @@ do {
     // Sem `.flip`: peca de roupa tem lado (abotoamento, fenda, decote
     // assimetrico), e espelhar ensinaria que nao tem.
     var parametros = MLImageClassifier.ModelParameters()
-    parametros.augmentationOptions = [.crop, .rotation, .blur, .exposure]
+    // Dois, e nao quatro. A corrida de 07/08 foi cancelada no teto do job
+    // DURANTE o treino: cada aumento multiplica o conjunto, e um i7 sem GPU
+    // decente nao da conta de quatro. `.crop` e `.exposure` sao os que
+    // descrevem a variacao real de foto de produto -- enquadramento e luz.
+    parametros.augmentationOptions = [.crop, .exposure]
     modelo = try MLImageClassifier(trainingData: fonte, parameters: parametros)
 } catch {
     log("ERRO no treino: \(error)")
