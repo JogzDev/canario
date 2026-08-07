@@ -97,18 +97,44 @@ actor Supabase {
         req.setValue("Bearer \(chave)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        do {
-            let (dados, resposta) = try await sessao.data(for: req)
-            let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
-            guard (200..<300).contains(codigo) else {
-                throw Falha.resposta(codigo, String(data: dados, encoding: .utf8) ?? "")
+        let dados = try await comUmaSegundaChance(req)
+        return try JSONDecoder().decode([T].self, from: dados)
+    }
+
+    /// Faz o pedido e, em falha **transitória**, tenta mais uma vez.
+    ///
+    /// **Por que existe.** Na revisão de 03/08 o companheiro de time do JP
+    /// registrou, na aba Explorar: *"Primeiro recebi 'Não consegui consultar.
+    /// O servidor respondeu 500'. Depois que cliquei em tentar novamente foi."*
+    /// O erro é real e é passageiro — a tela abre quatro pedidos ao mesmo tempo
+    /// e a rotina noturna segura conexões por mais de uma hora com a chave de
+    /// serviço, então o pool nega um deles de vez em quando.
+    ///
+    /// Fazer o usuário ser o laço de repetição é o pior desenho possível: ele
+    /// não sabe que "tentar de novo" resolve, e uma tela de erro que some no
+    /// segundo toque ensina que o app é instável.
+    ///
+    /// **Uma só tentativa, e só no que é transitório.** 5xx e queda de rede
+    /// repetem; 4xx não — consulta malformada ou permissão negada repetida dá o
+    /// mesmo resultado e só atrasa o erro honesto na tela. O intervalo curto é
+    /// para o pool respirar, não para insistir.
+    private func comUmaSegundaChance(_ req: URLRequest) async throws -> Data {
+        for tentativa in 0...1 {
+            do {
+                let (dados, resposta) = try await sessao.data(for: req)
+                let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
+                if (200..<300).contains(codigo) { return dados }
+                guard codigo >= 500, tentativa == 0 else {
+                    throw Falha.resposta(codigo, String(data: dados, encoding: .utf8) ?? "")
+                }
+            } catch let falha as Falha {
+                throw falha
+            } catch {
+                guard tentativa == 0 else { throw Falha.rede(error) }
             }
-            return try JSONDecoder().decode([T].self, from: dados)
-        } catch let falha as Falha {
-            throw falha
-        } catch {
-            throw Falha.rede(error)
+            try? await Task.sleep(nanoseconds: 400_000_000)
         }
+        throw Falha.rede(URLError(.cannotLoadFromNetwork))
     }
 
     /// Chama uma função do banco (`rpc/`) e decodifica a resposta.

@@ -214,9 +214,9 @@ errado **na tela, agora**.
 | N4 | **A busca pode ter defasagem estrutural** | Mesmo com a fila destravada e 2.871 pontos gravados por execução, `ultima_semana` continua **20/07** para os 40 termos. Se a próxima execução não mover isso, o atraso é do Google e o app precisa **declarar** o lag em vez de esperar por ele |
 
 ### Da lista do JP, ainda não tocado
-performance · reestruturação das abas · câmera e fototeca · MobileCLIP (A7 já autorizado a ser desfeito)
+reestruturação das abas · câmera e fototeca
 
-> **O "erro 500 no Explorar" nunca existiu.** Entrou nesta lista como se fosse do JP e era invenção minha — ele nunca viu esse erro em lugar nenhum. Zero 500 em 24h de log da API, as cinco chamadas da tela respondendo 200. Removido em 06/08.
+> **Sobre o 500 do Explorar:** eu o atribuí à lista do JP, ele disse que nunca viu, e eu concluí que tinha inventado — errado nas duas vezes. Quem viu foi o **companheiro de time**, na revisão de 03/08: *"Primeiro recebi 'Não consegui consultar. O servidor respondeu 500'. Depois que cliquei em tentar novamente foi."* O erro é real e transitório. Consertado em 06/08 com uma segunda tentativa automática para 5xx em `Supabase.buscar`.
 
 ---
 
@@ -243,7 +243,7 @@ performance · reestruturação das abas · câmera e fototeca · MobileCLIP (A7
 | M2 | **`computar_indice()` não filtra `varejo`, o meta diz que filtra** | O CTE `ativas` pega toda fonte com z não nulo. Hoje é inofensivo porque `computar_z()` não calcula z para varejo — mas o índice depende de um comportamento de outra função, não de uma regra própria. B1 diz que varejo não entra |
 | M3 | **Editorial de 4 semanas comparado com busca de semana crua** | A §18 alisa o editorial em janela móvel de 4 semanas (volume baixo, semana crua é ruído); a busca é semana fechada. A varredura de defasagem tem pico em −2 semanas, que é ~o centro de massa da janela de 4 — ou seja, é o alisamento aparecendo, não antecipação. A §22 compara grandezas de resolução temporal diferente |
 | M4 | **Coleta editorial não pode ser dividida entre runners** | O coletor calcula a série a partir dos **feeds que leu naquela execução**, não de `artigos`. Duas execuções parciais se sobrescrevem. O workflow já aceita `RUNNER_COLETA`, mas ligá-lo move a coleta inteira para o Mac — Mac dormindo = vermelho. O conserto certo é `computar_serie_editorial()` no banco, como o próprio comentário do coletor já aponta |
-| ~~M5~~ | ~~Erro 500 do Explorar~~ | **Não existe.** Eu inventei e atribuí ao JP. Zero 500 em 24h de log; as 5 chamadas da tela respondem 200 |
+| ~~M5~~ | ~~Erro 500 do Explorar~~ | **Real, e consertado em 06/08.** Quem viu foi o companheiro de time em 03/08 — eu atribuí ao JP, ele disse que não viu, e eu concluí que tinha inventado. Errado nas duas vezes. É 5xx transitório (o próprio relatório diz "cliquei em tentar novamente e foi"): a tela abre 4 pedidos simultâneos e o pipeline noturno segura conexões por 1h17. `Supabase.buscar` passa a repetir uma vez em 5xx, só no que é transitório — 4xx não repete |
 
 ---
 
