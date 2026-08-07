@@ -56,7 +56,7 @@ func inteiro(_ b: String, _ p: Int) -> Int {
     else { return p }
     return v
 }
-let porTermo = inteiro("--por-termo", 400)
+let porTermo = inteiro("--por-termo", 2000)
 
 let UA = "CanarioBot/1.0 (projeto academico; contato: canarioch3@gmail.com)"
 func log(_ s: String) { FileHandle.standardError.write(Data((s + "\n").utf8)) }
@@ -114,9 +114,22 @@ log("Categorias: \(categorias.joined(separator: ", "))\n")
 /// produto_id -> categorias que o título deu. Mais de uma = fora.
 var porProduto: [Int: (categorias: Set<String>, imagem: String)] = [:]
 for cat in categorias {
-    let linhas = pedirJSON(
-        "produto_termos?termo_id=eq.\(cat)&select=produto_id,produtos(imagem_url)"
-        + "&produtos.imagem_url=not.is.null&limit=\(porTermo)")
+    // O PostgREST corta em 1000 linhas POR RESPOSTA e nao avisa. Pedir
+    // `limit=2000` devolve 1000 caladamente -- foi assim que o coletor de
+    // busca concluiu "36 termos sem serie" quando eram quatro. Pagina.
+    var linhas: [[String: Any]] = []
+    var deslocamento = 0
+    while linhas.count < porTermo {
+        let pedaco = min(1000, porTermo - linhas.count)
+        let pagina = pedirJSON(
+            "produto_termos?termo_id=eq.\(cat)&select=produto_id,produtos(imagem_url)"
+            + "&produtos.imagem_url=not.is.null&order=produto_id"
+            + "&limit=\(pedaco)&offset=\(deslocamento)")
+        if pagina.isEmpty { break }
+        linhas += pagina
+        deslocamento += pagina.count
+        if pagina.count < pedaco { break }
+    }
     var n = 0
     for l in linhas {
         guard let pid = l["produto_id"] as? Int,
@@ -175,7 +188,16 @@ log("\nTreinando (Create ML separa validação sozinho)...")
 let fonte = MLImageClassifier.DataSource.labeledDirectories(at: raiz)
 let modelo: MLImageClassifier
 do {
-    modelo = try MLImageClassifier(trainingData: fonte)
+    // 12 pontos entre treino (75,9%) e validacao (64,1%) na primeira corrida
+    // sao falta de dado, nao teto do metodo. Aumento cobre parte disso sem
+    // baixar uma imagem a mais: foto de produto varia em corte, enquadramento
+    // e luz, e ensinar essa variacao e de graca.
+    //
+    // Sem `.flip`: peca de roupa tem lado (abotoamento, fenda, decote
+    // assimetrico), e espelhar ensinaria que nao tem.
+    var parametros = MLImageClassifier.ModelParameters()
+    parametros.augmentationOptions = [.crop, .rotation, .blur, .exposure]
+    modelo = try MLImageClassifier(trainingData: fonte, parameters: parametros)
 } catch {
     log("ERRO no treino: \(error)")
     exit(1)
