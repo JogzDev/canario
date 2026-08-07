@@ -81,8 +81,16 @@ func pedirJSON(_ caminho: String) -> [[String: Any]] {
 
 var ultimo: [String: Date] = [:]
 let trava = NSLock()
+var motivos: [String: Int] = [:]
+let travaMotivos = NSLock()
+func anotar(_ motivo: String) {
+    travaMotivos.lock(); motivos[motivo, default: 0] += 1; travaMotivos.unlock()
+}
+
 func baixar(_ endereco: String) -> Data? {
-    guard let url = URL(string: endereco), let host = url.host else { return nil }
+    guard let url = URL(string: endereco), let host = url.host else {
+        anotar("url invalida"); return nil
+    }
     trava.lock()
     if let a = ultimo[host] {
         let espera = 1.0 - Date().timeIntervalSince(a)
@@ -95,10 +103,15 @@ func baixar(_ endereco: String) -> Data? {
     req.setValue(UA, forHTTPHeaderField: "User-Agent")
     let sem = DispatchSemaphore(value: 0)
     var saida: Data?
-    URLSession.shared.dataTask(with: req) { d, r, _ in
+    URLSession.shared.dataTask(with: req) { d, r, e in
         defer { sem.signal() }
-        if let d, (r as? HTTPURLResponse)?.statusCode == 200,
-           CGImageSourceCreateWithData(d as CFData, nil) != nil { saida = d }
+        if let e { anotar("rede: \(type(of: e))"); return }
+        let codigo = (r as? HTTPURLResponse)?.statusCode ?? 0
+        guard codigo == 200 else { anotar("HTTP \(codigo)"); return }
+        guard let d, CGImageSourceCreateWithData(d as CFData, nil) != nil else {
+            anotar("nao decodificou"); return
+        }
+        saida = d
     }.resume()
     sem.wait()
     return saida
@@ -152,29 +165,67 @@ log("\nPeças com categoria única: \(limpas.count)  (descartadas por ambiguidad
 
 // MARK: - Baixar em pastas por categoria
 
-let raiz = URL(fileURLWithPath: NSTemporaryDirectory())
-    .appendingPathComponent("canario-treino-categoria")
-try? FileManager.default.removeItem(at: raiz)
+// CACHE QUE SOBREVIVE ENTRE EXECUCOES.
+//
+// As duas primeiras corridas baixaram ~8.100 imagens e jogaram todas fora: a
+// pasta ficava em NSTemporaryDirectory e o runner limpa o workspace. Horas de
+// regra 7 no lixo, e a terceira corrida recomecando do zero.
+//
+// Agora vive em $HOME, fora do workspace. Imagem ja baixada nao e pedida de
+// novo -- o que tambem e a coisa educada a fazer com o servidor de quem nos
+// deixa entrar.
+let raiz = FileManager.default.homeDirectoryForCurrentUser
+    .appendingPathComponent("canario-imagens-treino")
 for cat in categorias {
     try? FileManager.default.createDirectory(
         at: raiz.appendingPathComponent(cat), withIntermediateDirectories: true)
 }
 
-var baixadas = 0, falhas = 0
+func jaTemos(_ cat: String, _ pid: Int) -> Bool {
+    FileManager.default.fileExists(
+        atPath: raiz.appendingPathComponent(cat)
+            .appendingPathComponent("\(pid).jpg").path)
+}
+
+// ORCAMENTO DE TEMPO, PORQUE O JOB TEM TETO.
+//
+// A corrida de 07/08 foi cancelada aos 350 minutos no meio do download, e nao
+// produziu numero nenhum -- so gastou o i7. Agora o download para sozinho e o
+// treino roda com o que ha, sempre. Execucao seguinte continua de onde parou,
+// porque o cache persiste.
+let minutosDeDownload = Double(inteiro("--minutos-download", 180))
+let prazo = Date().addingTimeInterval(minutosDeDownload * 60)
+
+var baixadas = 0, falhas = 0, reaproveitadas = 0
 var porCategoria: [String: Int] = [:]
+var pararam = false
 for (i, (pid, v)) in limpas.sorted(by: { $0.key < $1.key }).enumerated() {
     guard let cat = v.categorias.first else { continue }
+    if jaTemos(cat, pid) { reaproveitadas += 1; porCategoria[cat, default: 0] += 1; continue }
+    if Date() >= prazo {
+        pararam = true
+        log("\nOrcamento de \(Int(minutosDeDownload))min esgotado em \(i)/\(limpas.count). "
+            + "Treinando com o que ha; a proxima execucao continua daqui.")
+        break
+    }
     if let dados = baixar(v.imagem) {
-        let destino = raiz.appendingPathComponent(cat).appendingPathComponent("\(pid).jpg")
-        try? dados.write(to: destino)
+        try? dados.write(to: raiz.appendingPathComponent(cat)
+                            .appendingPathComponent("\(pid).jpg"))
         baixadas += 1
         porCategoria[cat, default: 0] += 1
     } else {
         falhas += 1
     }
-    if (i + 1) % 250 == 0 { log("  \(i + 1)/\(limpas.count)  (\(falhas) falhas)") }
+    if (i + 1) % 250 == 0 {
+        log("  \(i + 1)/\(limpas.count)  novas=\(baixadas) cache=\(reaproveitadas) falhas=\(falhas)")
+    }
 }
-log("\nBaixadas: \(baixadas), falhas: \(falhas)")
+log("\nBaixadas agora: \(baixadas) | reaproveitadas do cache: \(reaproveitadas) | falhas: \(falhas)")
+if !motivos.isEmpty {
+    log("Motivos das falhas:")
+    for (m, n) in motivos.sorted(by: { $0.value > $1.value }) { log("  \(n)x  \(m)") }
+}
+if pararam { log("(download incompleto: rode de novo para continuar)") }
 for cat in categorias { log("  \(cat): \(porCategoria[cat] ?? 0)") }
 
 // Categoria com pouquíssima foto envenena a métrica: o modelo aprende a nunca

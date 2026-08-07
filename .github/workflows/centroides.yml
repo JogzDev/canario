@@ -20,9 +20,13 @@ on:
         type: choice
         options: [treinar_categoria, centroides]
       por_termo:
-        description: 'Pecas por termo (400 ~ 1h)'
+        description: 'Pecas por termo (teto da amostra; o cache acumula entre execucoes)'
         required: false
-        default: '400'
+        default: '2000'
+      minutos_download:
+        description: 'Teto de download em minutos. O treino roda com o que houver.'
+        required: false
+        default: '180'
 
 permissions:
   contents: write
@@ -56,12 +60,14 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           TAREFA: ${{ inputs.tarefa }}
           POR_TERMO: ${{ inputs.por_termo }}
+          MINUTOS: ${{ inputs.minutos_download }}
         run: |
           case "$TAREFA" in
             treinar_categoria|centroides) ;;
             *) echo "tarefa desconhecida: $TAREFA"; exit 1 ;;
           esac
-          swift "ferramentas/$TAREFA.swift" --por-termo "$POR_TERMO"
+          swift "ferramentas/$TAREFA.swift" --por-termo "$POR_TERMO" \
+            --minutos-download "${MINUTOS:-180}"
 
       - name: Resumo na aba do Actions
         if: always()
