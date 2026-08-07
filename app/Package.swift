@@ -22,6 +22,7 @@ let package = Package(
                       "Rede/Importacao.swift", "Rede/Explicacao.swift",
                       "Rede/CurvaDeTamanhos.swift", "Rede/Similares.swift",
                       "Rede/Cluster.swift", "Rede/SemelhancaVisual.swift",
+                      "Rede/PecasSalvas.swift",
                       "Design/Formato.swift"]
         ),
         .testTarget(
