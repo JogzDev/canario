@@ -21,6 +21,40 @@ struct RelatorioDaPeca: View {
     @State private var cluster: Cluster.Resposta?
     @State private var carregando = true
     @State private var erro: String?
+    /// nil = ainda não tentou; true = guardada; false = a lista está no teto.
+    @State private var guardada: Bool?
+
+    /// Guarda a peça em "Minhas peças" (§27, A10).
+    ///
+    /// Grava só os `termoIds` — o que o usuário confirmou. Nada do que está na
+    /// tela abaixo: índice, estado e similares são recomputados do dado de hoje
+    /// quando ela for reaberta. É essa a diferença entre lista de trabalho e
+    /// armário, e a §34 exclui o segundo.
+    @ViewBuilder
+    private var botaoDeGuardar: some View {
+        switch guardada {
+        case true:
+            Label("Guardada", systemImage: "checkmark")
+                .labelStyle(.titleAndIcon)
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(.secondary)
+        case false:
+            // O teto é dito, e não engole a peça em silêncio.
+            Text("Lista cheia (\(PecasSalvas.teto))")
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(.secondary)
+        case nil:
+            Button {
+                Task {
+                    guardada = await PecasSalvas.shared.salvar(
+                        PecaSalva(termoIds: termos.map(\.id), precoAlvo: precoAlvo))
+                }
+            } label: {
+                Label("Guardar", systemImage: "square.stack.3d.up")
+            }
+            .disabled(termos.isEmpty)
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -42,6 +76,9 @@ struct RelatorioDaPeca: View {
             .padding(Tokens.Espaco.m)
         }
         .task { await carregar() }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
+        }
     }
 
     /// §29.1 — template determinístico. Só conta o que foi medido.
