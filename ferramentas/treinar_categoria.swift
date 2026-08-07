@@ -256,55 +256,16 @@ if !magras.isEmpty { log("\nATENCAO: menos de 50 imagens em: \(magras.joined(sep
 
 // MARK: - Treinar
 
-// CURVA DE APRENDIZADO, E NAO UMA CORRIDA GRANDE.
+// SEM CURVA. A tentativa de medir a inclinacao travou o job por 90 minutos
+// sem imprimir um patamar sequer, enquanto a corrida ANTERIOR treinou 2.574
+// imagens com quatro aumentos em SEIS minutos. O gargalo era o meu codigo de
+// balanceamento, nao a maquina.
 //
-// O JP, em 07/08: "nao tenho o dia todo pra ficar esperando algo rodar por 6h
-// pra me retornar um fracasso". Certo, e o defeito era de desenho meu: eu
-// rodava o experimento GRANDE para responder uma pergunta que o PEQUENO
-// responde em minutos.
-//
-// A pergunta e "mais dado leva aos 80%?". Isso nao se responde treinando com
-// tudo -- se responde treinando com 100, 200, 400 por classe e olhando a
-// INCLINACAO. Se de 100 para 400 sobe dois pontos, dobrar de novo nao vai
-// resolver, e a gente descobre isso em minutos em vez de em horas.
-//
-// Cada patamar imprime assim que sai. Corrida cancelada no meio ja deixou
-// resultado.
-func balancear(_ porClasse: Int) throws -> URL {
-    let destino = FileManager.default.temporaryDirectory
-        .appendingPathComponent("canario-patamar-\(porClasse)")
-    try? FileManager.default.removeItem(at: destino)
-    for cat in categorias {
-        let de = raiz.appendingPathComponent(cat)
-        let para = destino.appendingPathComponent(cat)
-        try FileManager.default.createDirectory(at: para, withIntermediateDirectories: true)
-        let arquivos = ((try? FileManager.default.contentsOfDirectory(atPath: de.path)) ?? [])
-            .filter { $0.hasSuffix(".jpg") }.sorted().prefix(porClasse)
-        for a in arquivos {
-            try? FileManager.default.copyItem(at: de.appendingPathComponent(a),
-                                              to: para.appendingPathComponent(a))
-        }
-    }
-    return destino
-}
+// A licao vale mais que a curva: volto a forma que comprovadamente roda e mudo
+// UMA variavel por vez. Aqui a variavel e a quantidade de imagens -- 4.790 em
+// cache contra as 2.574 que deram 64,1%.
 
-let patamares = [100, 200, 400, 800].filter { $0 <= (porCategoria.values.max() ?? 0) }
-if patamares.count > 1 {
-    log("\nCurva de aprendizado (sem aumento, para ser rapida):")
-    log("  por classe | validacao")
-    for n in patamares {
-        guard let pasta = try? balancear(n) else { continue }
-        let f = MLImageClassifier.DataSource.labeledDirectories(at: pasta)
-        guard let m = try? MLImageClassifier(trainingData: f) else {
-            log("  \(n) | falhou"); continue
-        }
-        let v = (1.0 - m.validationMetrics.classificationError) * 100
-        log("  \(String(format: "%9d", n)) | \(String(format: "%.1f", v))%")
-        try? FileManager.default.removeItem(at: pasta)
-    }
-}
-
-log("\nTreinando com tudo (Create ML separa validação sozinho)...")
+log("\nTreinando (Create ML separa validação sozinho)...")
 let fonte = MLImageClassifier.DataSource.labeledDirectories(at: raiz)
 let modelo: MLImageClassifier
 do {
