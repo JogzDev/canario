@@ -32,7 +32,7 @@ struct MinhasPecas: View {
                     lista
                 }
             }
-            .navigationTitle("Minhas peças")
+            .navigationTitle("Armário")
             .toolbar {
                 if !pecas.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) { EditButton() }

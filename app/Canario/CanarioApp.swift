@@ -18,13 +18,24 @@ struct CanarioApp: App {
 /// já analisadas"*, e o app esquecia todas ao trocar de aba — faltava o insumo,
 /// não o desenho.
 ///
-/// A ordem segue a do trabalho: **Adicionar** é a entrada, **Minhas peças**
-/// guarda o que saiu dela, **Dados** é o mercado (valor de esforço zero na
-/// abertura), e **Comparar** fecha.
+/// A ordem segue a do trabalho: **Adicionar** é a entrada, **Armário** guarda o
+/// que saiu dela, **Dados** é o mercado (valor de esforço zero na abertura), e
+/// **Comparar** fecha.
 ///
-/// `Comparar` ainda é aba própria e a A10 a coloca *dentro* de Minhas peças —
-/// ela ainda seleciona termos soltos, que é a origem do *"camisa e branco tá na
-/// mesma lista mas são categorias diferentes"* da mesma revisão. A dobra vem
+/// **Sobre o nome "Armário" (A11, decisão do JP em 07/08).** Eu tinha chamado
+/// de "Minhas peças" para não prometer o que a §34 exclui — closet e
+/// monitoramento contínuo por peça. O JP revogou o nome e disse que a função
+/// vem depois, com o design da Bianca.
+///
+/// O nome mudou; a garantia não. `PecaSalva` continua guardando **só o que o
+/// usuário digitou** e nenhum número calculado, e `PecasSalvasTests` falha se
+/// alguém acrescentar um. Se a função que vier envolver acompanhar a peça ao
+/// longo do tempo, a §34 precisa de revogação com consequência de método, e não
+/// só de rótulo: a peça do cliente não está no painel e não temos como medi-la.
+///
+/// `Comparar` ainda é aba própria e a A10 a coloca *dentro* do Armário — ela
+/// ainda seleciona termos soltos, que é a origem do *"camisa e branco tá na
+/// mesma lista mas são categorias diferentes"* da revisão de 03/08. A dobra vem
 /// quando a seleção passar a ser por peça guardada; até lá, tirar a aba seria
 /// remover função sem entregar a substituta.
 struct Raiz: View {
@@ -33,7 +44,7 @@ struct Raiz: View {
             Analisar()
                 .tabItem { Label("Adicionar", systemImage: "plus.magnifyingglass") }
             MinhasPecas()
-                .tabItem { Label("Minhas peças", systemImage: "square.stack.3d.up") }
+                .tabItem { Label("Armário", systemImage: "square.stack.3d.up") }
             Explorar()
                 .tabItem { Label("Dados", systemImage: "chart.bar.doc.horizontal") }
             Comparar()
