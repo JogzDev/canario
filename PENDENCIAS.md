@@ -266,3 +266,44 @@ reestruturação das abas · câmera e fototeca
 | **§22: quem confirma direção é sinal brasileiro** | O app posiciona peça no mercado nacional. `busca` e `editorial_br` confirmam; `editorial_intl` e `varejo` viram contexto — gravados e visíveis em `meta`, sem mover o índice nem acender estado. Medido: busca × editorial_br r=0,235 e 67,7% de mesmo sinal; busca × editorial_intl r=−0,070, dentro de um erro-padrão de zero. Resultado: 114 "em alta" → **78**, todos com duas fontes daqui |
 | **Portal que nunca contribuiu sai** | FashionNetwork Brasil removido do CSV (403 definitivo). Vogue Business já tinha saído. Lyst fica: é `dado_agregado` pela §12, não feed que falhou |
 | **Nada roda do Mac pessoal (M5)** | Sondas do Trends e testes de FFW/BoF de 05/08 rodaram de lá. Não se repete |
+
+---
+
+## 07/08 — visão da peça: o que foi medido e por que eu parei
+
+### O que existe de número
+
+| tentativa | imagens/categoria | validação |
+|---|---|---|
+| Centroide da Vision | ~320 | 49,6% |
+| **Create ML, 4 aumentos** | **~320** | **64,1%** |
+| Create ML com 4.790 imagens | ~600 | *nunca terminou* |
+
+Piso da §28: **80%**. Acaso com 8 categorias: ~12,5%.
+
+### O que travou
+
+Seis execuções no i7, **um** número aproveitável — o da primeira. As outras cinco:
+
+| causa | de quem |
+|---|---|
+| Filtrei por dimensão `peca`, que não existe (é `categoria`). Deu `0/0` e quase virou "a visão não acerta" | **minha** |
+| Download descartava o motivo do erro; 62% de falha sem diagnóstico | **minha** |
+| Imagens baixadas iam para `NSTemporaryDirectory` e o runner apagava. ~8.100 imagens jogadas fora | **minha** |
+| Código de balanceamento da curva travou 90 min sem imprimir um patamar | **minha** |
+| Create ML com 4.790 imagens não termina em 90 min, contra 6 min com 2.574 | limite da máquina, não medido antes |
+
+Diagnóstico que só apareceu ao contar o motivo da falha: **5.411 de 5.413 recusas eram HTTP 429**. Eu contava e seguia batendo na mesma cadência — descumprindo a regra 7, não só perdendo eficiência. Corrigido com recuo exponencial por domínio.
+
+### Recomendação: parar por agora
+
+Três medições dizem a mesma coisa, e continuar é apostar que a quarta contraria as três. **O app não depende disso**: a entrada por arquivo já lê texto (OCR) e cor (pixel), que é o escopo aprovado na §28 desde 30/07. Sugestão de categoria a 64% erraria uma peça a cada três — custa mais confiança do que economiza toque.
+
+Caminho medido para retomar depois do Demo Day: **recortar a peça do fundo antes de treinar** (`VNGenerateForegroundInstanceMaskRequest`). Foto de e-commerce carrega modelo, cenário e props, e o classificador está aprendendo cenário junto com roupa.
+
+### Fica pronto para quem retomar
+
+- **4.790 imagens em cache** no i7 (`~/canario-imagens-treino`), zero falha, sem precisar de rede
+- Recuo no 429 implementado
+- Teto de 90 min no job, para nenhuma tentativa custar uma tarde
+- Portão da §28 no código: segurou nas seis execuções, nada vazou para a tela
