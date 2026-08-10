@@ -147,6 +147,16 @@ enum LeitorDeArquivo {
         return await deCGImage(imagem)
     }
 
+    /// Mesma leitura, a partir de uma imagem já em memória.
+    ///
+    /// Existe para a câmera e a fototeca (A12): as duas entregam a imagem
+    /// direto, sem passar por arquivo em disco. Isso é o que mantém a retenção
+    /// zero da §28 — não há caminho de arquivo para gravar, e não existe cópia
+    /// intermediária a esquecer.
+    static func ler(_ imagem: CGImage) async -> Leitura {
+        await deCGImage(imagem)
+    }
+
     private static func deCGImage(_ img: CGImage) async -> Leitura {
         let texto = (try? await ocr(img)) ?? ""
         let temTexto = !texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

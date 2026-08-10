@@ -19,11 +19,21 @@
 	    o app não toca em UserDefaults, em data de arquivo, em espaço em disco
 	    nem em tempo de atividade do sistema.
 
-	  A entrada por arquivo (§28) merece nota, porque é o ponto em que alguém
-	  poderia supor coleta: o print, a foto ou o PDF são lidos em memória pelo
-	  seletor de documentos do iOS, o texto e a cor são extraídos no próprio
-	  aparelho e nada é copiado, salvo ou enviado. Não há câmera, não há
-	  fototeca e o app não pede permissão nenhuma.
+	  A entrada por imagem (§28) merece nota, porque é o ponto em que alguém
+	  poderia supor coleta. São três caminhos — arquivo, fototeca e câmera — e os
+	  três terminam iguais: a imagem é lida EM MEMÓRIA, o texto (OCR) e a cor
+	  (pixel) são extraídos no próprio aparelho, e nada é copiado, salvo ou
+	  enviado. Não existe caminho de disco em nenhum deles.
+
+	  Desde 07/08 (A12) o app PEDE duas permissões: câmera e leitura da
+	  fototeca. Isso não muda o que ele coleta, que continua sendo nada:
+	  permissão de acesso e coleta de dado são coisas diferentes, e por isso
+	  `NSPrivacyCollectedDataTypes` segue vazio. Pedir para LER não é o mesmo
+	  que guardar.
+
+	  Não pedimos escrita na fototeca (`NSPhotoLibraryAddUsageDescription` não
+	  existe no Info.plist): o app não salva foto nenhuma, nem a que ele mesmo
+	  tirou.
 	-->
 	<key>NSPrivacyTracking</key>
 	<false/>

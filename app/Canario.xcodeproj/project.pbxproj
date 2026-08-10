@@ -29,6 +29,7 @@
 		8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */; };
 		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
 		2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */; };
+		0BB0A20C023BA57B694D435D /* CapturaDeCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D5FAF9A68F6C3A399290C8D /* CapturaDeCamera.swift */; };
 		60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */; };
 		BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */; };
 		0D84DC35CA70B3050CF0ECA0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00CF251BD47C47E7D73F68E0 /* Assets.xcassets */; };
@@ -60,6 +61,7 @@
 		F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhosView.swift"; sourceTree = "<group>"; };
 		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
 		330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportarPeca.swift"; sourceTree = "<group>"; };
+		3D5FAF9A68F6C3A399290C8D /* CapturaDeCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CapturaDeCamera.swift"; sourceTree = "<group>"; };
 		7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDaPeca.swift"; sourceTree = "<group>"; };
 		13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDoTermo.swift"; sourceTree = "<group>"; };
 		461A5A3F9FDD134BC064B0B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -148,6 +150,7 @@
 				F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */,
 				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
 				330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */,
+				3D5FAF9A68F6C3A399290C8D /* CapturaDeCamera.swift */,
 				7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */,
 				13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */,
 			);
@@ -233,6 +236,7 @@
 				8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */,
 				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
 				2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */,
+				0BB0A20C023BA57B694D435D /* CapturaDeCamera.swift in Sources */,
 				60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */,
 				BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */,
 			);

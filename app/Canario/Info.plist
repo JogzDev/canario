@@ -39,6 +39,21 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 
+	<!-- Câmera e fototeca (A12, decisão do JP em 07/08, desfazendo o corte do
+	     A7). O texto que aparece no pedido de permissão diz o que o app faz com
+	     a foto e o que ele NÃO faz — a revisão da App Store lê essa frase, e o
+	     usuário também. Retenção zero continua valendo: a imagem é lida em
+	     memória, os atributos saem dela no próprio aparelho e nada é copiado,
+	     salvo ou enviado.
+
+	     Só leitura da fototeca (NSPhotoLibraryUsageDescription), nunca escrita:
+	     o app não salva foto nenhuma, então NSPhotoLibraryAddUsageDescription
+	     não existe aqui de propósito. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Para fotografar uma peça e reconhecer os atributos dela no próprio aparelho. A foto não é salva nem enviada.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Para ler uma foto que você escolher e reconhecer os atributos da peça no próprio aparelho. A foto não é salva nem enviada.</string>
+
 	<!-- Lidos pelo Supabase.swift. Vêm do Config.xcconfig, que está no
 	     .gitignore: nenhum valor real entra no repositório. -->
 	<key>SUPABASE_URL</key>

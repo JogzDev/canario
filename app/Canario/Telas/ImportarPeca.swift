@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import PhotosUI
 
 /// Entrada por arquivo: print, foto ou PDF (§28, com a revogação parcial do A7).
 ///
@@ -8,12 +9,20 @@ import UniformTypeIdentifiers
 /// derruba a exigência de acurácia da leitura, e por isso o app pode usar OCR e
 /// medição de cor em vez de um modelo treinado.
 ///
-/// Sem câmera, sem fototeca, sem retenção: o seletor de documentos entrega o
-/// arquivo, o conteúdo é lido em memória e nada é guardado.
+/// **Três entradas, uma leitura (A12).** Arquivo, fototeca e câmera terminam no
+/// mesmo `LeitorDeArquivo`: OCR do texto, cor do pixel, atributos marcados no
+/// formulário. Câmera e fototeca entraram em 07/08, desfazendo o corte do A7.
+///
+/// **Retenção zero continua valendo, e agora é mais fácil de verificar:** a
+/// câmera e a fototeca entregam a imagem em memória, sem passar por arquivo. Não
+/// existe caminho de disco em nenhum dos três caminhos — o que não existe não
+/// pode ser esquecido ligado.
 struct ImportarPeca: View {
     let termos: [Termo]
 
     @State private var mostrandoSeletor = false
+    @State private var mostrandoCamera = false
+    @State private var daFototeca: PhotosPickerItem?
     @State private var lendo = false
     @State private var erro: String?
     @State private var detectados: Set<String> = []
@@ -71,6 +80,18 @@ struct ImportarPeca: View {
         ) { resultado in
             Task { await processar(resultado) }
         }
+        .fullScreenCover(isPresented: $mostrandoCamera) {
+            CapturaDeCamera { imagem in
+                mostrandoCamera = false
+                guard let imagem else { return }   // cancelou
+                Task { await processarImagem(imagem, nome: "foto da câmera") }
+            }
+            .ignoresSafeArea()
+        }
+        .onChange(of: daFototeca) { _, item in
+            guard let item else { return }
+            Task { await processarDaFototeca(item) }
+        }
     }
 
     // MARK: Formulário
@@ -108,11 +129,31 @@ struct ImportarPeca: View {
             Text("Leio o arquivo no próprio aparelho e marco os atributos que reconhecer. Nada é enviado nem guardado.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
+            // A câmera vem primeiro porque é o gesto mais direto de quem está
+            // com a peça na mão -- que é a situação do comprador em showroom.
+            // Some no simulador e em aparelho sem câmera, em vez de abrir nada.
+            if CapturaDeCamera.disponivel {
+                Button {
+                    erro = nil
+                    mostrandoCamera = true
+                } label: {
+                    Label("Fotografar a peça", systemImage: "camera")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            PhotosPicker(selection: $daFototeca, matching: .images,
+                         photoLibrary: .shared()) {
+                Label("Escolher da fototeca", systemImage: "photo.on.rectangle")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
             Button {
                 erro = nil
                 mostrandoSeletor = true
             } label: {
-                Label("Escolher arquivo", systemImage: "doc.badge.plus")
+                Label("Escolher arquivo ou PDF", systemImage: "doc.badge.plus")
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
             if let nomeDoArquivo {
@@ -178,6 +219,39 @@ struct ImportarPeca: View {
     }
 
     // MARK: Leitura
+
+    /// Fototeca: o item vira imagem em memória e segue o mesmo caminho.
+    private func processarDaFototeca(_ item: PhotosPickerItem) async {
+        daFototeca = nil
+        lendo = true
+        erro = nil
+        defer { lendo = false }
+        guard let dados = try? await item.loadTransferable(type: Data.self),
+              let fonte = CGImageSourceCreateWithData(dados as CFData, nil),
+              let imagem = CGImageSourceCreateImageAtIndex(fonte, 0, nil) else {
+            erro = "Não consegui abrir essa foto."
+            return
+        }
+        await processarImagem(imagem, nome: "foto da fototeca")
+    }
+
+    /// Câmera e fototeca terminam aqui, no mesmo leitor do arquivo.
+    private func processarImagem(_ imagem: CGImage, nome: String) async {
+        lendo = true
+        erro = nil
+        procedencia = []
+        nomeDoArquivo = nome
+        let leitura = await LeitorDeArquivo.ler(imagem)
+        let achado = Importacao.atributos(de: leitura, em: termos)
+        detectados = achado.marcados
+        procedencia = achado.procedencia
+        if achado.marcados.isEmpty {
+            // A foto não falhou: ela não bateu. A diferença importa, porque o
+            // formulário abaixo continua servindo.
+            erro = "Li a foto, mas nada dela bateu com a taxonomia."
+        }
+        lendo = false
+    }
 
     private func processar(_ resultado: Result<[URL], Error>) async {
         guard case .success(let urls) = resultado, let url = urls.first else { return }

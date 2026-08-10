@@ -670,3 +670,21 @@ E a amostra mostra a matriz preço × grade da §23 ao vivo: Cantão a R$ 1.199 
 - `REVOGATÓRIA` | **A11 (revoga o nome dado na A10)** | O JP: *"A aba armário volta, mas com uma roupagem diferente. A ação revogatória que estou fazendo agora é pro nome da aba, a função dela eu explico com mais detalhes em breve."* A aba passa a se chamar **Armário**. A A10 tinha escolhido "Minhas peças" justamente para não prometer o que a §34 exclui; a escolha do nome é do JP e o design da Bianca ainda não chegou.
 - `ADITIVA` | **O nome mudou; a garantia não.** `PecaSalva` continua guardando **só o que o usuário digitou** — atributos, apelido, contexto — e nenhum número calculado. Índice, estado e z seguem recomputados do dado de hoje a cada abertura. `testPecaSalvaNaoGuardaNumeroCalculado` falha se alguém acrescentar campo dessa natureza.
 - `ADITIVA` | **O que fica pendente da função.** Se a "roupagem diferente" envolver acompanhar a peça ao longo do tempo — alerta, histórico por peça, "sua peça caiu 3%" — então a §34 precisa de revogação com **consequência de método**, e não só de rótulo: a peça do cliente não está no painel, não é vendida por nenhuma marca que a gente mede, e afirmar movimento sobre ela seria a regra 2 ao contrário. Se for organizar, agrupar ou reabrir, não há conflito nenhum e nada mais precisa mudar.
+
+---
+
+### 07/08/2026 — câmera e fototeca entram (A12)
+
+- `REVOGATÓRIA` | **A12 (desfaz o resto do A7 sobre a §28)** | O JP: *"E se necessário, o app vai passar a pedir permissão sim"* e *"Camera pode ser antes da submissão, acho que dá"*. Entram **câmera** e **leitura da fototeca**, ao lado da entrada por arquivo que já existia. As três terminam no mesmo `LeitorDeArquivo`: OCR do texto, cor do pixel, atributos confirmados no formulário.
+- `ADITIVA` | **A retenção zero fica mais fácil de verificar, não mais difícil.** Câmera e fototeca entregam a imagem **em memória**, sem passar por arquivo. Não existe caminho de disco em nenhum dos três caminhos — e o que não existe não pode ser esquecido ligado.
+- `ADITIVA` | **O que a ficha de privacidade perde, e o que ela não perde.** O app deixa de poder dizer "não pede permissão nenhuma": agora pede duas. Mas `NSPrivacyCollectedDataTypes` **continua vazio**, porque permissão de acesso e coleta de dado são coisas diferentes. Não pedimos escrita na fototeca: o app não salva foto nenhuma, nem a que ele mesmo tirou.
+- `ADITIVA` | **`allowsEditing = false` na câmera, de propósito.** O recorte do iOS parece útil e não é: ele devolve a imagem já cortada, e o corte feito com o dedo mudaria a cor dominante que o `CorDaPeca` mede. O app estaria medindo o enquadramento, e não a peça.
+
+### 07/08/2026 — leitura do design da Bianca e do Davi
+
+Quatro pontos do Figma que colidem com o documento, registrados antes de virarem código:
+
+- **Login / Cadastrar / Account** colidem com a §34 (*"sem login/conta de usuário"*). Conta significa dado de usuário, ficha de privacidade diferente e autenticação a manter. Se a conta existe só para guardar o armário, o aparelho já faz isso sem ela. Pergunta em aberto para o Davi: **o que a conta habilita?**
+- **"Métricas da peça" com gráfico de linha** implica acompanhar a peça do usuário ao longo do tempo, que é o closet da §34 e que o dado não sustenta — a peça não está no painel. **Conserto barato, tela idêntica:** o gráfico é dos *atributos* dela (o índice do cluster), que existe e é medido.
+- **"Taking measurements" / "Clothing DNA"** prometem que o app mede a peça pela foto. Medido em 07/08: 64,1% só em categoria. O texto de carregamento precisa dizer o que acontece de fato.
+- **"Mostrar similares" com foto de produto** colide com o A6 (*"o binário submetido não republica foto de produto de terceiro"*). Se as imagens do Figma são placeholder, não há questão.
