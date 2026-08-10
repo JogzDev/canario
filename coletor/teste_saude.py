@@ -33,13 +33,13 @@ def main():
 
     saudavel = [linha("varejo", 100, marca_id=1),
                 linha("editorial", 80), linha("busca", 40)]
-    if alertas_criticos(saudavel, MARCAS, HOJE):
+    if alertas_criticos(saudavel, MARCAS, HOJE)[0]:
         print("FALHOU: fontes saudaveis foram bloqueadas")
         return 1
 
     sem_busca = [linha("varejo", 100, marca_id=1), linha("editorial", 80)]
     if not any("busca sem observacao" in x
-               for x in alertas_criticos(sem_busca, MARCAS, HOJE)):
+               for x in alertas_criticos(sem_busca, MARCAS, HOJE)[0]):
         print("FALHOU: ausencia de busca nao bloqueou")
         return 1
 
@@ -48,7 +48,7 @@ def main():
     queda.extend(linha("varejo", 100, dias=d, marca_id=1)
                  for d in range(1, 8))
     if not any("caiu 80%" in x
-               for x in alertas_criticos(queda, MARCAS, HOJE)):
+               for x in alertas_criticos(queda, MARCAS, HOJE)[0]):
         print("FALHOU: queda maior que 70% nao bloqueou")
         return 1
 
@@ -66,7 +66,7 @@ def main():
         antiga = linha("busca", 3, dias=d)
         antiga["itens"] = 3626         # janela de 5 anos
         janela_menor.append(antiga)
-    if any("busca" in x for x in alertas_criticos(janela_menor, MARCAS, HOJE)):
+    if any("busca" in x for x in alertas_criticos(janela_menor, MARCAS, HOJE)[0]):
         print("FALHOU: troca de janela do Trends bloqueou como se fosse queda")
         return 1
 
@@ -75,8 +75,47 @@ def main():
                       linha("busca", 1)]
     cobertura_caiu.extend(linha("busca", 8, dias=d) for d in range(1, 8))
     if not any("busca caiu" in x
-               for x in alertas_criticos(cobertura_caiu, MARCAS, HOJE)):
+               for x in alertas_criticos(cobertura_caiu, MARCAS, HOJE)[0]):
         print("FALHOU: queda real de cobertura da busca nao bloqueou")
+        return 1
+
+    # LOJA QUE RECUSOU HOJE NAO E COLETA QUEBRADA.
+    #
+    # Em 09 e 10/08 o pipeline caiu por "varejo/Amaro retornou zero", e o motivo
+    # gravado era `http 429 (persistiu apos backoff longo)` -- a loja pedindo
+    # para diminuir, que a regra 7 manda respeitar. Medido em 9 dias: Amaro 8
+    # bons e 2 zerados, PatBo 8 bons e 2 zerados E recuperou sozinha.
+    def zerada(dias, erro="http 429"):
+        l = linha("varejo", 0, dias=dias, marca_id=1)
+        l["visitados"] = 0
+        l["alertas"] = {"erro": erro}
+        return l
+
+    um_dia = [zerada(0), linha("editorial", 80), linha("busca", 40)]
+    um_dia.extend(linha("varejo", 100, dias=d, marca_id=1) for d in range(1, 8))
+    crit, avisos = alertas_criticos(um_dia, MARCAS, HOJE)
+    if any("Marca A" in x for x in crit):
+        print("FALHOU: um dia de recusa da loja travou o pipeline")
+        return 1
+    if not any("Marca A" in x for x in avisos):
+        print("FALHOU: a recusa sumiu em vez de virar aviso")
+        return 1
+
+    # Tres dias seguidos ja nao e um dia ruim.
+    tres_dias = [zerada(0), zerada(1), zerada(2),
+                 linha("editorial", 80), linha("busca", 40)]
+    tres_dias.extend(linha("varejo", 100, dias=d, marca_id=1) for d in range(3, 8))
+    crit, _ = alertas_criticos(tres_dias, MARCAS, HOJE)
+    if not any("3 dias seguidos" in x for x in crit):
+        print("FALHOU: zero persistente nao bloqueou")
+        return 1
+
+    # Zero SEM motivo e pior que zero com motivo: nao sabemos o que houve.
+    sem_motivo = [zerada(0, erro=None), linha("editorial", 80), linha("busca", 40)]
+    sem_motivo.extend(linha("varejo", 100, dias=d, marca_id=1) for d in range(1, 8))
+    crit, _ = alertas_criticos(sem_motivo, MARCAS, HOJE)
+    if not any("sem dizer por qu" in x for x in crit):
+        print("FALHOU: zero inexplicado nao bloqueou")
         return 1
 
     metricas = metricas_varejo_ativas(

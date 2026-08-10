@@ -720,11 +720,51 @@ def _valor_de_saude(linha):
     return linha.get("gravados") or 0
 
 
+#: A loja pode recusar hoje e voltar amanhã. Abaixo disto o zero é ruído
+#: operacional e vira aviso; a partir daqui é achado e bloqueia.
+DIAS_DE_ZERO_PARA_BLOQUEAR = 3
+
+
+def _zeros_seguidos(historico, hoje_iso):
+    """Há quantos dias seguidos, contando hoje, esta fonte está em zero."""
+    seguidos = 0
+    for data in sorted(historico, reverse=True):
+        if data > hoje_iso or historico[data] > 0:
+            break
+        seguidos += 1
+    return seguidos
+
+
 def alertas_criticos(registros, marcas_ativas, hoje):
-    """Detecta ausência, zero e queda >70% contra os sete dias anteriores."""
+    """Detecta ausência, zero PERSISTENTE e queda >70% contra os 7 dias.
+
+    O QUE MUDOU EM 10/08, E POR QUÊ
+    ===============================
+
+    O portão derrubava o pipeline inteiro porque UMA loja teve um dia ruim. Nos
+    dias 09 e 10/08 o motivo foi `http 429 (persistiu apos backoff longo)` da
+    Amaro — a loja nos pedindo para diminuir, que é o que a regra 7 manda
+    respeitar, e não uma coleta quebrada.
+
+    Medido em 9 dias: Amaro 8 dias bons e 2 zerados; PatBo 8 bons e 2 zerados,
+    **e recuperou sozinha**. Zero de um dia é ruído; falhar a noite inteira por
+    causa dele é gritar quando não há nada errado — e alarme assim é o que
+    ensina a ignorar alarme.
+
+    A distinção que passa a valer:
+
+    * zero **com motivo HTTP registrado** e por menos de
+      `DIAS_DE_ZERO_PARA_BLOQUEAR` dias seguidos → a fonte recusou. Vira aviso.
+    * zero **sem motivo nenhum** → não sabemos o que houve, e não saber é pior
+      que saber que foi recusa. Bloqueia na hora.
+    * zero por 3 dias seguidos → não é mais um dia ruim. Bloqueia.
+
+    Devolve `(criticos, avisos)`: só os críticos travam o pipeline.
+    """
     hoje_iso = hoje.isoformat()
     atuais = {}
     anteriores = {}
+    historico = {}
     for r in sorted(registros,
                     key=lambda x: (x.get("criado_em") or "", x.get("id") or 0)):
         chave = (r.get("fonte"), r.get("marca_id"))
@@ -732,10 +772,12 @@ def alertas_criticos(registros, marcas_ativas, hoje):
             atuais[chave] = r
         else:
             anteriores.setdefault(chave, []).append(_valor_de_saude(r))
+        if r.get("data"):
+            historico.setdefault(chave, {})[r["data"]] = _valor_de_saude(r)
 
     esperadas = {("editorial", None), ("busca", None)}
     esperadas.update(("varejo", m["id"]) for m in marcas_ativas)
-    criticos = []
+    criticos, avisos = [], []
     for chave in sorted(esperadas, key=lambda x: (x[0], x[1] or 0)):
         fonte, marca_id = chave
         atual = atuais.get(chave)
@@ -747,7 +789,18 @@ def alertas_criticos(registros, marcas_ativas, hoje):
             continue
         valor = _valor_de_saude(atual)
         if valor <= 0:
-            criticos.append("{} retornou zero".format(rotulo))
+            motivo = ((atual.get("alertas") or {}).get("erro")
+                      if isinstance(atual.get("alertas"), dict) else None)
+            seguidos = _zeros_seguidos(historico.get(chave, {}), hoje_iso)
+            if not motivo:
+                criticos.append(
+                    "{} retornou zero sem dizer por quê".format(rotulo))
+            elif seguidos >= DIAS_DE_ZERO_PARA_BLOQUEAR:
+                criticos.append("{} em zero há {} dias seguidos ({})".format(
+                    rotulo, seguidos, motivo))
+            else:
+                avisos.append("{} retornou zero hoje ({}); {}º dia".format(
+                    rotulo, motivo, seguidos))
             continue
         base = [v for v in anteriores.get(chave, []) if v > 0]
         if base:
@@ -756,7 +809,7 @@ def alertas_criticos(registros, marcas_ativas, hoje):
                 criticos.append(
                     "{} caiu {:.0f}% contra a media de 7 dias ({} vs {:.0f})".format(
                         rotulo, 100 * (1 - valor / media), valor, media))
-    return criticos
+    return criticos, avisos
 
 
 def metricas_varejo_ativas(atuais, nomes, marcas_ativas):
@@ -804,7 +857,7 @@ def renderizar_saude(hoje, fallback_varejo=None):
     if not metricas and fallback_varejo:
         metricas = fallback_varejo
 
-    criticos = alertas_criticos(registros, marcas_ativas, hoje)
+    criticos, avisos = alertas_criticos(registros, marcas_ativas, hoje)
     tot_vis = sum(m["visitados"] for m in metricas)
     tot_grav = sum(m["gravados"] for m in metricas)
     presentes = {m["marca_id"] for m in metricas}
@@ -817,6 +870,12 @@ def renderizar_saude(hoje, fallback_varejo=None):
               "**Estado:** {}\n".format(
                   "ATENÇÃO" if criticos else "sem alerta crítico"),
               "\n## Portão operacional\n"]
+    if avisos:
+        linhas.append(
+            "\n**Avisos (não travam):** fonte que recusou hoje mas voltou "
+            "antes de {} dias seguidos.\n\n".format(DIAS_DE_ZERO_PARA_BLOQUEAR))
+        linhas += ["- {}\n".format(a) for a in avisos]
+        linhas.append("\n")
     if criticos:
         linhas.extend("- ⚠️ {}\n".format(c) for c in criticos)
     else:
