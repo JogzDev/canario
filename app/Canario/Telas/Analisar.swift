@@ -143,10 +143,17 @@ struct Analisar: View {
         carregando = true
         erro = nil
         do {
-            termos = try await Supabase.shared.buscar(
+            // As duas EM PARALELO. Estavam em sequência, e como o custo aqui é
+            // abertura de conexão e não tamanho -- medido em 10/08: `termos`
+            // leva 1,7s para 9 kB enquanto `series` traz 168 kB em 0,38s --
+            // uma esperava a outra sem precisar. Somadas davam os ~3s que o
+            // Xcode reportou como `Hang detected: 3.65s` na abertura.
+            async let t: [Termo] = Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
-            let recentes: [IndiceSemanal] = try await Supabase.shared.buscar(
+            async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_do_app", "select=*&order=semana.desc&limit=400")
+            termos = try await t
+            let recentes = try await i
             var mapa: [String: IndiceSemanal] = [:]
             for i in recentes where mapa[i.termoId] == nil { mapa[i.termoId] = i }
             indices = mapa

@@ -226,10 +226,15 @@ struct Explorar: View {
                 let pontos: [PontoSerie] = try await Supabase.shared.buscar(
                     "series_do_app",
                     "select=*&termo_id=in.(\(ids))&semana=in.(\(semanas))&limit=2000")
+                // `alvos.first(where:)` dentro do laço era O(n x m): até 2000
+                // pontos vezes os alvos, com comparação de string, e isto roda
+                // no ator principal porque `carregar()` é chamado de `.task`
+                // numa View. Um dicionário resolve em uma passada.
+                let semanaDoAlvo = Dictionary(
+                    alvos.map { ($0.termoId, $0.semana) },
+                    uniquingKeysWith: { primeiro, _ in primeiro })
                 var mapa: [String: [PontoSerie]] = [:]
-                for p in pontos {
-                    guard let alvo = alvos.first(where: { $0.termoId == p.termoId }),
-                          alvo.semana == p.semana else { continue }
+                for p in pontos where semanaDoAlvo[p.termoId] == p.semana {
                     mapa[p.termoId, default: []].append(p)
                 }
                 series = mapa

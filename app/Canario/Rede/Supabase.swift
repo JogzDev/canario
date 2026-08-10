@@ -49,7 +49,15 @@ actor Supabase {
         // carimbo visível. O cache do protocolo é a base disso.
         cfg.requestCachePolicy = .useProtocolCachePolicy
         cfg.urlCache = URLCache(memoryCapacity: 8 << 20, diskCapacity: 64 << 20)
-        cfg.timeoutIntervalForRequest = 20
+        // 20s era tempo demais para falhar. Com a segunda tentativa em cima,
+        // uma requisição travada segurava a tela por 40s -- e o JP viu isso
+        // como "tela preta por alguns segundos" com `Hang detected: 5.25s` no
+        // Xcode. Dez segundos ainda é folgado para uma consulta que roda em
+        // milissegundos no banco, e falha rápido quando a rede não colabora.
+        cfg.timeoutIntervalForRequest = 10
+        // Sem isto o iOS enfileira a requisição esperando rede aparecer, em
+        // vez de devolver erro e deixar a tela dizer que está offline (§27).
+        cfg.waitsForConnectivity = false
         self.sessao = URLSession(configuration: cfg)
     }
 
@@ -129,6 +137,12 @@ actor Supabase {
                 }
             } catch let falha as Falha {
                 throw falha
+            } catch let erro as URLError where erro.code == .timedOut {
+                // Tempo esgotado NÃO repete. Repetir custa outros 10s e o
+                // motivo mais provável de estourar é congestionamento -- que
+                // uma segunda chamada só piora. 5xx repete porque ali o
+                // servidor respondeu, e rápido.
+                throw Falha.rede(erro)
             } catch {
                 guard tentativa == 0 else { throw Falha.rede(error) }
             }

@@ -39,16 +39,28 @@ struct CanarioApp: App {
 /// quando a seleção passar a ser por peça guardada; até lá, tirar a aba seria
 /// remover função sem entregar a substituta.
 struct Raiz: View {
+    /// Qual aba está aberta. Existe para o `TabView` não montar as quatro de
+    /// uma vez: sem seleção explícita o SwiftUI podia construir as outras
+    /// junto, e cada uma dispara a própria carga -- o Explorar sozinho abre
+    /// quatro requisições. Na abertura fria isso viravam mais de dez chamadas
+    /// simultâneas contra um projeto free, e o resultado foi o que o JP viu:
+    /// tela preta por segundos e `Operation timed out` no Xcode.
+    @State private var aba = 0
+
     var body: some View {
-        TabView {
+        TabView(selection: $aba) {
             Analisar()
                 .tabItem { Label("Adicionar", systemImage: "plus.magnifyingglass") }
+                .tag(0)
             MinhasPecas()
                 .tabItem { Label("Armário", systemImage: "square.stack.3d.up") }
+                .tag(1)
             Explorar()
                 .tabItem { Label("Dados", systemImage: "chart.bar.doc.horizontal") }
+                .tag(2)
             Comparar()
                 .tabItem { Label("Comparar", systemImage: "arrow.left.arrow.right") }
+                .tag(3)
         }
     }
 }
