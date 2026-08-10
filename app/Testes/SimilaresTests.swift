@@ -39,10 +39,15 @@ final class SimilaresTests: XCTestCase {
 
     private func peca(_ marca: String, preco: Double?, queda: Double?,
                       disponiveis: Int, degraus: Int,
-                      faltando: [String] = []) -> Similares.Peca {
+                      faltando: [String] = [],
+                      imagem: String? = nil) -> Similares.Peca {
+        // `imagem` nasce nil de propósito: peça sem foto tem que continuar
+        // funcionando em todo lugar. É o caso da loja que tirou a imagem do ar,
+        // e o parágrafo da §29 não pode depender dela.
         Similares.Peca(
             id: 1, marca: marca, papelDaMarca: "nucleo", titulo: "Vestido Midi Floral",
-            url: "https://exemplo/1", preco: preco, precoDe: nil, quedaPct: queda,
+            url: "https://exemplo/1", imagem: imagem,
+            preco: preco, precoDe: nil, quedaPct: queda,
             emComum: 3,
             grade: .init(degraus: degraus, disponiveis: disponiveis,
                          faltando: faltando,

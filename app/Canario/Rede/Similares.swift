@@ -69,6 +69,11 @@ enum Similares {
         let papelDaMarca: String?
         let titulo: String?
         let url: String?
+        /// URL no CDN da PRÓPRIA loja (A13). O card carrega direto de lá, por
+        /// hotlink: a imagem nunca é copiada para o nosso servidor nem para o
+        /// binário. Se a loja tirar do ar, o card cai no bloco de cor, que é o
+        /// desenho do A6 e continua existindo.
+        let imagem: String?
         let preco: Double?
         let precoDe: Double?
         let quedaPct: Double?
@@ -76,7 +81,7 @@ enum Similares {
         let grade: Grade?
 
         enum CodingKeys: String, CodingKey {
-            case id, marca, titulo, url, preco, grade
+            case id, marca, titulo, url, imagem, preco, grade
             case papelDaMarca = "papel_da_marca"
             case precoDe = "preco_de"
             case quedaPct = "queda_pct"

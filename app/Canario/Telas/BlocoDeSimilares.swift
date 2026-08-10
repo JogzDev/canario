@@ -93,14 +93,28 @@ struct CartaoDeSimilar: View {
 /// que o comprador faz de relance, e não depende de cor — a §32 proíbe
 /// comunicar estado só por cor, então o número vai ao lado, no texto.
 ///
-/// Placeholder para a Bianca: a família de cor da peça e o glifo de silhueta
-/// entram aqui quando o design existir.
+/// A foto da peça, carregada do CDN da própria loja (A13).
+///
+/// **Hotlink, e não cópia.** O aparelho busca a imagem no servidor da marca, na
+/// hora de exibir. Nada é copiado para o nosso servidor nem embutido no
+/// binário, e o toque no card abre a página original — a atribuição e o
+/// caminho até a origem que a regra 3 pede já existiam.
+///
+/// **O bloco de cor não sai de cena; ele vira o fundo.** Era o desenho do A6
+/// (altura = grade disponível) e continua sendo o que aparece enquanto a foto
+/// carrega, quando a loja tira a imagem do ar, e quando o produto não tem foto.
+/// Card sem foto continua dizendo a mesma coisa que dizia antes.
 struct MarcaVisual: View {
     let peca: Similares.Peca
 
     private var preenchido: Double {
         guard let g = peca.grade, g.degraus > 0 else { return 1 }
         return Double(g.disponiveis) / Double(g.degraus)
+    }
+
+    private var endereco: URL? {
+        guard let i = peca.imagem, !i.isEmpty else { return nil }
+        return URL(string: i)
     }
 
     var body: some View {
@@ -111,6 +125,20 @@ struct MarcaVisual: View {
                 RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta)
                     .fill(Tokens.Cor.tintaFraca.opacity(0.45))
                     .frame(height: max(2, geo.size.height * preenchido))
+                if let endereco {
+                    // `AsyncImage` só desenha em `.success`: em carregamento e
+                    // em falha o bloco de cor fica visível sozinho, sem ícone
+                    // de imagem quebrada e sem a tela pular de tamanho.
+                    AsyncImage(url: endereco) { fase in
+                        if case .success(let img) = fase {
+                            img.resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .transition(.opacity)
+                        }
+                    }
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
+                }
             }
             .overlay(
                 RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta)
