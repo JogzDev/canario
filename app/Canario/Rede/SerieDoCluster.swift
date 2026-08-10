@@ -1,0 +1,102 @@
+import Foundation
+
+/// A série semanal do índice dos atributos da peça (A14).
+///
+/// **O que ela é, e o que ela não é.** O Figma pedia "Métricas da peça" com um
+/// gráfico ao longo do tempo. Lido ao pé da letra, aquilo prometia acompanhar
+/// *a peça do usuário* — o closet que a §34 exclui, e que o dado não sustenta:
+/// a peça é do cliente, não está no painel, nenhuma marca que medimos vende
+/// ela. Decisão do JP em 07/08: o gráfico é dos **atributos** dela. A tela fica
+/// igual e a afirmação vira verdadeira.
+///
+/// **Por que cada ponto carrega `nAtributos`.** Semana em que só um dos três
+/// atributos teve leitura não é comparável com semana em que os três tiveram, e
+/// desenhar as duas com a mesma linha finge uma cobertura constante que não
+/// existe. A regra 3 pede o caminho até a origem; aqui ele é quantos atributos
+/// sustentaram cada ponto.
+enum SerieDoCluster {
+
+    struct Resposta: Decodable {
+        let unidade: String?
+        let categoriaUsada: String?
+        let atributosPedidos: Int
+        let atributosComPeso: Int
+        let pontos: [Ponto]
+
+        enum CodingKeys: String, CodingKey {
+            case unidade, pontos
+            case categoriaUsada = "categoria_usada"
+            case atributosPedidos = "atributos_pedidos"
+            case atributosComPeso = "atributos_com_peso"
+        }
+    }
+
+    struct Ponto: Decodable, Identifiable, Hashable {
+        let semana: String
+        let indice: Double
+        let nAtributos: Int
+
+        var id: String { semana }
+
+        enum CodingKeys: String, CodingKey {
+            case semana, indice
+            case nAtributos = "n_atributos"
+        }
+
+        /// `Date` para o eixo do gráfico. `nil` numa semana malformada, que a
+        /// tela descarta em vez de desenhar no lugar errado.
+        var data: Date? {
+            let f = DateFormatter()
+            f.calendar = Calendar(identifier: .iso8601)
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.timeZone = TimeZone(identifier: "America/Sao_Paulo")
+            f.dateFormat = "yyyy-MM-dd"
+            return f.date(from: semana)
+        }
+    }
+
+    /// Abaixo disto o gráfico não é desenhado: três pontos não são uma série, e
+    /// uma linha entre eles sugere uma tendência que ninguém mediu.
+    static let pontosMinimos = 8
+
+    /// Ponto sustentado por menos atributos que isto é marcado na tela.
+    ///
+    /// A regra é relativa ao que foi pedido, e não um número fixo: numa peça de
+    /// um atributo só, um atributo É a cobertura inteira.
+    static func ralo(_ p: Ponto, de pedidos: Int) -> Bool {
+        pedidos > 1 && p.nAtributos < pedidos
+    }
+
+    /// Frase de rodapé com a cobertura real, sem enfeite.
+    ///
+    /// Existe porque a linha sozinha mente por omissão: ela parece uniforme
+    /// mesmo quando metade dos pontos veio de um atributo só.
+    static func ressalva(_ r: Resposta) -> String? {
+        let ralos = r.pontos.filter { ralo($0, de: r.atributosPedidos) }.count
+        guard ralos > 0 else { return nil }
+        if ralos == r.pontos.count {
+            return "Nenhuma semana teve os \(r.atributosPedidos) atributos ao "
+                 + "mesmo tempo: a linha é o que havia em cada uma."
+        }
+        return "\(ralos) de \(r.pontos.count) semanas tiveram menos que os "
+             + "\(r.atributosPedidos) atributos; estão marcadas no gráfico."
+    }
+
+    /// Por que o gráfico não aparece, quando não aparece. Sempre uma frase que
+    /// diz o que falta — nunca um espaço em branco.
+    static func porQueNaoDesenha(_ r: Resposta?) -> String? {
+        guard let r else {
+            return "Ainda não consegui carregar o histórico destes atributos."
+        }
+        if r.atributosComPeso == 0 {
+            return "Estes atributos ainda não têm peso calculado no painel, "
+                 + "então não dá para compor uma linha com eles."
+        }
+        if r.pontos.count < pontosMinimos {
+            return "São \(r.pontos.count) semana\(r.pontos.count == 1 ? "" : "s") "
+                 + "com leitura, e eu só desenho a partir de \(pontosMinimos). "
+                 + "O histórico se acumula sozinho a cada coleta."
+        }
+        return nil
+    }
+}

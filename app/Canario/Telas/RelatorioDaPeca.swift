@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 /// Leitura de uma peça a partir dos atributos confirmados pelo usuário (§29).
 ///
@@ -19,6 +20,7 @@ struct RelatorioDaPeca: View {
     @State private var coberturas: [String: Cobertura] = [:]
     @State private var similares: Similares.Resposta?
     @State private var cluster: Cluster.Resposta?
+    @State private var serie: SerieDoCluster.Resposta?
     @State private var carregando = true
     @State private var erro: String?
     /// nil = ainda não tentou; true = guardada; false = a lista está no teto.
@@ -70,6 +72,7 @@ struct RelatorioDaPeca: View {
                     blocoDeSimilares
                     porAtributo
                     blocoDoCluster
+                    blocoDoHistorico
                     limites
                 }
             }
@@ -181,6 +184,46 @@ struct RelatorioDaPeca: View {
         }
     }
 
+    /// O histórico dos ATRIBUTOS da peça (A14).
+    ///
+    /// Não é a peça do usuário ao longo do tempo — ela não está no painel, e a
+    /// §34 exclui acompanhá-la. É o recorte de mercado que ela ocupa.
+    @ViewBuilder
+    private var blocoDoHistorico: some View {
+        Cartao {
+            Text("Como esse conjunto se moveu").font(Tokens.Fonte.secao)
+            if let motivo = SerieDoCluster.porQueNaoDesenha(serie) {
+                // Nunca um espaço em branco: a tela diz o que falta.
+                Text(motivo)
+                    .font(Tokens.Fonte.corpo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+            } else if let s = serie {
+                Chart(s.pontos.filter { $0.data != nil }) { p in
+                    LineMark(x: .value("Semana", p.data!),
+                             y: .value("Índice", p.indice))
+                        .interpolationMethod(.monotone)
+                    // Semana com menos atributos que o pedido ganha ponto
+                    // visível: a linha sozinha mente por omissão, porque parece
+                    // uniforme mesmo quando metade dela veio de um atributo só.
+                    if SerieDoCluster.ralo(p, de: s.atributosPedidos) {
+                        PointMark(x: .value("Semana", p.data!),
+                                  y: .value("Índice", p.indice))
+                            .symbolSize(28)
+                            .foregroundStyle(Tokens.Cor.semDado)
+                    }
+                }
+                .chartYAxisLabel(s.unidade ?? "")
+                .frame(height: 160)
+                .accessibilityLabel(
+                    "Histórico do conjunto em \(s.pontos.count) semanas")
+                if let r = SerieDoCluster.ressalva(s) { LinhaInsumo(texto: r) }
+                if let c = s.categoriaUsada, c != "(todas)" {
+                    LinhaInsumo(texto: "Raridade medida dentro de \(c).")
+                }
+            }
+        }
+    }
+
     /// §22 / K5 — o número da peça inteira, com os pesos abertos.
     ///
     /// Esta tela declarava, até 02/08, que o cálculo não existia. Agora existe,
@@ -277,6 +320,10 @@ struct RelatorioDaPeca: View {
             // continuam na tela. O contrário também vale.
             cluster = try? await Supabase.shared.chamar(
                 "indice_do_cluster", ["termos": termos.map(\.id)])
+            // `try?` igual ao cluster: o histórico é o bloco menos essencial da
+            // tela, e perder o gráfico não pode levar o relatório junto.
+            serie = try? await Supabase.shared.chamar(
+                "serie_do_cluster", ["termos": termos.map(\.id), "semanas": 52])
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

@@ -42,7 +42,8 @@ struct BlocoDeSimilares: View {
     }
 }
 
-/// Um similar. Sem foto de terceiro (A6): a identidade é gerada.
+/// Um similar: foto da loja por hotlink (A13), com o bloco de cor do A6 atrás
+/// dela para quando não houver foto.
 struct CartaoDeSimilar: View {
     let peca: Similares.Peca
 
@@ -145,7 +146,12 @@ struct MarcaVisual: View {
                     .strokeBorder(Tokens.Cor.semDado.opacity(0.35), lineWidth: 1)
             )
         }
-        .frame(width: 34, height: 52)
+        // 34x52 era a medida do BLOCO DE COR, que é abstrato e legível em
+        // qualquer tamanho. Foto de produto naquele espaço vira mancha -- o JP
+        // rodou o app depois do A13 e não percebeu que havia foto. Agora é
+        // 72x96: cabe a silhueta da peça, que é o que faz o card ser útil de
+        // relance.
+        .frame(width: 72, height: 96)
         .accessibilityHidden(true)   // o texto ao lado já diz a grade
     }
 }
