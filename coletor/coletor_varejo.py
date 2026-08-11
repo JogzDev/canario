@@ -236,38 +236,45 @@ def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
     A VTEX exige o caminho: na C&A, `fq=C:1004161` devolve 0 e
     `fq=C:1000003/1004161` devolve 89.354 para a mesma categoria "Roupas".
     """
-    de = 0
-    while de < min(limite, TETO_OFFSET):
-        ate = de + PAGINA - 1
-        # ORDEM DETERMINISTICA (OrderByPriceASC), e nao a ordem padrao.
-        #
-        # A ordem padrao da VTEX e ordem de vitrine: muda conforme a loja
-        # promove peca. Onde a categoria estoura o teto de 2500 e a coleta pega
-        # so um pedaco, a ordem padrao faria a composicao do pedaco MUDAR de um
-        # dia para o outro -- e ai um produto "aparecendo" seria ruido de
-        # amostragem, nao reposicao de verdade. Isso corromperia os eventos da
-        # §23, que sao o sinal mais forte do painel.
-        #
-        # Ordenar por preco resolve dois problemas de uma vez: o pedaco passa a
-        # ser o MESMO todo dia (evento virou evento), e desaparece o vies de
-        # promocao que a decisao A2 queria justamente evitar.
-        url = ("https://{}/api/catalog_system/pub/products/search"
-               "?fq=C:{}{}&O=OrderByPriceASC&_from={}&_to={}".format(
-                   dominio, cat_id, _fq_preco(pmin, pmax), de, ate))
-        codigo, corpo, _, _ = buscar_varejo(url, dominio)
-        if codigo not in (200, 206) or not corpo:
-            return
-        try:
-            produtos = json.loads(corpo)
-        except ValueError:
-            return
-        if not produtos:
-            return
-        for p in produtos:
-            yield p
-        de += PAGINA
-        if len(produtos) < PAGINA:
-            return
+    alvo = min(limite, TETO_OFFSET)
+    vistos = set()
+
+    # A ordenacao por PRECO parecia deterministica, mas nao define desempate.
+    # Numa pagina de 50 produtos com o mesmo preco, a VTEX mudava a ordem entre
+    # requisicoes e repetia produtos nas paginas seguintes. Em 11/08 isso fez
+    # Farm declarar 2.829 produtos e entregar apenas 766 ids unicos; a NV caiu
+    # de 903 para 416 pela mesma causa. Nome tem cardinalidade muito maior e e
+    # uma ordem oficial da Search API. DESC e uma segunda passagem de reparo:
+    # so roda se ASC nao recuperar 98% do que o header declarou.
+    for ordem in ("OrderByNameASC", "OrderByNameDESC"):
+        de = 0
+        while de < alvo and len(vistos) < alvo:
+            ate = min(de + PAGINA - 1, alvo - 1)
+            url = ("https://{}/api/catalog_system/pub/products/search"
+                   "?fq=C:{}{}&O={}&_from={}&_to={}".format(
+                       dominio, cat_id, _fq_preco(pmin, pmax), ordem, de, ate))
+            codigo, corpo, _, _ = buscar_varejo(url, dominio)
+            if codigo not in (200, 206) or not corpo:
+                break
+            try:
+                produtos = json.loads(corpo)
+            except ValueError:
+                break
+            if not produtos:
+                break
+            for p in produtos:
+                produto_id = str(p.get("productId") or "")
+                if not produto_id or produto_id in vistos:
+                    continue
+                vistos.add(produto_id)
+                yield p
+                if len(vistos) >= alvo:
+                    break
+            de += PAGINA
+            if len(produtos) < PAGINA:
+                break
+        if len(vistos) >= alvo * 0.98:
+            break
 
 
 def _filhos(dominio, caminho):
@@ -282,8 +289,11 @@ def _filhos(dominio, caminho):
     n = len(partes)
     vistos = {}
     for de in (0, 400, 900, 1500, 2200):
+        # O mesmo desempate instavel por preco que duplicava produtos tambem
+        # fazia o conjunto de filhos variar por noite. Nome fixa a amostra.
         url = ("https://{}/api/catalog_system/pub/products/search"
-               "?fq=C:{}&_from={}&_to={}".format(dominio, caminho, de, de + PAGINA - 1))
+               "?fq=C:{}&O=OrderByNameASC&_from={}&_to={}".format(
+                   dominio, caminho, de, de + PAGINA - 1))
         codigo, corpo, _, _ = buscar_varejo(url, dominio)
         if codigo not in (200, 206) or not corpo:
             continue
