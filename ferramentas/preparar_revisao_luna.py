@@ -8,6 +8,7 @@ que os revisores exportarem seus rotulos.
 """
 
 import argparse
+import base64
 import csv
 import json
 from pathlib import Path
@@ -29,6 +30,13 @@ PADRAO_LOG = re.compile(
     re.IGNORECASE,
 )
 VERSAO_RUBRICA = "categoria-cor-v2"
+MIME_POR_EXTENSAO = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".heic": "image/heic",
+}
 
 
 def ler_predicoes(pasta_logs):
@@ -69,6 +77,16 @@ def _escrever_csv(caminho, linhas):
         escritor = csv.DictWriter(arquivo, fieldnames=campos)
         escritor.writeheader()
         escritor.writerows(linhas)
+
+
+def _imagem_embutida(caminho):
+    """Transforma a imagem em data URL para o HTML funcionar isoladamente."""
+    extensao = caminho.suffix.lower()
+    mime = MIME_POR_EXTENSAO.get(extensao)
+    if mime is None:
+        raise ValueError("Extensao de imagem sem MIME: {}".format(extensao))
+    conteudo = base64.b64encode(caminho.read_bytes()).decode("ascii")
+    return "data:{};base64,{}".format(mime, conteudo)
 
 
 def _rubrica():
@@ -128,7 +146,8 @@ Famílias: `preto`, `branco_cru`, `cinza`, `azul`, `verde`, `lilas_roxo`,
 def _instrucoes(run_id):
     return """# Revisão cega da amostra Luna
 
-1. Extraia o ZIP inteiro mantendo a pasta `images` ao lado de `revisao.html`.
+1. Extraia o ZIP e abra `revisao.html`. O arquivo já contém as 24 imagens e
+   continua funcionando se for movido sozinho.
 2. Leia `RUBRICA.md`.
 3. Abra `revisao.html` em um navegador, informe seu nome e rotule as 24 peças.
 4. Exporte JSON e CSV. Cada revisor trabalha sem conversar com o outro.
@@ -151,6 +170,7 @@ def preparar(cache, taxonomia_path, logs, template, saida, quantidade, semente,
     pasta_imagens = saida / "images"
     pasta_imagens.mkdir()
     amostra_cega = []
+    amostra_html = []
     recuperadas = []
 
     for indice, (catalogo, origem) in enumerate(amostra, 1):
@@ -161,6 +181,10 @@ def preparar(cache, taxonomia_path, logs, template, saida, quantidade, semente,
         amostra_cega.append({
             "sample_id": sample_id,
             "image": "images/" + destino.name,
+        })
+        amostra_html.append({
+            "sample_id": sample_id,
+            "image": _imagem_embutida(destino),
         })
         chave = (catalogo, origem.name)
         if chave not in predicoes:
@@ -178,7 +202,7 @@ def preparar(cache, taxonomia_path, logs, template, saida, quantidade, semente,
         raise ValueError("Template sem o marcador da amostra.")
     html = html.replace(
         marcador,
-        json.dumps(amostra_cega, ensure_ascii=False, separators=(",", ":")),
+        json.dumps(amostra_html, ensure_ascii=False, separators=(",", ":")),
     )
     (saida / "revisao.html").write_text(html, encoding="utf-8")
     (saida / "amostra-cega.json").write_text(

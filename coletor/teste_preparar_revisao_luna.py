@@ -73,6 +73,8 @@ def testar_parser_e_pacote_cego():
         assert "__CANARIO_SAMPLES_JSON__" not in html
         assert "categoria_catalogo" not in html
         assert "categoria_luna" not in html
+        assert html.count("data:image/jpeg;base64,") == 24
+        assert '"image":"images/' not in html
         for item in recuperadas:
             assert item["imagem_original"] not in html
         scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.DOTALL)
@@ -88,6 +90,10 @@ def testar_parser_e_pacote_cego():
         manifesto = json.loads((saida / "amostra-cega.json").read_text())
         assert manifesto["rubric_version"] == MODULO.VERSAO_RUBRICA
         assert manifesto["quantity"] == 24
+        assert all(
+            item["image"].startswith("images/")
+            for item in manifesto["samples"]
+        )
         with open(saida / "predicoes-recuperadas.csv", encoding="utf-8") as arquivo:
             linhas = list(csv.DictReader(arquivo))
         assert len(linhas) == 24
