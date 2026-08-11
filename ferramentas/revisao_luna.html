@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Canário — revisão cega Luna</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #eef9fb;
+      --surface: #ffffff;
+      --text: #17233b;
+      --muted: #5e6c80;
+      --line: #c8d8df;
+      --accent: #2f4a72;
+      --accent-text: #ffffff;
+      --soft: #dff3f6;
+      --danger: #a8384a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101a2a;
+        --surface: #17243a;
+        --text: #eef7fa;
+        --muted: #b6c5d1;
+        --line: #3c5268;
+        --accent: #bcebf1;
+        --accent-text: #142238;
+        --soft: #20384b;
+        --danger: #ff9cad;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    main { width: min(1100px, calc(100% - 28px)); margin: 24px auto 48px; }
+    header { display: grid; gap: 14px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: clamp(1.45rem, 4vw, 2rem); }
+    p { margin: 0; color: var(--muted); line-height: 1.45; }
+    .toolbar, .review { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+    .toolbar { padding: 16px; display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 14px; align-items: end; }
+    .toolbar label, .field-label { display: grid; gap: 6px; font-weight: 650; }
+    input, select, textarea, button { font: inherit; }
+    input[type="text"], select, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+      border-radius: 10px; background: var(--surface); color: var(--text);
+    }
+    button {
+      border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;
+      background: var(--surface); color: var(--text); cursor: pointer;
+    }
+    button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .progress-wrap { display: grid; gap: 8px; }
+    .progress-head { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+    progress { width: 100%; height: 12px; accent-color: var(--accent); }
+    .sample-nav { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+    .sample-nav button { padding: 7px 2px; font-size: .78rem; }
+    .sample-nav button.done { background: var(--soft); border-color: var(--accent); }
+    .sample-nav button.active { outline: 3px solid var(--accent); outline-offset: 1px; }
+    .review { margin-top: 16px; overflow: hidden; }
+    .review-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+    .review-head strong { font-size: 1.15rem; }
+    .grid { display: grid; grid-template-columns: minmax(300px, 1.05fr) minmax(320px, .95fr); }
+    .image-pane { min-height: 620px; display: grid; place-items: center; padding: 18px; background: color-mix(in srgb, var(--soft) 68%, var(--surface)); border-right: 1px solid var(--line); }
+    .image-pane a { display: grid; place-items: center; width: 100%; height: 100%; }
+    .image-pane img { max-width: 100%; max-height: 670px; object-fit: contain; border-radius: 10px; }
+    .form-pane { padding: 18px; display: grid; align-content: start; gap: 16px; }
+    fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 0; }
+    legend { font-weight: 650; padding: 0 6px; }
+    .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; }
+    .choice-grid label, .color-grid label { display: flex; gap: 8px; align-items: start; line-height: 1.25; }
+    .color-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .hint { color: var(--muted); font-size: .86rem; line-height: 1.35; }
+    .error { color: var(--danger); font-weight: 650; min-height: 1.25em; }
+    textarea { min-height: 82px; resize: vertical; }
+    .actions { display: flex; justify-content: space-between; gap: 10px; padding: 16px 18px; border-top: 1px solid var(--line); }
+    details { margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 13px 16px; }
+    summary { cursor: pointer; font-weight: 650; }
+    details div { color: var(--muted); line-height: 1.45; padding-top: 10px; }
+    code { color: var(--text); }
+    @media (max-width: 780px) {
+      .toolbar { grid-template-columns: 1fr; }
+      .sample-nav { grid-template-columns: repeat(8, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+      .image-pane { min-height: 380px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .image-pane img { max-height: 520px; }
+    }
+    @media (max-width: 480px) {
+      main { width: min(100% - 16px, 1100px); margin-top: 12px; }
+      .sample-nav { grid-template-columns: repeat(6, 1fr); }
+      .choice-grid, .color-grid { grid-template-columns: 1fr; }
+      .actions { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Revisão cega — categoria e cor</h1>
+    <p>Não abra <code>predicoes-recuperadas.csv</code> antes de exportar seus rótulos. Clique na imagem para ampliar.</p>
+    <section class="toolbar">
+      <label>Nome do revisor
+        <input id="reviewer" type="text" autocomplete="name" placeholder="Ex.: JP" required>
+      </label>
+      <button id="export" class="primary" type="button">Exportar gabarito cego</button>
+    </section>
+    <div class="progress-wrap">
+      <div class="progress-head"><span id="progress-text">0 de 24 concluídas</span><span id="save-state">Salvo localmente</span></div>
+      <progress id="progress" max="24" value="0"></progress>
+      <nav id="sample-nav" class="sample-nav" aria-label="Amostras"></nav>
+    </div>
+  </header>
+
+  <section class="review">
+    <div class="review-head"><strong id="sample-title">S01</strong><span class="hint">ordem aleatória · respostas ocultas</span></div>
+    <div class="grid">
+      <div class="image-pane"><a id="image-link" target="_blank" rel="noopener"><img id="image" alt="Peça para revisão"></a></div>
+      <form id="form" class="form-pane">
+        <fieldset>
+          <legend>Clareza do alvo</legend>
+          <div id="clarity" class="choice-grid"></div>
+        </fieldset>
+
+        <label class="field-label">Categoria humana
+          <select id="category"></select>
+        </label>
+
+        <label class="field-label">Estrutura visual observada
+          <select id="structure"></select>
+        </label>
+
+        <label class="field-label">Cor primária
+          <select id="primary-color"></select>
+        </label>
+
+        <fieldset>
+          <legend>Cores secundárias — no máximo duas</legend>
+          <div id="secondary-colors" class="color-grid"></div>
+        </fieldset>
+
+        <label class="field-label">Observação opcional
+          <textarea id="notes" placeholder="Registre corte, oclusão, conjunto, short-saia ou evidência decisiva."></textarea>
+        </label>
+        <div id="sample-error" class="error" role="alert"></div>
+      </form>
+    </div>
+    <div class="actions">
+      <button id="previous" type="button">← Anterior</button>
+      <button id="mark-next" class="primary" type="button">Salvar e avançar →</button>
+      <button id="next" type="button">Próxima →</button>
+    </div>
+  </section>
+
+  <details>
+    <summary>Rubrica resumida</summary>
+    <div><strong>Camisa</strong>: abertura frontal longa e estrutura de camisaria; colarinho/punhos são evidências fortes. <strong>Blusa/top</strong>: peça superior restante, somente após excluir camisa e camada externa. <strong>Short</strong>: duas aberturas/entrepernas e comprimento até aproximadamente o joelho. <strong>Saia</strong>: painel inferior contínuo. Cores pertencem apenas à peça-alvo; uma secundária precisa ocupar cerca de 10% ou reaparecer de forma importante.</div>
+  </details>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const samples = __CANARIO_SAMPLES_JSON__;
+  const rubricVersion = "categoria-cor-v1";
+  const categories = [
+    ["", "Selecione…"], ["vestido", "Vestido"], ["saia", "Saia"],
+    ["blusa_top", "Blusa / top"], ["camisa", "Camisa"], ["calca", "Calça"],
+    ["short", "Short / bermuda"], ["casaco_jaqueta", "Casaco / jaqueta"],
+    ["macacao", "Macacão"], ["not_visible", "Não determinável"]
+  ];
+  const colors = [
+    ["", "Selecione…"], ["preto", "Preto"], ["branco_cru", "Branco / cru"],
+    ["cinza", "Cinza"], ["azul", "Azul"], ["verde", "Verde"],
+    ["lilas_roxo", "Lilás / roxo"], ["vermelho_rosa", "Vermelho / rosa"],
+    ["amarelo_laranja", "Amarelo / laranja"], ["terrosos", "Terrosos"],
+    ["outras_cores", "Outras cores"], ["not_visible", "Não determinável"]
+  ];
+  const structures = [
+    ["", "Selecione…"],
+    ["one_piece_no_separate_legs", "Peça única sem pernas separadas"],
+    ["one_piece_with_separate_legs", "Peça única com pernas separadas"],
+    ["lower_continuous_panel", "Peça inferior com painel contínuo"],
+    ["lower_two_legs_short", "Peça inferior com duas pernas, curta"],
+    ["lower_two_legs_long", "Peça inferior com duas pernas, longa"],
+    ["upper_shirt_construction", "Peça superior com construção de camisa"],
+    ["upper_outer_layer", "Camada superior externa"],
+    ["upper_other", "Outra peça superior"],
+    ["target_not_determinable", "Alvo não determinável"]
+  ];
+  const clarityOptions = [
+    ["clear", "Uma peça-alvo clara"],
+    ["partially_occluded", "Alvo claro, mas cortado/coberto"],
+    ["multiple_garments_target_clear", "Várias peças; alvo ainda é claro"],
+    ["ambiguous_target", "Alvo não determinável pelos pixels"]
+  ];
+  const els = Object.fromEntries([
+    "reviewer", "export", "progress-text", "progress", "save-state", "sample-nav",
+    "sample-title", "image-link", "image", "form", "clarity", "category",
+    "structure", "primary-color", "secondary-colors", "notes", "sample-error",
+    "previous", "mark-next", "next"
+  ].map(id => [id, document.getElementById(id)]));
+  let index = 0;
+  let reviewer = localStorage.getItem("canario-luna-last-reviewer") || "";
+  let answers = {};
+
+  function storageKey(name) { return `canario-luna:${rubricVersion}:${name.trim().toLowerCase()}`; }
+  function blankAnswer() {
+    return { target_clarity: "", category: "", structure: "", primary_color: "", secondary_colors: [], notes: "", reviewed_at: "" };
+  }
+  function loadReviewer(name) {
+    reviewer = name.trim();
+    localStorage.setItem("canario-luna-last-reviewer", reviewer);
+    try { answers = JSON.parse(localStorage.getItem(storageKey(reviewer)) || "{}"); }
+    catch { answers = {}; }
+    render();
+  }
+  function current() {
+    const id = samples[index].sample_id;
+    if (!answers[id]) answers[id] = blankAnswer();
+    return answers[id];
+  }
+  function save() {
+    if (reviewer) localStorage.setItem(storageKey(reviewer), JSON.stringify(answers));
+    els["save-state"].textContent = reviewer ? "Salvo localmente" : "Informe o revisor";
+  }
+  function isComplete(answer) {
+    if (!answer.target_clarity) return false;
+    if (answer.target_clarity === "ambiguous_target") {
+      return answer.category === "not_visible" && answer.structure === "target_not_determinable" && answer.primary_color === "not_visible";
+    }
+    return Boolean(answer.category && answer.category !== "not_visible" &&
+      answer.structure && answer.structure !== "target_not_determinable" &&
+      answer.primary_color && answer.primary_color !== "not_visible");
+  }
+  function optionMarkup(options) {
+    return options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+  }
+  function renderControls() {
+    if (!els.category.options.length) els.category.innerHTML = optionMarkup(categories);
+    if (!els.structure.options.length) els.structure.innerHTML = optionMarkup(structures);
+    if (!els["primary-color"].options.length) els["primary-color"].innerHTML = optionMarkup(colors);
+    if (!els.clarity.children.length) {
+      els.clarity.innerHTML = clarityOptions.map(([value, label]) =>
+        `<label><input type="radio" name="target_clarity" value="${value}"> <span>${label}</span></label>`).join("");
+    }
+    if (!els["secondary-colors"].children.length) {
+      els["secondary-colors"].innerHTML = colors.filter(([value]) => value && value !== "not_visible").map(([value, label]) =>
+        `<label><input type="checkbox" value="${value}"> <span>${label}</span></label>`).join("");
+    }
+  }
+  function renderNav() {
+    els["sample-nav"].innerHTML = "";
+    samples.forEach((sample, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = sample.sample_id;
+      button.className = `${i === index ? "active " : ""}${isComplete(answers[sample.sample_id] || {}) ? "done" : ""}`.trim();
+      button.setAttribute("aria-label", `Abrir ${sample.sample_id}`);
+      button.addEventListener("click", () => { capture(); index = i; render(); });
+      els["sample-nav"].appendChild(button);
+    });
+  }
+  function render() {
+    renderControls();
+    const sample = samples[index];
+    const answer = current();
+    els.reviewer.value = reviewer;
+    els["sample-title"].textContent = sample.sample_id;
+    els.image.src = sample.image;
+    els.image.alt = `Peça ${sample.sample_id} para revisão cega`;
+    els["image-link"].href = sample.image;
+    els.category.value = answer.category;
+    els.structure.value = answer.structure;
+    els["primary-color"].value = answer.primary_color;
+    els.notes.value = answer.notes;
+    els.clarity.querySelectorAll("input").forEach(input => { input.checked = input.value === answer.target_clarity; });
+    els["secondary-colors"].querySelectorAll("input").forEach(input => {
+      input.checked = answer.secondary_colors.includes(input.value);
+      input.disabled = input.value === answer.primary_color || answer.primary_color === "not_visible";
+    });
+    els.previous.disabled = index === 0;
+    els.next.disabled = index === samples.length - 1;
+    els["sample-error"].textContent = "";
+    const completed = samples.filter(sampleItem => isComplete(answers[sampleItem.sample_id] || {})).length;
+    els.progress.value = completed;
+    els.progress.max = samples.length;
+    els["progress-text"].textContent = `${completed} de ${samples.length} concluídas`;
+    renderNav();
+  }
+  function capture() {
+    const answer = current();
+    answer.target_clarity = els.clarity.querySelector("input:checked")?.value || "";
+    answer.category = els.category.value;
+    answer.structure = els.structure.value;
+    answer.primary_color = els["primary-color"].value;
+    answer.secondary_colors = Array.from(els["secondary-colors"].querySelectorAll("input:checked"))
+      .map(input => input.value).filter(value => value !== answer.primary_color).slice(0, 2);
+    answer.notes = els.notes.value.trim();
+    answer.reviewed_at = new Date().toISOString();
+    if (answer.target_clarity === "ambiguous_target") {
+      answer.category = "not_visible";
+      answer.structure = "target_not_determinable";
+      answer.primary_color = "not_visible";
+      answer.secondary_colors = [];
+    }
+    save();
+    return answer;
+  }
+  function validateCurrent() {
+    const answer = capture();
+    if (answer.secondary_colors.includes(answer.primary_color)) {
+      els["sample-error"].textContent = "A cor primária não pode se repetir como secundária.";
+      return false;
+    }
+    if (!isComplete(answer)) {
+      els["sample-error"].textContent = "Complete clareza, categoria, estrutura e cor primária antes de avançar.";
+      return false;
+    }
+    els["sample-error"].textContent = "";
+    return true;
+  }
+  function download(name, type, content) {
+    const blob = new Blob([content], { type });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+  function csvEscape(value) {
+    const text = Array.isArray(value) ? value.join("|") : String(value ?? "");
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+  function exportAnswers() {
+    capture();
+    if (!reviewer) { alert("Informe o nome do revisor."); els.reviewer.focus(); return; }
+    const missing = samples.filter(sample => !isComplete(answers[sample.sample_id] || {})).map(sample => sample.sample_id);
+    if (missing.length) { alert(`Ainda faltam: ${missing.join(", ")}`); return; }
+    const rows = samples.map(sample => ({ sample_id: sample.sample_id, ...answers[sample.sample_id] }));
+    const exportedAt = new Date().toISOString();
+    const payload = { rubric_version: rubricVersion, reviewer, exported_at: exportedAt, answers: rows };
+    const safeName = reviewer.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "revisor";
+    download(`rotulos-${safeName}.json`, "application/json", JSON.stringify(payload, null, 2) + "\n");
+    const fields = ["rubric_version", "reviewer", "sample_id", "target_clarity", "category", "structure", "primary_color", "secondary_colors", "notes", "reviewed_at"];
+    const lines = [fields.map(csvEscape).join(",")];
+    rows.forEach(row => lines.push(fields.map(field => csvEscape(field === "rubric_version" ? rubricVersion : field === "reviewer" ? reviewer : row[field])).join(",")));
+    download(`rotulos-${safeName}.csv`, "text/csv", lines.join("\n") + "\n");
+  }
+
+  els.reviewer.addEventListener("change", event => loadReviewer(event.target.value));
+  els.form.addEventListener("change", () => { capture(); render(); });
+  els.notes.addEventListener("input", () => { capture(); });
+  els.previous.addEventListener("click", () => { capture(); if (index > 0) index -= 1; render(); });
+  els.next.addEventListener("click", () => { capture(); if (index < samples.length - 1) index += 1; render(); });
+  els["mark-next"].addEventListener("click", () => { if (validateCurrent() && index < samples.length - 1) { index += 1; render(); } });
+  els.export.addEventListener("click", exportAnswers);
+  document.addEventListener("keydown", event => {
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
+    if (event.key === "ArrowLeft" && index > 0) { capture(); index -= 1; render(); }
+    if (event.key === "ArrowRight" && index < samples.length - 1) { capture(); index += 1; render(); }
+  });
+  loadReviewer(reviewer);
+})();
+</script>
+</body>
+</html>

@@ -55,6 +55,8 @@ jobs:
         run: python3 coletor/teste_workflows.py
       - name: Contrato do avaliador Luna (sem rede)
         run: python3 coletor/teste_avaliar_luna.py
+      - name: Pacote cego de revisao Luna (sem rede)
+        run: python3 coletor/teste_preparar_revisao_luna.py
       - name: Modulos compilam
         run: python3 -m py_compile coletor/*.py
       # `py_compile` acima confere SINTAXE. Nome usado e nunca definido passa
