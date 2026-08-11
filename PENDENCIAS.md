@@ -63,7 +63,7 @@ coleção.
 | A12 | Câmera e fototeca, sem retenção em disco | ✅ Feito — três entradas terminam no mesmo `LeitorDeArquivo` |
 | A13 | Foto do similar por hotlink, com bloco visual como fallback | ✅ Feito |
 | A14 | Gráfico do histórico dos atributos da peça | ✅ Feito — `serie_do_cluster()` e cobertura por ponto |
-| A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Aprovado; checkpoint e secret validados sem inferência; smoke test estratificado de 24 imagens em preparação; benchmark humano e integração pendentes |
+| A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Secret e contrato validados; smoke Luna: 24/24 respostas válidas e 19/24 (79,2%) de concordância com rótulo fraco; revisão humana, benchmark e integração pendentes |
 | A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
 
 ---
@@ -275,6 +275,30 @@ reestruturação das abas · câmera e fototeca
 | **Nada roda do Mac pessoal (M5)** | Sondas do Trends e testes de FFW/BoF de 05/08 rodaram de lá. Não se repete |
 
 ---
+
+## 10/08 — primeiro smoke test do Luna (A15)
+
+Execução: [GitHub Actions #31452732941](https://github.com/JogzDev/canario/actions/runs/31452732941).
+Foram três imagens de cada uma das oito categorias, amostradas com semente fixa
+do cache do i7. O modelo não recebeu título, nome de arquivo nem rótulo.
+
+| medida | resultado |
+|---|---:|
+| Respostas que completaram e obedeceram ao JSON Schema | **24/24** |
+| Concordância de categoria com o rótulo fraco do catálogo | **19/24 (79,2%)** |
+| Custo estimado pelos tokens reportados | **US$ 0,010906** |
+| Duração total | **82,8s** |
+| Latência por imagem | **3,3s mediana; 4,4s p95** |
+
+Por categoria: vestido, blusa/top, calça, casaco/jaqueta e macacão 3/3; saia
+2/3; camisa 1/3; short 1/3. Das cinco divergências, quatro viraram
+`blusa_top` e uma virou `saia`.
+
+**Isto valida a rota técnica, não abre o portão de 80%.** As pastas foram
+rotuladas pelo matcher dos títulos de e-commerce. O próximo passo é revisar as
+cinco divergências nas imagens e montar verdade humana de categoria **e cor**;
+só depois vale gastar o benchmark de 300. A estimativa anterior de menos de
+US$ 0,01 para as 24 foi corrigida pelo número real acima.
 
 ## 07/08 — visão da peça: o que foi medido e por que eu parei
 
