@@ -103,6 +103,9 @@ def testar_template_tem_contrato_de_exportacao():
         "secondary_colors", "structure", "localStorage", "Exportar gabarito cego",
         "predicoes-recuperadas.csv", "categoryByStructure",
         "answer.category = categoryByStructure[answer.structure]",
+        "Estrutura visual observada — escolha primeiro",
+        "Categoria humana — calculada automaticamente",
+        "Preenchida automaticamente pela estrutura escolhida",
     ]
     for trecho in exigencias:
         assert trecho in html, trecho

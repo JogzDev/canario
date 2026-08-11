@@ -45,6 +45,11 @@
       width: 100%; padding: 10px 12px; border: 1px solid var(--line);
       border-radius: 10px; background: var(--surface); color: var(--text);
     }
+    .derived-value {
+      min-height: 46px; display: flex; align-items: center; padding: 10px 12px;
+      border: 1px solid var(--line); border-radius: 10px; background: var(--soft);
+      color: var(--text); font-weight: 700;
+    }
     button {
       border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;
       background: var(--surface); color: var(--text); cursor: pointer;
@@ -122,13 +127,14 @@
           <div id="clarity" class="choice-grid"></div>
         </fieldset>
 
-        <label class="field-label">Categoria humana — derivada da estrutura
-          <select id="category" disabled></select>
-        </label>
-
-        <label class="field-label">Estrutura visual observada
+        <label class="field-label">Estrutura visual observada — escolha primeiro
           <select id="structure"></select>
         </label>
+
+        <div class="field-label">Categoria humana — calculada automaticamente
+          <output id="category" class="derived-value" aria-live="polite">Escolha a estrutura acima</output>
+          <span class="hint">Preenchida automaticamente pela estrutura escolhida; não requer outro clique.</span>
+        </div>
 
         <label class="field-label">Cor primária
           <select id="primary-color"></select>
@@ -249,7 +255,6 @@
     return options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
   }
   function renderControls() {
-    if (!els.category.options.length) els.category.innerHTML = optionMarkup(categories);
     if (!els.structure.options.length) els.structure.innerHTML = optionMarkup(structures);
     if (!els["primary-color"].options.length) els["primary-color"].innerHTML = optionMarkup(colors);
     if (!els.clarity.children.length) {
@@ -282,8 +287,8 @@
     els.image.src = sample.image;
     els.image.alt = `Peça ${sample.sample_id} para revisão cega`;
     els["image-link"].href = sample.image;
-    els.category.value = answer.category;
     els.structure.value = answer.structure;
+    els.category.textContent = categories.find(([value]) => value === answer.category)?.[1] || "Escolha a estrutura acima";
     els["primary-color"].value = answer.primary_color;
     els.notes.value = answer.notes;
     els.clarity.querySelectorAll("input").forEach(input => { input.checked = input.value === answer.target_clarity; });
