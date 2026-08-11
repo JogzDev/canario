@@ -63,7 +63,7 @@ coleção.
 | A12 | Câmera e fototeca, sem retenção em disco | ✅ Feito — três entradas terminam no mesmo `LeitorDeArquivo` |
 | A13 | Foto do similar por hotlink, com bloco visual como fallback | ✅ Feito |
 | A14 | Gráfico do histórico dos atributos da peça | ✅ Feito — `serie_do_cluster()` e cobertura por ponto |
-| A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Aprovado; checkpoint criado; validação do secret em andamento; benchmark e integração pendentes |
+| A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Aprovado; checkpoint e secret validados sem inferência; smoke test estratificado de 24 imagens em preparação; benchmark humano e integração pendentes |
 | A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
 
 ---
