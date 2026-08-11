@@ -50,3 +50,14 @@ jobs:
             echo '## Luna — avaliacao nao concluida' >> "$GITHUB_STEP_SUMMARY"
             echo 'Consulte o log do passo anterior.' >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Guardar respostas completas para auditoria
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: luna-respostas-${{ inputs.quantidade }}-run-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/avaliacao-luna.jsonl
+            ${{ runner.temp }}/avaliacao-luna.md
+          if-no-files-found: warn
+          retention-days: 3

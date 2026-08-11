@@ -224,21 +224,27 @@ baixo (`viscose_fluido`: 0,9% de semanas em zero no semanal, 73,5% no diário).
 
 ### 1.10 API da OpenAI — preços levantados
 
+> **CORREÇÃO em 11/08:** a tabela original abaixo estava errada. Preço oficial
+> atual: Sol US$5/US$30, Terra US$2,50/US$15 e Luna US$1/US$6 por milhão de
+> tokens de entrada/saída. O primeiro smoke de 24 custou cerca de US$0,054530,
+> e não US$0,010906. Use `ferramentas/avaliar_luna.py` como cálculo vigente.
+
 | modelo | entrada /1M | saída /1M |
 |---|---|---|
 | Sol | $5,00 | $30,00 |
-| Terra | $2,00 | $12,00 |
-| **Luna** | **$0,20** | $1,20 |
+| Terra | $2,50 | $15,00 |
+| **Luna** | **$1,00** | $6,00 |
 
 Estimando ~1.000 tokens por imagem + ~10 de saída:
 
 | | por foto | 300 imagens | as 68.525 do painel |
 |---|---|---|---|
-| Luna | ~$0,0002 | **~$0,06** | **~$14** |
-| Terra | ~$0,002 | ~$0,60 | ~$140 |
+| Luna | ~$0,0011 | **~$0,32** | **~$73** |
+| Terra | ~$0,0027 | ~$0,80 | ~$182 |
 
 **Recomendação:** começar na **Luna**. Distinguir vestido de calça é tarefa fácil,
-e dá para descobrir se ela basta por seis centavos.
+e ainda dá para descobrir se ela basta com custo baixo; medido no smoke real,
+24 imagens custaram cerca de cinco centavos.
 
 **Duas rotas, e a diferença não é preço:**
 

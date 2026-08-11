@@ -44,7 +44,7 @@ coleção.
 
 ---
 
-## Decisões das instruções do JP (A1–A16)
+## Decisões das instruções do JP (A1–A17)
 
 | id | O que exige | Estado |
 |---|---|---|
@@ -63,8 +63,9 @@ coleção.
 | A12 | Câmera e fototeca, sem retenção em disco | ✅ Feito — três entradas terminam no mesmo `LeitorDeArquivo` |
 | A13 | Foto do similar por hotlink, com bloco visual como fallback | ✅ Feito |
 | A14 | Gráfico do histórico dos atributos da peça | ✅ Feito — `serie_do_cluster()` e cobertura por ponto |
-| A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Secret e contrato validados; smoke Luna: 24/24 respostas válidas e 19/24 (79,2%) de concordância com rótulo fraco; revisão humana, benchmark e integração pendentes |
+| A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Secret e contrato validados; smoke Luna: 24/24 respostas válidas. Os 19/24 eram concordância com rótulo fraco, não acurácia; revisão cega e prompt estrutural A17 prontos, nova rodada e integração pendentes |
 | A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
+| A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Ferramenta cega para 2 revisores, categoria derivada da estrutura, portão 20/24 em categoria **e** cor e exclusão das 24 no holdout implementados; faltam dois gabaritos independentes e a repetição paga |
 
 ---
 
@@ -286,7 +287,8 @@ do cache do i7. O modelo não recebeu título, nome de arquivo nem rótulo.
 |---|---:|
 | Respostas que completaram e obedeceram ao JSON Schema | **24/24** |
 | Concordância de categoria com o rótulo fraco do catálogo | **19/24 (79,2%)** |
-| Custo estimado pelos tokens reportados | **US$ 0,010906** |
+| Custo exibido na execução (fórmula de preço errada) | US$ 0,010906 |
+| Custo corrigido com os mesmos tokens e preço oficial de 11/08 | **US$ 0,054530** |
 | Duração total | **82,8s** |
 | Latência por imagem | **3,3s mediana; 4,4s p95** |
 
@@ -297,8 +299,40 @@ Por categoria: vestido, blusa/top, calça, casaco/jaqueta e macacão 3/3; saia
 **Isto valida a rota técnica, não abre o portão de 80%.** As pastas foram
 rotuladas pelo matcher dos títulos de e-commerce. O próximo passo é revisar as
 cinco divergências nas imagens e montar verdade humana de categoria **e cor**;
-só depois vale gastar o benchmark de 300. A estimativa anterior de menos de
-US$ 0,01 para as 24 foi corrigida pelo número real acima.
+só depois vale gastar o benchmark de 300. A execução inicialmente exibiu
+US$ 0,010906, mas a fórmula usava preço 5× menor que o oficial atual; com os
+mesmos tokens, o valor correto é US$ 0,054530.
+
+## 11/08 — auditoria das 24 e protocolo de calibração (A17)
+
+As 24 imagens e as categorias impressas no log foram recuperadas em um artefato
+privado sem nova inferência. Auditoria visual das cinco divergências:
+
+| amostra | catálogo | Luna | leitura pelos pixels |
+|---|---|---|---|
+| S10 | saia | blusa/top | look com top e saia igualmente plausíveis; alvo de venda não é inferível |
+| S14 | camisa | blusa/top | conjunto de camisa e short; alvo ambíguo, mas a construção de camisa está visível |
+| S17 | short | saia | exterior visível parece saia; entrepernas/duas aberturas não aparecem |
+| S20 | camisa | blusa/top | camisa isolada com colarinho e abertura frontal: erro real de fronteira |
+| S21 | short | blusa/top | look com top e short; pixels não dizem qual item está à venda |
+
+Logo, **19/24 não mede a acurácia do modelo**: mistura erro do Luna, rótulo fraco
+do catálogo e imagens cujo alvo não pode ser deduzido. Separar `blusa_top` em
+duas classes não resolve nenhuma das cinco e cria uma fronteira nova sem série
+de mercado própria.
+
+O prompt `alvo-estrutura-v2` primeiro decide se existe um alvo visual, depois
+escolhe uma estrutura observável. A categoria é derivada por código: painel
+inferior contínuo → saia; duas pernas curtas → short; construção de camisaria →
+camisa; superior residual → blusa/top. Alvo ambíguo obriga `not_visible`. Duas
+revisões humanas cegas precisam ser comparadas e as divergências adjudicadas.
+
+As mesmas 24 viram **calibração**, não benchmark. Nessa amostra, o primeiro
+valor inteiro acima de 80% é 20/24 = 83,3%; categoria e cor primária precisam
+atingi-lo separadamente. Só então o avaliador aceita 300 imagens. As 300 formam
+um holdout determinístico que exclui todas as 24, impedindo vazamento. As
+respostas completas das próximas rodadas ficam em artefato privado por três
+dias, para não ser necessário pagar outra inferência só para auditá-las.
 
 ## 07/08 — visão da peça: o que foi medido e por que eu parei
 

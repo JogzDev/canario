@@ -87,9 +87,10 @@ def testar_parser_e_pacote_cego():
 def testar_template_tem_contrato_de_exportacao():
     html = (RAIZ / "ferramentas" / "revisao_luna.html").read_text(encoding="utf-8")
     exigencias = [
-        "categoria-cor-v1", "target_clarity", "primary_color",
+        "categoria-cor-v2", "target_clarity", "primary_color",
         "secondary_colors", "structure", "localStorage", "Exportar gabarito cego",
-        "predicoes-recuperadas.csv",
+        "predicoes-recuperadas.csv", "categoryByStructure",
+        "answer.category = categoryByStructure[answer.structure]",
     ]
     for trecho in exigencias:
         assert trecho in html, trecho

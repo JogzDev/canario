@@ -122,8 +122,8 @@
           <div id="clarity" class="choice-grid"></div>
         </fieldset>
 
-        <label class="field-label">Categoria humana
-          <select id="category"></select>
+        <label class="field-label">Categoria humana — derivada da estrutura
+          <select id="category" disabled></select>
         </label>
 
         <label class="field-label">Estrutura visual observada
@@ -162,7 +162,7 @@
 (() => {
   "use strict";
   const samples = __CANARIO_SAMPLES_JSON__;
-  const rubricVersion = "categoria-cor-v1";
+  const rubricVersion = "categoria-cor-v2";
   const categories = [
     ["", "Selecione…"], ["vestido", "Vestido"], ["saia", "Saia"],
     ["blusa_top", "Blusa / top"], ["camisa", "Camisa"], ["calca", "Calça"],
@@ -188,6 +188,17 @@
     ["upper_other", "Outra peça superior"],
     ["target_not_determinable", "Alvo não determinável"]
   ];
+  const categoryByStructure = {
+    one_piece_no_separate_legs: "vestido",
+    one_piece_with_separate_legs: "macacao",
+    lower_continuous_panel: "saia",
+    lower_two_legs_short: "short",
+    lower_two_legs_long: "calca",
+    upper_shirt_construction: "camisa",
+    upper_outer_layer: "casaco_jaqueta",
+    upper_other: "blusa_top",
+    target_not_determinable: "not_visible"
+  };
   const clarityOptions = [
     ["clear", "Uma peça-alvo clara"],
     ["partially_occluded", "Alvo claro, mas cortado/coberto"],
@@ -229,7 +240,8 @@
     if (answer.target_clarity === "ambiguous_target") {
       return answer.category === "not_visible" && answer.structure === "target_not_determinable" && answer.primary_color === "not_visible";
     }
-    return Boolean(answer.category && answer.category !== "not_visible" &&
+    return Boolean(answer.category === categoryByStructure[answer.structure] &&
+      answer.category !== "not_visible" &&
       answer.structure && answer.structure !== "target_not_determinable" &&
       answer.primary_color && answer.primary_color !== "not_visible");
   }
@@ -291,8 +303,8 @@
   function capture() {
     const answer = current();
     answer.target_clarity = els.clarity.querySelector("input:checked")?.value || "";
-    answer.category = els.category.value;
     answer.structure = els.structure.value;
+    answer.category = categoryByStructure[answer.structure] || "";
     answer.primary_color = els["primary-color"].value;
     answer.secondary_colors = Array.from(els["secondary-colors"].querySelectorAll("input:checked"))
       .map(input => input.value).filter(value => value !== answer.primary_color).slice(0, 2);

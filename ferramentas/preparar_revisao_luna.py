@@ -28,7 +28,7 @@ PADRAO_LOG = re.compile(
     r"(?P<estado>OK|DIVERGIU).*\|\s+(?P<imagem>[^\s|]+\.(?:jpg|jpeg|png|webp|heic))",
     re.IGNORECASE,
 )
-VERSAO_RUBRICA = "categoria-cor-v1"
+VERSAO_RUBRICA = "categoria-cor-v2"
 
 
 def ler_predicoes(pasta_logs):
@@ -86,22 +86,25 @@ do Luna ficam escondidos para não ancorar o julgamento.
 - `partially_occluded`: a peça-alvo é identificável, mas parte relevante está
   cortada ou coberta.
 - `multiple_garments_target_clear`: existem várias peças, mas uma é claramente
-  o alvo visual.
+  o alvo visual por enquadramento, escala, centralidade e nível de detalhe.
 - `ambiguous_target`: pixels insuficientes para determinar qual peça é o alvo.
 
 Em `ambiguous_target`, use categoria, estrutura e cor primária `not_visible`.
 Não escolha a peça que parece combinar melhor com o rótulo que você imagina.
 
-## Categoria pela estrutura visível
+## Estrutura visível; categoria derivada automaticamente
+
+O revisor escolhe a estrutura e a ferramenta deriva a categoria pelo mapa
+abaixo. Não existem duas decisões semânticas capazes de se contradizer.
 
 | id | decisão operacional |
 |---|---|
 | `vestido` | peça única cobrindo tronco e parte inferior, sem pernas separadas |
 | `macacao` | peça única cobrindo tronco e parte inferior, com pernas separadas |
 | `saia` | peça inferior com painel contínuo, sem entrepernas visível |
-| `short` | peça inferior com entrepernas/duas aberturas, até aprox. o joelho |
+| `short` | peça inferior até aprox. o joelho com evidência de duas pernas: entrepernas, costura central, separação ou duas aberturas |
 | `calca` | peça inferior com duas pernas, prolongando-se abaixo do joelho |
-| `camisa` | construção de camisaria: abertura frontal longa e estrutura de camisa; colarinho/punhos são evidência forte |
+| `camisa` | construção de camisaria: colarinho com abertura/placket frontal substancial e/ou punhos; camisa amarrada continua camisa |
 | `casaco_jaqueta` | camada externa concebida para ser usada sobre outra peça |
 | `blusa_top` | peça superior restante: camiseta, regata, cropped, top, body ou blusa; somente após excluir camisa e camada externa |
 
