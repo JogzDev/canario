@@ -9,7 +9,7 @@ dívida que mais apareceu, e sempre no meio de outra conversa.
 decisão nova nasce com uma linha aqui. Atualizado a cada commit que mexe no
 estado de algum item.
 
-Última varredura: **31/07/2026** (atualizado ao fim de cada etapa).
+Última varredura: **10/08/2026** (atualizado ao fim de cada etapa).
 
 **Lição de 31/07, que mudou como este arquivo é lido:** K1 e K4 estavam marcados
 como ✅ porque `computar_eventos()` existia e estava correta. Só que **nada a
@@ -44,7 +44,7 @@ coleção.
 
 ---
 
-## Decisões das instruções do JP (A1–A9)
+## Decisões das instruções do JP (A1–A16)
 
 | id | O que exige | Estado |
 |---|---|---|
@@ -55,9 +55,16 @@ coleção.
 | A7 | Visão e referências internas fora da v1 | ✅ Feito (entrada por arquivo voltou em 30/07) |
 | §28 | Entrada por arquivo (print, foto, PDF) com OCR, sem câmera | ✅ Feito — `LeitorDeArquivo.swift` |
 | §28 | Formulário de confirmação de atributos (humano no circuito) | ✅ Feito — `ImportarPeca.swift` |
-| §28 | Retenção zero: arquivo processado e descartado | ✅ Feito — lido em memória, nada em disco |
+| §28 | Retenção zero: arquivo processado e descartado | ⚪ Revogado por A15; o estado atual ainda é local até a integração da API |
 | A8 | Vocabulário interno nunca vira produto | ✅ Feito — `teste_vocabulario.py` |
 | A9 | Roadmap v1.1 | ⚪ Registrado, sem código |
+| A10 | Abas orientadas ao objeto; Comparar dobra para dentro do Armário | 🟡 Nomes/Armário feitos; dobra da comparação ainda não |
+| A11 | Nome da aba volta a ser Armário | ✅ Feito |
+| A12 | Câmera e fototeca, sem retenção em disco | ✅ Feito — três entradas terminam no mesmo `LeitorDeArquivo` |
+| A13 | Foto do similar por hotlink, com bloco visual como fallback | ✅ Feito |
+| A14 | Gráfico do histórico dos atributos da peça | ✅ Feito — `serie_do_cluster()` e cobertura por ponto |
+| A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Aprovado; checkpoint criado; validação do secret em andamento; benchmark e integração pendentes |
+| A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
 
 ---
 
