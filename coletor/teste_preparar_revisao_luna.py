@@ -4,6 +4,8 @@ import csv
 import importlib.util
 import json
 from pathlib import Path
+import re
+import subprocess
 import sys
 import tempfile
 
@@ -73,6 +75,16 @@ def testar_parser_e_pacote_cego():
         assert "categoria_luna" not in html
         for item in recuperadas:
             assert item["imagem_original"] not in html
+        scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.DOTALL)
+        assert len(scripts) == 1
+        javascript = raiz / "revisao-gerada.js"
+        javascript.write_text(scripts[0], encoding="utf-8")
+        sintaxe = subprocess.run(
+            ["node", "--check", str(javascript)],
+            capture_output=True,
+            text=True,
+        )
+        assert sintaxe.returncode == 0, sintaxe.stderr
         manifesto = json.loads((saida / "amostra-cega.json").read_text())
         assert manifesto["rubric_version"] == MODULO.VERSAO_RUBRICA
         assert manifesto["quantity"] == 24
