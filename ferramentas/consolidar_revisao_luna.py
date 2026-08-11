@@ -18,6 +18,12 @@ CAMPOS_HUMANOS = (
     "primary_color",
     "secondary_colors",
 )
+CAMPOS_DO_PORTAO = (
+    "target_clarity",
+    "category",
+    "structure",
+    "primary_color",
+)
 
 
 def carregar_revisao(caminho):
@@ -86,6 +92,65 @@ def comparar_revisoes(revisoes):
         "sample_size": len(ids),
         "agreements": acordos,
         "disagreements": divergencias,
+    }
+
+
+def ids_para_adjudicar(comparacao):
+    """Só o que pode mudar categoria/cor do portão; secundárias ficam fora."""
+    return {
+        item["sample_id"]
+        for item in comparacao["disagreements"]
+        if any(campo in CAMPOS_DO_PORTAO for campo in item["fields"])
+    }
+
+
+def adjudicar_revisoes(revisoes, adjudicacao):
+    """Fecha o ouro: consenso dos dois revisores + voto cego do adjudicador."""
+    comparacao = comparar_revisoes(revisoes)
+    ids_divergentes = ids_para_adjudicar(comparacao)
+    ids_adjudicados = set(adjudicacao["answers"])
+    if ids_adjudicados != ids_divergentes:
+        faltam = sorted(ids_divergentes - ids_adjudicados)
+        sobram = sorted(ids_adjudicados - ids_divergentes)
+        raise ValueError(
+            "Adjudicacao deve cobrir apenas divergencias: faltam={}, sobram={}".format(
+                faltam, sobram))
+    if adjudicacao["rubric_version"] != comparacao["rubric_version"]:
+        raise ValueError("Adjudicacao usou outra versao da rubrica.")
+
+    respostas = []
+    nao_adjudicados = []
+    for sample_id in sorted(revisoes[0]["answers"]):
+        final = dict(revisoes[0]["answers"][sample_id])
+        final["sample_id"] = sample_id
+        for campo in CAMPOS_HUMANOS:
+            valores = [
+                _comparavel(campo, revisao["answers"][sample_id][campo])
+                for revisao in revisoes
+            ]
+            if len(set(valores)) == 1:
+                final[campo] = revisoes[0]["answers"][sample_id][campo]
+            elif campo in CAMPOS_DO_PORTAO or sample_id in ids_adjudicados:
+                final[campo] = adjudicacao["answers"][sample_id][campo]
+            else:
+                # Cor secundaria nao participa do portao A17. Nao obrigamos o
+                # adjudicador a rever uma imagem apenas por ela, e nao fingimos
+                # consenso: o ouro registra explicitamente o campo descartado.
+                final[campo] = []
+                nao_adjudicados.append({
+                    "sample_id": sample_id,
+                    "field": campo,
+                    "reason": "fora do portao A17",
+                })
+        final["notes"] = (adjudicacao["answers"].get(sample_id, {}).get("notes")
+                          or final.get("notes") or "")
+        respostas.append(final)
+    return {
+        "reviewer": "ADJUDICADO: {}".format(adjudicacao["reviewer"]),
+        "rubric_version": comparacao["rubric_version"],
+        "source_reviewers": comparacao["reviewers"],
+        "unresolved_non_gate_fields": nao_adjudicados,
+        "answers": respostas,
     }
 
 
@@ -198,12 +263,26 @@ def relatorio_markdown(comparacao=None, avaliacao=None):
         for campo, acertos in comparacao["agreements"].items():
             linhas.append("| {} | {}/{} ({:.1%}) |".format(
                 campo, acertos, total, acertos / total))
-        linhas += ["", "### Itens para adjudicar", ""]
-        if not comparacao["disagreements"]:
+        linhas += ["", "### Itens para adjudicar no portão", ""]
+        ids_portao = ids_para_adjudicar(comparacao)
+        if not ids_portao:
             linhas.append("Nenhuma divergencia.")
         for item in comparacao["disagreements"]:
-            linhas.append("- **{}**: {}".format(
-                item["sample_id"], ", ".join(item["fields"])))
+            campos = [campo for campo in item["fields"]
+                      if campo in CAMPOS_DO_PORTAO]
+            if campos:
+                linhas.append("- **{}**: {}".format(
+                    item["sample_id"], ", ".join(campos)))
+        somente_secundarias = [
+            item["sample_id"] for item in comparacao["disagreements"]
+            if item["sample_id"] not in ids_portao
+        ]
+        if somente_secundarias:
+            linhas += [
+                "",
+                "Divergencias apenas em cores secundarias, fora do portao A17: {}.".format(
+                    ", ".join(somente_secundarias)),
+            ]
         linhas.append("")
 
     if avaliacao:
@@ -242,6 +321,8 @@ def argumentos():
     parser.add_argument("--revisoes", nargs="*", type=Path, default=[])
     parser.add_argument("--gabarito", type=Path)
     parser.add_argument("--resultados", type=Path)
+    parser.add_argument("--adjudicacao", type=Path)
+    parser.add_argument("--gabarito-saida", type=Path)
     parser.add_argument("--relatorio", type=Path, required=True)
     parser.add_argument("--portao", type=Path)
     return parser.parse_args()
@@ -252,9 +333,19 @@ def main():
     comparacao = None
     avaliacao = None
     if args.revisoes:
-        comparacao = comparar_revisoes([
-            carregar_revisao(caminho) for caminho in args.revisoes
-        ])
+        revisoes = [carregar_revisao(caminho) for caminho in args.revisoes]
+        comparacao = comparar_revisoes(revisoes)
+        if bool(args.adjudicacao) != bool(args.gabarito_saida):
+            raise SystemExit(
+                "--adjudicacao e --gabarito-saida devem ser usados juntos")
+        if args.adjudicacao:
+            gabarito = adjudicar_revisoes(
+                revisoes, carregar_revisao(args.adjudicacao))
+            args.gabarito_saida.write_text(
+                json.dumps(gabarito, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
+    elif args.adjudicacao or args.gabarito_saida:
+        raise SystemExit("Adjudicacao exige --revisoes")
     if bool(args.gabarito) != bool(args.resultados):
         raise SystemExit("--gabarito e --resultados devem ser usados juntos")
     if args.gabarito:

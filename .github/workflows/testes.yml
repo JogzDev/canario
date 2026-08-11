@@ -61,6 +61,8 @@ jobs:
         run: python3 coletor/teste_preparar_revisao_luna.py
       - name: Consolidacao humana do Luna (sem rede)
         run: python3 coletor/teste_consolidar_revisao_luna.py
+      - name: Adjudicacao cega do Luna (sem rede)
+        run: python3 coletor/teste_preparar_adjudicacao_luna.py
       - name: Modulos compilam
         run: python3 -m py_compile coletor/*.py
       # `py_compile` acima confere SINTAXE. Nome usado e nunca definido passa

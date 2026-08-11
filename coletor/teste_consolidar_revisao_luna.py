@@ -55,6 +55,33 @@ def testar_comparacao_independente():
         }]
 
 
+def testar_adjudicacao_parcial_fecha_ouro():
+    revisao_a = {
+        "reviewer": "A", "rubric_version": "categoria-cor-v2",
+        "answers": {"S01": resposta("S01"), "S02": resposta("S02")},
+    }
+    revisao_b = {
+        "reviewer": "B", "rubric_version": "categoria-cor-v2",
+        "answers": {
+            "S01": resposta("S01"),
+            "S02": resposta("S02", categoria="blusa_top"),
+        },
+    }
+    revisao_b["answers"]["S02"]["structure"] = "upper_other"
+    voto = resposta("S02", categoria="blusa_top")
+    voto["structure"] = "upper_other"
+    adjudicacao = {
+        "reviewer": "JP", "rubric_version": "categoria-cor-v2",
+        "answers": {"S02": voto},
+    }
+    ouro = MODULO.adjudicar_revisoes(
+        [revisao_a, revisao_b], adjudicacao)
+    assert len(ouro["answers"]) == 2
+    assert ouro["answers"][0]["category"] == "camisa"
+    assert ouro["answers"][1]["category"] == "blusa_top"
+    assert ouro["answers"][1]["structure"] == "upper_other"
+
+
 def montar_avaliacao(acertos_categoria=20, acertos_cor=20):
     respostas = {}
     resultados = {}
@@ -115,6 +142,7 @@ def testar_prompt_misto_e_recusado():
 def main():
     testes = [
         testar_comparacao_independente,
+        testar_adjudicacao_parcial_fecha_ouro,
         testar_portao_exige_categoria_e_cor,
         testar_prompt_misto_e_recusado,
     ]
