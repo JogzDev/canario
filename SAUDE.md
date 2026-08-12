@@ -1,10 +1,10 @@
 # SAÚDE — coletores do Canário
 
-**Gerado (UTC):** 2026-08-11T07:43:19.061151+00:00
+**Gerado (UTC):** 2026-08-12T00:21:04.488885+00:00
 
 **Data observada:** 2026-08-11
 
-**Estado:** ATENÇÃO
+**Estado:** sem alerta crítico
 
 
 ## Portão operacional
@@ -17,25 +17,24 @@
 
 
 
-- ⚠️ varejo/C&A caiu 75% contra a media de 7 dias (4011 vs 16217)
-
-- ⚠️ varejo/Farm caiu 70% contra a media de 7 dias (766 vs 2581)
+- Todas as fontes obrigatórias registraram volume sem queda superior a 70%.
 
 
 ## Varejo
 
-- Produtos **visitados**: 32549
+- Produtos **visitados**: 41291
 
-- Snapshots **gravados** (delta, B3): 5409
+- Snapshots **gravados** (delta, B3): 11021
 
 - Marcas coletando: 15 de 15
 
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
+| C&A | vtex | 10661 | 5808 | 12011 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 10661, "paginavel": 12011}, "faixas_truncadas": [{"faixa": "0-1", "existem": 41114, "coletados": 2500}, {"faixa": "0-1", "existem": 11334, "coletados": 2500}, {"faixa": "0-1", "existem": 6884, "coletados": 2500}]} |
 | Hering | vtex | 7781 | 1147 | 7781 | 0.986 | — |
 | Dress To | vtex | 6603 | 2340 | 6603 | 1.0 | — |
-| C&A | vtex | 4011 | 155 | 8354 | 1.0 | {"truncou": "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada", "divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 4011, "paginavel": 8354}, "faixas_truncadas": [{"faixa": "0-1", "existem": 7238, "coletados": 2500}, {"faixa": "0-1", "existem": 7371, "coletados": 2500}]} |
+| Farm | vtex | 2858 | 42 | 2858 | 0.984 | — |
 | Lanca Perfume | vtex | 2538 | 439 | 2539 | 1.0 | — |
 | Zinzane | vtex | 2508 | 292 | 2569 | 1.0 | {"divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 2508, "paginavel": 2569}} |
 | Le Lis Blanc | vtex | 1683 | 271 | 1683 | 1.0 | — |
@@ -44,7 +43,6 @@
 | Morena Rosa | vtex | 1196 | 98 | 1196 | 1.0 | — |
 | Cantao | vtex | 841 | 83 | 841 | 1.0 | — |
 | Bo.Bo | vtex | 781 | 53 | 781 | 1.0 | — |
-| Farm | vtex | 766 | 83 | 2829 | 0.943 | {"divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 766, "paginavel": 2829}} |
 | NV | vtex | 416 | 33 | 903 | 1.0 | {"divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 416, "paginavel": 903}} |
 | Amaro | shopify | 250 | 0 | — | 1.0 | {"erro": "http 500"} |
 | PatBo | shopify | 0 | 0 | — | — | {"erro": "http 429 (persistiu apos backoff longo)"} |
