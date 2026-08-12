@@ -26,6 +26,7 @@ import threading
 import time
 import urllib.parse
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from teste_30s import buscar, robots_permite  # noqa: E402
@@ -58,9 +59,16 @@ LIMITE_GLOBAL = 1.0     # regra 7 emendada: 1 req/s GLOBAL
 BACKOFF_429 = 60        # um unico retry longo (decisao do JP)
 PRECO_TETO = 200000     # teto de preco para o particionamento (R$)
 NIVEL_MAXIMO = 4        # profundidade maxima da arvore de categorias da VTEX
+FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
 
 _trava = threading.Lock()
 _ultima = [0.0]
+
+
+def data_operacional(agora=None):
+    """Data de negocio em Sao Paulo, independente do fuso do runner."""
+    agora = agora or datetime.now(FUSO_OPERACIONAL)
+    return agora.astimezone(FUSO_OPERACIONAL).date()
 
 
 def _ritmo():
@@ -964,7 +972,7 @@ def main():
     print("Marcas a coletar: {}{}".format(
         len(marcas), " (filtro: {})".format(filtro) if filtro else ""), file=sys.stderr)
 
-    hoje = date.today()
+    hoje = data_operacional()
     metricas = []
     cache_deps = _carregar_cache_departamentos()
     conhecidas = sum(1 for k in cache_deps if not k.startswith("_"))

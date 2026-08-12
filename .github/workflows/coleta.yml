@@ -48,14 +48,14 @@ jobs:
           python-version: '3.11'
 
       - name: Pente fino do datacenter
-        if: github.event_name == 'workflow_dispatch'
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: python3 coletor/pente_fino_datacenter.py
 
       - name: Commitar veredito do pente fino
-        if: github.event_name == 'workflow_dispatch'
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' }}
         run: >-
           bash .github/commitar.sh
           "PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv"

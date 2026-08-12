@@ -1,19 +1,9 @@
 """Renderiza o relatório único de saúde e aplica o portão operacional."""
 
 import sys
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
 import supabase_rest
-from coletor_varejo import renderizar_saude
-
-FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
-
-
-def data_operacional(agora=None):
-    """Data de negocio, independente do fuso do runner que aplica o portao."""
-    agora = agora or datetime.now(FUSO_OPERACIONAL)
-    return agora.astimezone(FUSO_OPERACIONAL).date()
+from coletor_varejo import data_operacional, renderizar_saude
 
 
 def main():

@@ -69,6 +69,16 @@ def checar_orquestracao(workflows):
         if "schedule" in gatilhos:
             falhar(arquivo, "workflow individual voltou a ter cron proprio")
 
+    coleta_varejo = workflows.get("coleta.yml", {})
+    passos_varejo = coleta_varejo.get("jobs", {}).get(
+        "coletar", {}).get("steps", [])
+    passos_pente = [p for p in passos_varejo
+                    if "Pente fino" in str(p.get("name", ""))]
+    if (len(passos_pente) != 1 or
+            "inputs.marca == ''" not in str(passos_pente[0].get("if", ""))):
+        falhar("coleta.yml",
+               "coleta direcionada nao deve repetir o pente fino inteiro")
+
     pipeline = workflows.get("pipeline-diario.yml", {})
     gatilhos = pipeline.get("on", pipeline.get(True, {})) or {}
     if "schedule" not in gatilhos:
