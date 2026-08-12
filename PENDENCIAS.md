@@ -9,7 +9,7 @@ dívida que mais apareceu, e sempre no meio de outra conversa.
 decisão nova nasce com uma linha aqui. Atualizado a cada commit que mexe no
 estado de algum item.
 
-Última varredura: **10/08/2026** (atualizado ao fim de cada etapa).
+Última varredura: **11/08/2026** (atualizado ao fim de cada etapa).
 
 **Lição de 31/07, que mudou como este arquivo é lido:** K1 e K4 estavam marcados
 como ✅ porque `computar_eventos()` existia e estava correta. Só que **nada a
@@ -65,7 +65,7 @@ coleção.
 | A14 | Gráfico do histórico dos atributos da peça | ✅ Feito — `serie_do_cluster()` e cobertura por ponto |
 | A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Secret e contrato validados; smoke Luna: 24/24 respostas válidas. Os 19/24 eram concordância com rótulo fraco, não acurácia; revisão cega e prompt estrutural A17 prontos, nova rodada e integração pendentes |
 | A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
-| A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Ferramenta cega para 2 revisores, categoria derivada da estrutura, portão 20/24 em categoria **e** cor e exclusão das 24 no holdout implementados; faltam dois gabaritos independentes e a repetição paga |
+| A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Dois gabaritos independentes completos: acordo 19/24 em categoria e 17/24 em cor primária. Dez itens relevantes ao portão aguardam adjudicação cega; depois faltam a repetição paga e, se ambos derem ≥20/24, o holdout |
 
 ---
 
@@ -73,7 +73,7 @@ coleção.
 
 | Onde | O que exige | Estado |
 |---|---|---|
-| §20 | Alerta quando uma fonte cai mais de 70% vs. média de 7 dias | 🟡 Parcial — as 3 pernas agora gravam `saude` (busca entrou em 01/08); falta o limiar dos 70% |
+| §20 | Alerta quando uma fonte cai mais de 70% vs. média de 7 dias | ✅ Feito — as 3 pernas gravam `saude`; queda para menos de 30% da média dos 7 dias anteriores bloqueia e tem regressão em `teste_saude.py` |
 | §22 | Índice do cluster (conjunto de atributos de uma peça) | ✅ Feito — migração 0010, com dispersão e recusa de direção quando os atributos discordam |
 | §24 | Curva de tamanhos | ✅ Feito — migração 0008, no motor, com tela própria. **Marco de demo 1 fechado** |
 | §29 | Bloco de similares com preço, remarcação e estado da grade | ✅ Feito — migração 0009, `similares_da_peca()`, com o parágrafo-resumo da §29.1 e o percentil de preço da §29.5 |
@@ -173,7 +173,7 @@ errado **na tela, agora**.
 | # | O que | Evidência |
 |---|---|---|
 | V9 | **A coleta de 01/08 falhou no mesmo conflito de git que o commit da noite corrigiu** | `Pulling is not possible because you have unmerged files`. A correção do `commitar.sh` entrou às 19:52Z, depois da falha das 08:04Z — ou seja, **ainda não foi exercitada por nenhum run agendado** |
-| V10 | **4 dias sem coleta nenhuma em julho** | Snapshots existem em 24, 29, 30, 31/07 e 01/08. Faltam 25, 26, 27, 28/07. O alerta da §20 (queda >70% vs média de 7 dias) pegaria isso e continua não implementado |
+| V10 | **4 dias sem coleta nenhuma em julho** | Snapshots existem em 24, 29, 30, 31/07 e 01/08. Faltam 25, 26, 27, 28/07. O alerta da §20 agora pega queda >70%; a lacuna histórica não é reconstruível |
 | V11 | **76,6% dos produtos foram vistos uma vez só** | 51.455 de 67.202 com um único snapshot. A `taxa_quebra` da §24 precisa de 2+ observações. É maturidade, não defeito — mas o marco de demo 1 hoje se apoia em ~23% do catálogo |
 
 ### 🔵 Rastreabilidade e limpeza
@@ -333,6 +333,36 @@ atingi-lo separadamente. Só então o avaliador aceita 300 imagens. As 300 forma
 um holdout determinístico que exclui todas as 24, impedindo vazamento. As
 respostas completas das próximas rodadas ficam em artefato privado por três
 dias, para não ser necessário pagar outra inferência só para auditá-las.
+
+Os dois gabaritos chegaram completos em 11/08. Acordo entre Fadul e Bianca:
+19/24 em alvo, categoria e estrutura; 17/24 em cor primária; 14/24 em cores
+secundárias. O portão depende de dez amostras (`S02`, `S05`, `S07`, `S10`,
+`S14`, `S16`, `S19`, `S20`, `S21`, `S23`); divergências somente em cores
+secundárias ficam fora. Foi gerado um pacote de adjudicação cego apenas com
+essas dez, sem rótulo de catálogo ou do Luna. Nenhuma chamada à OpenAI foi feita.
+
+## 11/08 — vermelho do pipeline e paginação VTEX
+
+O pipeline #10 bloqueou corretamente: C&A caiu de média 16.217 para 4.011
+itens visitados (75%) e Farm de 2.581 para 766 (70%). O limiar da §20 já
+existia; o placar que dizia o contrário estava desatualizado.
+
+A causa estava na paginação VTEX por preço: muitos produtos empatados podiam
+mudar de posição entre páginas, repetir ids e encerrar com cobertura parcial sem
+erro HTTP. A ordem agora é estável por nome, ids são deduplicados e cobertura
+abaixo de 98% abre uma passada complementar na ordem inversa. O portão de 70%
+foi preservado. Regressão local: 150/150 ids únicos mesmo com empate e reparo
+ASC/DESC. Na prova ao vivo, Farm voltou a 2.858 itens visitados.
+
+Uma execução manual logo depois das 21h revelou ainda que `date.today()` usava
+UTC no runner e podia gravar o dia seguinte no Brasil. Coleta e saúde agora
+compartilham uma única data operacional em `America/Sao_Paulo`; coleta manual
+de uma marca também não roda mais o pente fino completo. Testes do commit e duas
+execuções focadas da Farm ficaram verdes. A prova da C&A subiu de 4.011 para
+10.661 de 12.011 itens pagináveis e também ficou verde. Por fim, o portão
+consolidado respondeu "nenhuma fonte obrigatória bloqueada" e o motor publicou
+atomicamente 75.004 produtos, 186.960 ligações e todos os cálculos. Recuperação
+de ponta a ponta concluída.
 
 ## 07/08 — visão da peça: o que foi medido e por que eu parei
 
