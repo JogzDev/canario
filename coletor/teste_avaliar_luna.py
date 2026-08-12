@@ -36,6 +36,12 @@ def testar_taxonomia_e_schema():
     assert "Decorative buttons alone are insufficient" in prompt
     assert "Sleeve length is never evidence for shorts" in prompt
     assert "label only the exterior construction actually visible" in prompt
+    assert "A coordinated matching set is still multiple garments" in prompt
+    assert "visible gap, separate waistband, overlapping hem" in prompt
+    assert "sleeveless collared, button-front, or tie-front dress" in prompt
+    assert "cropped length or deep neckline does not turn a blazer" in prompt
+    assert "surface area on the target garment only" in prompt
+    assert "metallic gold, silver, bronze, or copper" in prompt
 
 
 def testar_amostra_balanceada_e_deterministica():

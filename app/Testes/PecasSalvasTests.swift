@@ -18,6 +18,11 @@ final class PecasSalvasTests: XCTestCase {
             .appendingPathComponent("pecas-\(UUID().uuidString).json")
     }
 
+    private func pastaTemporaria() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("miniaturas-\(UUID().uuidString)", isDirectory: true)
+    }
+
     // MARK: - A linha da §34
 
     func testPecaSalvaNaoGuardaNumeroCalculado() throws {
@@ -152,5 +157,55 @@ final class PecasSalvasTests: XCTestCase {
         await loja.salvar(PecaSalva(apelido: "depois", termoIds: ["saia"]))
         let depois = await loja.todas()
         XCTAssertEqual(depois.count, 1)
+    }
+
+    func testMiniaturaLocalSobreviveReaberturaESomeComAPeca() async throws {
+        let arquivo = arquivoTemporario()
+        let pasta = pastaTemporaria()
+        defer {
+            try? FileManager.default.removeItem(at: arquivo)
+            try? FileManager.default.removeItem(at: pasta)
+        }
+        let jpeg = Data([0xFF, 0xD8, 0xFF, 0xD9])
+        let peca = PecaSalva(apelido: "visual", termoIds: ["vestido"])
+        let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
+        let salvou = await loja.salvar(peca, miniaturaJPEG: jpeg)
+        XCTAssertTrue(salvou)
+
+        let todas = await loja.todas()
+        let salva = try XCTUnwrap(todas.first)
+        let miniaturaSalva = await loja.miniatura(de: salva)
+        XCTAssertEqual(miniaturaSalva, jpeg)
+        XCTAssertNotNil(salva.miniaturaArquivo)
+
+        let reaberta = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
+        let todasReabertas = await reaberta.todas()
+        let recarregada = try XCTUnwrap(todasReabertas.first)
+        let miniaturaReaberta = await reaberta.miniatura(de: recarregada)
+        XCTAssertEqual(miniaturaReaberta, jpeg)
+
+        await reaberta.apagar(recarregada.id)
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: pasta.appendingPathComponent(
+                try XCTUnwrap(recarregada.miniaturaArquivo)).path))
+    }
+
+    func testAtualizarSemNovaImagemPreservaMiniatura() async throws {
+        let arquivo = arquivoTemporario()
+        let pasta = pastaTemporaria()
+        defer {
+            try? FileManager.default.removeItem(at: arquivo)
+            try? FileManager.default.removeItem(at: pasta)
+        }
+        let jpeg = Data([1, 2, 3])
+        let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
+        var peca = PecaSalva(apelido: "antes", termoIds: ["camisa"])
+        await loja.salvar(peca, miniaturaJPEG: jpeg)
+        peca.apelido = "depois"
+        await loja.salvar(peca)
+        let todas = await loja.todas()
+        let salva = try XCTUnwrap(todas.first)
+        let miniatura = await loja.miniatura(de: salva)
+        XCTAssertEqual(miniatura, jpeg)
     }
 }

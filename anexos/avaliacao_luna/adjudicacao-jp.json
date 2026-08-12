@@ -1,0 +1,151 @@
+{
+  "rubric_version": "categoria-cor-v2",
+  "reviewer": "JP + revisão técnica do comentário",
+  "source": "rotulos-jp.csv, respondido em 2026-08-12",
+  "policy": "O comentário descritivo prevalece sobre um clique contraditório; cores pertencem somente à peça-alvo e conjuntos sem alvo único exigem abstenção.",
+  "answers": [
+    {
+      "sample_id": "S02",
+      "target_clarity": "multiple_garments_target_clear",
+      "category": "vestido",
+      "structure": "one_piece_no_separate_legs",
+      "primary_color": "vermelho_rosa",
+      "secondary_colors": [],
+      "notes": "É um vestido rosa longo tomara que caia com mangas e babados da cintura pra baixo. A imagem parece ter sido tirada de um desfile (Não é um macacão)",
+      "adjudication_basis": "O texto diz explicitamente vestido e nega macacão; o desfile contém outras peças, mas a peça central continua sendo o alvo.",
+      "original_selection": {
+        "target_clarity": "clear",
+        "category": "macacao",
+        "structure": "one_piece_with_separate_legs"
+      },
+      "reviewed_at": "2026-08-12T18:56:48.505Z"
+    },
+    {
+      "sample_id": "S05",
+      "target_clarity": "multiple_garments_target_clear",
+      "category": "casaco_jaqueta",
+      "structure": "upper_outer_layer",
+      "primary_color": "preto",
+      "secondary_colors": ["branco_cru"],
+      "notes": "É um blazer \"cropped\"(?) , enfim, mais curtinho, acima do umbigo, preto  com uma linha de bordados brancos que percorre o braço inteiro, do ombro a manga. Tem um decotão. Usando bom senso e percebendo o foco da imagem dá pra entender que a peca é o blazer, mas aparece também algo que se parece com uma calca ou uma bermuda bem longa até a altura do joelho.",
+      "adjudication_basis": "Blazer continua sendo camada externa mesmo cropped e decotado; o bordado branco pertence à peça-alvo.",
+      "original_selection": {
+        "category": "blusa_top",
+        "structure": "upper_other"
+      },
+      "reviewed_at": "2026-08-12T19:04:50.806Z"
+    },
+    {
+      "sample_id": "S07",
+      "target_clarity": "multiple_garments_target_clear",
+      "category": "calca",
+      "structure": "lower_two_legs_long",
+      "primary_color": "vermelho_rosa",
+      "secondary_colors": [],
+      "notes": "Marquei que era a calça rosa e respondi com base nisso mas confesso que foi dificil entender qual era a peca principal (o alvo não é claro de primeira), já que na foto aparece uma mulher usando um  cropped branco e uma calca rosa bem chamativa. defini que era a calca porque se fosse o cropped a imagem não precisaria mostrar a calca por completo. mesma coisa com a cor primaria, se for a da imagem inteira, certamente é o branco/cru, afinal o unico ponto de cor da imagem é a calca mesmo. que seria a cor secundaria no caso.",
+      "adjudication_basis": "O enquadramento completo da calça, junto dos demais sinais de composição, sustenta o alvo. Branco pertence ao cropped e não pode virar cor secundária da calça.",
+      "original_selection": {
+        "secondary_colors": ["branco_cru"]
+      },
+      "reviewed_at": "2026-08-12T19:12:18.885Z"
+    },
+    {
+      "sample_id": "S10",
+      "target_clarity": "clear",
+      "category": "vestido",
+      "structure": "one_piece_no_separate_legs",
+      "primary_color": "branco_cru",
+      "secondary_colors": ["preto"],
+      "notes": "Foto limpa, com fundo branco, carcteristico de site mostrando uma moca vestindo um vestido bicolor curtinho e tomara que caia onde a parte de cima (colo) tem algo que como se fosse um babado que tenta remeter a flores brancas ou pelas de rosas brancas, o tronco é preto liso e a parte \"saia\"é branca lisa também",
+      "adjudication_basis": "Branco ocupa duas áreas substanciais da peça e preto ocupa o torso; ambos pertencem ao vestido.",
+      "original_selection": {},
+      "reviewed_at": "2026-08-12T19:24:29.022Z"
+    },
+    {
+      "sample_id": "S14",
+      "target_clarity": "ambiguous_target",
+      "category": "not_visible",
+      "structure": "target_not_determinable",
+      "primary_color": "not_visible",
+      "secondary_colors": [],
+      "notes": "Marquei peca unica com pernas separadas porque em algum momento achei que era um macacao, mas da pra perceber uma certa divisao entre a parte de cima e a de baixo, o que me fez suspeitar que talvez fosse um conjuntinho que ta sendo vendido todo junto.  A cor secundaria eu marquei como verde por ser a cor de fundo da foto. mas a peca em si é um conjuntinho de blusa de botoes e bermuda de renda branca tipo bordada a mao",
+      "adjudication_basis": "A separação visível indica conjunto de duas peças e não existe uma categoria de conjunto nem um alvo dominante. O correto é abster; verde é fundo.",
+      "original_selection": {
+        "target_clarity": "multiple_garments_target_clear",
+        "category": "macacao",
+        "structure": "one_piece_with_separate_legs",
+        "primary_color": "branco_cru",
+        "secondary_colors": ["verde"]
+      },
+      "reviewed_at": "2026-08-12T19:32:40.976Z"
+    },
+    {
+      "sample_id": "S16",
+      "target_clarity": "clear",
+      "category": "macacao",
+      "structure": "one_piece_with_separate_legs",
+      "primary_color": "outras_cores",
+      "secondary_colors": [],
+      "notes": "Tipo de imagem perfeita, sem fundo, sem pessoa vestindo, somente a peça. É um macacão de paetês num tom meio dourado leve, meio cobre com um leve decote no peito",
+      "adjudication_basis": "Dourado e cobre metálicos pertencem a outras_cores; reflexos não os transformam em amarelo, cinza ou branco.",
+      "original_selection": {},
+      "reviewed_at": "2026-08-12T19:37:47.379Z"
+    },
+    {
+      "sample_id": "S19",
+      "target_clarity": "clear",
+      "category": "casaco_jaqueta",
+      "structure": "upper_outer_layer",
+      "primary_color": "vermelho_rosa",
+      "secondary_colors": [],
+      "notes": "Mais um exemplo de imagem perfeita pro app, queria que todas estivessem assim. com fundo removido, sem ninguém vestindo, apenas a peca. É um blazer com dupla abotoadura e bolsos com dois tons de rosa, um claro e um mais escuro, criando um quadriculado.",
+      "adjudication_basis": "Os dois tons pertencem ao mesmo id vermelho_rosa; não se repete o id nem se inventa outras_cores.",
+      "original_selection": {
+        "secondary_colors": ["outras_cores"]
+      },
+      "reviewed_at": "2026-08-12T19:40:06.241Z"
+    },
+    {
+      "sample_id": "S20",
+      "target_clarity": "clear",
+      "category": "vestido",
+      "structure": "one_piece_no_separate_legs",
+      "primary_color": "lilas_roxo",
+      "secondary_colors": [],
+      "notes": "Vestido com gola polo e sem mangas com amarracao na frente, só não é imagem perfeita porque tem fundo branco.",
+      "adjudication_basis": "A continuidade até o painel inferior define vestido; gola e abertura frontal não o transformam em camisa. Branco é fundo.",
+      "original_selection": {
+        "secondary_colors": ["outras_cores"]
+      },
+      "reviewed_at": "2026-08-12T19:41:21.485Z"
+    },
+    {
+      "sample_id": "S21",
+      "target_clarity": "multiple_garments_target_clear",
+      "category": "short",
+      "structure": "lower_two_legs_short",
+      "primary_color": "amarelo_laranja",
+      "secondary_colors": [],
+      "notes": "Esse tipo de imagem é o pior pesadelo de quem vai analisar no escuro, tem cor de fundo, modelo vestindo e ela ainda aparece de corpo inteiro. Na parte de cima ela veste uma camiseta com mangas bufantes brancas e tronco bege e na parte de baixo um short laranja muito laranja (que foi a peca que eu julguei ser a principal embora nao esteja claro qual é)",
+      "adjudication_basis": "O short é o alvo adjudicado. Branco pertence à camiseta e não é cor secundária do short.",
+      "original_selection": {
+        "secondary_colors": ["branco_cru"]
+      },
+      "reviewed_at": "2026-08-12T19:47:08.021Z"
+    },
+    {
+      "sample_id": "S23",
+      "target_clarity": "multiple_garments_target_clear",
+      "category": "camisa",
+      "structure": "upper_shirt_construction",
+      "primary_color": "vermelho_rosa",
+      "secondary_colors": ["branco_cru"],
+      "notes": "Foto tem fundo branco e mostra uma modelo vestindo algo que claramente é um conjunto ou duas pecas de uma mesma colecao e mesma estampa (listrado) mas também com foco claro na parte de cima, uma camisa que as mangas vao ate pouco depois do cotovelo feita pra amarrar na frente, abaixo dos seios.",
+      "adjudication_basis": "Há duas peças visíveis, mas a composição favorece claramente a camisa; rosa e branco pertencem às listras da peça-alvo.",
+      "original_selection": {
+        "target_clarity": "clear"
+      },
+      "reviewed_at": "2026-08-12T19:50:39.174Z"
+    }
+  ]
+}

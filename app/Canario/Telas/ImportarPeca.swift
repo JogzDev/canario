@@ -13,10 +13,9 @@ import PhotosUI
 /// mesmo `LeitorDeArquivo`: OCR do texto, cor do pixel, atributos marcados no
 /// formulário. Câmera e fototeca entraram em 07/08, desfazendo o corte do A7.
 ///
-/// **Retenção zero continua valendo, e agora é mais fácil de verificar:** a
-/// câmera e a fototeca entregam a imagem em memória, sem passar por arquivo. Não
-/// existe caminho de disco em nenhum dos três caminhos — o que não existe não
-/// pode ser esquecido ligado.
+/// A imagem original continua só em memória. A18 autoriza uma exceção explícita
+/// e local: quando o usuário salva a peça no Closet, uma miniatura reamostrada,
+/// sem metadados, pode ser persistida e é apagada com a peça.
 struct ImportarPeca: View {
     let termos: [Termo]
 
@@ -30,6 +29,7 @@ struct ImportarPeca: View {
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
     @State private var precoDigitado = ""
+    @State private var miniaturaJPEG: Data?
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
     /// funciona igual, e com ele entra o percentil de preço que a §5 autoriza
@@ -60,7 +60,8 @@ struct ImportarPeca: View {
                     Carregando()
                 } else if confirmou {
                     RelatorioDaPeca(termos: termos.filter { detectados.contains($0.id) },
-                                    precoAlvo: precoAlvo)
+                                    precoAlvo: precoAlvo,
+                                    miniaturaJPEG: miniaturaJPEG)
                 } else {
                     formulario
                 }
@@ -126,7 +127,7 @@ struct ImportarPeca: View {
     private var importador: some View {
         Cartao {
             Text("Print, foto ou PDF").font(Tokens.Fonte.secao)
-            Text("Leio o arquivo no próprio aparelho e marco os atributos que reconhecer. Nada é enviado nem guardado.")
+            Text("Leio o arquivo no próprio aparelho. O original não é guardado; ao salvar no Closet, fica apenas uma miniatura local sem metadados.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             // A câmera vem primeiro porque é o gesto mais direto de quem está
@@ -227,8 +228,7 @@ struct ImportarPeca: View {
         erro = nil
         defer { lendo = false }
         guard let dados = try? await item.loadTransferable(type: Data.self),
-              let fonte = CGImageSourceCreateWithData(dados as CFData, nil),
-              let imagem = CGImageSourceCreateImageAtIndex(fonte, 0, nil) else {
+              let imagem = MiniaturaLocal.imagem(de: dados) else {
             erro = "Não consegui abrir essa foto."
             return
         }
@@ -241,6 +241,7 @@ struct ImportarPeca: View {
         erro = nil
         procedencia = []
         nomeDoArquivo = nome
+        miniaturaJPEG = MiniaturaLocal.jpeg(de: imagem)
         let leitura = await LeitorDeArquivo.ler(imagem)
         let achado = Importacao.atributos(de: leitura, em: termos)
         detectados = achado.marcados
@@ -259,6 +260,7 @@ struct ImportarPeca: View {
         erro = nil
         procedencia = []
         nomeDoArquivo = url.lastPathComponent
+        miniaturaJPEG = MiniaturaLocal.jpeg(doArquivo: url)
         do {
             let leitura = try await LeitorDeArquivo.ler(url)
             let achado = Importacao.atributos(de: leitura, em: termos)

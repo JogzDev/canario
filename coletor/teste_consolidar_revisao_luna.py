@@ -1,6 +1,7 @@
 """Testes sem rede da consolidacao humana do Luna."""
 
 import importlib.util
+import csv
 import json
 from pathlib import Path
 import tempfile
@@ -55,6 +56,36 @@ def testar_comparacao_independente():
         }]
 
 
+def testar_csv_preserva_comentario_e_normaliza_cores():
+    with tempfile.TemporaryDirectory() as temporaria:
+        caminho = Path(temporaria) / "jp.csv"
+        with caminho.open("w", encoding="utf-8", newline="") as arquivo:
+            escritor = csv.DictWriter(arquivo, fieldnames=[
+                "rubric_version", "reviewer", "sample_id", "target_clarity",
+                "category", "structure", "primary_color", "secondary_colors",
+                "notes", "reviewed_at",
+            ])
+            escritor.writeheader()
+            escritor.writerow({
+                "rubric_version": "categoria-cor-v2",
+                "reviewer": "JP",
+                "sample_id": "S14",
+                "target_clarity": "ambiguous_target",
+                "category": "not_visible",
+                "structure": "target_not_determinable",
+                "primary_color": "not_visible",
+                "secondary_colors": "branco_cru|verde",
+                "notes": "O verde pertence ao fundo; a peça parece um conjunto.",
+                "reviewed_at": "2026-08-12T00:00:00Z",
+            })
+        revisao = MODULO.carregar_revisao(caminho)
+        resposta_lida = revisao["answers"]["S14"]
+        assert revisao["reviewer"] == "JP"
+        assert resposta_lida["secondary_colors"] == ["branco_cru", "verde"]
+        assert resposta_lida["notes"] == (
+            "O verde pertence ao fundo; a peça parece um conjunto.")
+
+
 def testar_adjudicacao_parcial_fecha_ouro():
     revisao_a = {
         "reviewer": "A", "rubric_version": "categoria-cor-v2",
@@ -70,6 +101,8 @@ def testar_adjudicacao_parcial_fecha_ouro():
     revisao_b["answers"]["S02"]["structure"] = "upper_other"
     voto = resposta("S02", categoria="blusa_top")
     voto["structure"] = "upper_other"
+    voto["notes"] = "Blusa residual, sem construção de camisaria."
+    voto["adjudication_basis"] = "A descrição visual resolve o clique."
     adjudicacao = {
         "reviewer": "JP", "rubric_version": "categoria-cor-v2",
         "answers": {"S02": voto},
@@ -80,6 +113,10 @@ def testar_adjudicacao_parcial_fecha_ouro():
     assert ouro["answers"][0]["category"] == "camisa"
     assert ouro["answers"][1]["category"] == "blusa_top"
     assert ouro["answers"][1]["structure"] == "upper_other"
+    assert ouro["answers"][1]["notes"] == (
+        "Blusa residual, sem construção de camisaria.")
+    assert ouro["answers"][1]["adjudication_basis"] == (
+        "A descrição visual resolve o clique.")
 
 
 def montar_avaliacao(acertos_categoria=20, acertos_cor=20):
@@ -142,6 +179,7 @@ def testar_prompt_misto_e_recusado():
 def main():
     testes = [
         testar_comparacao_independente,
+        testar_csv_preserva_comentario_e_normaliza_cores,
         testar_adjudicacao_parcial_fecha_ouro,
         testar_portao_exige_categoria_e_cor,
         testar_prompt_misto_e_recusado,

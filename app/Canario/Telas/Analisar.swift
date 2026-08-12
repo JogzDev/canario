@@ -24,6 +24,7 @@ import SwiftUI
 /// Por isso a busca com dois ou mais atributos passa a oferecer a leitura do
 /// conjunto — o mesmo caminho da entrada por arquivo, que já funcionava assim.
 struct Analisar: View {
+    var aoFechar: (() -> Void)?
     @State private var termos: [Termo] = []
     @State private var texto = ""
     @State private var indices: [String: IndiceSemanal] = [:]
@@ -56,6 +57,13 @@ struct Analisar: View {
             .searchable(text: $texto, prompt: "Descreva a peça: vestido de bolinha, saia midi…")
             .sheet(isPresented: $importando) {
                 ImportarPeca(termos: termos)
+            }
+            .toolbar {
+                if let aoFechar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close", action: aoFechar)
+                    }
+                }
             }
         }
         .task { await carregar() }

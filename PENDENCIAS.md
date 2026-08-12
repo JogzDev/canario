@@ -9,7 +9,7 @@ dívida que mais apareceu, e sempre no meio de outra conversa.
 decisão nova nasce com uma linha aqui. Atualizado a cada commit que mexe no
 estado de algum item.
 
-Última varredura: **11/08/2026** (atualizado ao fim de cada etapa).
+Última varredura: **12/08/2026** (atualizado ao fim de cada etapa).
 
 **Lição de 31/07, que mudou como este arquivo é lido:** K1 e K4 estavam marcados
 como ✅ porque `computar_eventos()` existia e estava correta. Só que **nada a
@@ -44,7 +44,7 @@ coleção.
 
 ---
 
-## Decisões das instruções do JP (A1–A17)
+## Decisões das instruções do JP (A1–A18)
 
 | id | O que exige | Estado |
 |---|---|---|
@@ -55,17 +55,18 @@ coleção.
 | A7 | Visão e referências internas fora da v1 | ✅ Feito (entrada por arquivo voltou em 30/07) |
 | §28 | Entrada por arquivo (print, foto, PDF) com OCR, sem câmera | ✅ Feito — `LeitorDeArquivo.swift` |
 | §28 | Formulário de confirmação de atributos (humano no circuito) | ✅ Feito — `ImportarPeca.swift` |
-| §28 | Retenção zero: arquivo processado e descartado | ⚪ Revogado por A15; o estado atual ainda é local até a integração da API |
+| §28 | Imagem original processada e descartada | ✅ Feito; A18 autoriza somente miniatura local sem metadados, após salvar no Closet |
 | A8 | Vocabulário interno nunca vira produto | ✅ Feito — `teste_vocabulario.py` |
 | A9 | Roadmap v1.1 | ⚪ Registrado, sem código |
-| A10 | Abas orientadas ao objeto; Comparar dobra para dentro do Armário | 🟡 Nomes/Armário feitos; dobra da comparação ainda não |
+| A10 | Abas orientadas ao objeto; Comparar dobra para dentro do Armário | ✅ Feito — Add · Closet · Analytics; Compare abre de dentro do Closet |
 | A11 | Nome da aba volta a ser Armário | ✅ Feito |
-| A12 | Câmera e fototeca, sem retenção em disco | ✅ Feito — três entradas terminam no mesmo `LeitorDeArquivo` |
+| A12 | Câmera e fototeca; original não persiste | ✅ Feito — três entradas terminam no mesmo `LeitorDeArquivo`; A18 trata a miniatura local separadamente |
 | A13 | Foto do similar por hotlink, com bloco visual como fallback | ✅ Feito |
 | A14 | Gráfico do histórico dos atributos da peça | ✅ Feito — `serie_do_cluster()` e cobertura por ponto |
 | A15 | OpenAI no runtime: visão + redator com coleira | 🟡 Secret e contrato validados; smoke Luna: 24/24 respostas válidas. Os 19/24 eram concordância com rótulo fraco, não acurácia; revisão cega e prompt estrutural A17 prontos, nova rodada e integração pendentes |
 | A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
-| A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Dois gabaritos independentes completos: acordo 19/24 em categoria e 17/24 em cor primária. Dez itens relevantes ao portão aguardam adjudicação cega; depois faltam a repetição paga e, se ambos derem ≥20/24, o holdout |
+| A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Gabarito 24/24 adjudicado com comentários do JP; prompt v3 fechado e testado offline. Falta repetir as 24; só ≥20/24 em categoria e cor abre o holdout |
+| A18 | Home do Figma em Liquid Glass, paleta aprovada, menu e duas peças recentes | ✅ Feito e verificado no iPhone Simulator — miniaturas reais, locais, 720 px, sem EXIF e excluídas de backup |
 
 ---
 

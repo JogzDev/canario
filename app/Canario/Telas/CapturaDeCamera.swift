@@ -9,11 +9,10 @@ import UIKit
 /// captura inteira — e construir uma sessão daria controle que não precisamos
 /// (foco manual, exposição, vídeo) em troca de muito mais código para revisar.
 ///
-/// **Retenção zero, que é o ponto.** A imagem sai daqui como `CGImage` em
-/// memória e vai direto para o `LeitorDeArquivo`. Não passa por arquivo
-/// temporário, não vai para a fototeca, não sobe para lugar nenhum. Não existe
-/// caminho de disco neste arquivo — de propósito, porque o que não existe não
-/// pode ser esquecido ligado.
+/// A imagem sai daqui como `CGImage` em memória e vai direto ao leitor. Não
+/// passa por arquivo temporário, não vai para a fototeca e não sobe daqui. A18
+/// permite que outra camada derive uma miniatura sem metadados quando a peça é
+/// efetivamente salva no Closet; a foto original continua fora do armazenamento.
 ///
 /// `allowsEditing = false`: o recorte do iOS parece útil e não é. Ele devolve a
 /// imagem já cortada, e o corte que o usuário faz com o dedo mudaria a cor
@@ -51,10 +50,10 @@ struct CapturaDeCamera: UIViewControllerRepresentable {
             didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
         ) {
             let imagem = info[.originalImage] as? UIImage
-            // `cgImage` pode vir nulo quando a foto chega como CIImage. Nesse
-            // caso redesenha uma vez, em vez de devolver nada e o usuário achar
-            // que a câmera falhou.
-            aoCapturar(imagem?.cgImage ?? imagem.flatMap(Self.redesenhar))
+            // Redesenha sempre: o bitmap cru não incorpora `imageOrientation`
+            // e fotos verticais podiam chegar deitadas ao leitor e à miniatura.
+            // O renderer aplica a orientação sem criar arquivo temporário.
+            aoCapturar(imagem.flatMap(Self.redesenhar))
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {

@@ -15,6 +15,8 @@ struct RelatorioDaPeca: View {
     /// Preço que o usuário pretende praticar, se informou. §29.5 chama isso de
     /// contexto condicional, e a §5 autoriza o percentil de preço que sai dele.
     var precoAlvo: Double?
+    /// Prévia local, já sem metadados. Só é persistida se o usuário guardar.
+    var miniaturaJPEG: Data?
 
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
@@ -49,7 +51,8 @@ struct RelatorioDaPeca: View {
             Button {
                 Task {
                     guardada = await PecasSalvas.shared.salvar(
-                        PecaSalva(termoIds: termos.map(\.id), precoAlvo: precoAlvo))
+                        PecaSalva(termoIds: termos.map(\.id), precoAlvo: precoAlvo),
+                        miniaturaJPEG: miniaturaJPEG)
                 }
             } label: {
                 Label("Guardar", systemImage: "square.stack.3d.up")
@@ -280,7 +283,7 @@ struct RelatorioDaPeca: View {
             Text("Limites").font(Tokens.Fonte.secao)
             LinhaInsumo(texto: "Não consideramos: seu histórico de vendas, seus custos, sua capacidade de produção.")
             LinhaInsumo(texto: "Sinal editorial carrega viés comercial de publicidade.")
-            LinhaInsumo(texto: "O arquivo que você enviou foi lido no aparelho e descartado. Nada foi guardado nem enviado.")
+            LinhaInsumo(texto: "A imagem original foi lida e descartada. Se você salvar no Closet, fica somente uma miniatura local sem metadados, apagada junto com a peça.")
         }
     }
 

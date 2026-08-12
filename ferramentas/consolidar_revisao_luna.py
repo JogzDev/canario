@@ -6,8 +6,10 @@ gabarito adjudicado e do JSONL completo produzido pelo avaliador.
 """
 
 import argparse
+import csv
 import json
 import math
+import re
 from pathlib import Path
 
 
@@ -26,8 +28,40 @@ CAMPOS_DO_PORTAO = (
 )
 
 
+def _cores_secundarias(valor):
+    if isinstance(valor, list):
+        return valor
+    if not valor:
+        return []
+    return [cor.strip() for cor in re.split(r"[;|,]", valor) if cor.strip()]
+
+
+def _dados_da_revisao(caminho):
+    """Aceita o JSON exportado pelo formulario e o CSV do revisor."""
+    if caminho.suffix.lower() != ".csv":
+        return json.loads(caminho.read_text(encoding="utf-8"))
+
+    with caminho.open(encoding="utf-8-sig", newline="") as arquivo:
+        respostas = list(csv.DictReader(arquivo))
+    if not respostas:
+        return {"answers": []}
+    rubricas = {resposta.pop("rubric_version", "") for resposta in respostas}
+    revisores = {resposta.pop("reviewer", "") for resposta in respostas}
+    if len(rubricas) != 1 or len(revisores) != 1:
+        raise ValueError("CSV mistura revisores ou versoes da rubrica: {}".format(
+            caminho))
+    for resposta in respostas:
+        resposta["secondary_colors"] = _cores_secundarias(
+            resposta.get("secondary_colors"))
+    return {
+        "rubric_version": next(iter(rubricas)),
+        "reviewer": next(iter(revisores)),
+        "answers": respostas,
+    }
+
+
 def carregar_revisao(caminho):
-    dados = json.loads(caminho.read_text(encoding="utf-8"))
+    dados = _dados_da_revisao(caminho)
     respostas = dados.get("answers")
     if not isinstance(respostas, list) or not respostas:
         raise ValueError("Revisao sem answers: {}".format(caminho))
@@ -144,6 +178,10 @@ def adjudicar_revisoes(revisoes, adjudicacao):
                 })
         final["notes"] = (adjudicacao["answers"].get(sample_id, {}).get("notes")
                           or final.get("notes") or "")
+        if sample_id in ids_adjudicados:
+            voto = adjudicacao["answers"][sample_id]
+            final["adjudication_basis"] = voto.get("adjudication_basis", "")
+            final["original_selection"] = voto.get("original_selection", {})
         respostas.append(final)
     return {
         "reviewer": "ADJUDICADO: {}".format(adjudicacao["reviewer"]),
@@ -246,7 +284,7 @@ def avaliar_contra_gabarito(gabarito, resultados):
     }
 
 
-def relatorio_markdown(comparacao=None, avaliacao=None):
+def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
     linhas = ["# Revisao Luna — consolidacao", ""]
     if comparacao:
         total = comparacao["sample_size"]
@@ -283,6 +321,23 @@ def relatorio_markdown(comparacao=None, avaliacao=None):
                 "Divergencias apenas em cores secundarias, fora do portao A17: {}.".format(
                     ", ".join(somente_secundarias)),
             ]
+        linhas.append("")
+
+    if ouro_adjudicado:
+        linhas += [
+            "## Adjudicação concluída",
+            "",
+            "O comentário descritivo prevalece sobre clique contraditório. "
+            "Cores pertencem somente à peça-alvo; fundo e outras roupas não entram.",
+            "",
+        ]
+        for resposta in ouro_adjudicado["answers"]:
+            base = resposta.get("adjudication_basis")
+            if not base:
+                continue
+            linhas.append("- **{} — {} · {}:** {}".format(
+                resposta["sample_id"], resposta["category"],
+                resposta["primary_color"], base))
         linhas.append("")
 
     if avaliacao:
@@ -332,6 +387,7 @@ def main():
     args = argumentos()
     comparacao = None
     avaliacao = None
+    ouro_adjudicado = None
     if args.revisoes:
         revisoes = [carregar_revisao(caminho) for caminho in args.revisoes]
         comparacao = comparar_revisoes(revisoes)
@@ -339,10 +395,10 @@ def main():
             raise SystemExit(
                 "--adjudicacao e --gabarito-saida devem ser usados juntos")
         if args.adjudicacao:
-            gabarito = adjudicar_revisoes(
+            ouro_adjudicado = adjudicar_revisoes(
                 revisoes, carregar_revisao(args.adjudicacao))
             args.gabarito_saida.write_text(
-                json.dumps(gabarito, ensure_ascii=False, indent=2) + "\n",
+                json.dumps(ouro_adjudicado, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8")
     elif args.adjudicacao or args.gabarito_saida:
         raise SystemExit("Adjudicacao exige --revisoes")
@@ -356,7 +412,8 @@ def main():
     if not comparacao and not avaliacao:
         raise SystemExit("Informe revisoes ou gabarito+resultados")
     args.relatorio.write_text(
-        relatorio_markdown(comparacao, avaliacao) + "\n", encoding="utf-8")
+        relatorio_markdown(comparacao, avaliacao, ouro_adjudicado).rstrip() + "\n",
+        encoding="utf-8")
     if args.portao:
         if not avaliacao:
             raise SystemExit("--portao exige gabarito+resultados")

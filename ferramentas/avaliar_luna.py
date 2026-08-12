@@ -26,7 +26,7 @@ import urllib.request
 
 
 MODELO = "gpt-5.6-luna"
-VERSAO_DO_PROMPT = "alvo-estrutura-v2"
+VERSAO_DO_PROMPT = "alvo-estrutura-v3"
 URL_RESPOSTAS = "https://api.openai.com/v1/responses"
 SEMENTE_PADRAO = 20260810
 CLAREZAS_DO_ALVO = (
@@ -182,11 +182,18 @@ confirm it. Use only visible pixels: no catalog title, filename, brand, likely
 sale item, or hidden construction. Accuracy is more important than coverage.
 
 1. Identify the target before classifying it
-- A single isolated garment is clear.
+- A single isolated product garment is clear. A white or transparent-looking
+  studio background is still a background and never part of the garment.
 - In a worn look with several garments, use
   multiple_garments_target_clear only when one garment is unambiguously the
   visual subject because the crop, scale, centering, and detail strongly favor
-  it. Do not simply choose the most colorful garment.
+  it. Showing one garment completely while cropping another can support the
+  target, but only together with the other composition cues. Do not simply
+  choose the most colorful garment.
+- A coordinated matching set is still multiple garments. If the image presents
+  the top and bottom as peers and no single target dominates, use
+  ambiguous_target rather than inventing one target or calling the set a
+  jumpsuit.
 - If two or more garments are plausible targets, use ambiguous_target. Never
   guess which item the catalog or user intended.
 - Ignore body, skin, hair, pose, background, props, footwear, bags, jewelry,
@@ -194,9 +201,12 @@ sale item, or hidden construction. Accuracy is more important than coverage.
 
 2. Classify visible construction, not a fashion synonym
 - one_piece_no_separate_legs: one garment joins torso to a lower continuous
-  panel (dress).
+  panel (dress). Establish this torso-to-lower-panel continuity before using
+  upper-body details: a sleeveless collared, button-front, or tie-front dress
+  remains a dress when it continues into one lower panel.
 - one_piece_with_separate_legs: one garment joins torso to two legs (jumpsuit
-  or romper).
+  or romper). A visible gap, separate waistband, overlapping hem, or other
+  separation between top and bottom means two garments, never a jumpsuit.
 - lower_continuous_panel: lower garment with a continuous exterior and no
   visible crotch or separate leg openings (skirt).
 - lower_two_legs_short: lower garment ending around the knee or above, with
@@ -207,9 +217,13 @@ sale item, or hidden construction. Accuracy is more important than coverage.
 - upper_shirt_construction: upper garment with recognizable shirt construction.
   Strong evidence is a shirt collar together with a substantial front opening
   or placket and/or shirt cuffs. A tie-front shirt remains a shirt. Decorative
-  buttons alone are insufficient.
+  buttons alone are insufficient. A collar or buttons do not make a continuous
+  one-piece dress a shirt.
 - upper_outer_layer: jacket, coat, blazer, cardigan, or another garment visibly
-  constructed as an outer layer.
+  constructed as an outer layer. Blazer lapels, tailored shoulders, structured
+  fronts, welt or flap pockets, and double-breasted construction are strong
+  evidence. A cropped length or deep neckline does not turn a blazer into a
+  blouse or top.
 - upper_other: residual upper garment only after ruling out shirt construction
   and outerwear; includes blouse, top, tee, tank, cropped top, and bodysuit.
 - Sleeve length is never evidence for shorts. For a skort, label only the
@@ -225,7 +239,11 @@ from appearance; fabrics may be empty. Length, silhouette, and waist may be
 not_visible when inapplicable, cropped, or occluded. Colors are ordered: the
 primary color first, followed by at most two secondary colors. A secondary
 color must cover about 10 percent of the target or recur materially in its
-print. Ignore tiny trim, buttons, crystals, shadows, skin, and background.
+print. Rank colors by visible surface area on the target garment only, never by
+surface area of the whole image or by saturation. Ignore colors from another
+garment, tiny trim, buttons, crystals, shadows, skin, and background. Map a
+metallic gold, silver, bronze, or copper surface to outras_cores; do not force
+it into amarelo_laranja, branco_cru, or cinza merely because of its highlights.
 Aesthetics has at most three ids. additional_visual_attributes has at most five
 short, concrete English phrases not already represented below. Never repeat an
 item or place a free-form guess in a taxonomy field.

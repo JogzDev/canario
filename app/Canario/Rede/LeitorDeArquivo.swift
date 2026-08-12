@@ -29,9 +29,9 @@ import Vision
 /// ## Retenção zero
 ///
 /// Decisão do JP em 30/07: o arquivo é lido para a memória, o que interessa é
-/// extraído e nada é copiado, salvo ou enviado. Sem cópia em disco, sem upload,
-/// sem miniatura. Sem câmera e sem fototeca: o seletor de documentos entrega o
-/// arquivo já autorizado, então o app não pede permissão nenhuma.
+/// extraído e a imagem original não é copiada nem salva por este leitor. A18
+/// autoriza, fora daqui e só depois de "Save to Closet", uma miniatura local
+/// reamostrada e sem metadados. Câmera e fototeca continuam em memória.
 enum LeitorDeArquivo {
 
     /// Tudo que o arquivo entregou, com a procedência de cada parte.

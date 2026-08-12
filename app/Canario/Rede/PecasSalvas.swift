@@ -32,9 +32,10 @@ import Foundation
 ///
 /// ## Fica no aparelho
 ///
-/// A §34 não tem conta de usuário na v1, então não há para onde sincronizar —
-/// e não haveria por quê. Grava em Application Support, fora do backup de
-/// documentos do usuário, em JSON legível.
+/// A §34 não tem sincronização na v1. Grava em Application Support, excluído
+/// de backup. Desde A18, uma peça pode apontar para uma **miniatura local**:
+/// JPEG reamostrado, sem metadados e apagado junto com a peça. A foto original
+/// continua não sendo copiada para o app.
 struct PecaSalva: Codable, Equatable, Identifiable {
 
     /// Estável entre execuções: é ele que a aba Comparar usa para escolher.
@@ -49,16 +50,20 @@ struct PecaSalva: Codable, Equatable, Identifiable {
     var precoAlvo: Double?
     var canal: String?
     var criadaEm: Date
+    /// Nome opaco do JPEG local. Nunca contém caminho, URL de origem ou imagem
+    /// em base64; `PecasSalvas` valida o nome antes de abrir.
+    var miniaturaArquivo: String?
 
     init(id: UUID = UUID(), apelido: String = "", termoIds: [String],
          precoAlvo: Double? = nil, canal: String? = nil,
-         criadaEm: Date = Date()) {
+         criadaEm: Date = Date(), miniaturaArquivo: String? = nil) {
         self.id = id
         self.apelido = apelido
         self.termoIds = termoIds
         self.precoAlvo = precoAlvo
         self.canal = canal
         self.criadaEm = criadaEm
+        self.miniaturaArquivo = miniaturaArquivo
     }
 
     /// Nome para a lista quando o usuário não deu um. Usa os rótulos vindos do
@@ -83,15 +88,21 @@ actor PecasSalvas {
     private var itens: [PecaSalva] = []
     private var carregado = false
     private let arquivo: URL?
+    private let pastaDeMiniaturas: URL?
 
-    init(arquivo: URL? = nil) {
+    init(arquivo: URL? = nil, pastaDeMiniaturas: URL? = nil) {
         if let arquivo {
             self.arquivo = arquivo
+            self.pastaDeMiniaturas = pastaDeMiniaturas
+                ?? arquivo.deletingLastPathComponent()
+                    .appendingPathComponent("pecas_salvas_miniaturas", isDirectory: true)
         } else {
             let base = try? FileManager.default.url(
                 for: .applicationSupportDirectory, in: .userDomainMask,
                 appropriateFor: nil, create: true)
             self.arquivo = base?.appendingPathComponent("pecas_salvas.json")
+            self.pastaDeMiniaturas = pastaDeMiniaturas
+                ?? base?.appendingPathComponent("pecas_salvas_miniaturas", isDirectory: true)
         }
     }
 
@@ -103,26 +114,51 @@ actor PecasSalvas {
     }
 
     @discardableResult
-    func salvar(_ peca: PecaSalva) -> Bool {
+    func salvar(_ peca: PecaSalva, miniaturaJPEG: Data? = nil) -> Bool {
         carregarSeNecessario()
+        let existente = itens.first(where: { $0.id == peca.id })
+        guard existente != nil || itens.count < Self.teto else { return false }
+
+        var salva = peca
+        if salva.miniaturaArquivo == nil {
+            salva.miniaturaArquivo = existente?.miniaturaArquivo
+        }
+        if let miniaturaJPEG,
+           let nome = gravarMiniatura(miniaturaJPEG, id: salva.id) {
+            if let anterior = existente?.miniaturaArquivo, anterior != nome {
+                apagarMiniatura(anterior)
+            }
+            salva.miniaturaArquivo = nome
+        }
         if let i = itens.firstIndex(where: { $0.id == peca.id }) {
-            itens[i] = peca
+            itens[i] = salva
         } else {
-            guard itens.count < Self.teto else { return false }
-            itens.append(peca)
+            itens.append(salva)
         }
         gravar()
         return true
     }
 
+    func miniatura(de peca: PecaSalva) -> Data? {
+        carregarSeNecessario()
+        guard let url = urlDaMiniatura(peca.miniaturaArquivo) else { return nil }
+        return try? Data(contentsOf: url, options: .mappedIfSafe)
+    }
+
     func apagar(_ id: UUID) {
         carregarSeNecessario()
+        if let nome = itens.first(where: { $0.id == id })?.miniaturaArquivo {
+            apagarMiniatura(nome)
+        }
         itens.removeAll { $0.id == id }
         gravar()
     }
 
     func apagarTudo() {
         carregarSeNecessario()
+        for item in itens {
+            if let nome = item.miniaturaArquivo { apagarMiniatura(nome) }
+        }
         itens.removeAll()
         gravar()
     }
@@ -142,5 +178,42 @@ actor PecasSalvas {
         cod.outputFormatting = [.prettyPrinted, .sortedKeys]
         guard let dados = try? cod.encode(itens) else { return }
         try? dados.write(to: arquivo, options: .atomic)
+        excluirDeBackup(arquivo)
+    }
+
+    private func gravarMiniatura(_ dados: Data, id: UUID) -> String? {
+        guard !dados.isEmpty, let pastaDeMiniaturas else { return nil }
+        do {
+            try FileManager.default.createDirectory(
+                at: pastaDeMiniaturas, withIntermediateDirectories: true)
+            excluirDeBackup(pastaDeMiniaturas)
+            let nome = "\(id.uuidString.lowercased()).jpg"
+            let url = pastaDeMiniaturas.appendingPathComponent(nome)
+            try dados.write(to: url, options: .atomic)
+            excluirDeBackup(url)
+            return nome
+        } catch {
+            return nil
+        }
+    }
+
+    private func urlDaMiniatura(_ nome: String?) -> URL? {
+        guard let nome, !nome.isEmpty, nome == URL(fileURLWithPath: nome).lastPathComponent,
+              nome.lowercased().hasSuffix(".jpg"), let pastaDeMiniaturas else {
+            return nil
+        }
+        return pastaDeMiniaturas.appendingPathComponent(nome)
+    }
+
+    private func apagarMiniatura(_ nome: String) {
+        guard let url = urlDaMiniatura(nome) else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    private func excluirDeBackup(_ url: URL) {
+        var valores = URLResourceValues()
+        valores.isExcludedFromBackup = true
+        var mutavel = url
+        try? mutavel.setResourceValues(valores)
     }
 }

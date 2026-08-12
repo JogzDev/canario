@@ -7,14 +7,17 @@ import SwiftUI
 /// Quando o Figma ficar pronto, trocar os valores deste arquivo remodela o app
 /// inteiro sem mexer em lógica nem em layout.
 ///
-/// A paleta de agora é deliberadamente neutra — preto, branco e cinza para
-/// estrutura, verde e vermelho apenas para estado. Não é escolha estética; é
-/// para o app poder ser testado sem fingir um design que ainda não existe.
+/// A18 fixou a primeira paleta da Bianca/Fadul. As telas legadas ainda usam os
+/// tons semânticos do sistema; a raiz nova usa os três tokens de marca abaixo.
 enum Tokens {
 
     // MARK: - Cor
 
     enum Cor {
+        /// Paleta aprovada em 12/08/2026.
+        static let ceu = Color(red: 187 / 255, green: 229 / 255, blue: 237 / 255)
+        static let noite = Color(red: 14 / 255, green: 17 / 255, blue: 22 / 255)
+        static let azulMarca = Color(red: 55 / 255, green: 74 / 255, blue: 103 / 255)
         /// Fundo da tela.
         static let fundo = Color(.systemBackground)
         /// Fundo de cartão, um degrau acima do fundo.

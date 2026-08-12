@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// As peças que o usuário já montou.
 ///
@@ -32,8 +33,15 @@ struct MinhasPecas: View {
                     lista
                 }
             }
-            .navigationTitle("Armário")
+            .navigationTitle("Closet")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink {
+                        Comparar()
+                    } label: {
+                        Label("Compare", systemImage: "arrow.left.arrow.right")
+                    }
+                }
                 if !pecas.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) { EditButton() }
                 }
@@ -49,10 +57,9 @@ struct MinhasPecas: View {
             Image(systemName: "square.stack.3d.up")
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-            Text("Nenhuma peça ainda").font(Tokens.Fonte.secao)
+            Text("No clothes yet").font(Tokens.Fonte.secao)
             // Diz o que fazer, e não só o que falta.
-            Text("As peças que você montar em Adicionar ficam aqui, "
-                 + "prontas para abrir de novo e para comparar entre si.")
+            Text("Clothes you save from Add stay here, ready to open again and compare.")
                 .font(Tokens.Fonte.corpo)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -85,8 +92,8 @@ struct MinhasPecas: View {
                     Task { for id in alvos { await PecasSalvas.shared.apagar(id) } }
                 }
             } footer: {
-                Text("\(pecas.count) de \(PecasSalvas.teto). "
-                     + "Os números são recalculados toda vez que você abre uma peça.")
+                Text("\(pecas.count) of \(PecasSalvas.teto). "
+                     + "Market readings are recalculated whenever you open an item.")
                     .font(Tokens.Fonte.miudo)
             }
         }
@@ -107,8 +114,7 @@ struct MinhasPecas: View {
         } catch {
             // Sem a taxonomia a lista ainda serve: o nome cai no id, que é feio
             // e verdadeiro. Abrir o relatório é que não dá.
-            erro = "Não consegui carregar a taxonomia agora. "
-                 + "As peças estão aqui; os relatórios voltam quando a conexão voltar."
+            erro = "The taxonomy is unavailable right now. Your clothes are still here; reports return when the connection does."
         }
         carregando = false
     }
@@ -118,21 +124,40 @@ struct MinhasPecas: View {
 struct LinhaDaPecaSalva: View {
     let peca: PecaSalva
     let rotulos: [String: String]
+    @State private var miniatura: Data?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-            Text(peca.nome(comRotulos: rotulos))
-                .font(Tokens.Fonte.corpo)
-                .lineLimit(2)
-            if !peca.termoIds.isEmpty {
-                Text(peca.termoIds.compactMap { rotulos[$0] ?? $0 }
-                        .joined(separator: " · "))
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+        HStack(spacing: 12) {
+            Group {
+                if let miniatura, let imagem = UIImage(data: miniatura) {
+                    Image(uiImage: imagem).resizable().scaledToFill()
+                } else {
+                    Image(systemName: "tshirt")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Tokens.Cor.superficie)
+                }
+            }
+            .frame(width: 54, height: 68)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                Text(peca.nome(comRotulos: rotulos))
+                    .font(Tokens.Fonte.corpo)
+                    .lineLimit(2)
+                if !peca.termoIds.isEmpty {
+                    Text(peca.termoIds.compactMap { rotulos[$0] ?? $0 }
+                            .joined(separator: " · "))
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
         }
         .padding(.vertical, 2)
+        .task(id: peca.miniaturaArquivo) {
+            miniatura = await PecasSalvas.shared.miniatura(de: peca)
+        }
         .accessibilityElement(children: .combine)
     }
 }
