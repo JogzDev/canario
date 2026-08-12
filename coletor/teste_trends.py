@@ -3,7 +3,8 @@
 import sys
 from datetime import date, timedelta
 
-from coletor_trends import combinar_saude_busca, planejar_grupos
+from coletor_trends import (alertas_com_motivo_http, combinar_saude_busca,
+                            motivo_http_transitorio, planejar_grupos)
 
 
 def main():
@@ -48,6 +49,27 @@ def main():
     repetida = combinar_saude_busca(combinada, 1, atual)
     if repetida != combinada:
         print("FALHOU: repetir tentativa duplicou os totais")
+        return 1
+
+    recusas = [
+        {"grupo": 1, "erro": "falhou apos 4 tentativas (HTTP 429)"},
+        {"grupo": 2, "erro": "falhou apos 4 tentativas (HTTP 429)"},
+    ]
+    if motivo_http_transitorio(recusas) != (
+            "http 429 em todos os 2 grupos apos backoff"):
+        print("FALHOU: 429 conhecido nao virou causa de saude")
+        return 1
+    if motivo_http_transitorio(
+            recusas + [{"grupo": 3, "erro": "JSON inesperado"}]) is not None:
+        print("FALHOU: erro desconhecido foi mascarado como recusa HTTP")
+        return 1
+    antigos = {"grupos_que_falharam": recusas, "tentativa": 1}
+    corrigidos = alertas_com_motivo_http(antigos)
+    if corrigidos.get("erro") != "http 429 em todos os 2 grupos apos backoff":
+        print("FALHOU: reconsolidacao nao recuperou causa da linha antiga")
+        return 1
+    if antigos.get("erro") is not None:
+        print("FALHOU: reconsolidacao alterou o objeto de entrada")
         return 1
 
     print("Trends: rotacao entre dias/tentativas e saude idempotente")

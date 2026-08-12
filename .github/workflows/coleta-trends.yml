@@ -19,6 +19,11 @@ on:
         required: false
         type: number
         default: 0
+      somente_reconsolidar:
+        description: 'reparar diagnostico de saude sem consultar o Google'
+        required: false
+        type: boolean
+        default: false
     secrets:
       SUPABASE_URL:
         required: true
@@ -35,6 +40,11 @@ on:
         required: false
         type: number
         default: 0
+      somente_reconsolidar:
+        description: 'reparar diagnostico de saude sem consultar o Google'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -62,4 +72,7 @@ jobs:
           # Uma recuperacao no mesmo dia consulta outro lote, em vez de
           # insistir nos grupos que acabaram de receber 429.
           TRENDS_TENTATIVA: ${{ inputs.tentativa }}
+          # Operacao cirurgica: deriva `alertas.erro` das falhas ja gravadas.
+          # Nao abre conexao com o Google nem repete um 429 conhecido.
+          TRENDS_SOMENTE_RECONSOLIDAR: ${{ inputs.somente_reconsolidar }}
         run: "$PY coletor/coletor_trends.py"

@@ -21,6 +21,7 @@ B2). Este coletor so guarda o cru; o casamento e retroativo.
 
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -810,9 +811,16 @@ def alertas_criticos(registros, marcas_ativas, hoje):
             motivo = ((atual.get("alertas") or {}).get("erro")
                       if isinstance(atual.get("alertas"), dict) else None)
             seguidos = _zeros_seguidos(historico.get(chave, {}), hoje_iso)
+            motivo_http = bool(re.search(
+                r"\bhttp\s+(?:429|5\d\d)\b", str(motivo or ""),
+                flags=re.IGNORECASE))
             if not motivo:
                 criticos.append(
                     "{} retornou zero sem dizer por quê".format(rotulo))
+            elif not motivo_http:
+                criticos.append(
+                    "{} retornou zero por erro nao HTTP ({})".format(
+                        rotulo, motivo))
             elif seguidos >= DIAS_DE_ZERO_PARA_BLOQUEAR:
                 criticos.append("{} em zero há {} dias seguidos ({})".format(
                     rotulo, seguidos, motivo))

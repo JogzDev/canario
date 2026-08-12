@@ -101,6 +101,17 @@ def main():
         print("FALHOU: a recusa sumiu em vez de virar aviso")
         return 1
 
+    # Motivo qualquer nao basta. So uma recusa HTTP conhecida pode usar a
+    # tolerancia; parse, contrato ou excecao interna continuam bloqueando.
+    erro_interno = [zerada(0, erro="json inesperado"),
+                    linha("editorial", 80), linha("busca", 40)]
+    erro_interno.extend(
+        linha("varejo", 100, dias=d, marca_id=1) for d in range(1, 8))
+    crit, _ = alertas_criticos(erro_interno, MARCAS, HOJE)
+    if not any("erro nao HTTP" in x for x in crit):
+        print("FALHOU: erro interno foi tolerado como recusa da fonte")
+        return 1
+
     # Tres dias seguidos ja nao e um dia ruim.
     tres_dias = [zerada(0), zerada(1), zerada(2),
                  linha("editorial", 80), linha("busca", 40)]

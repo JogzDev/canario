@@ -28,12 +28,14 @@ RODAR NO RUNNER RESIDENCIAL: o Google recusa IP de datacenter. Verificado em
 import http.cookiejar
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import supabase_rest  # noqa: E402
@@ -96,10 +98,74 @@ GRUPOS_POR_EXECUCAO = 3
 # bruto na janela inteira: o Trends normaliza 0-100, entao media < 1 significa
 # que o termo praticamente nao aparece.
 MEDIA_MINIMA = 1.0
+HTTP_TRANSITORIOS = {429, 500, 502, 503}
+FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
 
 
 class TrendsErro(Exception):
     pass
+
+
+def motivo_http_transitorio(falhas):
+    """Resume uma recusa HTTP conhecida sem esconder falha de outra natureza.
+
+    O portao de saude sabe diferenciar um dia de recusa externa de zero sem
+    explicacao. Antes desta funcao, o log dizia HTTP 429, mas a linha `saude`
+    guardava apenas a lista de grupos; o motivo de topo sumia e o portao
+    reportava falsamente "sem dizer por que".
+    """
+    if not falhas:
+        return None
+    codigos = []
+    for falha in falhas:
+        achado = re.search(r"\bHTTP\s+(\d{3})\b", str(falha.get("erro") or ""),
+                           flags=re.IGNORECASE)
+        if not achado:
+            return None
+        codigo = int(achado.group(1))
+        if codigo not in HTTP_TRANSITORIOS:
+            return None
+        codigos.append(codigo)
+    resumo = "/".join(str(c) for c in sorted(set(codigos)))
+    return "http {} em todos os {} grupos apos backoff".format(
+        resumo, len(falhas))
+
+
+def alertas_com_motivo_http(alertas):
+    """Deriva a causa de topo a partir do detalhe, inclusive em linha antiga."""
+    novos = dict(alertas or {})
+    motivo = motivo_http_transitorio(novos.get("grupos_que_falharam") or [])
+    if motivo:
+        novos["erro"] = motivo
+    return novos
+
+
+def data_operacional(agora=None):
+    agora = agora or datetime.now(FUSO_OPERACIONAL)
+    return agora.astimezone(FUSO_OPERACIONAL).date()
+
+
+def reconsolidar_saude_existente(hoje):
+    """Repara apenas o diagnostico persistido; nao toca no Google Trends."""
+    filtro = ("?data=eq.{}&fonte=eq.busca&marca_id=is.null&"
+              "select=data,fonte,marca_id,visitados,gravados,itens,"
+              "pct_campos_ok,alertas&limit=1").format(hoje.isoformat())
+    linhas = supabase_rest.selecionar("saude", filtro)
+    if not linhas:
+        print("ERRO: nao existe saude da busca para {}.".format(hoje),
+              file=sys.stderr)
+        return 1
+    linha = dict(linhas[0])
+    alertas = alertas_com_motivo_http(linha.get("alertas"))
+    if not alertas.get("erro"):
+        print("ERRO: a linha nao contem somente recusas HTTP transitórias.",
+              file=sys.stderr)
+        return 1
+    linha["alertas"] = alertas
+    supabase_rest.upsert("saude", [linha], on_conflict="data,fonte,marca_id")
+    print("Saude da busca reconsolidada sem nova consulta: {}.".format(
+        alertas["erro"]), file=sys.stderr)
+    return 0
 
 
 def semana_iso(quando):
@@ -431,6 +497,10 @@ def main():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
         return 1
 
+    if os.environ.get("TRENDS_SOMENTE_RECONSOLIDAR", "").lower() in {
+            "1", "true", "yes"}:
+        return reconsolidar_saude_existente(data_operacional())
+
     try:
         tentativa = max(0, int(os.environ.get("TRENDS_TENTATIVA", "0") or 0))
     except ValueError:
@@ -472,7 +542,7 @@ def main():
     # precisa do universo inteiro, nao do lote.
     ids_aprovados = {t["id"] for t in aprovados}
     modo = os.environ.get("TRENDS_MODO", "").strip().lower()
-    hoje = date.today()
+    hoje = data_operacional()
 
     # Em dia = cobre a ultima semana ISO fechada, com uma semana de tolerancia
     # para o atraso de publicacao do Google.
@@ -620,6 +690,7 @@ def main():
     # nenhum grupo passa fica visivel na hora.
     tentados = len(grupos)
     responderam = tentados - len(falhas)
+    recusa_http = motivo_http_transitorio(falhas) if not responderam else None
     # Quem ja tinha serie (universo menos os que nunca coletaram) mais quem
     # coletou agora. `ja_tem` morreu junto com os dois modos; usar o nome
     # antigo aqui passou pelo `ast.parse` e so estourou no runner, porque
@@ -631,7 +702,8 @@ def main():
         "itens": total_pontos,
         "pct_campos_ok": (round(responderam / float(tentados), 3)
                           if tentados else None),
-        "alertas": {
+        "alertas": alertas_com_motivo_http({
+            "erro": recusa_http,
             "modo": modo,
             "tentativa": tentativa,
             "grupos_que_falharam": falhas or None,
@@ -642,7 +714,7 @@ def main():
             "termos_com_serie": cobertura,
             "termos_aprovados": total_aprovados,
             "semana_mais_recente": hoje.isoformat(),
-        },
+        }),
     }
     anteriores = supabase_rest.selecionar(
         "saude", "?data=eq.{}&fonte=eq.busca&marca_id=is.null&"
@@ -661,9 +733,16 @@ def main():
         len(mortos), ", ".join(sorted(mortos)) or "nenhum"), file=sys.stderr)
     if falhas:
         print("Grupos que falharam: {}".format(falhas), file=sys.stderr)
-    # Codigo de saida diferente de zero quando NENHUM grupo passou: assim o
-    # Actions marca a execucao como falha em vez de verde silencioso.
+    # Recusa HTTP conhecida fica a cargo do portao de saude: um dia vira aviso
+    # e tres dias seguidos bloqueiam. Sair 1 aqui disparava imediatamente outra
+    # bateria de 12 chamadas contra o mesmo 429 e deixava a run vermelha mesmo
+    # quando a serie anterior continuava valida. Erro desconhecido permanece
+    # falha dura.
     if tentados and not responderam:
+        if recusa_http:
+            print("AVISO: {}. A serie anterior foi preservada; o portao decide "
+                  "pela persistencia.".format(recusa_http), file=sys.stderr)
+            return 0
         print("ERRO: nenhum grupo respondeu. A perna de busca nao avancou hoje.",
               file=sys.stderr)
         return 1
