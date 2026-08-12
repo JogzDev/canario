@@ -1,10 +1,10 @@
 # SAÚDE — coletores do Canário
 
-**Gerado (UTC):** 2026-08-12T08:50:47.815611+00:00
+**Gerado (UTC):** 2026-08-12T20:24:42.850648+00:00
 
 **Data observada:** 2026-08-12
 
-**Estado:** ATENÇÃO
+**Estado:** sem alerta crítico
 
 
 ## Portão operacional
@@ -13,11 +13,13 @@
 **Avisos (não travam):** fonte que recusou hoje mas voltou antes de 3 dias seguidos.
 
 
+- busca retornou zero hoje (http 429 em todos os 6 grupos apos backoff); 1º dia
+
 - varejo/PatBo retornou zero hoje (http 429 (persistiu apos backoff longo)); 2º dia
 
 
 
-- ⚠️ busca retornou zero sem dizer por quê
+- Todas as fontes obrigatórias registraram volume sem queda superior a 70%.
 
 
 ## Varejo
@@ -52,7 +54,7 @@
 | Fonte | Tentativas | Respostas | Itens/pontos | % ok | Alertas |
 |---|---:|---:|---:|---:|---|
 | editorial | 16 | 55 | 503 | 0.875 | {"por_veiculo": {"FFW": 0, "WWD": 10, "Dazed": 15, "Vogue": 29, "Hypebeast": 20, "Refinery29": 10, "Elle Brasil": 10, "Highsnobiety": 15, "Vogue Brasil": 100, "Who What Wear": 50, "Glamour Brasil": 100, "Steal the Look": 10, "Fashion Bubbles": 24, "Business of Fashion": 0, "Marie Claire Brasil": 100, "Harpers Bazaar Brasil": 10}, "veiculos_com_erro": {"FFW": "feed http 403", "Business of Fashion": "feed http 403"}, "veiculos_sem_itens": null} |
-| busca | 6 | 0 | 0 | 0.0 | {"modo": "semanal", "execucoes": {"0": {"itens": 0, "tentados": 3, "responderam": 0, "grupos_que_falharam": [{"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3}]}, "1": {"itens": 0, "tentados": 3, "responderam": 0, "grupos_que_falharam": [{"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3}]}}, "tentativa": 1, "grupos_totais": 10, "termos_aprovados": 40, "termos_com_serie": 40, "grupos_planejados": 6, "grupos_que_falharam": [{"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1, "tentativa": 0}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2, "tentativa": 0}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3, "tentativa": 0}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1, "tentativa": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2, "tentativa": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3, "tentativa": 1}], "semana_mais_recente": "2026-08-12", "termos_sem_perna_de_busca": null, "grupos_adiados_por_orcamento": 7} |
+| busca | 6 | 0 | 0 | 0.0 | {"erro": "http 429 em todos os 6 grupos apos backoff", "modo": "semanal", "execucoes": {"0": {"itens": 0, "tentados": 3, "responderam": 0, "grupos_que_falharam": [{"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3}]}, "1": {"itens": 0, "tentados": 3, "responderam": 0, "grupos_que_falharam": [{"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3}]}}, "tentativa": 1, "grupos_totais": 10, "termos_aprovados": 40, "termos_com_serie": 40, "grupos_planejados": 6, "grupos_que_falharam": [{"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1, "tentativa": 0}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2, "tentativa": 0}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3, "tentativa": 0}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 1, "tentativa": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 2, "tentativa": 1}, {"erro": "falhou apos 4 tentativas (HTTP 429)", "grupo": 3, "tentativa": 1}], "semana_mais_recente": "2026-08-12", "termos_sem_perna_de_busca": null, "grupos_adiados_por_orcamento": 7} |
 
 ---
 
