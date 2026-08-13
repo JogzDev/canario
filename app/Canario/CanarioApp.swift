@@ -27,7 +27,8 @@ struct Raiz: View {
     @State private var buscaAberta = false
     @State private var menuAberto = ProcessInfo.processInfo.arguments.contains(
         "-CanarioMenuAberto")
-    @State private var itemDoMenu: ItemDoMenu?
+    @State private var itemDoMenu: ItemDoMenu? = ProcessInfo.processInfo.arguments.contains(
+        "-CanarioAbrirPrivacy") ? ItemDoMenu(nome: "Privacy") : nil
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -84,11 +85,8 @@ struct Raiz: View {
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })
         }
-        .alert(item: $itemDoMenu) { item in
-            Alert(
-                title: Text(item.nome),
-                message: Text("This section is part of the approved navigation and will be connected in the next product pass."),
-                dismissButton: .default(Text("OK")))
+        .fullScreenCover(item: $itemDoMenu) { item in
+            TelaDoMenu(nome: item.nome)
         }
     }
 }

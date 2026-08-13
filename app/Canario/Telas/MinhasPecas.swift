@@ -90,6 +90,7 @@ struct MinhasPecas: View {
                             aoEscolherFoto: { item in
                                 await substituirFoto(de: peca, por: item)
                             },
+                            aoFavoritar: { favoritar(peca) },
                             aoApagar: { apagar(peca) })
                     }
                 }
@@ -152,6 +153,13 @@ struct MinhasPecas: View {
         pecas.removeAll { $0.id == peca.id }
         Task { await PecasSalvas.shared.apagar(peca.id) }
     }
+
+    private func favoritar(_ peca: PecaSalva) {
+        guard let indice = pecas.firstIndex(where: { $0.id == peca.id }) else { return }
+        pecas[indice].favorita = !(pecas[indice].favorita ?? false)
+        let atualizada = pecas[indice]
+        Task { await PecasSalvas.shared.salvar(atualizada) }
+    }
 }
 
 /// Card do Figma: a peça é protagonista, inteira e sem um recorte quadrado que
@@ -164,6 +172,7 @@ private struct CartaoDoArmario: View {
     let categoria: String?
     let processandoFoto: Bool
     let aoEscolherFoto: (PhotosPickerItem) async -> Data?
+    let aoFavoritar: () -> Void
     let aoApagar: () -> Void
 
     @State private var miniatura: Data?
@@ -173,42 +182,54 @@ private struct CartaoDoArmario: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavigationLink {
-                RelatorioDaPeca(
-                    termos: termos.filter { peca.termoIds.contains($0.id) },
-                    precoAlvo: peca.precoAlvo,
-                    pecaSalva: peca)
-            } label: {
-                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                    ZStack {
-                        if let miniatura, let imagem = UIImage(data: miniatura) {
-                            Image(uiImage: imagem)
-                                .resizable()
-                                .scaledToFit()
-                                .padding(8)
-                        } else {
-                            Image(systemName: "tshirt")
-                                .font(.system(size: 46, weight: .light))
-                                .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.48))
+            ZStack(alignment: .topTrailing) {
+                NavigationLink {
+                    RelatorioDaPeca(
+                        termos: termos.filter { peca.termoIds.contains($0.id) },
+                        precoAlvo: peca.precoAlvo,
+                        pecaSalva: peca)
+                } label: {
+                    VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                        ZStack {
+                            if let miniatura, let imagem = UIImage(data: miniatura) {
+                                Image(uiImage: imagem)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(8)
+                            } else {
+                                Image(systemName: "tshirt")
+                                    .font(.system(size: 46, weight: .light))
+                                    .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.48))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 182)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(peca.nome(comRotulos: rotulos))
+                                .font(Tokens.Fonte.corpo.weight(.semibold))
+                                .foregroundStyle(Tokens.Cor.noite)
+                                .lineLimit(2)
+                            Text(categoria ?? "Clothing")
+                                .font(Tokens.Fonte.miudo)
+                                .foregroundStyle(Tokens.Cor.azulMarca)
+                                .lineLimit(1)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 182)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(peca.nome(comRotulos: rotulos))
-                            .font(Tokens.Fonte.corpo.weight(.semibold))
-                            .foregroundStyle(Tokens.Cor.noite)
-                            .lineLimit(2)
-                        Text(categoria ?? "Clothing")
-                            .font(Tokens.Fonte.miudo)
-                            .foregroundStyle(Tokens.Cor.azulMarca)
-                            .lineLimit(1)
-                    }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+
+                Button(action: aoFavoritar) {
+                    Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
+                        .font(.system(size: 23, weight: .semibold))
+                        .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
+                        .padding(8)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
             }
-            .buttonStyle(.plain)
 
             Divider().opacity(0.32)
 

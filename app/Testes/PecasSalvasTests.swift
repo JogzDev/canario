@@ -115,6 +115,26 @@ final class PecasSalvasTests: XCTestCase {
         XCTAssertEqual(todas.first?.apelido, "corrigida")
     }
 
+    func testFavoritoPersisteSemGuardarLeituraCalculada() async throws {
+        let arquivo = arquivoTemporario()
+        defer { try? FileManager.default.removeItem(at: arquivo) }
+        let loja = PecasSalvas(arquivo: arquivo)
+        let peca = PecaSalva(apelido: "favorita", termoIds: ["vestido"],
+                             favorita: true)
+        await loja.salvar(peca)
+
+        let reaberta = PecasSalvas(arquivo: arquivo)
+        let todas = await reaberta.todas()
+        let salva = try XCTUnwrap(todas.first)
+        XCTAssertEqual(salva.favorita, true)
+        let dados = try JSONEncoder().encode(salva)
+        let json = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: dados) as? [String: Any])
+        XCTAssertEqual(json["favorita"] as? Bool, true)
+        XCTAssertNil(json["estado"])
+        XCTAssertNil(json["indice"])
+    }
+
     func testMaisRecentePrimeiro() async throws {
         let arquivo = arquivoTemporario()
         defer { try? FileManager.default.removeItem(at: arquivo) }

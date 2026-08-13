@@ -54,10 +54,14 @@ struct PecaSalva: Codable, Equatable, Identifiable {
     /// Nome opaco da miniatura local. Nunca contém caminho, URL de origem ou imagem
     /// em base64; `PecasSalvas` valida o nome antes de abrir.
     var miniaturaArquivo: String?
+    /// Escolha explícita do usuário. `nil` mantém compatibilidade com peças
+    /// criadas antes de Favorites existir e não ocupa o JSON até ser usada.
+    var favorita: Bool?
 
     init(id: UUID = UUID(), apelido: String = "", termoIds: [String],
          precoAlvo: Double? = nil, canal: String? = nil,
-         criadaEm: Date = Date(), miniaturaArquivo: String? = nil) {
+         criadaEm: Date = Date(), miniaturaArquivo: String? = nil,
+         favorita: Bool? = nil) {
         self.id = id
         self.apelido = apelido
         self.termoIds = termoIds
@@ -65,6 +69,7 @@ struct PecaSalva: Codable, Equatable, Identifiable {
         self.canal = canal
         self.criadaEm = criadaEm
         self.miniaturaArquivo = miniaturaArquivo
+        self.favorita = favorita
     }
 
     /// Nome para a lista quando o usuário não deu um. Usa os rótulos vindos do
