@@ -194,17 +194,17 @@ private struct TermosDoMenu: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 TextoComTitulo(
-                    titulo: "What Canário provides",
-                    texto: "Canário organizes public fashion-market signals and the clothing attributes you confirm. Trend labels are evidence summaries, not forecasts, financial advice or guarantees of sales.")
+                    titulo: "What the app provides",
+                    texto: "The app organizes public fashion-market signals and the clothing attributes you confirm. Trend labels are evidence summaries, not forecasts, financial advice or guarantees of sales.")
                 TextoComTitulo(
                     titulo: "Store information",
-                    texto: "Prices, stock, product images and links come from the named stores and can change after collection. Purchases happen on the store website under that store's terms; Canário is not the seller.")
+                    texto: "Prices, stock, product images and links come from the named stores and can change after collection. Purchases happen on the store website under that store's terms; this app is not the seller.")
                 TextoComTitulo(
                     titulo: "Your Closet",
                     texto: "You control the items you save. Removing an item deletes its local record and thumbnail. Reinstalling the app can remove the entire local Closet because it is not synced in this build.")
                 TextoComTitulo(
                     titulo: "Fair use of the service",
-                    texto: "Do not use the app to overload source websites, bypass access controls, copy third-party catalogs or misrepresent Canário's readings as facts about future demand.")
+                    texto: "Do not use the app to overload source websites, bypass access controls, copy third-party catalogs or misrepresent its readings as facts about future demand.")
                 TextoComTitulo(
                     titulo: "Corrections",
                     texto: "Source coverage and classifications can be wrong. The app exposes dates and evidence so a reading can be checked and corrected rather than treated as unquestionable.")
@@ -224,7 +224,7 @@ private struct AjustesDoMenu: View {
                 LabeledContent("Reduce Motion") {
                     Text(reduzirMovimento ? "On" : "Off")
                 }
-                Text("Canário follows the iPhone accessibility setting for motion and text size.")
+                Text("The app follows the iPhone accessibility setting for motion and text size.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -269,7 +269,7 @@ private struct PrivacidadeDoMenu: View {
                 BlocoInformativo(
                     icone: "internaldrive",
                     titulo: "A small local thumbnail",
-                    texto: "When you save an item, Canário can keep a resized thumbnail without photo metadata. The original is not copied. Deleting the item deletes its thumbnail.")
+                    texto: "When you save an item, the app can keep a resized thumbnail without photo metadata. The original is not copied. Deleting the item deletes its thumbnail.")
                 BlocoInformativo(
                     icone: "network",
                     titulo: "Store images and links",
@@ -277,7 +277,7 @@ private struct PrivacidadeDoMenu: View {
                 BlocoInformativo(
                     icone: "person.crop.circle.badge.xmark",
                     titulo: "No account data yet",
-                    texto: "There is no sign-in in this build, so Canário does not collect an email address, password or synced Closet. This notice must change before account sync or remote photo analysis ships.")
+                    texto: "There is no sign-in in this build, so the app does not collect an email address, password or synced Closet. This notice must change before account sync or remote photo analysis ships.")
             }
         }
     }
@@ -286,10 +286,10 @@ private struct PrivacidadeDoMenu: View {
 private struct PerguntasDoMenu: View {
     private let perguntas: [(String, String)] = [
         ("What is a confirmed movement?", "A direction supported by at least two independent evidence legs, such as search interest and relevant fashion coverage. A spike in one source is shown separately instead of being promoted to a trend."),
-        ("Why can two dates be different?", "Google search interest and editorial sources close their weeks on different schedules. Canário shows the date attached to each signal and does not silently pretend they are the same observation."),
+        ("Why can two dates be different?", "Google search interest and editorial sources close their weeks on different schedules. The app shows the date attached to each signal and does not silently pretend they are the same observation."),
         ("What does Not confirmed mean?", "There may be a current reading, but there is not enough independent coverage to claim a direction. It is missing evidence, not a negative verdict about the garment."),
         ("Are Similar Pieces recommendations?", "No. They are observed products sharing the selected attributes. Price, discount and availability describe the store at collection time; they are not purchase advice."),
-        ("Does Canário follow my garment over time?", "No. Opening a saved Closet item recalculates today's market reading for its attributes. The app does not claim that your personal garment rose or fell in the market."),
+        ("Does the app follow my garment over time?", "No. Opening a saved Closet item recalculates today's market reading for its attributes. The app does not claim that your personal garment rose or fell in the market."),
         ("How fresh is Weekly Trends?", "Search interest uses the latest closed Google Trends week available under the collection cadence. Fashion coverage uses publication dates. Each section shows its own evidence date so freshness can be audited.")
     ]
 
