@@ -157,16 +157,12 @@ struct Analisar: View {
         carregando = true
         erro = nil
         do {
-            // As duas EM PARALELO. Estavam em sequência, e como o custo aqui é
-            // abertura de conexão e não tamanho -- medido em 10/08: `termos`
-            // leva 1,7s para 9 kB enquanto `series` traz 168 kB em 0,38s --
-            // uma esperava a outra sem precisar. Somadas davam os ~3s que o
-            // Xcode reportou como `Hang detected: 3.65s` na abertura.
-            async let t: [Termo] = Supabase.shared.buscar(
-                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
-            async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_do_app", "select=*&order=semana.desc&limit=600")
+            // Ambos são snapshots compartilhados e normalmente já foram
+            // aquecidos pela Home. Nenhuma troca de aba reabre o mesmo TLS.
+            async let t = CatalogoDeTermos.shared.carregar()
+            async let i = CatalogoDeIndices.shared.carregar()
             termos = try await t
+            carregando = false
             let recentes = try await i
             // A linha mais nova pode ter só busca OU editorial e, portanto,
             // nenhum estado. Quando há um estado realmente medido nas 12
@@ -191,7 +187,8 @@ struct LinhaTermo: View {
                 Text(rotulo ?? termo.rotulo).font(Tokens.Fonte.corpo)
                 Spacer()
                 SeloEstado(estado: indice?.estado,
-                           motivo: "Menos de duas pernas ativas nesta semana.")
+                           motivo: "Fewer than two independent sources agree.",
+                           leitura: indice?.indice)
             }
             Text(termo.dimensao)
                 .font(Tokens.Fonte.miudo)

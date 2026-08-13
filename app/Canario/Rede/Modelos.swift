@@ -13,7 +13,7 @@ enum Recorte {
 
 /// Um termo aprovado. O app só recebe `status='aprovado'` — a regra inviolável 4
 /// é aplicada por política de banco, não por filtro daqui.
-struct Termo: Decodable, Identifiable, Hashable {
+struct Termo: Codable, Identifiable, Hashable {
     let id: String
     let rotulo: String
     let dimensao: String
@@ -54,7 +54,7 @@ struct Termo: Decodable, Identifiable, Hashable {
 /// O estado semanal de um termo. `estado` é opcional de propósito: quando há
 /// menos de duas pernas ativas, a §22 não permite declarar estado, e o app
 /// mostra silêncio honesto em vez de inventar "estável" (regra 2 e regra 6).
-struct IndiceSemanal: Decodable, Identifiable, Hashable {
+struct IndiceSemanal: Codable, Identifiable, Hashable {
     let id: Int
     let termoId: String
     let segmento: String
@@ -69,7 +69,7 @@ struct IndiceSemanal: Decodable, Identifiable, Hashable {
     /// O que a §22 registrou junto do número. Existe para a tela poder
     /// **explicar o estado ao usuário**, e não só exibi-lo: "pico" sem motivo é
     /// um rótulo que o comprador não sabe se deve seguir ou ignorar.
-    struct Meta: Decodable, Hashable {
+    struct Meta: Codable, Hashable {
         let indiceSemanaAnterior: Double?
         let pernasAcimaDe1: Int?
         let pernasAbaixoDe1: Int?
@@ -143,7 +143,7 @@ enum Estado: String {
 // MARK: - Série
 
 /// Um ponto de série por fonte. Alimenta o minigráfico do §29.3.
-struct PontoSerie: Decodable, Identifiable, Hashable {
+struct PontoSerie: Codable, Identifiable, Hashable {
     let id: Int
     let termoId: String
     let fonte: String
@@ -159,7 +159,7 @@ struct PontoSerie: Decodable, Identifiable, Hashable {
     /// só "baseado em: editorial BR", e o JP apontou o óbvio: isso não nomeia
     /// nada. A regra 3 pede o caminho até a origem, e a origem parava no rótulo
     /// da perna em vez de chegar no site que publicou.
-    struct Meta: Decodable, Hashable {
+    struct Meta: Codable, Hashable {
         let unidade: String?
         let veiculos: [String: Int]?
         let exemplos: [Exemplo]?
@@ -167,7 +167,7 @@ struct PontoSerie: Decodable, Identifiable, Hashable {
         let metrica: String?
         let nTotalSortimento: Double?
 
-        struct Exemplo: Decodable, Hashable {
+        struct Exemplo: Codable, Hashable {
             let veiculo: String
             let titulo: String
             let url: String?
@@ -292,7 +292,7 @@ enum Elegibilidade {
 /// Um evento de varejo (§23). Reposição é o sinal mais forte do painel: é a
 /// marca decidindo repor com o próprio dinheiro, não uma ruptura que pode ser
 /// só estoque acabando.
-struct EventoVarejo: Decodable, Identifiable, Hashable {
+struct EventoVarejo: Codable, Identifiable, Hashable {
     let id: Int
     let tipo: String
     let data: String
@@ -309,7 +309,7 @@ struct EventoVarejo: Decodable, Identifiable, Hashable {
     /// Dias entre a primeira ocorrência e esta. Nulo quando é a primeira.
     let diasDesdeAPrimeira: Int?
 
-    struct Detalhe: Decodable, Hashable {
+    struct Detalhe: Codable, Hashable {
         let tamanhos: [String]?
         // Vem como NUMERO no jsonb; declarar String derrubava a decodificacao
         // e a tela mostrava "nao consegui consultar" como se fosse rede.

@@ -185,3 +185,125 @@ actor Supabase {
         }
     }
 }
+
+/// Taxonomia com cache local stale-while-revalidate.
+///
+/// Ela muda raramente, era buscada novamente por Home, Closet, Search e
+/// Compare e fazia cada troca de tela pagar outra abertura TLS. A primeira
+/// leitura vem da rede; as seguintes devolvem o arquivo local imediatamente e
+/// renovam silenciosamente para a próxima abertura.
+actor CatalogoDeTermos {
+    static let shared = CatalogoDeTermos()
+    private var memoria: [Termo]?
+    private var buscaEmCurso: Task<[Termo], Error>?
+
+    private var arquivo: URL {
+        let raiz = FileManager.default.urls(for: .cachesDirectory,
+                                             in: .userDomainMask)[0]
+        return raiz.appendingPathComponent("canario-taxonomia-v1.json")
+    }
+
+    func carregar() async throws -> [Termo] {
+        if let memoria { return memoria }
+        if let dados = try? Data(contentsOf: arquivo),
+           let locais = try? JSONDecoder().decode([Termo].self, from: dados),
+           !locais.isEmpty {
+            memoria = locais
+            Task { await renovar() }
+            return locais
+        }
+        return try await buscarESalvar()
+    }
+
+    func renovar() async {
+        _ = try? await buscarESalvar()
+    }
+
+    private func buscarESalvar() async throws -> [Termo] {
+        if let buscaEmCurso { return try await buscaEmCurso.value }
+        let tarefa = Task<[Termo], Error> {
+            try await Supabase.shared.buscar(
+                "termos",
+                "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,"
+                + "palavras_pt,palavras_en&order=dimensao,id")
+        }
+        buscaEmCurso = tarefa
+        let recebidos: [Termo]
+        do {
+            recebidos = try await tarefa.value
+        } catch {
+            buscaEmCurso = nil
+            throw error
+        }
+        buscaEmCurso = nil
+        memoria = recebidos
+        if let dados = try? JSONEncoder().encode(recebidos) {
+            try? dados.write(to: arquivo, options: .atomic)
+        }
+        return recebidos
+    }
+}
+
+/// Últimas 14 semanas de índices, compartilhadas por busca, relatórios,
+/// comparação e radar. Antes cada aba baixava as mesmas ~500 linhas; como o
+/// custo dominante é abrir TLS, trocar de aba parecia reiniciar o aplicativo.
+/// A data continua em cada `IndiceSemanal`, então servir o snapshot local não
+/// esconde sua idade enquanto a renovação silenciosa prepara o próximo toque.
+actor CatalogoDeIndices {
+    static let shared = CatalogoDeIndices()
+    private var memoria: [IndiceSemanal]?
+    private var buscaEmCurso: Task<[IndiceSemanal], Error>?
+
+    private var arquivo: URL {
+        FileManager.default.urls(for: .cachesDirectory,
+                                 in: .userDomainMask)[0]
+            .appendingPathComponent("canario-indices-v1.json")
+    }
+
+    func carregar() async throws -> [IndiceSemanal] {
+        // A Home já aquece a sessão. Renovar aqui transformava cada navegação
+        // posterior em uma nova abertura TLS para o mesmo snapshot semanal.
+        if let memoria { return memoria }
+        if let dados = try? Data(contentsOf: arquivo),
+           let locais = try? JSONDecoder().decode([IndiceSemanal].self, from: dados),
+           !locais.isEmpty {
+            memoria = locais
+            Task { await renovar() }
+            return locais
+        }
+        return try await buscarESalvar()
+    }
+
+    func renovar() async {
+        _ = try? await buscarESalvar()
+    }
+
+    private func buscarESalvar() async throws -> [IndiceSemanal] {
+        if let buscaEmCurso { return try await buscaEmCurso.value }
+        let calendario = Calendar(identifier: .iso8601)
+        let corte = calendario.date(byAdding: .day, value: -98, to: Date()) ?? Date()
+        let f = DateFormatter()
+        f.calendar = calendario
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        let consulta = "select=*&segmento=eq.\(Recorte.segmento)"
+            + "&semana=gte.\(f.string(from: corte))&order=semana.desc&limit=1000"
+        let tarefa = Task<[IndiceSemanal], Error> {
+            try await Supabase.shared.buscar("indices_do_app", consulta)
+        }
+        buscaEmCurso = tarefa
+        let recebidos: [IndiceSemanal]
+        do {
+            recebidos = try await tarefa.value
+        } catch {
+            buscaEmCurso = nil
+            throw error
+        }
+        buscaEmCurso = nil
+        memoria = recebidos
+        if let dados = try? JSONEncoder().encode(recebidos) {
+            try? dados.write(to: arquivo, options: .atomic)
+        }
+        return recebidos
+    }
+}

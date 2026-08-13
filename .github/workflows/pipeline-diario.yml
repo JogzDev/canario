@@ -89,11 +89,12 @@ jobs:
   recuperar-busca:
     needs: [saude-inicial, recuperar-shopify]
     if: ${{ always() && needs.saude-inicial.outputs.saudavel != 'true' }}
-    uses: ./.github/workflows/coleta-trends.yml
-    with:
-      modo: ''
-      tentativa: 1
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Não repetir automaticamente uma fonte semanal que recusou
+        run: >-
+          echo "A causa registrada segue para o portão; a recuperação do
+          Trends é manual e ocorre numa janela posterior."
 
   saude:
     # O portao final continua estrito. A recuperacao melhora os dados; nao

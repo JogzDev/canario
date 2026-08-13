@@ -34,7 +34,7 @@ struct Raiz: View {
             Group {
                 switch aba {
                 case .adicionar:
-                    TelaInicialAdicionar { menuAberto = true }
+                    TelaInicialAdicionar()
                 case .armario:
                     MinhasPecas()
                 case .dados:
@@ -59,7 +59,27 @@ struct Raiz: View {
                 .transition(.move(edge: .leading))
                 .zIndex(10)
             }
+
+            // Um único controle troca apenas o símbolo. Assim ellipsis e X
+            // ocupam literalmente a mesma coordenada e compartilham a mesma
+            // safe area; duas telas nunca mais podem divergir no recuo.
+            if aba == .adicionar {
+                VStack {
+                    HStack {
+                        BotaoCircularDoMenu(
+                            simbolo: menuAberto ? "xmark" : "ellipsis",
+                            acessibilidade: menuAberto ? "Close menu" : "Open menu",
+                            acao: { menuAberto.toggle() })
+                        Spacer()
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .zIndex(11)
+            }
         }
+        .statusBarHidden(aba == .adicionar)
         .animation(.snappy(duration: 0.35), value: menuAberto)
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })

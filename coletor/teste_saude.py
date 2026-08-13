@@ -43,6 +43,19 @@ def main():
         print("FALHOU: ausencia de busca nao bloqueou")
         return 1
 
+    busca_em_dia = linha("busca", 0)
+    busca_em_dia["visitados"] = 0
+    busca_em_dia["alertas"] = {
+        "adiado_por_cadencia": True,
+        "motivo": "todas as series de busca estao em dia",
+    }
+    cadencia = [linha("varejo", 100, marca_id=1), linha("editorial", 80),
+                busca_em_dia]
+    crit, avisos = alertas_criticos(cadencia, MARCAS, HOJE)
+    if crit or not any("já estavam em dia" in x for x in avisos):
+        print("FALHOU: skip semanal do Trends foi tratado como pane")
+        return 1
+
     queda = [linha("varejo", 20, marca_id=1),
              linha("editorial", 80), linha("busca", 40)]
     queda.extend(linha("varejo", 100, dias=d, marca_id=1)

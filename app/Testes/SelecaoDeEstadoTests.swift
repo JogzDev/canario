@@ -51,4 +51,19 @@ final class SelecaoDeEstadoTests: XCTestCase {
         XCTAssertEqual(mapa["preto"]?.estado, "em alta")
         XCTAssertEqual(mapa["saia"]?.estado, "em queda")
     }
+
+    func testRadarEditorialNaoPromoveNoticiaIncidentalComoModa() {
+        XCTAssertFalse(Explicacao.mancheteDeclaraModa(
+            "Vini Jr.: De São Gonçalo ao topo do mundo"))
+        XCTAssertFalse(Explicacao.mancheteDeclaraModa(
+            "Anne Hathaway exibe avanço da terceira gestação durante evento"))
+        XCTAssertTrue(Explicacao.mancheteDeclaraModa(
+            "O casaco de tweed é alternativa ao blazer: 5 jeitos de usar"))
+        XCTAssertTrue(Explicacao.mancheteDeclaraModa(
+            "Copenhagen Fashion Week outfits to recreate now"))
+        XCTAssertTrue(Explicacao.mancheteDeclaraModa(
+            "Os vestidos escolhidos para o verão"))
+        XCTAssertFalse(Explicacao.mancheteDeclaraModa(
+            "Camisa 7 do Real Madrid decide o clássico"))
+    }
 }

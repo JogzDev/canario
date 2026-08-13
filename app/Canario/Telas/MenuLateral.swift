@@ -14,12 +14,11 @@ struct MenuLateral: View {
                     .onTapGesture(perform: fechar)
                     .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 0) {
-                    BotaoCircularDoMenu(simbolo: "xmark",
-                                        acessibilidade: "Close menu",
-                                        acao: fechar)
-                    .padding(.top, 4)
+                Tokens.Cor.azulMarca
+                    .frame(width: geo.size.width * 0.79)
+                    .ignoresSafeArea()
 
+                VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(itens, id: \.self) { item in
                             Button(item) { escolher(item) }
@@ -29,17 +28,17 @@ struct MenuLateral: View {
                                 .frame(height: 104)
                         }
                     }
-                    .padding(.top, 34)
+                    // O controle de fechar pertence à raiz e ocupa a mesma
+                    // posição do ellipsis. A lista começa abaixo dele.
+                    .padding(.top, 100)
                     Spacer()
                 }
                 .padding(.leading, 20)
                 .padding(.trailing, 26)
                 .frame(width: geo.size.width * 0.79)
                 .frame(maxHeight: .infinity)
-                .background(Tokens.Cor.azulMarca)
                 .shadow(color: .black.opacity(0.24), radius: 22, x: 10)
             }
-            .ignoresSafeArea()
         }
     }
 }

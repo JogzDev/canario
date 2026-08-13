@@ -181,7 +181,8 @@ def filtrar_por_categoria(achados, categorias):
     return achados
 
 
-def filtrar_contexto_editorial(titulo, resumo, achados, categorias):
+def filtrar_contexto_editorial(titulo, resumo, achados, categorias,
+                               achados_no_titulo=None):
     """Recusa categoria citada fora de contexto de vestuário.
 
     O falso positivo que motivou a trava foi real: a Harper's Bazaar publicou
@@ -189,41 +190,63 @@ def filtrar_contexto_editorial(titulo, resumo, achados, categorias):
     `camisa` no índice de moda. Exigir apenas alguma categoria no artigo não
     resolve, porque a própria palavra ambígua é a categoria.
 
-    A exceção segura é título claramente de moda (look/moda/roupa etc.) ou uma
-    segunda evidência de vestuário no título+resumo. Assim "camisa branca" e
-    "looks com camisa" continuam; "camisa 7 do Real Madrid" sai.
+    A coleta ainda casa título + resumo, mas o artigo só entra se o TÍTULO
+    declarar uma peça ou intenção editorial de moda. Resumo é útil para achar
+    atributos de uma matéria pertinente; não pode transformar uma notícia de
+    gravidez, futebol ou viagem em matéria de moda só porque descreveu a roupa
+    de alguém numa frase lateral.
+
+    `achados_no_titulo` vem do mesmo matcher da taxonomia e é aceito como
+    argumento para tornar essa separação auditável nos testes. A decisão final
+    usa também um vocabulário estreito de intenção de moda, pois vários termos
+    da taxonomia ("top", "longo", "social") são palavras comuns fora dela.
     """
     categorias_achadas = achados & categorias
     if not achados or not categorias_achadas:
         return set()
-    # A trava nasce estreita, no caso que foi medido. Aplicá-la de uma vez a
-    # vestido/saia/calça etc. derrubaria cobertura sem ainda existir uma amostra
-    # de recall. Se outra categoria demonstrar ambiguidade real, ela entra aqui
-    # junto com uma regressão e uma medição cega — nunca por impressão.
-    if not categorias_achadas.issubset({"camisa"}):
-        return achados
-    texto = limpar((titulo or "") + " " + (resumo or "")).lower()
+    achados_no_titulo = set(achados_no_titulo or ())
     titulo_limpo = limpar(titulo or "").lower()
     contexto_forte = (
         "moda", "fashion", "look", "looks", "roupa", "roupas", "outfit",
-        "style", "estilo", "tendencia", "tendência", "colecao", "coleção",
-        "runway", "passarela", "wear", "styling", "alfaiataria",
+        "outfits", "style", "estilo", "tendencia", "tendência", "trend",
+        "trends", "colecao", "coleção", "collection", "runway", "passarela",
+        "wear", "wearing", "styling", "alfaiataria", "fashion week",
+        "streetwear", "street style", "wardrobe", "closet", "fw26", "ss27",
     )
-    evidencia_de_peca = (
-        "vestido", "saia", "calca", "calça", "short", "bermuda", "blusa",
-        "top", "camiseta", "t-shirt", "jaqueta", "casaco", "blazer",
-        "macacao", "macacão", "jeans", "malha", "trico", "tricô", "croche",
-        "crochê", "manga", "gola", "tecido", "silhueta", "estampa",
-        "shirt", "blouse", "skirt", "shorts", "pants", "trousers",
-        "dress", "jumpsuit", "jacket", "coat", "sleeve", "collar",
-        "fabric", "silhouette", "print",
+    evidencia_de_peca_no_titulo = (
+        "vestido", "vestidos", "saia", "saias", "calca", "calça", "calcas",
+        "calças", "short", "shorts", "bermuda", "bermudas", "blusa",
+        "blusas", "crop top", "tank top", "camiseta", "camisetas", "t-shirt",
+        "t-shirts", "jaqueta", "jaquetas", "casaco", "casacos", "blazer",
+        "blazers", "macacao", "macacão", "macacoes", "macacões", "jeans",
+        "trico", "tricô", "croche", "crochê", "alfaiataria", "manga", "gola",
+        "tecido", "silhueta", "estampa", "shirt", "shirts", "blouse",
+        "blouses", "skirt", "skirts", "pants", "trousers", "dress", "dresses",
+        "gown", "gowns", "jumpsuit", "jumpsuits", "jacket", "jackets", "coat",
+        "coats", "sleeve", "collar", "fabric", "silhouette", "print", "denim",
     )
-    if any(re.search(r"\b{}\b".format(re.escape(p)), titulo_limpo)
-           for p in contexto_forte):
-        return achados
-    evidencias = sum(1 for p in evidencia_de_peca
-                     if re.search(r"\b{}\b".format(re.escape(p)), texto))
-    if evidencias >= 2:
+    metaforas_recusadas = (
+        r"\bcamisa\s+(?:\d+|do time|da empresa|da campanha)\b",
+        r"\bvestir?\s+a\s+camisa\s+(?:da|do)\b",
+        r"\bwear\s+the\s+company\s+shirt\b",
+    )
+    if any(re.search(p, titulo_limpo) for p in metaforas_recusadas):
+        return set()
+
+    titulo_declara_moda = any(
+        re.search(r"\b{}\b".format(re.escape(p)), titulo_limpo)
+        for p in contexto_forte + evidencia_de_peca_no_titulo)
+    categorias_no_titulo = achados_no_titulo & categorias
+    # `top` também significa modelo/celebridade e ranking. Só ele não prova
+    # uma blusa; construções inequívocas como crop top/tank top já estão no
+    # vocabulário de peça acima.
+    top_ambiguo = (
+        categorias_no_titulo == {"blusa_top"}
+        and re.search(r"\btops?\b", titulo_limpo)
+        and not re.search(r"\b(?:crop|tank)\s+tops?\b", titulo_limpo)
+    )
+    titulo_declara_categoria = bool(categorias_no_titulo) and not top_ambiguo
+    if titulo_declara_moda or titulo_declara_categoria:
         return achados
     return set()
 
@@ -256,6 +279,12 @@ def main():
     # Ate 3 manchetes por celula, para a tela mostrar o que o bot leu.
     exemplos = defaultdict(list)
     por_veiculo = {}
+    # Semanas que a perna efetivamente observou, mesmo quando nenhum termo
+    # casou. Elas permitem publicar ZERO explícito e, sobretudo, sobrescrever
+    # um falso positivo de uma coleta anterior. Antes, corrigir o filtro não
+    # limpava "camisa 7": a célula velha ficava no banco para sempre porque o
+    # coletor só fazia upsert das células que ainda tinham match.
+    semanas_observadas = defaultdict(set)
 
     for v in veiculos:
         itens, erro = itens_do_feed(v)
@@ -267,17 +296,20 @@ def main():
         fonte = "editorial_br" if (v.get("pais") or "").upper() == "BR" else "editorial_intl"
         casados = 0
         for titulo, link, quando, resumo in itens:
+            semana = semana_de(quando)
+            semanas_observadas[fonte].add(semana)
             # K8: titulo + resumo, nunca o texto integral (§18).
+            achados_titulo = termos_que_casam(titulo, termos)
             achados = filtrar_contexto_editorial(
                 titulo, resumo,
-                termos_que_casam(titulo + " " + limpar(resumo), termos), categorias)
+                termos_que_casam(titulo + " " + limpar(resumo), termos), categorias,
+                achados_no_titulo=achados_titulo)
             artigos_novos.append({"veiculo": v["veiculo"], "url": link,
                                   "titulo": titulo[:500],
                                   "data_pub": quando.isoformat()})
             if not achados:
                 continue
             casados += 1
-            semana = semana_de(quando)
             for termo_id in achados:
                 # §11: conjunto de artigos, entao o mesmo artigo conta 1 por
                 # termo mesmo que varias palavras do termo aparecam.
@@ -308,12 +340,24 @@ def main():
     # --- serie editorial em janela movel de 4 semanas (§18) ---
     # A semana crua tambem vai gravada, porque o `pico` (C4) precisa dela.
     crua = dict((k, len(v)) for k, v in contagem.items())
-    semanas = sorted({k[2] for k in crua})
+    semanas = sorted({s for conjunto in semanas_observadas.values() for s in conjunto})
     agora = datetime.now(timezone.utc).isoformat()
     linhas = []
-    for (termo_id, fonte, semana) in sorted(crua):
+    # Só materializa todos os zeros na semana MAIS NOVA de cada perna. Feeds
+    # curtos deixam artigos antigos cair; zerar toda semana histórica vista por
+    # qualquer outro veículo apagaria uma contagem legítima que já saiu do feed.
+    # A semana nova, ao contrário, está inteira na execução corrente e pode
+    # substituir com segurança uma célula que o filtro antigo contaminou.
+    celulas_observadas = set(crua)
+    for fonte, semanas_da_fonte in semanas_observadas.items():
+        if semanas_da_fonte:
+            semana_mais_nova = max(semanas_da_fonte)
+            celulas_observadas.update(
+                (termo_id, fonte, semana_mais_nova) for termo_id in termos)
+    for (termo_id, fonte, semana) in sorted(celulas_observadas):
         janela = [crua.get((termo_id, fonte, semana - timedelta(weeks=w)), 0)
                   for w in range(JANELA_SEMANAS)]
+        contagem_crua = crua.get((termo_id, fonte, semana), 0)
         linhas.append({
             "termo_id": termo_id, "segmento": SEGMENTO, "fonte": fonte,
             "semana": semana.isoformat(),
@@ -340,12 +384,13 @@ def main():
             "z": None, "n_amostra": sum(janela),
             "meta": {"janela_semanas": JANELA_SEMANAS,
                      "normalizacao": "pendente: computar_serie_editorial()",
-                     "contagem_semana_crua": crua[(termo_id, fonte, semana)],
+                     "contagem_semana_crua": contagem_crua,
                      "unidade": "materias que citaram o termo",
                      "veiculos": dict(sorted(
                          veiculos_por_celula[(termo_id, fonte, semana)].items(),
                          key=lambda kv: (-kv[1], kv[0]))),
                      "exemplos": exemplos[(termo_id, fonte, semana)],
+                     "contexto_editorial": "moda_declarada_no_titulo",
                      "obs": "valor_bruto e a media da janela de 4 semanas (§18); "
                             "a semana crua serve ao estado `pico` (C4)",
                      "coletado_em": agora},

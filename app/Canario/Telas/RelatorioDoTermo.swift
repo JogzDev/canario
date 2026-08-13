@@ -139,7 +139,8 @@ struct RelatorioDoTermo: View {
                 }
                 Spacer()
                 SeloEstado(estado: atual?.estado,
-                           motivo: "Só afirmo uma direção quando duas fontes concordam.")
+                           motivo: "Só afirmo uma direção quando duas fontes concordam.",
+                           leitura: temCobertura ? atual?.indice : nil)
             }
             if let z = atual?.indice {
                 LinhaInsumo(texto: Leitura.explicacao(z))
@@ -236,14 +237,12 @@ struct RelatorioDoTermo: View {
             async let s: [PontoSerie] = Supabase.shared.buscar(
                 "series_do_app",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=600")
-            async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_do_app",
-                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
+            async let i = CatalogoDeIndices.shared.carregar()
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
             serie = try await s
-            indices = try await i
+            indices = try await i.filter { $0.termoId == termo.id }
             coberturas = try await c
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"

@@ -155,15 +155,14 @@ struct Comparar: View {
         carregando = true
         erro = nil
         do {
-            termos = try await Supabase.shared.buscar(
-                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
-            async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_do_app", "select=*&segmento=eq.\(Recorte.segmento)&order=semana.desc&limit=400")
+            async let t = CatalogoDeTermos.shared.carregar()
+            async let i = CatalogoDeIndices.shared.carregar()
             async let v: [PontoSerie] = Supabase.shared.buscar(
                 "series_do_app", "select=*&segmento=eq.\(Recorte.segmento)&fonte=eq.varejo&order=semana.desc&limit=400")
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula", "select=*&segmento=eq.\(Recorte.segmento)&order=semana.desc&limit=400")
 
+            termos = try await t
             let dadosI = try await i
             let dadosV = try await v
             let dadosC = try await c
@@ -213,7 +212,8 @@ struct LinhaComparada: View {
                 SeloEstado(estado: podeMostrar ? indice?.estado : nil,
                            motivo: podeMostrar
                                ? "Menos de duas pernas nesta semana."
-                               : "Sem cobertura suficiente da mesma semana.")
+                               : "Sem cobertura suficiente da mesma semana.",
+                           leitura: podeMostrar ? indice?.indice : nil)
             }
 
             if cobertura == nil {

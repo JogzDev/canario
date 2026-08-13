@@ -5,8 +5,6 @@ import UIKit
 /// Fadul. O Dynamic Island é o elemento real do iPhone: o app desenha somente
 /// o feixe abaixo dele, nunca uma pílula preta falsa.
 struct TelaInicialAdicionar: View {
-    let abrirMenu: () -> Void
-
     @State private var termos: [Termo] = []
     @State private var buscandoTermos = false
     @State private var erro: String?
@@ -65,27 +63,20 @@ struct TelaInicialAdicionar: View {
                 Spacer(minLength: 100)
             }
 
-            VStack {
-                HStack {
-                    BotaoCircularDoMenu(simbolo: "ellipsis",
-                                        acessibilidade: "Open menu",
-                                        acao: abrirMenu)
-                    Spacer()
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 4)
         }
         .sheet(isPresented: $importando, onDismiss: carregarMiniaturas) {
             ImportarPeca(termos: termos)
         }
         // O Figma é uma experiência de entrada imersiva; o Dynamic Island
         // permanece físico, mas relógio/sinal não competem com menu e feixe.
-        .statusBarHidden(true)
         .task {
             carregarMiniaturas()
-            await carregarTermos()
+            // Prepara o formulário depois que o primeiro frame já apareceu.
+            // Não há spinner nem dependência de rede para abrir a Home.
+            try? await Task.sleep(for: .seconds(1))
+            async let termos = CatalogoDeTermos.shared.carregar()
+            async let indices = CatalogoDeIndices.shared.carregar()
+            _ = try? await (termos, indices)
         }
     }
 
@@ -139,9 +130,7 @@ struct TelaInicialAdicionar: View {
         buscandoTermos = true
         defer { buscandoTermos = false }
         do {
-            termos = try await Supabase.shared.buscar(
-                "termos",
-                "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
+            termos = try await CatalogoDeTermos.shared.carregar()
         } catch {
             self.erro = "Could not load the taxonomy."
         }
@@ -164,33 +153,39 @@ struct TelaInicialAdicionar: View {
     }
 }
 
-/// Material nativo do iOS 17, com borda e reflexo. Mantém a linguagem de vidro
-/// sem depender da API `glassEffect`, que só existe em SDK posterior ao alvo.
+/// Liquid Glass verdadeiro no iOS 26 e fallback compatível no iOS 17–25.
+/// `ultraThinMaterial` não refrata nem reage como a API nova; por isso ele fica
+/// restrito aos aparelhos em que Liquid Glass não existe.
 struct Vidro<S: InsettableShape>: View {
     let forma: S
 
     init(forma: S) { self.forma = forma }
 
     var body: some View {
+        Group {
+            if #available(iOS 26.0, *) {
+                forma
+                    .fill(.clear)
+                    .glassEffect(.regular.interactive(), in: forma)
+            } else {
+                fallback
+            }
+        }
+    }
+
+    private var fallback: some View {
         ZStack {
             forma.fill(.ultraThinMaterial)
-            forma.fill(
-                LinearGradient(
-                    colors: [.white.opacity(0.46), .white.opacity(0.10),
-                             Tokens.Cor.ceu.opacity(0.18)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing))
-            .overlay {
-                forma.stroke(
-                    LinearGradient(colors: [.white, .white.opacity(0.42),
-                                            Tokens.Cor.azulMarca.opacity(0.16)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 1.25)
-            }
-            forma
-                .inset(by: 2)
-                .stroke(.white.opacity(0.28), lineWidth: 0.75)
-                .blur(radius: 0.35)
+            forma.fill(LinearGradient(
+                colors: [.white.opacity(0.46), .white.opacity(0.10),
+                         Tokens.Cor.ceu.opacity(0.18)],
+                startPoint: .topLeading, endPoint: .bottomTrailing))
+            forma.stroke(LinearGradient(
+                colors: [.white, .white.opacity(0.42),
+                         Tokens.Cor.azulMarca.opacity(0.16)],
+                startPoint: .topLeading, endPoint: .bottomTrailing),
+                lineWidth: 1.25)
+            forma.inset(by: 2).stroke(.white.opacity(0.28), lineWidth: 0.75)
         }
         .compositingGroup()
         .shadow(color: .white.opacity(0.35), radius: 2, x: -1, y: -1)

@@ -22,14 +22,29 @@ import SwiftUI
 ///    unidade, a regra que produziu o estado e o nome de quem publicou.
 struct Explorar: View {
     @State private var todos: [IndiceSemanal] = []
-    @State private var rotulos: [String: String] = [:]
+    @State private var termos: [Termo] = []
     @State private var series: [String: [PontoSerie]] = [:]
+    @State private var pulsoBusca: [PontoSerie] = []
+    @State private var pulsoEditorial: [PontoSerie] = []
     @State private var eventos: [EventoVarejo] = []
     @State private var inicioDaColeta = "2026-07-24"
     @State private var carregando = true
+    @State private var carregandoPulso = true
+    @State private var carregandoEditorial = true
+    @State private var carregandoEventos = true
     @State private var erro: String?
+    @State private var avisoDeCache: String?
+    @State private var avisosParciais: [String] = []
 
-    private let diasMaximosDoDigest = 21
+    private let diasMaximosDoDigest = 42
+
+    private var rotulos: [String: String] {
+        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0.rotulo) })
+    }
+
+    private var termosPorId: [String: Termo] {
+        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
+    }
 
     /// Um termo por linha, com a mudança MAIS RECENTE dele.
     ///
@@ -47,6 +62,16 @@ struct Explorar: View {
             }
     }
 
+    /// A categoria filtra o mercado (§11); sozinha não é uma tendência. O
+    /// radar destaca os atributos atuais e deixa categoria para a busca.
+    private var buscaDaSemana: [PontoSerie] {
+        guard let semana = pulsoBusca.map(\.semana).max() else { return [] }
+        return pulsoBusca.filter {
+            $0.semana == semana && $0.z != nil
+                && termosPorId[$0.termoId]?.dimensao != "categoria"
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -58,7 +83,7 @@ struct Explorar: View {
                     conteudo
                 }
             }
-            .navigationTitle("Explorar")
+            .navigationTitle("Weekly Trends")
         }
         .task { await carregar() }
     }
@@ -66,12 +91,26 @@ struct Explorar: View {
     private var conteudo: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                if let avisoDeCache {
+                    Label(avisoDeCache, systemImage: "wifi.slash")
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+                if !avisosParciais.isEmpty {
+                    ForEach(avisosParciais, id: \.self) { aviso in
+                        Label(aviso, systemImage: "exclamationmark.circle")
+                            .font(Tokens.Fonte.miudo)
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                    }
+                }
+                radarDeBusca
+                radarEditorial
+                digest
                 curvaDoPainel
                 movimento(titulo: "Reposições", tipo: "reposicao",
                           vazio: "Nenhuma reposição confirmada nesta janela. Ela exige ver um tamanho sair e voltar, e depois continuar disponível.")
                 movimento(titulo: "Remarcações", tipo: "remarcacao",
                           vazio: "Nenhuma queda de preço de 5% ou mais nesta janela.")
-                digest
             }
             .padding(Tokens.Espaco.m)
         }
@@ -98,7 +137,9 @@ struct Explorar: View {
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
             }
-            if porMarca.isEmpty {
+            if carregandoEventos && porMarca.isEmpty {
+                ProgressView().frame(maxWidth: .infinity, alignment: .center)
+            } else if porMarca.isEmpty {
                 CoberturaInsuficiente(titulo: "Sem registro nesta janela",
                                       explicacao: vazio, oQueTem: nil)
             } else {
@@ -151,12 +192,137 @@ struct Explorar: View {
         "ocorrência mais recente: \(Formato.data(data))"
     }
 
-    // MARK: O que mudou
+    // MARK: Radares atuais
+
+    /// Google é uma fonte, não um veredito. Mostrá-lo separadamente resolve o
+    /// atraso aparente sem enfraquecer a regra que exige duas fontes para
+    /// chamar algo de tendência confirmada.
+    private var radarDeBusca: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Search interest now").font(Tokens.Fonte.secao)
+                Spacer()
+                if let semana = buscaDaSemana.map(\.semana).max() {
+                    Text(Formato.data(semana))
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+            }
+            Text("What people in Brazil searched for on Google, compared with each term's previous 12 weeks.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+
+            if carregandoPulso && buscaDaSemana.isEmpty {
+                ProgressView().frame(maxWidth: .infinity, alignment: .center)
+            } else if buscaDaSemana.isEmpty {
+                LinhaInsumo(texto: "No current Google search reading is available.")
+            } else {
+                ForEach(gruposDaBusca, id: \.titulo) { grupo in
+                    if !grupo.pontos.isEmpty {
+                        Text(grupo.titulo.uppercased())
+                            .font(Tokens.Fonte.miudo.weight(.semibold))
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                            .padding(.top, Tokens.Espaco.xs)
+                        ForEach(grupo.pontos.prefix(5)) { ponto in
+                            if let termo = termosPorId[ponto.termoId] {
+                                NavigationLink { RelatorioDoTermo(termo: termo) } label: {
+                                    Cartao {
+                                        HStack(alignment: .firstTextBaseline) {
+                                            Text(termo.rotulo).font(Tokens.Fonte.corpo)
+                                            Spacer()
+                                            Text(ponto.z.map(Leitura.emPalavras) ?? "—")
+                                                .font(Tokens.Fonte.miudo.weight(.semibold))
+                                                .foregroundStyle(Tokens.Cor.azulMarca)
+                                            Image(systemName: "chevron.right")
+                                                .font(Tokens.Fonte.miudo)
+                                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                LinhaInsumo(texto: "This is the current search pulse, not a confirmed trend on its own.")
+            }
+        }
+    }
+
+    private var gruposDaBusca: [(titulo: String, pontos: [PontoSerie])] {
+        let ordenados = buscaDaSemana.sorted { ($0.z ?? 0) > ($1.z ?? 0) }
+        return [
+            ("High", ordenados.filter { ($0.z ?? 0) >= 1 }),
+            ("Building", ordenados.filter { (0.35..<1).contains($0.z ?? 0) }),
+            ("Steady", ordenados.filter { abs($0.z ?? 0) < 0.35 }),
+            ("Cooling", ordenados.filter { ($0.z ?? 0) <= -0.35 }.reversed()),
+        ].map { ($0.0, Array($0.1)) }
+    }
+
+    private var manchetesAtuais: [PontoSerie.Meta.Exemplo] {
+        guard let semana = pulsoEditorial.map(\.semana).max() else { return [] }
+        var vistos = Set<String>()
+        return pulsoEditorial
+            .filter { $0.semana == semana }
+            .flatMap { $0.meta?.exemplos ?? [] }
+            .filter { Explicacao.mancheteDeclaraModa($0.titulo) }
+            .filter { vistos.insert(($0.url ?? $0.titulo).lowercased()).inserted }
+            .prefix(8).map { $0 }
+    }
+
+    private var radarEditorial: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("This week in fashion").font(Tokens.Fonte.secao)
+                Spacer()
+                if let semana = pulsoEditorial.map(\.semana).max() {
+                    Text(Formato.data(semana))
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+            }
+            Text("Current, fashion-specific headlines from the monitored publications. They provide context; one article alone does not establish a trend.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+
+            if carregandoEditorial && manchetesAtuais.isEmpty {
+                ProgressView().frame(maxWidth: .infinity, alignment: .center)
+            } else if manchetesAtuais.isEmpty {
+                LinhaInsumo(texto: "No current headline passed the fashion-context check.")
+            } else {
+                ForEach(manchetesAtuais, id: \.titulo) { manchete in
+                    if let bruto = manchete.url, let url = URL(string: bruto) {
+                        Link(destination: url) { linhaEditorial(manchete) }
+                            .buttonStyle(.plain)
+                    } else {
+                        linhaEditorial(manchete)
+                    }
+                }
+            }
+        }
+    }
+
+    private func linhaEditorial(_ manchete: PontoSerie.Meta.Exemplo) -> some View {
+        Cartao {
+            Text(manchete.titulo)
+                .font(Tokens.Fonte.apoio.weight(.semibold))
+                .foregroundStyle(Tokens.Cor.tinta)
+            HStack {
+                Text(manchete.veiculo).font(Tokens.Fonte.miudo)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(Tokens.Fonte.miudo)
+            }
+            .foregroundStyle(Tokens.Cor.azulMarca)
+        }
+    }
+
+    // MARK: Tendência confirmada
 
     private var digest: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Tendências da semana").font(Tokens.Fonte.secao)
+                Text("Confirmed movements").font(Tokens.Fonte.secao)
                 Spacer()
                 if let semana = mudaram.map(\.semana).max() {
                     Text("atualizado em \(Formato.data(semana))")
@@ -165,10 +331,7 @@ struct Explorar: View {
                 }
             }
             if mudaram.isEmpty {
-                CoberturaInsuficiente(
-                    titulo: "Sem tendência recente para destacar",
-                    explicacao: "A atualização mais nova com direção confirmada passou de \(diasMaximosDoDigest) dias.",
-                    oQueTem: "Os dados antigos continuam nos relatórios, mas não aparecem como novidade da semana.")
+                LinhaInsumo(texto: "No movement has been confirmed by two independent sources in the last \(diasMaximosDoDigest) days.")
             } else {
                 ForEach(gruposDoDigest, id: \.titulo) { grupo in
                     if !grupo.indices.isEmpty {
@@ -213,63 +376,196 @@ struct Explorar: View {
                      sinonimos: nil, semPernaBusca: nil, palavrasPt: nil, palavrasEn: nil)
     }
 
+    @MainActor
     private func carregar() async {
-        carregando = true
         erro = nil
-        do {
-            async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_do_app",
-                "select=*&estado=in.(\"em alta\",\"em queda\",estavel,pico)&order=semana.desc&limit=200")
-            async let t: [Termo] = Supabase.shared.buscar(
-                "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en")
-            // UMA CONSULTA POR TIPO, de propósito.
-            //
-            // Com uma só, ordenada por data, o bloco de reposições aparecia
-            // vazio mesmo havendo 217 no banco: em 31/07 houve 681 remarcações,
-            // e as primeiras 400 linhas da página eram todas remarcação. A
-            // reposição de ontem nunca entrava no resultado — e reposição é o
-            // sinal mais forte do painel (§23), justamente o que não pode sumir.
-            async let rep: [EventoVarejo] = Supabase.shared.chamar(
-                "eventos_recentes", ["tipo_evento": "reposicao", "limite": 200])
-            async let rem: [EventoVarejo] = Supabase.shared.chamar(
-                "eventos_recentes", ["tipo_evento": "remarcacao", "limite": 200])
-
-            todos = try await i
-            rotulos = Dictionary(uniqueKeysWithValues: try await t.map { ($0.id, $0.rotulo) })
-            eventos = try await rep + (try await rem)
-
-            // As séries das MESMAS semanas dos índices exibidos: é delas que
-            // saem a unidade, a contagem e o nome dos veículos.
-            let alvos = mudaram
-            if !alvos.isEmpty {
-                let ids = Set(alvos.map(\.termoId)).joined(separator: ",")
-                // Só as semanas que a tela vai mostrar, e não tudo desde a mais
-                // antiga. Com `gte` e um teto de linhas, os termos do fim da
-                // página vinham sem série nenhuma — e o cartão da Saia dizia
-                // "vários desvios" em vez do número, porque não tinha a linha do
-                // editorial para ler. É o mesmo erro de paginação dos eventos,
-                // no mesmo dia, em outro lugar.
-                let semanas = Set(alvos.map(\.semana)).joined(separator: ",")
-                let pontos: [PontoSerie] = try await Supabase.shared.buscar(
-                    "series_do_app",
-                    "select=*&termo_id=in.(\(ids))&semana=in.(\(semanas))&limit=2000")
-                // `alvos.first(where:)` dentro do laço era O(n x m): até 2000
-                // pontos vezes os alvos, com comparação de string, e isto roda
-                // no ator principal porque `carregar()` é chamado de `.task`
-                // numa View. Um dicionário resolve em uma passada.
-                let semanaDoAlvo = Dictionary(
-                    alvos.map { ($0.termoId, $0.semana) },
-                    uniquingKeysWith: { primeiro, _ in primeiro })
-                var mapa: [String: [PontoSerie]] = [:]
-                for p in pontos where semanaDoAlvo[p.termoId] == p.semana {
-                    mapa[p.termoId, default: []].append(p)
-                }
-                series = mapa
-            }
-        } catch {
-            erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+        avisoDeCache = nil
+        avisosParciais = []
+        var mostrouCache = false
+        if let salvo = await CacheDoExplorar.shared.carregar() {
+            aplicar(salvo)
+            carregando = false
+            mostrouCache = true
+            // Trocar de aba e voltar não refaz cinco consultas. Os carimbos
+            // continuam mostrando a idade real do dado; isto só evita trabalho
+            // duplicado dentro dos quinze minutos seguintes à sincronização.
+            if Date().timeIntervalSince(salvo.salvoEm) < 15 * 60 { return }
+        } else {
+            carregando = true
+            carregandoPulso = true
+            carregandoEditorial = true
+            carregandoEventos = true
         }
-        carregando = false
+
+        do {
+            async let i = CatalogoDeIndices.shared.carregar()
+            async let t = CatalogoDeTermos.shared.carregar()
+
+            todos = try await i.filter { $0.estado != nil }
+            termos = try await t
+            carregando = false
+        } catch {
+            let mensagem = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+            if mostrouCache {
+                avisoDeCache = "Offline · showing the last sync"
+                erro = nil
+            } else {
+                erro = mensagem
+            }
+            carregando = false
+            return
+        }
+
+        // A primeira tela útil já está visível. Radar, manchetes, explicações
+        // e eventos renovam em paralelo, cada um com seu próprio estado. Uma
+        // recusa do CDN ou um RPC lento não volta a cobrir tudo com spinner.
+        async let busca: Void = carregarPulsoDeBusca()
+        async let editorial: Void = carregarPulsoEditorial()
+        async let detalhes: Void = carregarDetalhesConfirmados()
+        async let movimentos: Void = carregarEventos()
+        _ = await (busca, editorial, detalhes, movimentos)
+
+        await CacheDoExplorar.shared.salvar(SnapshotDoExplorar(
+            todos: todos, termos: termos, series: series,
+            pulsoBusca: pulsoBusca, pulsoEditorial: pulsoEditorial,
+            eventos: eventos, salvoEm: Date()))
+    }
+
+    @MainActor
+    private func carregarPulsoDeBusca() async {
+        carregandoPulso = true
+        defer { carregandoPulso = false }
+        do {
+            let corte = Self.dataISO(diasAtras: 21)
+            let novos: [PontoSerie] = try await Supabase.shared.buscar(
+                "series_do_app",
+                "select=*&segmento=eq.\(Recorte.segmento)&fonte=eq.busca"
+                + "&semana=gte.\(corte)&order=semana.desc&limit=250")
+            pulsoBusca = novos
+        } catch {
+            avisar("Search interest could not refresh; the rest of the page is available.")
+        }
+    }
+
+    @MainActor
+    private func carregarPulsoEditorial() async {
+        carregandoEditorial = true
+        defer { carregandoEditorial = false }
+        do {
+            let corte = Self.dataISO(diasAtras: 14)
+            let novos: [PontoSerie] = try await Supabase.shared.buscar(
+                "series_do_app",
+                "select=*&segmento=eq.\(Recorte.segmento)"
+                + "&fonte=in.(editorial_br,editorial_intl)&semana=gte.\(corte)"
+                + "&order=semana.desc&limit=250")
+            pulsoEditorial = novos
+        } catch {
+            avisar("Fashion headlines could not refresh; the rest of the page is available.")
+        }
+    }
+
+    @MainActor
+    private func carregarDetalhesConfirmados() async {
+        let alvos = mudaram
+        guard !alvos.isEmpty else { series = [:]; return }
+        do {
+            let ids = Set(alvos.map(\.termoId)).joined(separator: ",")
+            let semanas = Set(alvos.map(\.semana)).joined(separator: ",")
+            let pontos: [PontoSerie] = try await Supabase.shared.buscar(
+                "series_do_app",
+                "select=*&termo_id=in.(\(ids))&semana=in.(\(semanas))&limit=1000")
+            let semanaDoAlvo = Dictionary(
+                alvos.map { ($0.termoId, $0.semana) },
+                uniquingKeysWith: { primeiro, _ in primeiro })
+            var mapa: [String: [PontoSerie]] = [:]
+            for p in pontos where semanaDoAlvo[p.termoId] == p.semana {
+                mapa[p.termoId, default: []].append(p)
+            }
+            series = mapa
+        } catch {
+            avisar("Confirmed-movement details could not refresh.")
+        }
+    }
+
+    @MainActor
+    private func carregarEventos() async {
+        carregandoEventos = true
+        defer { carregandoEventos = false }
+        do {
+            async let rep: [EventoVarejo] = Supabase.shared.chamar(
+                "eventos_recentes", ["tipo_evento": "reposicao", "limite": 120])
+            async let rem: [EventoVarejo] = Supabase.shared.chamar(
+                "eventos_recentes", ["tipo_evento": "remarcacao", "limite": 120])
+            eventos = try await rep + (try await rem)
+        } catch {
+            avisar("Store movements could not refresh.")
+        }
+    }
+
+    @MainActor
+    private func avisar(_ texto: String) {
+        if !avisosParciais.contains(texto) { avisosParciais.append(texto) }
+    }
+
+    @MainActor
+    private func aplicar(_ salvo: SnapshotDoExplorar) {
+        todos = salvo.todos
+        termos = salvo.termos
+        series = salvo.series
+        pulsoBusca = salvo.pulsoBusca
+        pulsoEditorial = salvo.pulsoEditorial
+        eventos = salvo.eventos
+        carregandoPulso = false
+        carregandoEditorial = false
+        carregandoEventos = false
+    }
+
+    private static func dataISO(diasAtras: Int) -> String {
+        let data = Calendar(identifier: .iso8601).date(
+            byAdding: .day, value: -diasAtras, to: Date()) ?? Date()
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .iso8601)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: data)
+    }
+}
+
+// MARK: - Cache instantâneo da aba
+
+struct SnapshotDoExplorar: Codable {
+    let todos: [IndiceSemanal]
+    let termos: [Termo]
+    let series: [String: [PontoSerie]]
+    let pulsoBusca: [PontoSerie]
+    let pulsoEditorial: [PontoSerie]
+    let eventos: [EventoVarejo]
+    let salvoEm: Date
+}
+
+actor CacheDoExplorar {
+    static let shared = CacheDoExplorar()
+    private var memoria: SnapshotDoExplorar?
+
+    private var arquivo: URL {
+        FileManager.default.urls(for: .cachesDirectory,
+                                 in: .userDomainMask)[0]
+            .appendingPathComponent("canario-explorar-v2.json")
+    }
+
+    func carregar() -> SnapshotDoExplorar? {
+        if let memoria { return memoria }
+        guard let dados = try? Data(contentsOf: arquivo),
+              let salvo = try? JSONDecoder().decode(
+                SnapshotDoExplorar.self, from: dados) else { return nil }
+        memoria = salvo
+        return salvo
+    }
+
+    func salvar(_ snapshot: SnapshotDoExplorar) {
+        memoria = snapshot
+        guard let dados = try? JSONEncoder().encode(snapshot) else { return }
+        try? dados.write(to: arquivo, options: .atomic)
     }
 }
 

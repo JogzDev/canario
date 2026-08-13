@@ -17,6 +17,44 @@ import Foundation
 /// em `computar_indice()`. Se um dos dois mudar sem o outro, o teste quebra.
 enum Explicacao {
 
+    /// Última barreira de precisão para a vitrine editorial do app.
+    ///
+    /// A origem já filtra título + resumo. Linhas coletadas antes dessa correção
+    /// ainda podem existir no cache/banco por alguns dias; o radar só mostra a
+    /// manchete quando o próprio título declara intenção de moda. Isto não
+    /// altera série nem estado — apenas impede que "camisa 7" e notícias de
+    /// gravidez sejam promovidas como conteúdo de moda na interface.
+    static func mancheteDeclaraModa(_ titulo: String) -> Bool {
+        let normalizada = titulo.folding(
+            options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+        let recusadas = [
+            #"\bcamisa\s+(?:\d+|do time|da empresa|da campanha)\b"#,
+            #"\bvestir?\s+a\s+camisa\s+(?:da|do)\b"#,
+        ]
+        if recusadas.contains(where: {
+            normalizada.range(of: $0, options: .regularExpression) != nil
+        }) { return false }
+        let marcadores = [
+            "moda", "fashion", "look", "looks", "outfit", "style", "styling",
+            "trend", "tendencia", "colecao", "collection", "runway", "passarela",
+            "streetwear", "street style", "wardrobe", "closet", "fashion week",
+            "modelagem", "como usar", "jeitos de usar", "wear", "wearing",
+            "chic", "elegant", "silhouette", "alfaiataria", "fw26", "ss27",
+        ]
+        if marcadores.contains(where: { normalizada.contains($0) }) { return true }
+        let pecasInequivocas = [
+            "vestido", "vestidos", "dress", "dresses", "gown", "saia",
+            "saias", "skirt", "calca", "calcas", "pants", "trousers",
+            "short", "shorts", "bermuda", "blusa", "blouse", "camiseta",
+            "t-shirt", "camisa", "shirt", "jaqueta", "jacket", "casaco",
+            "coat", "blazer", "macacao", "jumpsuit", "denim", "tweed",
+        ]
+        return pecasInequivocas.contains { peca in
+            let padrao = #"\b"# + NSRegularExpression.escapedPattern(for: peca) + #"\b"#
+            return normalizada.range(of: padrao, options: .regularExpression) != nil
+        }
+    }
+
     // MARK: Unidade
 
     /// O que a perna conta, em português.

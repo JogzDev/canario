@@ -808,6 +808,14 @@ def alertas_criticos(registros, marcas_ativas, hoje):
             continue
         valor = _valor_de_saude(atual)
         if valor <= 0:
+            alertas_da_linha = (atual.get("alertas")
+                                if isinstance(atual.get("alertas"), dict)
+                                else {})
+            if (fonte == "busca" and
+                    alertas_da_linha.get("adiado_por_cadencia")):
+                avisos.append(
+                    "busca não consultada hoje: séries já estavam em dia")
+                continue
             motivo = ((atual.get("alertas") or {}).get("erro")
                       if isinstance(atual.get("alertas"), dict) else None)
             seguidos = _zeros_seguidos(historico.get(chave, {}), hoje_iso)

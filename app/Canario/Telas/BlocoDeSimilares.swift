@@ -1,4 +1,5 @@
 import SwiftUI
+import ImageIO
 import UIKit
 
 /// O bloco de similares da §29, e os cartões que a A6 exige.
@@ -183,6 +184,20 @@ struct ImagemRemota: View {
 actor CacheDeImagemRemota {
     static let shared = CacheDeImagemRemota()
     private let memoria = NSCache<NSURL, UIImage>()
+    private let sessao: URLSession
+
+    init() {
+        memoria.countLimit = 120
+        memoria.totalCostLimit = 40 << 20
+        let configuracao = URLSessionConfiguration.default
+        configuracao.urlCache = URLCache(memoryCapacity: 16 << 20,
+                                         diskCapacity: 96 << 20)
+        configuracao.requestCachePolicy = .returnCacheDataElseLoad
+        configuracao.httpMaximumConnectionsPerHost = 4
+        configuracao.timeoutIntervalForRequest = 12
+        configuracao.waitsForConnectivity = false
+        sessao = URLSession(configuration: configuracao)
+    }
 
     func imagem(em endereco: URL?) async -> UIImage? {
         guard let endereco else { return nil }
@@ -195,7 +210,7 @@ actor CacheDeImagemRemota {
                                         timeoutInterval: 15)
                 pedido.setValue("image/avif,image/webp,image/*,*/*;q=0.8",
                                 forHTTPHeaderField: "Accept")
-                let (dados, resposta) = try await URLSession.shared.data(for: pedido)
+                let (dados, resposta) = try await sessao.data(for: pedido)
                 let http = resposta as? HTTPURLResponse
                 let codigo = http?.statusCode ?? 0
                 if codigo >= 500 && tentativa == 0 {
@@ -203,8 +218,9 @@ actor CacheDeImagemRemota {
                 }
                 guard (200..<300).contains(codigo),
                       http?.mimeType?.hasPrefix("image/") == true,
-                      let resultado = UIImage(data: dados) else { return nil }
-                memoria.setObject(resultado, forKey: endereco as NSURL)
+                      let resultado = miniatura(dados) else { return nil }
+                let custo = Int(resultado.size.width * resultado.size.height * 4)
+                memoria.setObject(resultado, forKey: endereco as NSURL, cost: custo)
                 return resultado
             } catch where tentativa == 0 {
                 continue
@@ -213,5 +229,19 @@ actor CacheDeImagemRemota {
             }
         }
         return nil
+    }
+
+    /// CDNs entregam fotos de vários megapixels para cards de 38–108 pt.
+    /// Decodificar o original fazia o scroll carregar dezenas de bitmaps de
+    /// 20–40 MB. O ImageIO cria diretamente uma miniatura de até 384 px.
+    private func miniatura(_ dados: Data) -> UIImage? {
+        guard let fonte = CGImageSourceCreateWithData(dados as CFData, nil),
+              let cg = CGImageSourceCreateThumbnailAtIndex(fonte, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceShouldCacheImmediately: true,
+                kCGImageSourceThumbnailMaxPixelSize: 384,
+              ] as CFDictionary) else { return nil }
+        return UIImage(cgImage: cg)
     }
 }

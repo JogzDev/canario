@@ -41,8 +41,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import supabase_rest  # noqa: E402
 
 BASE = "https://trends.google.com"
-UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+# Regra 7: a origem precisa saber quem somos. O UA de Chrome que havia aqui
+# mascarava o coletor como navegador comum e contradizia a regra mais rígida do
+# projeto. Se a interface privada do Trends exigir disfarce, ela deixou de ser
+# uma fonte admissível; não burlamos a proteção para mantê-la viva.
+UA = "CanarioBot/1.0 (projeto academico; contato: canarioch3@gmail.com)"
 GEO = "BR"
 
 # JANELA SEMANAL. A DIARIA FOI TENTADA EM 05/08 E REVERTIDA EM 06/08.
@@ -88,7 +91,7 @@ TZ = 180                    # minutos; BRT = UTC-3
 # entao o remedio e esperar de verdade -- e a coleta ser RETOMAVEL, para uma
 # execucao que pega metade deixar a outra metade para a proxima.
 ESPERA_ENTRE = 45.0
-ESPERAS_429 = [60, 180, 420]
+ESPERAS_429 = [90]
 # Tres grupos concluiram antes do limite de janela do Google na primeira
 # madrugada integrada. Planejamos esse teto e deixamos a rotacao completar a
 # cobertura nos dias seguintes, em vez de provocar 429 e esperar em vao.
@@ -220,6 +223,18 @@ def ultima_semana_fechada(hoje):
     return hoje - timedelta(days=hoje.weekday() + 7)
 
 
+def corte_de_frescura(hoje):
+    """Semana que já é razoável cobrar do Google.
+
+    Segunda a quarta toleram a publicação atrasar uma semana. De quinta em
+    diante, a última semana encerrada no domingo já teve pelo menos três dias
+    para aparecer. O corte anterior tolerava uma semana inteira todos os dias
+    e chamava 27/07 de atual em 13/08.
+    """
+    fechada = ultima_semana_fechada(hoje)
+    return fechada - timedelta(weeks=1) if hoje.weekday() <= 2 else fechada
+
+
 class Trends(object):
     def __init__(self):
         self.cj = http.cookiejar.CookieJar()
@@ -341,7 +356,7 @@ def fila_por_defasagem(aprovados, em_dia, nunca, modo=""):
 
     alvos = [t for t in aprovados if t["id"] not in em_dia]
     if not alvos:
-        return sorted(aprovados, key=lambda t: t["id"]), "semanal"
+        return [], "em_dia"
 
     # Sem serie na frente; entre os demais, ordem estavel por id para o lote do
     # dia ser deterministico e auditavel.
@@ -563,7 +578,7 @@ def main():
     # isso no cliente NAO funciona: o PostgREST corta em 1000 linhas por
     # resposta e `selecionar()` nao pagina, entao puxar `series_semanais`
     # inteira fez o coletor concluir "36 termos sem serie" quando eram QUATRO.
-    corte = (ultima_semana_fechada(hoje) - timedelta(weeks=1)).isoformat()
+    corte = corte_de_frescura(hoje).isoformat()
     em_dia, nunca = set(), set()
     for r in supabase_rest.selecionar(
             "cobertura_da_busca", "?select=termo_id,ultima_semana"):
@@ -585,9 +600,27 @@ def main():
               tentativa, ANCORA),
           file=sys.stderr)
 
-    t = Trends()
-    t.aquecer()
-    agora = datetime.now(timezone.utc).isoformat()
+    # Fonte semanal realmente em dia: não abre cookie, não chama endpoint e
+    # não fabrica uma falha por ter feito zero pedidos. A saúde registra o
+    # skip deliberado e o motor pode processar as outras fontes atuais.
+    if not grupos:
+        linha = {
+            "data": hoje.isoformat(), "fonte": "busca", "marca_id": None,
+            "visitados": 0, "gravados": 0, "itens": 0,
+            "pct_campos_ok": None,
+            "alertas": {
+                "adiado_por_cadencia": True,
+                "motivo": "todas as series de busca estao em dia",
+                "corte_de_frescura": corte,
+                "termos_em_dia": len(em_dia),
+                "termos_aprovados": total_aprovados,
+            },
+        }
+        supabase_rest.upsert("saude", [linha],
+                             on_conflict="data,fonte,marca_id")
+        print("Busca em dia ate o corte {}: nenhuma consulta ao Google."
+              .format(corte), file=sys.stderr)
+        return 0
 
     id_da_ancora = next((x["id"] for x in aprovados
                          if x["termo_busca"] == ANCORA), None)
@@ -596,8 +629,22 @@ def main():
     total_pontos = 0
     mortos = []
     termos_com_serie = set()
+    grupos_tentados = 0
+    grupos_respondidos = 0
 
-    for i, grupo in enumerate(grupos, 1):
+    t = Trends()
+    try:
+        t.aquecer()
+        aquecido = True
+    except TrendsErro as e:
+        aquecido = False
+        grupos_tentados = 1
+        falhas.append({"grupo": 0, "erro": str(e), "etapa": "aquecimento"})
+        print("  aquecimento: FALHOU ({})".format(e), file=sys.stderr)
+    agora = datetime.now(timezone.utc).isoformat()
+
+    for i, grupo in enumerate(grupos if aquecido else [], 1):
+        grupos_tentados += 1
         consulta = [ANCORA] + [x["termo_busca"] for x in grupo]
         try:
             series = t.serie(consulta, hoje)
@@ -605,7 +652,15 @@ def main():
             falhas.append({"grupo": i, "erro": str(e)})
             print("  grupo {}/{}: FALHOU ({})".format(i, len(grupos), e),
                   file=sys.stderr)
+            # 429/5xx vem do mesmo serviço, não do termo. Insistir nos outros
+            # grupos depois que o backoff falhou só amplia o bloqueio.
+            if re.search(r"\bHTTP\s+(?:429|5\d\d)\b", str(e), re.IGNORECASE):
+                print("  circuito aberto: os demais grupos ficam para a "
+                      "proxima janela.", file=sys.stderr)
+                break
             continue
+
+        grupos_respondidos += 1
 
         # A media da ancora NESTE grupo e o que torna os grupos comparaveis: o
         # Trends normaliza 0-100 dentro de cada consulta, entao um termo enorme
@@ -688,8 +743,9 @@ def main():
     # `visitados` = grupos tentados, `gravados` = grupos que responderam.
     # A divergencia entre os dois E o alerta: com 429 do Google, um dia em que
     # nenhum grupo passa fica visivel na hora.
-    tentados = len(grupos)
-    responderam = tentados - len(falhas)
+    tentados = grupos_tentados
+    # Grupos que o circuito deliberadamente adiou não contam como tentativa.
+    responderam = grupos_respondidos
     recusa_http = motivo_http_transitorio(falhas) if not responderam else None
     # Quem ja tinha serie (universo menos os que nunca coletaram) mais quem
     # coletou agora. `ja_tem` morreu junto com os dois modos; usar o nome

@@ -112,15 +112,14 @@ struct MinhasPecas: View {
         carregando = true
         erro = nil
         pecas = await PecasSalvas.shared.todas()
+        // A grade local não depende da rede. Os ids continuam sendo nomes
+        // provisórios por alguns milissegundos até o catálogo chegar.
+        carregando = false
         do {
-            termos = try await Supabase.shared.buscar(
-                "termos",
-                "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,"
-                + "palavras_pt,palavras_en&order=dimensao,id")
+            termos = try await CatalogoDeTermos.shared.carregar()
         } catch {
             erro = "The taxonomy is unavailable right now. Your clothes and photos are still on this iPhone."
         }
-        carregando = false
     }
 
     @MainActor

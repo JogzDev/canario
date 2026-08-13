@@ -23,7 +23,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from coletor_trends import fila_por_defasagem, planejar_grupos  # noqa: E402
+from coletor_trends import (corte_de_frescura, fila_por_defasagem,
+                            planejar_grupos)  # noqa: E402
 
 from datetime import date  # noqa: E402
 
@@ -76,11 +77,18 @@ def main():
     checar("floral" in ids and "midi" in ids,
            "termo com serie parada continua na fila")
 
-    # --- Todo mundo em dia: volta a cadencia semanal da §19 ----------------
+    # --- Todo mundo em dia: não consulta uma fonte semanal todo dia ---------
     fila, modo = fila_por_defasagem(
         aprovados, em_dia={t["id"] for t in aprovados}, nunca=set())
-    checar(modo == "semanal" and len(fila) == 8,
-           "com todos em dia, a fila volta a ser a taxonomia inteira (§19)")
+    checar(modo == "em_dia" and not fila,
+           "com todos em dia, nenhuma consulta e desperdicada")
+
+    # Na quinta, a semana encerrada no domingo já teve três dias para sair.
+    checar(corte_de_frescura(date(2026, 8, 13)) == date(2026, 8, 3),
+           "quinta cobra a ultima semana ISO fechada")
+    # Na segunda, a publicação ainda pode estar atrasada sem ser defeito.
+    checar(corte_de_frescura(date(2026, 8, 10)) == date(2026, 7, 27),
+           "inicio da semana tolera o atraso de publicacao do Google")
 
     # --- Determinismo -------------------------------------------------------
     a, _ = fila_por_defasagem(aprovados, set(), set(sem_nada))

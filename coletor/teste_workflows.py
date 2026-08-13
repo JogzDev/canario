@@ -132,10 +132,10 @@ def checar_orquestracao(workflows):
     recuperar_busca = jobs.get("recuperar-busca", {})
     if (set(recuperar_busca.get("needs", [])) != {
             "saude-inicial", "recuperar-shopify"} or
-            recuperar_busca.get("uses") != individuais["coleta-trends.yml"] or
-            recuperar_busca.get("with", {}).get("tentativa") != 1):
+            recuperar_busca.get("uses") is not None or
+            not recuperar_busca.get("steps")):
         falhar("pipeline-diario.yml",
-               "recuperacao Trends deve usar outra rotacao apos Shopify")
+               "pipeline nao deve repetir Trends imediatamente apos recusa")
 
     saude = jobs.get("saude", {})
     if set(saude.get("needs", [])) != {

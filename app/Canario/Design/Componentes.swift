@@ -12,6 +12,7 @@ import SwiftUI
 struct SeloEstado: View {
     let estado: String?
     let motivo: String?
+    var leitura: Double? = nil
 
     var body: some View {
         if let bruto = estado, let e = Estado(rawValue: bruto) {
@@ -23,15 +24,24 @@ struct SeloEstado: View {
                 .foregroundStyle(cor(e))
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
                 .accessibilityLabel("Estado: \(e.rotulo)")
+        } else if let leitura {
+            Label(Leitura.emPalavras(leitura), systemImage: "waveform.path.ecg")
+                .font(Tokens.Fonte.miudo.weight(.semibold))
+                .padding(.horizontal, Tokens.Espaco.s)
+                .padding(.vertical, Tokens.Espaco.xs)
+                .background(Tokens.Cor.azulMarca.opacity(0.12))
+                .foregroundStyle(Tokens.Cor.azulMarca)
+                .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
+                .accessibilityLabel("Current signal, not yet confirmed as a trend. \(motivo ?? "")")
         } else {
-            Label("Sem estado", systemImage: "minus.circle")
+            Label("Not confirmed", systemImage: "minus.circle")
                 .font(Tokens.Fonte.miudo)
                 .padding(.horizontal, Tokens.Espaco.s)
                 .padding(.vertical, Tokens.Espaco.xs)
                 .background(Tokens.Cor.semDado.opacity(0.12))
                 .foregroundStyle(Tokens.Cor.semDado)
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
-                .accessibilityLabel("Sem estado. \(motivo ?? "Cobertura insuficiente para afirmar.")")
+                .accessibilityLabel("Not confirmed. \(motivo ?? "Coverage is insufficient.")")
         }
     }
 
@@ -116,18 +126,30 @@ struct BotaoCircularDoMenu: View {
     let acao: () -> Void
 
     var body: some View {
-        Button(action: acao) {
-            ZStack {
-                Vidro(forma: Circle())
-                Image(systemName: simbolo)
-                    .font(.system(size: simbolo == "xmark" ? 27 : 24,
-                                  weight: simbolo == "xmark" ? .medium : .bold))
-                    .foregroundStyle(Tokens.Cor.noite)
+        Group {
+            if #available(iOS 26.0, *) {
+                Button(action: acao) { icone.frame(width: 62, height: 62) }
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
+            } else {
+                Button(action: acao) {
+                    ZStack {
+                        Vidro(forma: Circle())
+                        icone
+                    }
+                    .frame(width: 62, height: 62)
+                }
+                .buttonStyle(.plain)
             }
-            .frame(width: 62, height: 62)
         }
-        .buttonStyle(.plain)
         .accessibilityLabel(acessibilidade)
+    }
+
+    private var icone: some View {
+        Image(systemName: simbolo)
+            .font(.system(size: simbolo == "xmark" ? 27 : 24,
+                          weight: simbolo == "xmark" ? .medium : .bold))
+            .foregroundStyle(Tokens.Cor.noite)
     }
 }
 

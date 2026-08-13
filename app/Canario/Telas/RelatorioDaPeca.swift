@@ -28,7 +28,12 @@ struct RelatorioDaPeca: View {
     @State private var similares: Similares.Resposta?
     @State private var cluster: Cluster.Resposta?
     @State private var serie: SerieDoCluster.Resposta?
+    @State private var erroDosSimilares: String?
+    @State private var erroDoCluster: String?
     @State private var erroDaSerie: String?
+    @State private var carregandoSimilares = true
+    @State private var carregandoCluster = true
+    @State private var carregandoSerie = true
     @State private var carregando = true
     @State private var erro: String?
     /// nil = ainda não tentou; true = guardada; false = a lista está no teto.
@@ -122,9 +127,35 @@ struct RelatorioDaPeca: View {
     /// estado da grade, sempre.
     @ViewBuilder
     private var blocoDeSimilares: some View {
-        if let s = similares, let r = s.resumo, !s.pecas.isEmpty {
+        if carregandoSimilares {
+            secaoCarregando("Similar pieces")
+        } else if let erroDosSimilares {
+            falhaLocal(titulo: "Similar pieces", mensagem: erroDosSimilares)
+        } else if let s = similares, let r = s.resumo, !s.pecas.isEmpty {
             BlocoDeSimilares(resumo: r, pecas: s.pecas,
                              atributos: termos, precoAlvo: precoAlvo)
+        } else {
+            LinhaInsumo(texto: "No panel item matched all selected attributes.")
+        }
+    }
+
+    private func secaoCarregando(_ titulo: String) -> some View {
+        Cartao {
+            HStack {
+                Text(titulo).font(Tokens.Fonte.secao)
+                Spacer()
+                ProgressView()
+            }
+        }
+    }
+
+    private func falhaLocal(titulo: String, mensagem: String) -> some View {
+        Cartao {
+            Text(titulo).font(Tokens.Fonte.secao)
+            Text(mensagem).font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+            Button("Try again") { Task { await carregar() } }
+                .buttonStyle(.bordered)
         }
     }
 
@@ -172,7 +203,8 @@ struct RelatorioDaPeca: View {
                         SeloEstado(estado: podeMostrar ? indice?.estado : nil,
                                    motivo: podeMostrar
                                        ? "Só afirmo uma direção quando duas fontes concordam."
-                                       : "Sem cobertura suficiente da mesma semana.")
+                                       : "Sem cobertura suficiente da mesma semana.",
+                                   leitura: podeMostrar ? indice?.indice : nil)
                     }
                     conteudo(de: termo)
                 }
@@ -208,7 +240,9 @@ struct RelatorioDaPeca: View {
     private var blocoDoHistorico: some View {
         Cartao {
             Text("Como esse conjunto se moveu").font(Tokens.Fonte.secao)
-            if let erroDaSerie {
+            if carregandoSerie {
+                ProgressView().frame(maxWidth: .infinity, alignment: .center)
+            } else if let erroDaSerie {
                 Text("Não consegui carregar o gráfico: \(erroDaSerie)")
                     .font(Tokens.Fonte.corpo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -266,7 +300,11 @@ struct RelatorioDaPeca: View {
     /// se recusa a dar direção.
     @ViewBuilder
     private var blocoDoCluster: some View {
-        if let c = cluster, c.nAtributos > 0 {
+        if carregandoCluster {
+            secaoCarregando("Combined reading")
+        } else if let erroDoCluster {
+            falhaLocal(titulo: "Combined reading", mensagem: erroDoCluster)
+        } else if let c = cluster, c.nAtributos > 0 {
             Cartao {
                 Text("O conjunto").font(Tokens.Fonte.secao)
                 Text(Cluster.manchete(c)).font(Tokens.Fonte.corpo)
@@ -321,17 +359,35 @@ struct RelatorioDaPeca: View {
     private func carregar() async {
         carregando = true
         erro = nil
+        erroDosSimilares = nil
+        erroDoCluster = nil
+        erroDaSerie = nil
+        carregandoSimilares = true
+        carregandoCluster = true
+        carregandoSerie = true
         guard !termos.isEmpty else { carregando = false; return }
-        let ids = termos.map(\.id).joined(separator: ",")
+        let termoIds = termos.map(\.id)
+        let ids = termoIds.joined(separator: ",")
+        let conjuntoIds = Set(termoIds)
         do {
-            async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_do_app",
-                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=600")
+            // Todas as cinco operações começam no mesmo instante. A versão
+            // anterior esperava índice+cobertura e SÓ DEPOIS iniciava os três
+            // RPCs; a duração percebida era a soma de duas ondas de rede.
+            async let i = CatalogoDeIndices.shared.carregar()
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=600")
 
-            let recebidosI = try await i
+            var args: [String: Any] = ["termos": termoIds, "limite": 8]
+            if let precoAlvo { args["preco_alvo"] = precoAlvo }
+            async let respostaSimilar: Similares.Resposta = Supabase.shared.chamar(
+                "similares_da_peca", args)
+            async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
+                "indice_do_cluster", ["termos": termoIds])
+            async let respostaSerie: SerieDoCluster.Resposta = Supabase.shared.chamar(
+                "serie_do_cluster", ["termos": termoIds, "semanas": 52])
+
+            let recebidosI = try await i.filter { conjuntoIds.contains($0.termoId) }
             let mapaI = SelecaoDeEstado.porTermo(recebidosI)
             indices = mapaI
 
@@ -342,31 +398,29 @@ struct RelatorioDaPeca: View {
                 mapaC[x.termoId] = x
             }
             coberturas = mapaC
+            // Índices e cobertura bastam para liberar a tela. Os três RPCs
+            // continuam em voo e ocupam somente suas próprias seções.
+            carregando = false
 
-            // §33: servidor calcula, app consulta. As três funções são
-            // independentes e começam juntas; falha no gráfico não derruba os
-            // similares, e vice-versa.
-            var args: [String: Any] = ["termos": termos.map(\.id), "limite": 8]
-            if let precoAlvo { args["preco_alvo"] = precoAlvo }
-            async let respostaSimilar: Similares.Resposta = Supabase.shared.chamar(
-                "similares_da_peca", args)
-            async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
-                "indice_do_cluster", ["termos": termos.map(\.id)])
-            async let respostaSerie: SerieDoCluster.Resposta = Supabase.shared.chamar(
-                "serie_do_cluster", ["termos": termos.map(\.id), "semanas": 52])
-
-            similares = try await respostaSimilar
-            cluster = try? await respostaCluster
             do {
-                serie = try await respostaSerie
-                erroDaSerie = nil
+                similares = try await respostaSimilar
             } catch {
-                serie = nil
-                erroDaSerie = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+                erroDosSimilares = mensagem(error)
             }
+            carregandoSimilares = false
+            do { cluster = try await respostaCluster }
+            catch { erroDoCluster = mensagem(error) }
+            carregandoCluster = false
+            do { serie = try await respostaSerie }
+            catch { erroDaSerie = mensagem(error) }
+            carregandoSerie = false
         } catch {
-            erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+            erro = mensagem(error)
         }
         carregando = false
+    }
+
+    private func mensagem(_ error: Error) -> String {
+        (error as? LocalizedError)?.errorDescription ?? "\(error)"
     }
 }
