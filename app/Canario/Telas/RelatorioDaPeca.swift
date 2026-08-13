@@ -378,8 +378,11 @@ struct RelatorioDaPeca: View {
                 "cobertura_por_celula",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=600")
 
-            var args: [String: Any] = ["termos": termoIds, "limite": 8]
-            if let precoAlvo { args["preco_alvo"] = precoAlvo }
+            let args: [String: Any] = {
+                var argumentos: [String: Any] = ["termos": termoIds, "limite": 8]
+                if let precoAlvo { argumentos["preco_alvo"] = precoAlvo }
+                return argumentos
+            }()
             async let respostaSimilar: Similares.Resposta = Supabase.shared.chamar(
                 "similares_da_peca", args)
             async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
