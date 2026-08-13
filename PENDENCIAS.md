@@ -67,7 +67,7 @@ coleção.
 | A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
 | A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Gabarito 24/24 adjudicado com comentários do JP; prompt v3 fechado e testado offline. Falta repetir as 24; só ≥20/24 em categoria e cor abre o holdout |
 | A18 | Home do Figma em Liquid Glass, paleta aprovada, menu e duas peças recentes | ✅ Feito e verificado no iPhone Simulator — miniaturas reais, locais, 720 px, sem EXIF e excluídas de backup |
-| A19 | Recorte local da peça, Closet em grade, foto substituível; imagens de similares/eventos; gráfico e último estado medido visíveis | 🟡 Código, migração e 132 testes verdes; falta aplicar a migração `20260812220000` no Supabase e conferir o pacote inteiro no device |
+| A19 | Recorte local da peça, Closet em grade, foto substituível; imagens de similares/eventos; gráfico e último estado medido visíveis | 🟡 Migração aplicada e RPCs reais validadas: reposições 5/5 com imagem, remarcações 5/5, similares 8/8 e histórico com 52 pontos. Falta somente a conferência visual do pacote inteiro no device, incluindo o recorte de uma foto real |
 
 ---
 
