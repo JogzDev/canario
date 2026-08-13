@@ -236,6 +236,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
     private func evento(ordinal: Int?, dias: Int?, tamanhos: [String]?) -> EventoVarejo {
         EventoVarejo(id: 1, tipo: "reposicao", data: "2026-07-30", semana: "2026-07-27",
                      marca: "PatBo", peca: "Vestido longo", urlDaPeca: nil,
+                     imagem: nil,
                      detalhe: .init(tamanhos: tamanhos, quedaPct: nil, precoDe: nil, precoPara: nil),
                      ordinal: ordinal, diasDesdeAPrimeira: dias)
     }

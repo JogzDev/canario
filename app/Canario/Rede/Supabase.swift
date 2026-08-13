@@ -173,11 +173,10 @@ actor Supabase {
         req.httpBody = try JSONSerialization.data(withJSONObject: argumentos)
 
         do {
-            let (dados, resposta) = try await sessao.data(for: req)
-            let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
-            guard (200..<300).contains(codigo) else {
-                throw Falha.resposta(codigo, String(data: dados, encoding: .utf8) ?? "")
-            }
+            // RPC também recebe a segunda chance reservada a 5xx/quebra de
+            // rede. Antes, consultas GET repetiam e as funções que alimentam
+            // similares e gráficos não, embora falhassem pelo mesmo pool.
+            let dados = try await comUmaSegundaChance(req)
             return try JSONDecoder().decode(T.self, from: dados)
         } catch let falha as Falha {
             throw falha

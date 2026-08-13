@@ -20,7 +20,10 @@ struct Raiz: View {
         var id: String { nome }
     }
 
-    @State private var aba: Aba = .adicionar
+    /// Argumento de inspeção visual: permite abrir o Closet no simulador sem
+    /// adicionar um atalho de produto nem disparar consultas das abas ocultas.
+    @State private var aba: Aba = ProcessInfo.processInfo.arguments.contains(
+        "-CanarioAbrirCloset") ? .armario : .adicionar
     @State private var buscaAberta = false
     @State private var menuAberto = ProcessInfo.processInfo.arguments.contains(
         "-CanarioMenuAberto")

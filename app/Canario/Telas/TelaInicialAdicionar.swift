@@ -158,11 +158,13 @@ struct TelaInicialAdicionar: View {
     private func carregarMiniaturas() {
         Task { @MainActor in
             let todas = await PecasSalvas.shared.todas()
-            let pecas = Array(todas.prefix(2))
             var dados: [Data] = []
-            for peca in pecas {
+            // Itens antigos podem não ter foto. Procurar até achar duas evita
+            // esconder as imagens só porque as peças mais novas são legadas.
+            for peca in todas {
                 if let imagem = await PecasSalvas.shared.miniatura(de: peca) {
                     dados.append(imagem)
+                    if dados.count == 2 { break }
                 }
             }
             miniaturas = dados

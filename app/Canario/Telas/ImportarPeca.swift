@@ -61,7 +61,8 @@ struct ImportarPeca: View {
                 } else if confirmou {
                     RelatorioDaPeca(termos: termos.filter { detectados.contains($0.id) },
                                     precoAlvo: precoAlvo,
-                                    miniaturaJPEG: miniaturaJPEG)
+                                    miniaturaJPEG: miniaturaJPEG,
+                                    pecaSalva: nil)
                 } else {
                     formulario
                 }
@@ -241,7 +242,7 @@ struct ImportarPeca: View {
         erro = nil
         procedencia = []
         nomeDoArquivo = nome
-        miniaturaJPEG = MiniaturaLocal.jpeg(de: imagem)
+        miniaturaJPEG = await MiniaturaLocal.dados(de: imagem)
         let leitura = await LeitorDeArquivo.ler(imagem)
         let achado = Importacao.atributos(de: leitura, em: termos)
         detectados = achado.marcados
@@ -260,7 +261,7 @@ struct ImportarPeca: View {
         erro = nil
         procedencia = []
         nomeDoArquivo = url.lastPathComponent
-        miniaturaJPEG = MiniaturaLocal.jpeg(doArquivo: url)
+        miniaturaJPEG = await MiniaturaLocal.dados(doArquivo: url)
         do {
             let leitura = try await LeitorDeArquivo.ler(url)
             let achado = Importacao.atributos(de: leitura, em: termos)

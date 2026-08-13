@@ -18,7 +18,8 @@ struct RelatorioDoTermo: View {
     @State private var carregando = true
     @State private var erro: String?
 
-    private var atual: IndiceSemanal? { indices.first }
+    private var maisRecente: IndiceSemanal? { indices.first }
+    private var atual: IndiceSemanal? { SelecaoDeEstado.preferida(em: indices) }
 
     /// §8: sem cobertura, não há índice nem estado — só o que existe com
     /// honestidade. O portão vem antes de qualquer número na tela.
@@ -115,7 +116,10 @@ struct RelatorioDoTermo: View {
         }
         let pernas = Perna.frase(atual.pernasAtivas)
         if let bruto = atual.estado, let e = Estado(rawValue: bruto) {
-            return "\(termo.rotulo) está \(e.rotulo.lowercased()) e \(Leitura.emPalavras(valor)) na semana de \(Formato.data(atual.semana)). Leitura \(pernas)."
+            let prefixo = atual.semana == maisRecente?.semana
+                ? "Na semana mais recente com leitura"
+                : "Na última semana em que as duas fontes se encontraram"
+            return "\(prefixo), \(Formato.data(atual.semana)), \(termo.rotulo) ficou \(e.rotulo.lowercased()) e \(Leitura.emPalavras(valor)). Leitura \(pernas)."
         }
         return "\(termo.rotulo) tem índice \(fmt(valor)) na semana de \(Formato.data(atual.semana)), mas não há cobertura para declarar um estado: isso exige duas fontes concordando. Leitura \(pernas)."
     }

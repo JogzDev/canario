@@ -87,7 +87,7 @@ struct Analisar: View {
                 if descreveUmaPeca {
                     Section("Você descreveu uma peça") {
                         NavigationLink {
-                            RelatorioDaPeca(termos: casados)
+                            RelatorioDaPeca(termos: casados, pecaSalva: nil)
                         } label: {
                             VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                                 Text(casados.map(\.rotulo).joined(separator: " + "))
@@ -159,12 +159,13 @@ struct Analisar: View {
             async let t: [Termo] = Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en&order=dimensao,id")
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
-                "indices_do_app", "select=*&order=semana.desc&limit=400")
+                "indices_do_app", "select=*&order=semana.desc&limit=600")
             termos = try await t
             let recentes = try await i
-            var mapa: [String: IndiceSemanal] = [:]
-            for i in recentes where mapa[i.termoId] == nil { mapa[i.termoId] = i }
-            indices = mapa
+            // A linha mais nova pode ter só busca OU editorial e, portanto,
+            // nenhum estado. Quando há um estado realmente medido nas 12
+            // semanas anteriores, mostramos esse último estado com sua data.
+            indices = SelecaoDeEstado.porTermo(recentes)
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

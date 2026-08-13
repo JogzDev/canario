@@ -169,7 +169,7 @@ final class PecasSalvasTests: XCTestCase {
         let jpeg = Data([0xFF, 0xD8, 0xFF, 0xD9])
         let peca = PecaSalva(apelido: "visual", termoIds: ["vestido"])
         let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
-        let salvou = await loja.salvar(peca, miniaturaJPEG: jpeg)
+        let salvou = await loja.salvar(peca, miniaturaDados: jpeg)
         XCTAssertTrue(salvou)
 
         let todas = await loja.todas()
@@ -200,12 +200,40 @@ final class PecasSalvasTests: XCTestCase {
         let jpeg = Data([1, 2, 3])
         let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
         var peca = PecaSalva(apelido: "antes", termoIds: ["camisa"])
-        await loja.salvar(peca, miniaturaJPEG: jpeg)
+        await loja.salvar(peca, miniaturaDados: jpeg)
         peca.apelido = "depois"
         await loja.salvar(peca)
         let todas = await loja.todas()
         let salva = try XCTUnwrap(todas.first)
         let miniatura = await loja.miniatura(de: salva)
         XCTAssertEqual(miniatura, jpeg)
+    }
+
+    func testPNGTransparenteMantemExtensaoEImagemSubstituiAJPEG() async throws {
+        let arquivo = arquivoTemporario()
+        let pasta = pastaTemporaria()
+        defer {
+            try? FileManager.default.removeItem(at: arquivo)
+            try? FileManager.default.removeItem(at: pasta)
+        }
+        let jpeg = Data([0xFF, 0xD8, 0xFF, 0xD9])
+        let png = Data([0x89, 0x50, 0x4e, 0x47, 0x01])
+        let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
+        let peca = PecaSalva(apelido: "recortada", termoIds: ["vestido"])
+
+        await loja.salvar(peca, miniaturaDados: jpeg)
+        let depoisDoJPEG = await loja.todas()
+        let nomeJPEG = try XCTUnwrap(depoisDoJPEG.first?.miniaturaArquivo)
+        XCTAssertTrue(nomeJPEG.hasSuffix(".jpg"))
+
+        await loja.salvar(peca, miniaturaDados: png)
+        let depoisDoPNG = await loja.todas()
+        let atual = try XCTUnwrap(depoisDoPNG.first)
+        XCTAssertTrue(try XCTUnwrap(atual.miniaturaArquivo).hasSuffix(".png"))
+        let dadosAtuais = await loja.miniatura(de: atual)
+        XCTAssertEqual(dadosAtuais, png)
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: pasta.appendingPathComponent(nomeJPEG).path),
+            "substituir a foto não pode deixar a JPEG anterior órfã")
     }
 }

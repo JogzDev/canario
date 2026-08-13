@@ -44,14 +44,14 @@ coleção.
 
 ---
 
-## Decisões das instruções do JP (A1–A18)
+## Decisões das instruções do JP (A1–A19)
 
 | id | O que exige | Estado |
 |---|---|---|
 | A1 | `flag_tipo` presumido por categoria e palavra-chave | 🔴 Não feito — schema aceita os valores, nada preenche |
 | A2 | Coletar amplo, classificar depois | ✅ Feito |
 | A3 | Forma descritiva do marco de demo 2 | 🔴 Não feito |
-| A6 | Cards de similar com identidade visual própria | 🟡 Funcional feito, **sem foto de terceiro**: bloco cuja altura mostra o estado da grade. A identidade visual é da Bianca e troca em `MarcaVisual` |
+| A6 | Cards de similar com identidade visual própria | 🟡 Funcional feito; A13 acrescentou hotlink do CDN da loja sobre o bloco cuja altura mostra a grade. Identidade final da Bianca ainda pendente |
 | A7 | Visão e referências internas fora da v1 | ✅ Feito (entrada por arquivo voltou em 30/07) |
 | §28 | Entrada por arquivo (print, foto, PDF) com OCR, sem câmera | ✅ Feito — `LeitorDeArquivo.swift` |
 | §28 | Formulário de confirmação de atributos (humano no circuito) | ✅ Feito — `ImportarPeca.swift` |
@@ -67,6 +67,7 @@ coleção.
 | A16 | Interface da v1 em inglês | 🔴 Decidido; tradução e nome definitivo pendentes |
 | A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Gabarito 24/24 adjudicado com comentários do JP; prompt v3 fechado e testado offline. Falta repetir as 24; só ≥20/24 em categoria e cor abre o holdout |
 | A18 | Home do Figma em Liquid Glass, paleta aprovada, menu e duas peças recentes | ✅ Feito e verificado no iPhone Simulator — miniaturas reais, locais, 720 px, sem EXIF e excluídas de backup |
+| A19 | Recorte local da peça, Closet em grade, foto substituível; imagens de similares/eventos; gráfico e último estado medido visíveis | 🟡 Código, migração e 132 testes verdes; falta aplicar a migração `20260812220000` no Supabase e conferir o pacote inteiro no device |
 
 ---
 

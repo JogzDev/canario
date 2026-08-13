@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// O bloco de similares da §29, e os cartões que a A6 exige.
 ///
@@ -130,13 +131,7 @@ struct MarcaVisual: View {
                     // `AsyncImage` só desenha em `.success`: em carregamento e
                     // em falha o bloco de cor fica visível sozinho, sem ícone
                     // de imagem quebrada e sem a tela pular de tamanho.
-                    AsyncImage(url: endereco) { fase in
-                        if case .success(let img) = fase {
-                            img.resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .transition(.opacity)
-                        }
-                    }
+                    ImagemRemota(endereco: endereco, modo: .fit)
                     .frame(width: geo.size.width, height: geo.size.height)
                     .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
                 }
@@ -153,5 +148,70 @@ struct MarcaVisual: View {
         // relance.
         .frame(width: 72, height: 96)
         .accessibilityHidden(true)   // o texto ao lado já diz a grade
+    }
+}
+
+/// Carregador explícito das fotos de loja.
+///
+/// `AsyncImage` escondia completamente a causa da falha e, em alguns CDNs,
+/// não voltava a tentar depois de um cancelamento durante a navegação. Este
+/// caminho valida HTTP e MIME, usa cache de URL e repete uma vez apenas quando
+/// a primeira conexão cai. O fallback visual continua sob ele.
+struct ImagemRemota: View {
+    let endereco: URL?
+    var modo: ContentMode = .fit
+
+    @State private var imagem: UIImage?
+
+    var body: some View {
+        Group {
+            if let imagem {
+                Image(uiImage: imagem)
+                    .resizable()
+                    .aspectRatio(contentMode: modo)
+                    .transition(.opacity)
+            } else {
+                Color.clear
+            }
+        }
+        .task(id: endereco) {
+            imagem = await CacheDeImagemRemota.shared.imagem(em: endereco)
+        }
+    }
+}
+
+actor CacheDeImagemRemota {
+    static let shared = CacheDeImagemRemota()
+    private let memoria = NSCache<NSURL, UIImage>()
+
+    func imagem(em endereco: URL?) async -> UIImage? {
+        guard let endereco else { return nil }
+        if let existente = memoria.object(forKey: endereco as NSURL) { return existente }
+
+        for tentativa in 0...1 {
+            do {
+                var pedido = URLRequest(url: endereco,
+                                        cachePolicy: .returnCacheDataElseLoad,
+                                        timeoutInterval: 15)
+                pedido.setValue("image/avif,image/webp,image/*,*/*;q=0.8",
+                                forHTTPHeaderField: "Accept")
+                let (dados, resposta) = try await URLSession.shared.data(for: pedido)
+                let http = resposta as? HTTPURLResponse
+                let codigo = http?.statusCode ?? 0
+                if codigo >= 500 && tentativa == 0 {
+                    throw URLError(.badServerResponse)
+                }
+                guard (200..<300).contains(codigo),
+                      http?.mimeType?.hasPrefix("image/") == true,
+                      let resultado = UIImage(data: dados) else { return nil }
+                memoria.setObject(resultado, forKey: endereco as NSURL)
+                return resultado
+            } catch where tentativa == 0 {
+                continue
+            } catch {
+                return nil
+            }
+        }
+        return nil
     }
 }

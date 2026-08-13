@@ -90,6 +90,28 @@ struct IndiceSemanal: Decodable, Identifiable, Hashable {
     }
 }
 
+/// Escolhe a leitura que a interface deve representar como **estado**.
+///
+/// O motor continua publicando o índice mais recente mesmo quando apenas uma
+/// fonte chegou naquela semana; por isso a linha mais nova pode não ter estado.
+/// A interface procura, no máximo nas 12 leituras anteriores, a última semana
+/// em que duas fontes realmente sustentaram um estado. A data continua sempre
+/// visível. Se não existir, preserva a linha mais nova e o silêncio honesto.
+enum SelecaoDeEstado {
+    static let janelaMaxima = 13
+
+    static func preferida(em leituras: [IndiceSemanal]) -> IndiceSemanal? {
+        let ordenadas = leituras.sorted { $0.semana > $1.semana }
+        guard let maisNova = ordenadas.first else { return nil }
+        return ordenadas.prefix(janelaMaxima).first { $0.estado != nil } ?? maisNova
+    }
+
+    static func porTermo(_ leituras: [IndiceSemanal]) -> [String: IndiceSemanal] {
+        Dictionary(grouping: leituras, by: \.termoId)
+            .compactMapValues { preferida(em: $0) }
+    }
+}
+
 /// Como o app fala de estado. Os rótulos não carregam duração no título, que é
 /// o que a §27 exige — janela de tempo vai para a letra miúda dos insumos.
 enum Estado: String {
@@ -278,6 +300,9 @@ struct EventoVarejo: Decodable, Identifiable, Hashable {
     let marca: String
     let peca: String?
     let urlDaPeca: String?
+    /// Hotlink para o CDN da própria loja, sob a mesma decisão A13 usada nos
+    /// similares. O app não copia a imagem para o servidor nem para o binário.
+    let imagem: String?
     let detalhe: Detalhe?
     /// Quantas vezes isto já aconteceu com esta peça, contando esta.
     let ordinal: Int?
@@ -301,7 +326,7 @@ struct EventoVarejo: Decodable, Identifiable, Hashable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, tipo, data, semana, marca, peca, detalhe, ordinal
+        case id, tipo, data, semana, marca, peca, imagem, detalhe, ordinal
         case urlDaPeca = "url_da_peca"
         case diasDesdeAPrimeira = "dias_desde_a_primeira"
     }

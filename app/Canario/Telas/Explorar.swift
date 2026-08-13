@@ -202,10 +202,10 @@ struct Explorar: View {
             // e as primeiras 400 linhas da página eram todas remarcação. A
             // reposição de ontem nunca entrava no resultado — e reposição é o
             // sinal mais forte do painel (§23), justamente o que não pode sumir.
-            async let rep: [EventoVarejo] = Supabase.shared.buscar(
-                "eventos_da_semana", "select=*&tipo=eq.reposicao&order=data.desc&limit=200")
-            async let rem: [EventoVarejo] = Supabase.shared.buscar(
-                "eventos_da_semana", "select=*&tipo=eq.remarcacao&order=data.desc&limit=200")
+            async let rep: [EventoVarejo] = Supabase.shared.chamar(
+                "eventos_recentes", ["tipo_evento": "reposicao", "limite": 200])
+            async let rem: [EventoVarejo] = Supabase.shared.chamar(
+                "eventos_recentes", ["tipo_evento": "remarcacao", "limite": 200])
 
             todos = try await i
             rotulos = Dictionary(uniqueKeysWithValues: try await t.map { ($0.id, $0.rotulo) })
@@ -256,7 +256,22 @@ struct LinhaDeMarca: View {
 
     var body: some View {
         Cartao {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .center, spacing: Tokens.Espaco.s) {
+                HStack(spacing: -10) {
+                    ForEach(Array(eventos.compactMap(\.imagem).prefix(3).enumerated()),
+                            id: \.offset) { _, endereco in
+                        ZStack {
+                            Circle().fill(Tokens.Cor.superficie)
+                            Image(systemName: "tshirt")
+                                .font(.caption)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                            ImagemRemota(endereco: URL(string: endereco), modo: .fit)
+                                .clipShape(Circle())
+                        }
+                        .frame(width: 38, height: 38)
+                        .overlay(Circle().stroke(Tokens.Cor.fundo, lineWidth: 2))
+                    }
+                }
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                     Text(marca).font(Tokens.Fonte.corpo)
                     LinhaInsumo(texto: resumo)
@@ -295,16 +310,32 @@ struct ListaDeEventos: View {
             VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
                 ForEach(eventos) { e in
                     Cartao {
-                        HStack(alignment: .firstTextBaseline) {
-                            Label(e.marca, systemImage: e.icone)
-                                .font(Tokens.Fonte.apoio.weight(.semibold))
-                            Spacer()
-                            Text(Formato.data(e.data)).font(Tokens.Fonte.miudo)
-                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        HStack(alignment: .top, spacing: Tokens.Espaco.m) {
+                            ZStack {
+                                Tokens.Cor.fundo.opacity(0.55)
+                                Image(systemName: "tshirt")
+                                    .font(.system(size: 28, weight: .light))
+                                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                                ImagemRemota(endereco: e.imagem.flatMap(URL.init(string:)),
+                                             modo: .fit)
+                            }
+                            .frame(width: 82, height: 108)
+                            .clipShape(RoundedRectangle(
+                                cornerRadius: Tokens.Raio.etiqueta,
+                                style: .continuous))
+                            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Label(e.marca, systemImage: e.icone)
+                                        .font(Tokens.Fonte.apoio.weight(.semibold))
+                                    Spacer()
+                                    Text(Formato.data(e.data)).font(Tokens.Fonte.miudo)
+                                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                                }
+                                Text(e.peca ?? "—").font(Tokens.Fonte.corpo)
+                                Text(e.resumo).font(Tokens.Fonte.apoio)
+                                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                            }
                         }
-                        Text(e.peca ?? "—").font(Tokens.Fonte.corpo)
-                        Text(e.resumo).font(Tokens.Fonte.apoio)
-                            .foregroundStyle(Tokens.Cor.tintaFraca)
                         // A repetição em destaque: é ela que separa um evento
                         // isolado de um padrão de reposição.
                         if let r = e.repeticao(desde: inicioDaColeta) {

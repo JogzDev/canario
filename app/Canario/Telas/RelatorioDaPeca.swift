@@ -17,12 +17,15 @@ struct RelatorioDaPeca: View {
     var precoAlvo: Double?
     /// Prévia local, já sem metadados. Só é persistida se o usuário guardar.
     var miniaturaJPEG: Data?
+    /// Quando aberto pelo Closet, evita salvar uma duplicata da mesma peça.
+    var pecaSalva: PecaSalva? = nil
 
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
     @State private var similares: Similares.Resposta?
     @State private var cluster: Cluster.Resposta?
     @State private var serie: SerieDoCluster.Resposta?
+    @State private var erroDaSerie: String?
     @State private var carregando = true
     @State private var erro: String?
     /// nil = ainda não tentou; true = guardada; false = a lista está no teto.
@@ -36,7 +39,12 @@ struct RelatorioDaPeca: View {
     /// armário, e a §34 exclui o segundo.
     @ViewBuilder
     private var botaoDeGuardar: some View {
-        switch guardada {
+        if pecaSalva != nil {
+            Label("Saved", systemImage: "checkmark")
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(.secondary)
+        } else {
+            switch guardada {
         case true:
             Label("Guardada", systemImage: "checkmark")
                 .labelStyle(.titleAndIcon)
@@ -52,12 +60,13 @@ struct RelatorioDaPeca: View {
                 Task {
                     guardada = await PecasSalvas.shared.salvar(
                         PecaSalva(termoIds: termos.map(\.id), precoAlvo: precoAlvo),
-                        miniaturaJPEG: miniaturaJPEG)
+                        miniaturaDados: miniaturaJPEG)
                 }
             } label: {
                 Label("Guardar", systemImage: "square.stack.3d.up")
             }
             .disabled(termos.isEmpty)
+            }
         }
     }
 
@@ -195,16 +204,27 @@ struct RelatorioDaPeca: View {
     private var blocoDoHistorico: some View {
         Cartao {
             Text("Como esse conjunto se moveu").font(Tokens.Fonte.secao)
-            if let motivo = SerieDoCluster.porQueNaoDesenha(serie) {
+            if let erroDaSerie {
+                Text("Não consegui carregar o gráfico: \(erroDaSerie)")
+                    .font(Tokens.Fonte.corpo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                Button("Tentar gráfico novamente") { Task { await carregar() } }
+                    .buttonStyle(.bordered)
+            } else if let motivo = SerieDoCluster.porQueNaoDesenha(serie) {
                 // Nunca um espaço em branco: a tela diz o que falta.
                 Text(motivo)
                     .font(Tokens.Fonte.corpo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
             } else if let s = serie {
                 Chart(s.pontos.filter { $0.data != nil }) { p in
+                    AreaMark(x: .value("Semana", p.data!),
+                             yStart: .value("Base", 0),
+                             yEnd: .value("Índice", p.indice))
+                        .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.12))
                     LineMark(x: .value("Semana", p.data!),
                              y: .value("Índice", p.indice))
                         .interpolationMethod(.monotone)
+                        .foregroundStyle(Tokens.Cor.azulMarca)
                     // Semana com menos atributos que o pedido ganha ponto
                     // visível: a linha sozinha mente por omissão, porque parece
                     // uniforme mesmo quando metade dela veio de um atributo só.
@@ -215,6 +235,13 @@ struct RelatorioDaPeca: View {
                             .foregroundStyle(Tokens.Cor.semDado)
                     }
                 }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) {
+                        AxisGridLine().foregroundStyle(.clear)
+                        AxisValueLabel(format: .dateTime.month(.abbreviated))
+                    }
+                }
+                .chartYScale(domain: .automatic(includesZero: true))
                 .chartYAxisLabel(s.unidade ?? "")
                 .frame(height: 160)
                 .accessibilityLabel(
@@ -295,13 +322,13 @@ struct RelatorioDaPeca: View {
         do {
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_do_app",
-                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=400")
+                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=600")
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",
-                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=400")
+                "select=*&segmento=eq.\(Recorte.segmento)&termo_id=in.(\(ids))&order=semana.desc&limit=600")
 
-            var mapaI: [String: IndiceSemanal] = [:]
-            for x in try await i where mapaI[x.termoId] == nil { mapaI[x.termoId] = x }
+            let recebidosI = try await i
+            let mapaI = SelecaoDeEstado.porTermo(recebidosI)
             indices = mapaI
 
             // A cobertura tem de ser a da MESMA semana do índice do atributo.
@@ -312,21 +339,27 @@ struct RelatorioDaPeca: View {
             }
             coberturas = mapaC
 
-            // §33: servidor calcula, app consulta. Trazer 18 mil peças pela
-            // rede para contar quantas estão remarcadas seria o oposto disso.
+            // §33: servidor calcula, app consulta. As três funções são
+            // independentes e começam juntas; falha no gráfico não derruba os
+            // similares, e vice-versa.
             var args: [String: Any] = ["termos": termos.map(\.id), "limite": 8]
             if let precoAlvo { args["preco_alvo"] = precoAlvo }
-            similares = try await Supabase.shared.chamar("similares_da_peca", args)
-
-            // §22/K5. Chamada separada de propósito: se o cluster falhar, os
-            // similares — que são o substituto aprovado da previsão (§5) —
-            // continuam na tela. O contrário também vale.
-            cluster = try? await Supabase.shared.chamar(
+            async let respostaSimilar: Similares.Resposta = Supabase.shared.chamar(
+                "similares_da_peca", args)
+            async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
                 "indice_do_cluster", ["termos": termos.map(\.id)])
-            // `try?` igual ao cluster: o histórico é o bloco menos essencial da
-            // tela, e perder o gráfico não pode levar o relatório junto.
-            serie = try? await Supabase.shared.chamar(
+            async let respostaSerie: SerieDoCluster.Resposta = Supabase.shared.chamar(
                 "serie_do_cluster", ["termos": termos.map(\.id), "semanas": 52])
+
+            similares = try await respostaSimilar
+            cluster = try? await respostaCluster
+            do {
+                serie = try await respostaSerie
+                erroDaSerie = nil
+            } catch {
+                serie = nil
+                erroDaSerie = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+            }
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

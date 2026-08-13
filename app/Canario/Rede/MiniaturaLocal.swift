@@ -1,13 +1,18 @@
 import Foundation
+import CoreImage
+import CoreImage.CIFilterBuiltins
 import ImageIO
 import PDFKit
 import UIKit
+import Vision
 
 /// Cria a única cópia visual persistente autorizada pela A18.
 ///
-/// A imagem é redesenhada num bitmap novo, limitada a 720 px e recodificada em
-/// JPEG. Isso descarta EXIF, localização, nome original e demais metadados. O
-/// resultado só é salvo quando o usuário confirma "Save to Closet".
+/// A imagem é redesenhada num bitmap novo, limitada a 720 px e recodificada.
+/// Quando o Vision encontra um primeiro plano confiável, ele vira PNG com
+/// transparência; caso contrário, cai no JPEG seguro já existente. Nos dois
+/// casos são descartados EXIF, localização, nome original e demais metadados.
+/// O resultado só é salvo quando o usuário confirma "Save to Closet".
 enum MiniaturaLocal {
     static let ladoMaximo: CGFloat = 720
 
@@ -26,7 +31,21 @@ enum MiniaturaLocal {
         return CGImageSourceCreateThumbnailAtIndex(fonte, 0, opcoes as CFDictionary)
     }
 
-    static func jpeg(de imagem: CGImage) -> Data? {
+    /// Gera a prévia persistível. O recorte é deliberadamente conservador:
+    /// máscara quase vazia ou que cobre praticamente a foto inteira não é
+    /// aceita, porque apagar uma parte da roupa é pior que manter o fundo.
+    static func dados(de imagem: CGImage) async -> Data? {
+        await Task.detached(priority: .userInitiated) {
+            if let recortada = recortarPrimeiroPlano(imagem) {
+                return redesenhar(recortada, transparente: true)?.pngData()
+            }
+            return redesenhar(imagem, transparente: false)?
+                .jpegData(compressionQuality: 0.82)
+        }.value
+    }
+
+    private static func redesenhar(_ imagem: CGImage,
+                                   transparente: Bool) -> UIImage? {
         let largura = CGFloat(imagem.width)
         let altura = CGFloat(imagem.height)
         guard largura > 0, altura > 0 else { return nil }
@@ -35,16 +54,20 @@ enum MiniaturaLocal {
                              height: max(1, (altura * escala).rounded()))
         let formato = UIGraphicsImageRendererFormat()
         formato.scale = 1
-        formato.opaque = true
+        formato.opaque = !transparente
         let limpa = UIGraphicsImageRenderer(size: tamanho, format: formato).image { contexto in
-            UIColor.white.setFill()
-            contexto.fill(CGRect(origin: .zero, size: tamanho))
+            if transparente {
+                contexto.cgContext.clear(CGRect(origin: .zero, size: tamanho))
+            } else {
+                UIColor.white.setFill()
+                contexto.fill(CGRect(origin: .zero, size: tamanho))
+            }
             UIImage(cgImage: imagem).draw(in: CGRect(origin: .zero, size: tamanho))
         }
-        return limpa.jpegData(compressionQuality: 0.82)
+        return limpa
     }
 
-    static func jpeg(doArquivo url: URL) -> Data? {
+    static func dados(doArquivo url: URL) async -> Data? {
         let precisaLiberar = url.startAccessingSecurityScopedResource()
         defer { if precisaLiberar { url.stopAccessingSecurityScopedResource() } }
         guard let dados = try? Data(contentsOf: url) else { return nil }
@@ -57,9 +80,77 @@ enum MiniaturaLocal {
                 of: CGSize(width: caixa.width * escala, height: caixa.height * escala),
                 for: .mediaBox)
             guard let cgImage = imagem.cgImage else { return nil }
-            return jpeg(de: cgImage)
+            return await self.dados(de: cgImage)
         }
         guard let imagem = imagem(de: dados) else { return nil }
-        return jpeg(de: imagem)
+        return await self.dados(de: imagem)
+    }
+
+    /// `VNGenerateForegroundInstanceMaskRequest` é local e está disponível no
+    /// iOS 17. Ele separa sujeito e fundo; não tenta adivinhar o SKU numa foto
+    /// com várias roupas. Essa decisão semântica continua pertencendo à etapa
+    /// de visão e ao usuário.
+    private static func recortarPrimeiroPlano(_ imagem: CGImage) -> CGImage? {
+        let pedido = VNGenerateForegroundInstanceMaskRequest()
+        let manipulador = VNImageRequestHandler(cgImage: imagem)
+        do {
+            try manipulador.perform([pedido])
+            guard let observacao = pedido.results?.first,
+                  !observacao.allInstances.isEmpty else { return nil }
+            let mascara = try observacao.generateScaledMaskForImage(
+                forInstances: observacao.allInstances, from: manipulador)
+            guard let limites = limitesUteis(da: mascara) else { return nil }
+
+            let original = CIImage(cgImage: imagem)
+            let mask = CIImage(cvPixelBuffer: mascara)
+            let transparente = CIImage(color: .clear).cropped(to: original.extent)
+            let filtro = CIFilter.blendWithMask()
+            filtro.inputImage = original
+            filtro.backgroundImage = transparente
+            filtro.maskImage = mask
+            guard let composta = filtro.outputImage else { return nil }
+
+            // O pixel buffer tem origem no topo; Core Image, embaixo.
+            let altura = CGFloat(CVPixelBufferGetHeight(mascara))
+            var recorte = CGRect(x: limites.minX,
+                                 y: altura - limites.maxY,
+                                 width: limites.width,
+                                 height: limites.height)
+            let margem = max(recorte.width, recorte.height) * 0.05
+            recorte = recorte.insetBy(dx: -margem, dy: -margem)
+                .intersection(original.extent)
+            guard recorte.width > 1, recorte.height > 1 else { return nil }
+            return CIContext(options: [.cacheIntermediates: false])
+                .createCGImage(composta, from: recorte)
+        } catch {
+            return nil
+        }
+    }
+
+    /// Bounding box e cobertura da máscara. Entre 3% e 95%: abaixo disso a
+    /// detecção é ruído; acima disso ela não removeu fundo de forma útil.
+    private static func limitesUteis(da mascara: CVPixelBuffer) -> CGRect? {
+        CVPixelBufferLockBaseAddress(mascara, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(mascara, .readOnly) }
+        guard CVPixelBufferGetPixelFormatType(mascara) == kCVPixelFormatType_OneComponent8,
+              let base = CVPixelBufferGetBaseAddress(mascara) else { return nil }
+        let largura = CVPixelBufferGetWidth(mascara)
+        let altura = CVPixelBufferGetHeight(mascara)
+        let passo = CVPixelBufferGetBytesPerRow(mascara)
+        let bytes = base.assumingMemoryBound(to: UInt8.self)
+        var minX = largura, minY = altura, maxX = -1, maxY = -1, ativos = 0
+        for y in 0..<altura {
+            for x in 0..<largura where bytes[y * passo + x] > 127 {
+                ativos += 1
+                minX = min(minX, x); maxX = max(maxX, x)
+                minY = min(minY, y); maxY = max(maxY, y)
+            }
+        }
+        let cobertura = Double(ativos) / Double(max(1, largura * altura))
+        guard cobertura >= 0.03, cobertura <= 0.95, maxX >= minX, maxY >= minY else {
+            return nil
+        }
+        return CGRect(x: minX, y: minY,
+                      width: maxX - minX + 1, height: maxY - minY + 1)
     }
 }

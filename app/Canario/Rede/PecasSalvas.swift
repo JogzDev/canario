@@ -34,8 +34,9 @@ import Foundation
 ///
 /// A §34 não tem sincronização na v1. Grava em Application Support, excluído
 /// de backup. Desde A18, uma peça pode apontar para uma **miniatura local**:
-/// JPEG reamostrado, sem metadados e apagado junto com a peça. A foto original
-/// continua não sendo copiada para o app.
+/// PNG transparente quando o recorte local é confiável, ou JPEG reamostrado
+/// quando não é; ambos sem metadados e apagados junto com a peça. A foto
+/// original continua não sendo copiada para o app.
 struct PecaSalva: Codable, Equatable, Identifiable {
 
     /// Estável entre execuções: é ele que a aba Comparar usa para escolher.
@@ -50,7 +51,7 @@ struct PecaSalva: Codable, Equatable, Identifiable {
     var precoAlvo: Double?
     var canal: String?
     var criadaEm: Date
-    /// Nome opaco do JPEG local. Nunca contém caminho, URL de origem ou imagem
+    /// Nome opaco da miniatura local. Nunca contém caminho, URL de origem ou imagem
     /// em base64; `PecasSalvas` valida o nome antes de abrir.
     var miniaturaArquivo: String?
 
@@ -114,7 +115,7 @@ actor PecasSalvas {
     }
 
     @discardableResult
-    func salvar(_ peca: PecaSalva, miniaturaJPEG: Data? = nil) -> Bool {
+    func salvar(_ peca: PecaSalva, miniaturaDados: Data? = nil) -> Bool {
         carregarSeNecessario()
         let existente = itens.first(where: { $0.id == peca.id })
         guard existente != nil || itens.count < Self.teto else { return false }
@@ -123,8 +124,8 @@ actor PecasSalvas {
         if salva.miniaturaArquivo == nil {
             salva.miniaturaArquivo = existente?.miniaturaArquivo
         }
-        if let miniaturaJPEG,
-           let nome = gravarMiniatura(miniaturaJPEG, id: salva.id) {
+        if let miniaturaDados,
+           let nome = gravarMiniatura(miniaturaDados, id: salva.id) {
             if let anterior = existente?.miniaturaArquivo, anterior != nome {
                 apagarMiniatura(anterior)
             }
@@ -187,7 +188,9 @@ actor PecasSalvas {
             try FileManager.default.createDirectory(
                 at: pastaDeMiniaturas, withIntermediateDirectories: true)
             excluirDeBackup(pastaDeMiniaturas)
-            let nome = "\(id.uuidString.lowercased()).jpg"
+            let extensao = dados.prefix(4) == Data([0x89, 0x50, 0x4e, 0x47])
+                ? "png" : "jpg"
+            let nome = "\(id.uuidString.lowercased()).\(extensao)"
             let url = pastaDeMiniaturas.appendingPathComponent(nome)
             try dados.write(to: url, options: .atomic)
             excluirDeBackup(url)
@@ -199,7 +202,9 @@ actor PecasSalvas {
 
     private func urlDaMiniatura(_ nome: String?) -> URL? {
         guard let nome, !nome.isEmpty, nome == URL(fileURLWithPath: nome).lastPathComponent,
-              nome.lowercased().hasSuffix(".jpg"), let pastaDeMiniaturas else {
+              ["jpg", "jpeg", "png"].contains(URL(fileURLWithPath: nome)
+                    .pathExtension.lowercased()),
+              let pastaDeMiniaturas else {
             return nil
         }
         return pastaDeMiniaturas.appendingPathComponent(nome)
