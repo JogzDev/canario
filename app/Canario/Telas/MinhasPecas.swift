@@ -14,6 +14,7 @@ struct MinhasPecas: View {
     @State private var carregando = true
     @State private var erro: String?
     @State private var processandoFotos: Set<UUID> = []
+    @State private var editando: PecaSalva?
 
     private let colunas = [
         GridItem(.flexible(), spacing: 18),
@@ -21,12 +22,12 @@ struct MinhasPecas: View {
     ]
 
     private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0.rotulo) })
+        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
     }
 
     private var categorias: [String: String] {
         Dictionary(uniqueKeysWithValues: termos.filter { $0.dimensao == "categoria" }
-            .map { ($0.id, $0.rotulo) })
+            .map { ($0.id, Traducao.rotuloExibido($0)) })
     }
 
     var body: some View {
@@ -59,11 +60,11 @@ struct MinhasPecas: View {
         VStack(spacing: Tokens.Espaco.m) {
             Image(systemName: "tshirt")
                 .font(.system(size: 42))
-                .foregroundStyle(Tokens.Cor.azulMarca)
+                .foregroundStyle(Tokens.Cor.acao)
             Text("No clothes yet").font(Tokens.Fonte.secao)
             Text("Clothes you save from Add stay here, ready to open again and compare.")
                 .font(Tokens.Fonte.corpo)
-                .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.78))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
         .padding(Tokens.Espaco.g)
@@ -76,7 +77,7 @@ struct MinhasPecas: View {
                 if let erro {
                     Text(erro)
                         .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.azulMarca)
+                        .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
@@ -92,13 +93,14 @@ struct MinhasPecas: View {
                                 await substituirFoto(de: peca, por: item)
                             },
                             aoFavoritar: { favoritar(peca) },
+                            aoRenomear: { editando = peca },
                             aoApagar: { apagar(peca) })
                     }
                 }
 
                 Text("\(pecas.count) of \(PecasSalvas.teto) · Market readings are recalculated whenever you open an item.")
                     .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.72))
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.vertical, Tokens.Espaco.s)
             }
@@ -107,6 +109,13 @@ struct MinhasPecas: View {
             .padding(.bottom, 100)
         }
         .refreshable { await carregar() }
+        .sheet(item: $editando) { peca in
+            EditorDaPeca(peca: peca) { nova in
+                atualizar(nova)
+                editando = nil
+            }
+            .presentationDetents([.medium])
+        }
     }
 
     @MainActor
@@ -161,11 +170,17 @@ struct MinhasPecas: View {
         let atualizada = pecas[indice]
         Task { await PecasSalvas.shared.salvar(atualizada) }
     }
+
+    private func atualizar(_ peca: PecaSalva) {
+        guard let indice = pecas.firstIndex(where: { $0.id == peca.id }) else { return }
+        pecas[indice] = peca
+        Task { await PecasSalvas.shared.salvar(peca) }
+    }
 }
 
 /// Card do Figma: a peça é protagonista, inteira e sem um recorte quadrado que
-/// coma mangas ou barra. O botão de foto é explícito e funciona tanto para itens
-/// antigos sem miniatura quanto para substituir uma foto ruim.
+/// coma mangas ou barra. O card só oferece foto a itens antigos que ainda não
+/// têm uma; substituição mora no detalhe da peça.
 private struct CartaoDoArmario: View {
     let peca: PecaSalva
     let termos: [Termo]
@@ -174,6 +189,7 @@ private struct CartaoDoArmario: View {
     let processandoFoto: Bool
     let aoEscolherFoto: (PhotosPickerItem) async -> Data?
     let aoFavoritar: () -> Void
+    let aoRenomear: () -> Void
     let aoApagar: () -> Void
 
     @State private var miniatura: UIImage?
@@ -200,20 +216,22 @@ private struct CartaoDoArmario: View {
                             } else {
                                 Image(systemName: "tshirt")
                                     .font(.system(size: 46, weight: .light))
-                                    .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.48))
+                                    .foregroundStyle(.secondary.opacity(0.48))
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 182)
+                        .frame(maxWidth: 150, maxHeight: 150)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 160)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(peca.nome(comRotulos: rotulos))
                                 .font(Tokens.Fonte.corpo.weight(.semibold))
-                                .foregroundStyle(Tokens.Cor.noite)
+                                .foregroundStyle(.primary)
                                 .lineLimit(2)
                             Text(categoria ?? "Clothing")
                                 .font(Tokens.Fonte.miudo)
-                                .foregroundStyle(Tokens.Cor.azulMarca)
+                                .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
                     }
@@ -225,35 +243,42 @@ private struct CartaoDoArmario: View {
                     Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
                         .font(.system(size: 23, weight: .semibold))
                         .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
-                        .padding(8)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
             }
 
-            Divider().opacity(0.32)
-
-            PhotosPicker(selection: $fotoEscolhida, matching: .images) {
-                HStack(spacing: 6) {
-                    if processandoFoto {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Image(systemName: temFoto ? "photo.badge.arrow.down" : "photo.badge.plus")
+            if !temFoto {
+                Divider().opacity(0.32)
+                PhotosPicker(selection: $fotoEscolhida, matching: .images) {
+                    HStack(spacing: 6) {
+                        if processandoFoto {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "photo.badge.plus")
+                        }
+                        Text("Add photo").lineLimit(1)
                     }
-                    Text(temFoto ? "Replace photo" : "Add photo")
-                        .lineLimit(1)
+                    .font(Tokens.Fonte.miudo.weight(.semibold))
+                    .foregroundStyle(Tokens.Cor.acao)
+                    .frame(maxWidth: .infinity, minHeight: 44)
                 }
-                .font(Tokens.Fonte.miudo.weight(.semibold))
-                .foregroundStyle(Tokens.Cor.azulMarca)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
+                .disabled(processandoFoto)
             }
-            .disabled(processandoFoto)
         }
         .padding(10)
+        .frame(minHeight: 250, alignment: .top)
         .background { Vidro(raio: 24) }
         .contextMenu {
+            Button(action: aoFavoritar) {
+                Label((peca.favorita ?? false) ? "Unfavorite" : "Favorite",
+                      systemImage: (peca.favorita ?? false) ? "heart.slash" : "heart")
+            }
+            Button(action: aoRenomear) {
+                Label("Rename", systemImage: "pencil")
+            }
             Button(role: .destructive, action: aoApagar) {
                 Label("Delete from Closet", systemImage: "trash")
             }
@@ -275,6 +300,36 @@ private struct CartaoDoArmario: View {
             miniatura = await MiniaturaParaTela.imagem(de: dados)
         }
         .accessibilityAction(named: "Delete from Closet", aoApagar)
+    }
+}
+
+private struct EditorDaPeca: View {
+    @State var peca: PecaSalva
+    let salvar: (PecaSalva) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("Clothing name", text: $peca.apelido)
+                    .textInputAutocapitalization(.sentences)
+                Section {
+                    Toggle("Favorite", isOn: Binding(
+                        get: { peca.favorita ?? false },
+                        set: { peca.favorita = $0 ? true : nil }))
+                }
+            }
+            .navigationTitle("Edit item")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { salvar(peca) }
+                }
+            }
+        }
     }
 }
 

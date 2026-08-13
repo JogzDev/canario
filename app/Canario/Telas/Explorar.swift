@@ -39,7 +39,7 @@ struct Explorar: View {
     private let diasMaximosDoDigest = 42
 
     private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0.rotulo) })
+        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
     }
 
     private var termosPorId: [String: Termo] {
@@ -113,6 +113,7 @@ struct Explorar: View {
                           vazio: "Nenhuma queda de preço de 5% ou mais nesta janela.")
             }
             .padding(Tokens.Espaco.m)
+            .padding(.bottom, 20)
         }
     }
 
@@ -228,11 +229,11 @@ struct Explorar: View {
                                 NavigationLink { RelatorioDoTermo(termo: termo) } label: {
                                     Cartao {
                                         HStack(alignment: .firstTextBaseline) {
-                                            Text(termo.rotulo).font(Tokens.Fonte.corpo)
+                                            Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                                             Spacer()
                                             Text(ponto.z.map(Leitura.emPalavras) ?? "—")
                                                 .font(Tokens.Fonte.miudo.weight(.semibold))
-                                                .foregroundStyle(Tokens.Cor.azulMarca)
+                                                .foregroundStyle(Tokens.Cor.acao)
                                             Image(systemName: "chevron.right")
                                                 .font(Tokens.Fonte.miudo)
                                                 .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -313,7 +314,7 @@ struct Explorar: View {
                 Image(systemName: "arrow.up.right")
                     .font(Tokens.Fonte.miudo)
             }
-            .foregroundStyle(Tokens.Cor.azulMarca)
+            .foregroundStyle(Tokens.Cor.acao)
         }
     }
 
@@ -596,7 +597,7 @@ struct LinhaDeMarca: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                    Text(marca).font(Tokens.Fonte.corpo)
+                    Text(NomeDeMarca.exibido(marca)).font(Tokens.Fonte.corpo)
                     LinhaInsumo(texto: resumo)
                 }
                 Spacer()
@@ -608,7 +609,7 @@ struct LinhaDeMarca: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(marca), \(eventos.count) peças. \(resumo)")
+        .accessibilityLabel("\(NomeDeMarca.exibido(marca)), \(eventos.count) peças. \(resumo)")
     }
 
     private var resumo: String {
@@ -648,7 +649,7 @@ struct ListaDeEventos: View {
                                 style: .continuous))
                             VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                                 HStack(alignment: .firstTextBaseline) {
-                                    Label(e.marca, systemImage: e.icone)
+                                    Label(NomeDeMarca.exibido(e.marca), systemImage: e.icone)
                                         .font(Tokens.Fonte.apoio.weight(.semibold))
                                     Spacer()
                                     Text(Formato.data(e.data)).font(Tokens.Fonte.miudo)
@@ -732,5 +733,11 @@ struct CartaoDeMudanca: View {
                 }
             }
         }
+    }
+}
+
+enum NomeDeMarca {
+    static func exibido(_ nome: String) -> String {
+        nome == "Maria Filo" ? "Maria Filó" : nome
     }
 }

@@ -59,6 +59,13 @@ enum Formato {
         return dia.string(from: d)
     }
 
+    /// A mesma data ISO como `Date`, para eixos e recortes temporais. O método
+    /// é deliberadamente opcional: uma semana malformada não ganha uma posição
+    /// inventada no gráfico.
+    static func dataISO(_ texto: String) -> Date? {
+        iso.date(from: String(texto.prefix(10)))
+    }
+
     /// Carimbo de coleta com hora, em Brasília (§27 exige a data visível junto
     /// dos números).
     static func dataEHora(_ texto: String) -> String {

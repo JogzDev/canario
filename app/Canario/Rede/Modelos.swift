@@ -403,7 +403,7 @@ enum Leitura {
         case 2.0...:        return "muito acima do normal"
         case 1.0..<2.0:     return "acima do normal"
         case 0.35..<1.0:    return "levemente acima"
-        case -0.35..<0.35:  return "no normal"
+        case -0.35..<0.35:  return "dentro do normal"
         case -1.0 ..< -0.35: return "levemente abaixo"
         case -2.0 ..< -1.0: return "abaixo do normal"
         default:            return "muito abaixo do normal"

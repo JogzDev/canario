@@ -18,6 +18,10 @@ enum Tokens {
         static let ceu = Color(red: 187 / 255, green: 229 / 255, blue: 237 / 255)
         static let noite = Color(red: 14 / 255, green: 17 / 255, blue: 22 / 255)
         static let azulMarca = Color(red: 55 / 255, green: 74 / 255, blue: 103 / 255)
+        /// Azul de ação com contraste suficiente tanto no fundo claro quanto
+        /// no escuro. `azulMarca` é identidade sobre o céu da Home; usá-lo
+        /// como link em cards pretos tornava texto e ícone ilegíveis.
+        static let acao = Color.accentColor
         /// Fundo da tela.
         static let fundo = Color(.systemBackground)
         /// Fundo de cartão, um degrau acima do fundo.
@@ -62,6 +66,9 @@ enum Tokens {
     // Type funcionar, que a §32 exige.
 
     enum Fonte {
+        // `Font.system` já é San Francisco nas plataformas Apple. Manter os
+        // estilos sem nomear uma fonte empacotada preserva Dynamic Type e usa
+        // SF Pro com o peso semântico de cada nível.
         static let titulo = Font.title2.weight(.semibold)
         static let secao = Font.headline
         static let corpo = Font.body

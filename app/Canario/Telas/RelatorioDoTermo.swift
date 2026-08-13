@@ -17,6 +17,7 @@ struct RelatorioDoTermo: View {
     @State private var coberturas: [Cobertura] = []
     @State private var carregando = true
     @State private var erro: String?
+    @State private var janelaEmMeses = 6
 
     private var maisRecente: IndiceSemanal? { indices.first }
     private var atual: IndiceSemanal? { SelecaoDeEstado.preferida(em: indices) }
@@ -155,7 +156,7 @@ struct RelatorioDoTermo: View {
     /// Minigráfico do §29.3, uma linha por perna.
     @ViewBuilder
     private var grafico: some View {
-        let comZ = serie.filter { $0.z != nil }
+        let comZ = serieComparavel
         if comZ.isEmpty {
             CoberturaInsuficiente(
                 titulo: "Ainda estou juntando histórico",
@@ -163,20 +164,55 @@ struct RelatorioDoTermo: View {
                 oQueTem: serie.isEmpty ? nil : "Já coletei \(serie.count) medições — elas ficam guardadas até virarem histórico.")
         } else {
             Cartao {
-                Text("Histórico").font(Tokens.Fonte.secao)
+                HStack {
+                    Text("Histórico comparável").font(Tokens.Fonte.secao)
+                    Spacer()
+                    Picker("Período", selection: $janelaEmMeses) {
+                        Text("3M").tag(3)
+                        Text("6M").tag(6)
+                        Text("1Y").tag(12)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 170)
+                }
                 Chart(comZ) { ponto in
                     LineMark(
-                        x: .value("Semana", ponto.semana),
+                        x: .value("Semana", Formato.dataISO(ponto.semana) ?? .distantPast),
                         y: .value("z", ponto.z ?? 0)
                     )
                     .foregroundStyle(by: .value("Fonte", Perna.rotulo(ponto.fonte)))
                 }
-                .chartXAxis(.hidden)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) {
+                        AxisGridLine().foregroundStyle(.quaternary)
+                        AxisValueLabel(format: .dateTime.month(.abbreviated))
+                    }
+                }
                 .frame(height: 160)
                 .accessibilityLabel("Histórico por fonte ao longo das semanas")
-                LinhaInsumo(texto: "Cada ponto compara a semana com as 12 anteriores deste mesmo atributo.")
+                LinhaInsumo(texto: "Para comparar as linhas, o gráfico mostra somente semanas em que todas as fontes exibidas têm uma medição. Cada fonte mantém sua última data abaixo.")
             }
         }
+    }
+
+    private var serieComparavel: [PontoSerie] {
+        let comZ = serie.filter { $0.z != nil && Formato.dataISO($0.semana) != nil }
+        guard let semanaMaisNova = comZ.compactMap({ Formato.dataISO($0.semana) }).max(),
+              let corte = Calendar(identifier: .iso8601).date(
+                byAdding: .month, value: -janelaEmMeses, to: semanaMaisNova)
+        else { return comZ }
+
+        let naJanela = comZ.filter {
+            guard let data = Formato.dataISO($0.semana) else { return false }
+            return data >= corte
+        }
+        let fontes = Set(naJanela.map(\.fonte))
+        guard fontes.count > 1 else { return naJanela }
+        let porSemana = Dictionary(grouping: naJanela, by: \.semana)
+        let compartilhadas = Set(porSemana.compactMap { semana, pontos in
+            Set(pontos.map(\.fonte)).isSuperset(of: fontes) ? semana : nil
+        })
+        return naJanela.filter { compartilhadas.contains($0.semana) }
     }
 
     /// §29.4 — um bloco por fator, com fonte e data.

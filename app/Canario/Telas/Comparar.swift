@@ -97,7 +97,7 @@ struct Comparar: View {
                                   ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(escolhidos.contains(termo.id)
                                                  ? Tokens.Cor.tinta : Tokens.Cor.semDado)
-                            Text(termo.rotulo).foregroundStyle(Tokens.Cor.tinta)
+                            Text(Traducao.rotuloExibido(termo)).foregroundStyle(Tokens.Cor.tinta)
                             Spacer()
                             Text(termo.dimensao)
                                 .font(Tokens.Fonte.miudo)
@@ -141,9 +141,9 @@ struct Comparar: View {
         let pctV = Leitura.numero(maisVarejo.1, casas: 1)
 
         if maisEditorial.0.id == maisVarejo.0.id {
-            return "\(maisEditorial.0.rotulo) lidera nos dois eixos: é o mais citado pela imprensa e o mais presente no painel (\(pctE)% do sortimento). Quando os dois andam juntos, a leitura é de atributo já estabelecido, não de movimento novo."
+            return "\(Traducao.rotuloExibido(maisEditorial.0)) lidera nos dois eixos: é o mais citado pela imprensa e o mais presente no painel (\(pctE)% do sortimento). Quando os dois andam juntos, a leitura é de atributo já estabelecido, não de movimento novo."
         }
-        return "\(maisEditorial.0.rotulo) é o que a imprensa mais moveu nesta semana, e ocupa \(pctE)% do sortimento do painel. \(maisVarejo.0.rotulo) é o mais presente nas vitrines, com \(pctV)%. Essa distância entre o que a imprensa cita e o que as marcas já penduraram é o que esta tela existe para mostrar — o que fazer com ela depende do seu custo e do seu prazo, que eu não conheço."
+        return "\(Traducao.rotuloExibido(maisEditorial.0)) é o que a imprensa mais moveu nesta semana, e ocupa \(pctE)% do sortimento do painel. \(Traducao.rotuloExibido(maisVarejo.0)) é o mais presente nas vitrines, com \(pctV)%. Essa distância entre o que a imprensa cita e o que as marcas já penduraram é o que esta tela existe para mostrar — o que fazer com ela depende do seu custo e do seu prazo, que eu não conheço."
     }
 
     private func alternar(_ id: String) {
@@ -207,7 +207,7 @@ struct LinhaComparada: View {
             indice: indice, varejo: varejo, cobertura: cobertura)
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack {
-                Text(termo.rotulo).font(Tokens.Fonte.corpo)
+                Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                 Spacer()
                 SeloEstado(estado: podeMostrar ? indice?.estado : nil,
                            motivo: podeMostrar

@@ -1,5 +1,7 @@
-import SwiftUI
 import Charts
+import PhotosUI
+import SwiftUI
+import UIKit
 
 /// Leitura de uma peça a partir dos atributos confirmados pelo usuário (§29).
 ///
@@ -38,6 +40,12 @@ struct RelatorioDaPeca: View {
     @State private var erro: String?
     /// nil = ainda não tentou; true = guardada; false = a lista está no teto.
     @State private var guardada: Bool?
+    @State private var rejeitouSimilares = false
+    @State private var fotoEscolhida: PhotosPickerItem?
+    @State private var miniaturaDaPeca: UIImage?
+    @State private var processandoFoto = false
+    @State private var erroDaFoto: String?
+    @State private var pecaGuardadaNestaTela: PecaSalva?
 
     /// Guarda a peça em "Minhas peças" (§27, A10).
     ///
@@ -48,13 +56,13 @@ struct RelatorioDaPeca: View {
     @ViewBuilder
     private var botaoDeGuardar: some View {
         if pecaSalva != nil {
-            Label("Saved", systemImage: "checkmark")
+            Label("Saved", systemImage: "archivebox.fill")
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(.secondary)
         } else {
             switch guardada {
         case true:
-            Label("Guardada", systemImage: "checkmark")
+            Label("Saved", systemImage: "archivebox.fill")
                 .labelStyle(.titleAndIcon)
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(.secondary)
@@ -66,12 +74,15 @@ struct RelatorioDaPeca: View {
         case nil:
             Button {
                 Task {
+                    let nova = PecaSalva(
+                        termoIds: termos.map(\.id), precoAlvo: precoAlvo,
+                        similaresRejeitados: rejeitouSimilares ? true : nil)
                     guardada = await PecasSalvas.shared.salvar(
-                        PecaSalva(termoIds: termos.map(\.id), precoAlvo: precoAlvo),
-                        miniaturaDados: miniaturaJPEG)
+                        nova, miniaturaDados: miniaturaJPEG)
+                    if guardada == true { pecaGuardadaNestaTela = nova }
                 }
             } label: {
-                Label("Guardar", systemImage: "square.stack.3d.up")
+                Label("Save", systemImage: "archivebox")
             }
             .disabled(termos.isEmpty)
             }
@@ -86,6 +97,7 @@ struct RelatorioDaPeca: View {
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else {
+                    if pecaSalva != nil { fotoDaPeca }
                     // §29, na ordem que ela manda: o parágrafo vem primeiro, e
                     // ele é feito de similares — não do índice.
                     resumo
@@ -99,8 +111,77 @@ struct RelatorioDaPeca: View {
             .padding(Tokens.Espaco.m)
         }
         .task { await carregar() }
+        .task(id: pecaSalva?.miniaturaArquivo) { await carregarMiniaturaDaPeca() }
+        .onAppear { rejeitouSimilares = pecaSalva?.similaresRejeitados ?? false }
+        .onChange(of: fotoEscolhida) { _, item in
+            guard let item else { return }
+            Task { await substituirFoto(item) }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
+        }
+    }
+
+    /// A edição visual mora no detalhe, onde há contexto para entender qual
+    /// peça será alterada. O card continua oferecendo “Add photo” somente para
+    /// itens antigos que ainda não têm nenhuma.
+    private var fotoDaPeca: some View {
+        Cartao {
+            if let miniaturaDaPeca {
+                Image(uiImage: miniaturaDaPeca)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                    .accessibilityLabel("Saved clothing photo")
+            }
+            if let erroDaFoto {
+                Text(erroDaFoto).font(Tokens.Fonte.miudo).foregroundStyle(.secondary)
+            }
+            PhotosPicker(selection: $fotoEscolhida, matching: .images) {
+                HStack {
+                    if processandoFoto { ProgressView().controlSize(.small) }
+                    Label(miniaturaDaPeca == nil ? "Add photo" : "Replace photo",
+                          systemImage: "photo.badge.arrow.down")
+                }
+                .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .disabled(processandoFoto)
+        }
+    }
+
+    @MainActor
+    private func carregarMiniaturaDaPeca() async {
+        guard let pecaSalva,
+              let dados = await PecasSalvas.shared.miniatura(de: pecaSalva) else {
+            miniaturaDaPeca = nil
+            return
+        }
+        miniaturaDaPeca = await MiniaturaParaTela.imagem(de: dados)
+    }
+
+    @MainActor
+    private func substituirFoto(_ item: PhotosPickerItem) async {
+        guard let pecaSalva else { return }
+        processandoFoto = true
+        erroDaFoto = nil
+        defer {
+            processandoFoto = false
+            fotoEscolhida = nil
+        }
+        do {
+            guard let dados = try await item.loadTransferable(type: Data.self),
+                  let imagem = MiniaturaLocal.imagem(de: dados),
+                  let miniatura = await MiniaturaLocal.dados(de: imagem),
+                  await PecasSalvas.shared.salvar(pecaSalva, miniaturaDados: miniatura)
+            else {
+                erroDaFoto = "I couldn't save that photo. Your existing image was not changed."
+                return
+            }
+            miniaturaDaPeca = await MiniaturaParaTela.imagem(de: miniatura)
+        } catch {
+            erroDaFoto = "I couldn't read that image. Try another photo."
         }
     }
 
@@ -131,9 +212,20 @@ struct RelatorioDaPeca: View {
             secaoCarregando("Similar pieces")
         } else if let erroDosSimilares {
             falhaLocal(titulo: "Similar pieces", mensagem: erroDosSimilares)
-        } else if let s = similares, let r = s.resumo, !s.pecas.isEmpty {
-            BlocoDeSimilares(resumo: r, pecas: s.pecas,
-                             atributos: termos, precoAlvo: precoAlvo)
+        } else if let s = similares, let r = s.resumo,
+                  !s.pecas.filter(Similares.podeExibir).isEmpty {
+            if rejeitouSimilares {
+                LinhaInsumo(texto: "You marked this selection as not similar. You can review it again at any time.")
+                Button("Review similar pieces again") { rejeitarSimilares(false) }
+                    .buttonStyle(.bordered)
+            } else {
+                BlocoDeSimilares(resumo: r,
+                                 pecas: s.pecas.filter(Similares.podeExibir),
+                                 atributos: termos, precoAlvo: precoAlvo)
+                Button("None of these looks like my item") { rejeitarSimilares(true) }
+                    .buttonStyle(.bordered)
+                    .frame(minHeight: 44)
+            }
         } else {
             LinhaInsumo(texto: "No panel item matched all selected attributes.")
         }
@@ -172,13 +264,13 @@ struct RelatorioDaPeca: View {
         let abaixo = comLeitura.filter { (indices[$0.id]?.indice ?? 0) <= -1 }
         var partes = ["Esta peça tem \(termos.count) atributo\(termos.count == 1 ? "" : "s"), \(comLeitura.count) com leitura."]
         if !acima.isEmpty {
-            partes.append("Acima do normal: \(acima.map(\.rotulo).joined(separator: ", ")).")
+            partes.append("Acima do normal: \(acima.map(Traducao.rotuloExibido).joined(separator: ", ")).")
         }
         if !abaixo.isEmpty {
-            partes.append("Abaixo do normal: \(abaixo.map(\.rotulo).joined(separator: ", ")).")
+            partes.append("Abaixo do normal: \(abaixo.map(Traducao.rotuloExibido).joined(separator: ", ")).")
         }
         if acima.isEmpty && abaixo.isEmpty {
-            partes.append("Todos dentro do normal deles.")
+            partes.append("Todos dentro da faixa normal deles.")
         }
         return partes.joined(separator: " ")
     }
@@ -191,7 +283,7 @@ struct RelatorioDaPeca: View {
                 Cartao {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                            Text(termo.rotulo).font(Tokens.Fonte.corpo)
+                            Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                             Text(termo.dimensao)
                                 .font(Tokens.Fonte.miudo)
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -425,5 +517,13 @@ struct RelatorioDaPeca: View {
 
     private func mensagem(_ error: Error) -> String {
         (error as? LocalizedError)?.errorDescription ?? "\(error)"
+    }
+
+    private func rejeitarSimilares(_ rejeitados: Bool) {
+        rejeitouSimilares = rejeitados
+        guard var atualizada = pecaSalva ?? pecaGuardadaNestaTela else { return }
+        atualizada.similaresRejeitados = rejeitados ? true : nil
+        pecaGuardadaNestaTela = atualizada
+        Task { await PecasSalvas.shared.salvar(atualizada) }
     }
 }

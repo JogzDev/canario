@@ -57,11 +57,14 @@ struct PecaSalva: Codable, Equatable, Identifiable {
     /// Escolha explícita do usuário. `nil` mantém compatibilidade com peças
     /// criadas antes de Favorites existir e não ocupa o JSON até ser usada.
     var favorita: Bool?
+    /// Rejeição explícita da vitrine atual de similares. É escolha do usuário,
+    /// não leitura calculada do motor, e pode ser persistida localmente.
+    var similaresRejeitados: Bool?
 
     init(id: UUID = UUID(), apelido: String = "", termoIds: [String],
          precoAlvo: Double? = nil, canal: String? = nil,
          criadaEm: Date = Date(), miniaturaArquivo: String? = nil,
-         favorita: Bool? = nil) {
+         favorita: Bool? = nil, similaresRejeitados: Bool? = nil) {
         self.id = id
         self.apelido = apelido
         self.termoIds = termoIds
@@ -70,6 +73,7 @@ struct PecaSalva: Codable, Equatable, Identifiable {
         self.criadaEm = criadaEm
         self.miniaturaArquivo = miniaturaArquivo
         self.favorita = favorita
+        self.similaresRejeitados = similaresRejeitados
     }
 
     /// Nome para a lista quando o usuário não deu um. Usa os rótulos vindos do

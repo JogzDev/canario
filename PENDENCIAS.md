@@ -44,7 +44,7 @@ coleção.
 
 ---
 
-## Decisões das instruções do JP (A1–A20)
+## Decisões das instruções do JP (A1–A23)
 
 | id | O que exige | Estado |
 |---|---|---|
@@ -69,6 +69,7 @@ coleção.
 | A18 | Home do Figma em Liquid Glass, paleta aprovada, menu e duas peças recentes | ✅ Feito e verificado no iPhone Simulator — Liquid Glass nativo no iOS 26, fallback compatível no 17–25; miniaturas reais, locais, 720 px, sem EXIF e excluídas de backup |
 | A19 | Recorte local da peça, Closet em grade, foto substituível; imagens de similares/eventos; gráfico e último estado medido visíveis | 🟡 Migração aplicada e RPCs reais validadas: reposições 5/5 com imagem, remarcações 5/5, similares 8/8 e histórico com 52 pontos. Falta somente a conferência visual do pacote inteiro no device, incluindo o recorte de uma foto real |
 | A20 | Revisão de navegação: credibilidade da tela de tendências, linguagem humana, precisão editorial, acabamento visual e passagem de bastão completa | 🟡 Primeiro pacote feito e testado; fila NQ1–NQ19 abaixo é o escopo restante, sem esconder dívida antiga |
+| A23 | Feedback consolidado do grupo: navegação nativa, formulário pertinente, avaliação de marca/produto e protótipo antes de mudanças estruturais | 🟡 Primeiro pacote implementado e documentado em `PLANO_PRIORIZADO_FEEDBACK_EQUIPE_13-08-2026.md`; String Catalog, ranking de similares, Luna e protótipo seguem na ordem registrada |
 
 ---
 
@@ -86,7 +87,7 @@ coluna precisa ser demonstrado no aparelho ou nos dados.
 | NQ4 | **Transformar Search/Analytics na casa das tendências da semana.** Navegar, rolar, pesquisar e filtrar no mesmo fluxo | 🔴 A busca ainda abre separada e o Explorar ainda mistura curva, eventos e tendências | Uma tela semanal com busca fixa, filtros por categoria/estado/data, grupos Em alta · Estável · Em queda, cards tocáveis e preservação da frase do usuário |
 | NQ5 | **Taxonomia de categoria.** Rever `blusa_top`, considerar `camiseta` e outras classes sem criar fronteiras arbitrárias | 🔴 O id atual agrega blusa, top, cropped, regata e camiseta. Separar por gosto sem série histórica quebraria comparação | Matriz de confusão Luna+humano, amostra de títulos e volume por candidato; definições visuais mutuamente exclusivas; decisão de migração/alias; reclassificação e séries com cobertura antes de expor novo id |
 | NQ6 | **Mais marcas com curadoria nacional e internacional.** O painel de nove parece pequeno | 🔴 Há candidatas já catalogadas, mas fonte não entra apenas para aumentar contador | Matriz papel × faixa × segmento × país; teste de 30 s, robots/termos, estabilidade de 7 dias e impacto de cobertura. Marcas internacionais ficam como direção, não confirmam índice BR |
-| NQ7 | **Mais e melhores sinais externos.** Pesquisar Pinterest, TikTok, Google Trends oficial e Lyst sem inventar autorização | 🟡 Matriz oficial em `FONTES_OFICIAIS_INTERNACIONAIS.md`: Google alpha segue prioritário; Pinterest é a melhor candidata nova, Guardian é viável só como editorial; TikTok Research é inelegível e YouTube/Wikimedia foram rebaixados por ruído | Decisão do JP sobre candidaturas Pinterest Trial e Guardian Developer; depois piloto licenciado, cobertura e precisão medidas, papel metodológico separado |
+| NQ7 | **Mais e melhores sinais externos.** Pesquisar Pinterest, TikTok, Google Trends oficial e Lyst sem inventar autorização | ⚪ Adiado pelo JP para depois da v1: custo de integração supera o retorno agora. A matriz oficial permanece em `FONTES_OFICIAIS_INTERNACIONAIS.md` | Retomar na v1.1; nenhum scraper ou endpoint privado entra para “compensar” o adiamento |
 | NQ8 | **Peça do usuário limpa, sem fundo, no Closet e na home** | 🟡 A19 recorta localmente com Vision, PNG transparente e fallback seguro; falta prova com fotos reais | Ensaio no iPhone com pelo menos 24 fotos (isolada, corpo, cabide e conjunto), taxa de recorte aceitável registrada e troca manual sempre disponível |
 | NQ9 | **Imagens remotas limpas em similares, reposições e remarcações** | 🔴 Hotlink mostra a imagem que a loja publicou; fundo, modelo e texto não são removidos hoje | Primeiro escolher a foto mais limpa entre URLs autorizadas. Só avaliar segmentação em memória depois de medir qualidade, latência, termos da loja e efeito no cache; nunca copiar para servidor/binário |
 | NQ10 | **Liquid Glass convincente** | 🟡 iOS 26 usa `glassEffect`, `GlassEffectContainer` e button style `.glass` nativos; iOS 17–25 mantém o melhor fallback possível com `ultraThinMaterial`. Build real no SDK 26.2 passou | Comparação lado a lado no iPhone 26 e no fallback 17, claro/escuro e Reduce Transparency; aprovação visual do JP e contraste nas ações |
@@ -98,7 +99,7 @@ coluna precisa ser demonstrado no aparelho ou nos dados.
 | NQ16 | **Luna: repetir 24 e integrar visão/redação só depois do portão** | 🟡 Gabarito e prompt v3 prontos; ainda não houve segunda inferência | Categoria e cor primária ≥20/24 separadamente; depois holdout cego de 300, meta 90%+, contrato/privacidade e fallback humano no runtime |
 | NQ17 | **Conta, sincronização e privacidade** | 🔴 A intenção é sincronizar o Closet entre aparelhos, mas não há modelo de conta nem revogação final da antiga promessa local-only | Escopo mínimo decidido; Supabase Auth/RLS; exportar/apagar conta e peças; disclosures da App Store; ameaça e teste de isolamento entre usuários |
 | NQ18 | **“Sem estado” e cobertura de duas fontes** | 🟡 Nulo não vira estável; se existe índice de uma fonte, o selo mostra a intensidade e diz que não é tendência confirmada. Trends e editorial aparecem em radares separados enquanto o estado composto aguarda concordância | Recuperar cobertura BR e medir células. Estado só existe com duas fontes, nunca por conveniência visual |
-| NQ19 | **Performance e conferência A19 no device** | 🟡 Home tem zero rede antes do primeiro frame; taxonomia/índices são caches compartilhados e chamadas frias idênticas são coalescidas; Trends abre snapshot e não refaz cinco consultas por 15 min; relatórios iniciam RPCs juntos e falham por seção; imagens remotas e miniaturas locais são reduzidas/descomprimidas a 384 px fora da main thread, e Favorites carrega só linhas materializadas. 136 testes + builds SwiftUI verdes | Medir abertura fria/quente no iPhone do JP. Meta: nenhum quadro preto >1 s, troca de abas imediata após aquecimento e análise sem bloquear a main thread |
+| NQ19 | **Performance e conferência A19 no device** | ✅ JP confirmou no device: muito mais rápido, leve gargalo apenas no primeiro cold launch e demais aberturas/trocas adequadas. Caches, coalescência, RPCs paralelos e imagens fora da main thread permanecem | Performance deixa de bloquear as telas; instrumentar cold launch se voltar a ser perceptível, sem reabrir por milissegundos não medidos |
 
 ### Ordem de ataque que não mascara o produto
 
@@ -446,3 +447,69 @@ Caminho medido para retomar depois do Demo Day: **recortar a peça do fundo ante
 - Recuo no 429 implementado
 - Teto de 90 min no job, para nenhuma tentativa custar uma tarde
 - Portão da §28 no código: segurou nas seis execuções, nada vazou para a tela
+
+---
+
+## 13/08 — FFW e BoF não estão bloqueadas; o editorial é que roda do datacenter
+
+Medido hoje, uma requisição por veículo, de IP residencial, com o
+`CanarioBot/1.0` do próprio projeto e `robots_permite()` antes de cada uma:
+
+| veículo | robots.txt | HTTP | corpo |
+|---|---|---|---|
+| FFW (`/wp-json/wp/v2/posts`) | permite | **200** | 64.076 bytes |
+| Business of Fashion (`/arc/outboundfeeds/rss/`) | permite | **200** | 115.367 bytes |
+
+**Nenhum dos dois recusa o bot.** O `feed http 403` que aparece na saúde todos os
+dias desde 05/08 vem de *onde o job roda*, não de quem responde. O job editorial
+de hoje (run `31669457045`, 05:11 UTC) executou em `ubuntu-latest`, runner
+`GitHub Actions 1000000287`.
+
+O diagnóstico já estava escrito no `detalhe_feed` dos dois veículos desde 05/08 —
+*"403 do datacenter do GitHub e 200 de IP residencial"* — e ninguém ligou ao
+`runs-on`. A FFW **nunca coletou pelo pipeline**: está muda desde o dia em que foi
+descoberta. São 9 dias de perna editorial rodando com 14 dos 16 veículos, e um dos
+ausentes é BR de prioridade alta.
+
+Consequência direta: **não há e-mail de autorização a mandar para nenhum dos dois.**
+Não existe bloqueio a ser autorizado.
+
+### `RUNNER_COLETA` nunca existiu
+
+`GET /repos/:owner/:repo/actions/variables` devolve **lista vazia** — não há
+variável cadastrada no repositório. Logo `${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}`
+sempre resolveu para o datacenter, tanto em `coleta.yml` quanto em
+`coleta-editorial.yml`.
+
+O `RUNNER.md` e a entrada de 28/07 do changelog descrevem um mecanismo que **não
+está ligado**. Ninguém percebeu porque o varejo também roda em `ubuntu-latest` e
+está coletando (40.580 produtos em 12/08) — ou seja, a premissa do `RUNNER.md`
+("a VTEX responde 429 do datacenter") não vale mais como está escrita, seja
+porque a VTEX mudou, seja porque a paginação por nome mudou o padrão de
+requisição. A distribuição real hoje é acidental, não desenhada:
+
+| workflow | runner | estado |
+|---|---|---|
+| `coleta.yml` (varejo VTEX) | `ubuntu-latest` | coletando normalmente |
+| `coleta-editorial.yml` | `ubuntu-latest` | FFW e BoF em 403 |
+| `coleta-trends.yml` | `[self-hosted, macOS]` (i7) | 429 nos 6 grupos |
+| `coleta-shopify.yml` | `[self-hosted, macOS]` (i7) | PatBô 429, Amaro 500 |
+
+### O que NÃO fazer, e por quê
+
+Trocar o `runs-on` do editorial para o i7 parece consertar em uma linha. **O M4 já
+registrou por que não:** o coletor calcula a série a partir dos feeds lidos
+*naquela execução*, então execução parcial sobrescreve a boa, e Mac dormindo vira
+vermelho na perna inteira. A troca substituiria dois veículos ausentes por um
+ponto único de falha em dezesseis.
+
+O que este achado acrescenta ao M4 é **preço**. O `computar_serie_editorial()` no
+banco, que o M4 já aponta como o conserto certo, hoje custa 9 dias × 2 veículos de
+prioridade alta, e o contador segue correndo. Deixou de ser dívida teórica.
+
+### Hipótese barata, ainda não testada
+
+As duas pernas presas ao i7 são exatamente as duas em 429 hoje. Pode ser
+coincidência: o Trends recusa de quase todo lugar e a PatBô tem limite próprio de
+Shopify. É testável com uma execução de um grupo do Trends pelo datacenter,
+comparando o código de resposta. Enquanto não for medido, é suspeita, não causa.

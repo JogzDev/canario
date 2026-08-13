@@ -28,7 +28,7 @@ enum Importacao {
                 ? "texto do PDF"
                 : "texto reconhecido na imagem"
             achado.procedencia.append(
-                "Do \(fonte): " + porTexto.map(\.rotulo).joined(separator: ", ") + ".")
+                "Do \(fonte): " + porTexto.map(Traducao.rotuloExibido).joined(separator: ", ") + ".")
         }
 
         if let cor = leitura.cor {
@@ -37,11 +37,36 @@ enum Importacao {
             if !jaTemCor, let termo = existe {
                 achado.marcados.insert(termo.id)
                 achado.procedencia.append(
-                    "Da cor da imagem: \(termo.rotulo) — medida no próprio pixel, "
+                    "Da cor da imagem: \(Traducao.rotuloExibido(termo)) — medida no próprio pixel, "
                     + "é a marcação que mais pede conferência.")
             }
         }
 
         return achado
+    }
+
+    /// Marcas reconhecidas pelo OCR local. É contexto para a futura avaliação
+    /// da Luna, nunca prova de modelo, material ou composição. Os aliases ficam
+    /// explícitos para não transformar substring acidental em identidade.
+    static func marcasNoTexto(_ texto: String) -> [String] {
+        let palavras = Traducao.normalizar(texto).split(whereSeparator: {
+            !$0.isLetter && !$0.isNumber
+        }).map(String.init)
+        let linha = " " + palavras.joined(separator: " ") + " "
+        let aliases: [(String, [String])] = [
+            ("Patagonia", ["patagonia"]),
+            ("Farm Rio", ["farm rio", "farmrio"]),
+            ("Animale", ["animale"]),
+            ("Maria Filó", ["maria filo", "mariafilo"]),
+            ("Dress To", ["dress to", "dressto"]),
+            ("PatBo", ["patbo"]),
+            ("Hering", ["hering"]),
+            ("Zinzane", ["zinzane"]),
+            ("Cantão", ["cantao"]),
+            ("Amaro", ["amaro"]),
+        ]
+        return aliases.compactMap { nome, formas in
+            formas.contains { linha.contains(" \($0) ") } ? nome : nil
+        }
     }
 }

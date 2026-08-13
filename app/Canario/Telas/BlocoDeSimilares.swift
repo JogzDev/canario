@@ -32,7 +32,7 @@ struct BlocoDeSimilares: View {
                 }
             }
 
-            ForEach(pecas) { peca in
+            ForEach(pecas.filter(Similares.podeExibir)) { peca in
                 CartaoDeSimilar(peca: peca)
             }
 

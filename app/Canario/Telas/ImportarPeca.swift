@@ -30,6 +30,7 @@ struct ImportarPeca: View {
     @State private var procedencia: [String] = []
     @State private var precoDigitado = ""
     @State private var miniaturaJPEG: Data?
+    @FocusState private var precoEmFoco: Bool
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
     /// funciona igual, e com ele entra o percentil de preço que a §5 autoriza
@@ -67,11 +68,11 @@ struct ImportarPeca: View {
                     formulario
                 }
             }
-            .navigationTitle("Analisar uma peça")
+            .navigationTitle("Analyze an item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fechar") { dismiss() }
+                    Button("Close") { dismiss() }
                 }
             }
         }
@@ -123,11 +124,18 @@ struct ImportarPeca: View {
             }
             .padding(Tokens.Espaco.m)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { precoEmFoco = false }
+            }
+        }
     }
 
     private var importador: some View {
         Cartao {
-            Text("Print, foto ou PDF").font(Tokens.Fonte.secao)
+            Text("Photo or file").font(Tokens.Fonte.secao)
             Text("Leio o arquivo no próprio aparelho. O original não é guardado; ao salvar no Closet, fica apenas uma miniatura local sem metadados.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -190,7 +198,7 @@ struct ImportarPeca: View {
             }
             ForEach(dimensoes, id: \.self) { dimensao in
                 VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                    Text(dimensao.capitalized)
+                    Text(rotuloDaDimensao(dimensao))
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                     FluxoDeChips(
@@ -211,13 +219,34 @@ struct ImportarPeca: View {
             TextField("R$ 0,00", text: $precoDigitado)
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.roundedBorder)
+                .focused($precoEmFoco)
+                .submitLabel(.done)
         }
     }
 
     private var dimensoes: [String] {
+        let categorias = Set(termos.lazy
+            .filter { $0.dimensao == "categoria" && detectados.contains($0.id) }
+            .map(\.id))
+        let permitidas = FormularioDaPeca.dimensoesPermitidas(categorias: categorias)
         var vistas: [String] = []
-        for t in termos where !vistas.contains(t.dimensao) { vistas.append(t.dimensao) }
+        for t in termos where permitidas.contains(t.dimensao) && !vistas.contains(t.dimensao) {
+            vistas.append(t.dimensao)
+        }
         return vistas
+    }
+
+    private func rotuloDaDimensao(_ dimensao: String) -> String {
+        [
+            "categoria": "Category",
+            "cor": "Color",
+            "estampa": "Pattern",
+            "tecido": "Material",
+            "estetica": "Style",
+            "comprimento": "Length",
+            "silhueta": "Silhouette",
+            "cintura": "Waist",
+        ][dimensao] ?? dimensao.capitalized
     }
 
     // MARK: Leitura
@@ -245,12 +274,15 @@ struct ImportarPeca: View {
         miniaturaJPEG = await MiniaturaLocal.dados(de: imagem)
         let leitura = await LeitorDeArquivo.ler(imagem)
         let achado = Importacao.atributos(de: leitura, em: termos)
-        detectados = achado.marcados
+        let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
+        detectados = reconheceuPeca ? achado.marcados : []
         procedencia = achado.procedencia
-        if achado.marcados.isEmpty {
-            // A foto não falhou: ela não bateu. A diferença importa, porque o
-            // formulário abaixo continua servindo.
-            erro = "Li a foto, mas nada dela bateu com a taxonomia."
+        let marcas = Importacao.marcasNoTexto(leitura.texto)
+        if !marcas.isEmpty {
+            procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
+        }
+        if !reconheceuPeca {
+            erro = "I could not identify a garment with enough confidence. Choose its category below before adding any other attribute."
         }
         lendo = false
     }
@@ -265,10 +297,15 @@ struct ImportarPeca: View {
         do {
             let leitura = try await LeitorDeArquivo.ler(url)
             let achado = Importacao.atributos(de: leitura, em: termos)
-            detectados = achado.marcados
+            let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
+            detectados = reconheceuPeca ? achado.marcados : []
             procedencia = achado.procedencia
-            if achado.marcados.isEmpty {
-                erro = "Abri o arquivo, mas nada dele bateu com a taxonomia."
+            let marcas = Importacao.marcasNoTexto(leitura.texto)
+            if !marcas.isEmpty {
+                procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
+            }
+            if !reconheceuPeca {
+                erro = "I could not identify a garment with enough confidence. Choose its category below before adding any other attribute."
             }
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"

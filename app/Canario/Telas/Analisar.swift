@@ -57,8 +57,8 @@ struct Analisar: View {
                     lista
                 }
             }
-            .navigationTitle("Analisar")
-            .searchable(text: $texto, prompt: "Descreva a peça: vestido de bolinha, saia midi…")
+            .navigationTitle("Search")
+            .searchable(text: $texto, prompt: "Describe an item: polka-dot dress, midi skirt…")
             .sheet(isPresented: $importando) {
                 ImportarPeca(termos: termos)
             }
@@ -80,16 +80,16 @@ struct Analisar: View {
         } else if casados.isEmpty {
             ScrollView {
                 CoberturaInsuficiente(
-                    titulo: "Não acompanho este termo ainda",
-                    explicacao: "“\(texto)” não está na taxonomia. Ela é uma lista fechada e revisada, e prefiro dizer que não sei a inventar uma leitura.",
-                    oQueTem: "Termos próximos: " + sugestoes.joined(separator: ", ")
+                    titulo: "This term isn't tracked yet",
+                    explicacao: "“\(texto)” is outside the reviewed vocabulary, so there is no market reading for it yet.",
+                    oQueTem: "Try: " + sugestoes.joined(separator: ", ")
                 )
                 .padding(Tokens.Espaco.m)
             }
         } else {
             List {
                 if descreveUmaPeca {
-                    Section("Você descreveu uma peça") {
+                    Section("Your item") {
                         NavigationLink {
                             RelatorioDaPeca(termos: casados, pecaSalva: nil,
                                            descricaoAmigavel: descricaoDaBusca)
@@ -97,12 +97,12 @@ struct Analisar: View {
                             VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                                 Text(descricaoDaBusca)
                                     .font(Tokens.Fonte.corpo)
-                                LinhaInsumo(texto: "Ver a leitura e as peças parecidas para esta descrição.")
+                                LinhaInsumo(texto: "Open the combined reading and similar pieces.")
                             }
                         }
                     }
                 }
-                Section(descreveUmaPeca ? "Ou atributo por atributo" : "Atributos") {
+                Section(descreveUmaPeca ? "Or explore each attribute" : "Attributes") {
                     ForEach(casados) { termo in
                         NavigationLink {
                             RelatorioDoTermo(termo: termo)
@@ -120,9 +120,9 @@ struct Analisar: View {
     private var abertura: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
-                Text("Busque por um atributo ou descreva a peça.")
+                Text("Search for an attribute or describe an item.")
                     .font(Tokens.Fonte.corpo)
-                Text("Acompanho \(termos.count) termos. O que você digitar é traduzido para eles — não é filtro de texto livre.")
+                Text("The app tracks \(termos.count) reviewed fashion terms and maps your wording to them.")
                     .font(Tokens.Fonte.apoio)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
                 Divider()
@@ -132,11 +132,11 @@ struct Analisar: View {
                 Button {
                     importando = true
                 } label: {
-                    Label("Importar print, foto ou PDF", systemImage: "doc.badge.plus")
+                    Label("Analyze a photo or file", systemImage: "camera.viewfinder")
                 }
                 .buttonStyle(.bordered)
                 .disabled(termos.isEmpty)
-                Text("Leio o arquivo no próprio aparelho: título por reconhecimento de texto, cor pelo pixel. Nada é enviado nem guardado.")
+                Text("This build analyzes the file on your iPhone. Nothing is uploaded or stored unless you save the item.")
                     .font(Tokens.Fonte.miudo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
             }
@@ -150,7 +150,7 @@ struct Analisar: View {
     private var sugestoes: [String] {
         var vistas = Set<String>()
         return termos.filter { vistas.insert($0.dimensao).inserted }
-            .prefix(5).map(\.rotulo)
+            .prefix(5).map(Traducao.rotuloExibido)
     }
 
     private func carregar() async {
@@ -184,7 +184,7 @@ struct LinhaTermo: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
             HStack {
-                Text(rotulo ?? termo.rotulo).font(Tokens.Fonte.corpo)
+                Text(rotulo ?? Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                 Spacer()
                 SeloEstado(estado: indice?.estado,
                            motivo: "Fewer than two independent sources agree.",

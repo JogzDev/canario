@@ -113,7 +113,8 @@ enum Similares {
     static func paragrafo(_ r: Resumo, atributos: [Termo], descricao: String? = nil) -> String {
         var frases: [String] = []
 
-        let nomes = descricao ?? atributos.map(\.rotulo).joined(separator: " + ")
+        let nomes = descricao
+            ?? atributos.map(Traducao.rotuloExibido).joined(separator: " + ")
         if r.nSimilares == 0 {
             return "Não encontrei nenhuma peça no painel com \(nomes). "
                  + "Pode ser combinação rara, ou pode ser que o painel ainda não tenha alcançado — as duas coisas são possíveis e não sei distinguir."
@@ -191,5 +192,11 @@ enum Similares {
             partes.append("a preço cheio")
         }
         return partes.isEmpty ? "sem dado de preço nem de grade" : partes.joined(separator: " · ")
+    }
+
+    /// Produto explicitamente esgotado não é alternativa útil. Falta de grade
+    /// continua visível, pois nil significa “não medido”, não “esgotado”.
+    static func podeExibir(_ p: Peca) -> Bool {
+        p.grade?.esgotada != true
     }
 }

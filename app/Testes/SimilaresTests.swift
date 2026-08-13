@@ -164,6 +164,16 @@ final class SimilaresTests: XCTestCase {
         XCTAssertEqual(t, "sem dado de preço nem de grade")
     }
 
+    func testVitrineNaoOfereceProdutoExplicitamenteEsgotado() {
+        XCTAssertFalse(Similares.podeExibir(
+            peca("Hering", preco: 129, queda: 40, disponiveis: 0, degraus: 5)))
+        XCTAssertTrue(Similares.podeExibir(
+            peca("Dress To", preco: 429, queda: nil, disponiveis: 3, degraus: 5)))
+        XCTAssertTrue(Similares.podeExibir(
+            peca("Sem grade", preco: 429, queda: nil, disponiveis: 0, degraus: 0)),
+            "ausência de medição não pode ser convertida em esgotado")
+    }
+
     // MARK: Dinheiro em português
 
     func testDinheiroUsaVirgulaEArredondaAcimaDeCem() {

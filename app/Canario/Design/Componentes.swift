@@ -29,8 +29,8 @@ struct SeloEstado: View {
                 .font(Tokens.Fonte.miudo.weight(.semibold))
                 .padding(.horizontal, Tokens.Espaco.s)
                 .padding(.vertical, Tokens.Espaco.xs)
-                .background(Tokens.Cor.azulMarca.opacity(0.12))
-                .foregroundStyle(Tokens.Cor.azulMarca)
+                .background(Tokens.Cor.acao.opacity(0.14))
+                .foregroundStyle(Tokens.Cor.acao)
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
                 .accessibilityLabel("Current signal, not yet confirmed as a trend. \(motivo ?? "")")
         } else {
@@ -143,6 +143,7 @@ struct BotaoCircularDoMenu: View {
             }
         }
         .accessibilityLabel(acessibilidade)
+        .accessibilityAddTraits(.isButton)
     }
 
     private var icone: some View {

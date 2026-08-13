@@ -89,6 +89,49 @@ final class TraducaoTests: XCTestCase {
         XCTAssertEqual(estampa.id, "geometrica",
                        "linguagem amigável não cria uma série nova nem altera o id")
     }
+
+    func testRotulosCorrigemAcentosSemMudarIds() {
+        let calca = termo("calca", "Calca", "categoria")
+        let romantico = termo("romantico", "Romantico", "estetica")
+        XCTAssertEqual(Traducao.rotuloExibido(calca), "Calça")
+        XCTAssertEqual(Traducao.rotuloExibido(romantico), "Romântico")
+        XCTAssertEqual(calca.id, "calca", "a série histórica continua no mesmo id")
+    }
+
+    func testFormularioSoPerguntaMedidasQueCabemNaCategoria() {
+        let casaco = FormularioDaPeca.dimensoesPermitidas(categorias: ["casaco_jaqueta"])
+        XCTAssertFalse(casaco.contains("cintura"))
+        XCTAssertFalse(casaco.contains("comprimento"))
+        XCTAssertFalse(casaco.contains("silhueta"))
+
+        let calca = FormularioDaPeca.dimensoesPermitidas(categorias: ["calca"])
+        XCTAssertTrue(calca.contains("cintura"))
+        XCTAssertTrue(calca.contains("silhueta"))
+        XCTAssertFalse(calca.contains("comprimento"))
+
+        let vestido = FormularioDaPeca.dimensoesPermitidas(categorias: ["vestido"])
+        XCTAssertTrue(vestido.contains("comprimento"))
+        XCTAssertFalse(vestido.contains("cintura"))
+    }
+
+    func testSemCategoriaFormularioNaoFingeQueReconheceuUmaPeca() {
+        let termos = [
+            termo("vestido", "Vestido", "categoria"),
+            termo("verde", "Verde", "cor"),
+        ]
+        XCTAssertFalse(FormularioDaPeca.temCategoria(["verde"], termos: termos))
+        XCTAssertTrue(FormularioDaPeca.temCategoria(["vestido", "verde"], termos: termos))
+        XCTAssertEqual(FormularioDaPeca.dimensoesPermitidas(categorias: []), ["categoria"])
+    }
+
+    func testOCRLocalPodeReconhecerMarcaSemInventarProduto() {
+        XCTAssertEqual(Importacao.marcasNoTexto("PATAGONIA\nBetter Sweater"), ["Patagonia"])
+        XCTAssertEqual(Importacao.marcasNoTexto("Maria Filó vestido midi"), ["Maria Filó"])
+        XCTAssertEqual(Importacao.marcasNoTexto("FARM RIO"), ["Farm Rio"])
+        XCTAssertTrue(Importacao.marcasNoTexto("jaqueta preta sem logotipo").isEmpty)
+        XCTAssertTrue(Importacao.marcasNoTexto("farm equipment").isEmpty,
+                      "Farm sem Rio é palavra comum em inglês, não prova de marca")
+    }
 }
 
 /// O vocabulário de estado é onde a regra 2 pode ser violada em silêncio.

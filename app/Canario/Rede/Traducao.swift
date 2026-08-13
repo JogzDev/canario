@@ -8,6 +8,23 @@ import Foundation
 /// é layout e leitura de rede.
 enum Traducao {
 
+    /// Copy de apresentação até a migração para String Catalog. Os ids e os
+    /// rótulos gravados no servidor continuam imutáveis: acento é assunto da
+    /// interface, não uma migração de série histórica.
+    private static let rotulosCorrigidos: [String: String] = [
+        "calca": "Calça",
+        "macacao": "Macacão",
+        "geometrica": "Geométrica e étnica",
+        "algodao": "Algodão",
+        "trico_croche": "Tricô e crochê",
+        "romantico": "Romântico",
+        "lilas_roxo": "Lilás e roxo",
+    ]
+
+    static func rotuloExibido(_ termo: Termo) -> String {
+        rotulosCorrigidos[termo.id] ?? termo.rotulo
+    }
+
     /// Nome que a pessoa usou, quando ele é mais claro que o rótulo interno.
     ///
     /// A taxonomia agrupa poá dentro de `geometrica`, porque o motor precisa de
@@ -22,7 +39,7 @@ enum Traducao {
             if !palavras.isDisjoint(with: ["bolinha", "bolinhas"]) { return "Bolinha" }
             if palavras.contains("poa") { return "Poá" }
         }
-        return termo.rotulo
+        return rotuloExibido(termo)
     }
 
     /// Descrição da peça em linguagem de busca, sem expor ids ou agrupamentos
@@ -87,5 +104,30 @@ enum Traducao {
     /// Todos os termos que a consulta alcança, na ordem em que vieram.
     static func termos(para consulta: String, em todos: [Termo]) -> [Termo] {
         todos.filter { casa(consulta, $0) }
+    }
+}
+
+/// Ordem e pertinência das perguntas do formulário depois que a categoria é
+/// conhecida. Uma medida que não se aplica não é apenas ruído visual: sugere
+/// que o sistema entendeu a peça quando não entendeu.
+enum FormularioDaPeca {
+    static func dimensoesPermitidas(categorias: Set<String>) -> Set<String> {
+        guard !categorias.isEmpty else { return ["categoria"] }
+
+        var resultado: Set<String> = ["categoria", "cor", "estampa", "tecido", "estetica"]
+        if !categorias.isDisjoint(with: ["vestido", "saia"]) {
+            resultado.insert("comprimento")
+        }
+        if categorias.contains("calca") {
+            resultado.insert("silhueta")
+        }
+        if !categorias.isDisjoint(with: ["calca", "short", "saia"]) {
+            resultado.insert("cintura")
+        }
+        return resultado
+    }
+
+    static func temCategoria(_ marcados: Set<String>, termos: [Termo]) -> Bool {
+        termos.contains { $0.dimensao == "categoria" && marcados.contains($0.id) }
     }
 }
