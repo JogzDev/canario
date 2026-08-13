@@ -9,7 +9,7 @@ struct TelaInicialAdicionar: View {
     @State private var buscandoTermos = false
     @State private var erro: String?
     @State private var importando = false
-    @State private var miniaturas: [Data] = []
+    @State private var miniaturas: [UIImage] = []
 
     var body: some View {
         ZStack {
@@ -85,9 +85,8 @@ struct TelaInicialAdicionar: View {
     @ViewBuilder
     private var miniaturasRecentes: some View {
         GeometryReader { geo in
-            if let esquerda = miniaturas.first,
-               let imagem = UIImage(data: esquerda) {
-                Image(uiImage: imagem)
+            if let esquerda = miniaturas.first {
+                Image(uiImage: esquerda)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 132, height: 242)
@@ -97,8 +96,8 @@ struct TelaInicialAdicionar: View {
                     .offset(x: -74, y: geo.size.height * 0.39)
                     .accessibilityHidden(true)
             }
-            if miniaturas.count > 1, let imagem = UIImage(data: miniaturas[1]) {
-                Image(uiImage: imagem)
+            if miniaturas.count > 1 {
+                Image(uiImage: miniaturas[1])
                     .resizable()
                     .scaledToFill()
                     .frame(width: 132, height: 242)
@@ -139,16 +138,17 @@ struct TelaInicialAdicionar: View {
     private func carregarMiniaturas() {
         Task { @MainActor in
             let todas = await PecasSalvas.shared.todas()
-            var dados: [Data] = []
+            var imagens: [UIImage] = []
             // Itens antigos podem não ter foto. Procurar até achar duas evita
             // esconder as imagens só porque as peças mais novas são legadas.
             for peca in todas {
-                if let imagem = await PecasSalvas.shared.miniatura(de: peca) {
-                    dados.append(imagem)
-                    if dados.count == 2 { break }
+                if let dados = await PecasSalvas.shared.miniatura(de: peca),
+                   let imagem = await MiniaturaParaTela.imagem(de: dados) {
+                    imagens.append(imagem)
+                    if imagens.count == 2 { break }
                 }
             }
-            miniaturas = dados
+            miniaturas = imagens
         }
     }
 }

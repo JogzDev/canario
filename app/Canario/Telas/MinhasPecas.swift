@@ -1,6 +1,7 @@
 import PhotosUI
 import SwiftUI
 import UIKit
+import ImageIO
 
 /// O Armário local (A10, A18, A19).
 ///
@@ -175,10 +176,10 @@ private struct CartaoDoArmario: View {
     let aoFavoritar: () -> Void
     let aoApagar: () -> Void
 
-    @State private var miniatura: Data?
+    @State private var miniatura: UIImage?
     @State private var fotoEscolhida: PhotosPickerItem?
 
-    private var temFoto: Bool { miniatura.flatMap(UIImage.init(data:)) != nil }
+    private var temFoto: Bool { miniatura != nil }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -191,8 +192,8 @@ private struct CartaoDoArmario: View {
                 } label: {
                     VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
                         ZStack {
-                            if let miniatura, let imagem = UIImage(data: miniatura) {
-                                Image(uiImage: imagem)
+                            if let miniatura {
+                                Image(uiImage: miniatura)
                                     .resizable()
                                     .scaledToFit()
                                     .padding(8)
@@ -260,13 +261,37 @@ private struct CartaoDoArmario: View {
         .onChange(of: fotoEscolhida) { _, item in
             guard let item else { return }
             Task {
-                if let nova = await aoEscolherFoto(item) { miniatura = nova }
+                if let nova = await aoEscolherFoto(item) {
+                    miniatura = await MiniaturaParaTela.imagem(de: nova)
+                }
                 fotoEscolhida = nil
             }
         }
         .task(id: peca.miniaturaArquivo) {
-            miniatura = await PecasSalvas.shared.miniatura(de: peca)
+            guard let dados = await PecasSalvas.shared.miniatura(de: peca) else {
+                miniatura = nil
+                return
+            }
+            miniatura = await MiniaturaParaTela.imagem(de: dados)
         }
         .accessibilityAction(named: "Delete from Closet", aoApagar)
+    }
+}
+
+/// Miniaturas persistidas podem ter até 720 px. `UIImage(data:)` no `body`
+/// adia a descompressão e cobra esse custo da main thread durante o scroll.
+/// ImageIO cria e descomprime fora dela exatamente no tamanho útil dos cards.
+enum MiniaturaParaTela {
+    static func imagem(de dados: Data) async -> UIImage? {
+        await Task.detached(priority: .userInitiated) {
+            guard let fonte = CGImageSourceCreateWithData(dados as CFData, nil),
+                  let imagem = CGImageSourceCreateThumbnailAtIndex(fonte, 0, [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceShouldCacheImmediately: true,
+                    kCGImageSourceThumbnailMaxPixelSize: 384,
+                  ] as CFDictionary) else { return nil }
+            return UIImage(cgImage: imagem)
+        }.value
     }
 }

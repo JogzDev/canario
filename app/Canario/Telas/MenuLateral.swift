@@ -79,7 +79,6 @@ struct TelaDoMenu: View {
 private struct FavoritosDoMenu: View {
     @State private var pecas: [PecaSalva] = []
     @State private var termos: [Termo] = []
-    @State private var miniaturas: [UUID: Data] = [:]
 
     private var rotulos: [String: String] {
         Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0.rotulo) })
@@ -101,7 +100,7 @@ private struct FavoritosDoMenu: View {
                             pecaSalva: peca)
                     } label: {
                         HStack(spacing: 14) {
-                            miniatura(de: peca)
+                            MiniaturaFavorita(peca: peca)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(peca.nome(comRotulos: rotulos))
                                     .font(.headline)
@@ -125,38 +124,46 @@ private struct FavoritosDoMenu: View {
         .task { await carregar() }
     }
 
-    @ViewBuilder
-    private func miniatura(de peca: PecaSalva) -> some View {
-        if let dados = miniaturas[peca.id], let imagem = UIImage(data: dados) {
-            Image(uiImage: imagem)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 66, height: 78)
-        } else {
-            Image(systemName: "tshirt")
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(Tokens.Cor.azulMarca)
-                .frame(width: 66, height: 78)
-        }
-    }
-
     @MainActor
     private func carregar() async {
         pecas = await PecasSalvas.shared.todas().filter { $0.favorita ?? false }
         termos = (try? await CatalogoDeTermos.shared.carregar()) ?? []
-        var lidas: [UUID: Data] = [:]
-        for peca in pecas {
-            lidas[peca.id] = await PecasSalvas.shared.miniatura(de: peca)
-        }
-        miniaturas = lidas
     }
 
     private func desfavoritar(_ peca: PecaSalva) {
         pecas.removeAll { $0.id == peca.id }
-        miniaturas[peca.id] = nil
         var atualizada = peca
         atualizada.favorita = false
         Task { await PecasSalvas.shared.salvar(atualizada) }
+    }
+}
+
+/// Cada linha busca sua própria imagem quando a `List` a materializa. Isso
+/// evita ler e descomprimir centenas de favoritos antes do primeiro frame.
+private struct MiniaturaFavorita: View {
+    let peca: PecaSalva
+    @State private var imagem: UIImage?
+
+    var body: some View {
+        Group {
+            if let imagem {
+                Image(uiImage: imagem)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(systemName: "tshirt")
+                    .font(.system(size: 30, weight: .light))
+                    .foregroundStyle(Tokens.Cor.azulMarca)
+            }
+        }
+        .frame(width: 66, height: 78)
+        .task(id: peca.miniaturaArquivo) {
+            guard let dados = await PecasSalvas.shared.miniatura(de: peca) else {
+                imagem = nil
+                return
+            }
+            imagem = await MiniaturaParaTela.imagem(de: dados)
+        }
     }
 }
 
