@@ -97,9 +97,22 @@ enum MiniaturaLocal {
             try manipulador.perform([pedido])
             guard let observacao = pedido.results?.first,
                   !observacao.allInstances.isEmpty else { return nil }
-            let mascara = try observacao.generateScaledMaskForImage(
-                forInstances: observacao.allInstances, from: manipulador)
-            guard let limites = limitesUteis(da: mascara) else { return nil }
+            // Peça sobre mesa/cabide costuma ser uma instância própria. Usar
+            // todas preservaria também mão, prop e objeto de cenário. A maior
+            // instância plausível vira o alvo; em foto vestida o Vision pode
+            // considerar a pessoa inteira uma instância, limite que a tela de
+            // captura precisa declarar em vez de fingir uma segmentação de SKU.
+            var escolhida: (mascara: CVPixelBuffer, medida: MedidaDaMascara)?
+            for instancia in observacao.allInstances.prefix(16) {
+                let mascara = try observacao.generateScaledMaskForImage(
+                    forInstances: IndexSet(integer: instancia), from: manipulador)
+                guard let medida = medidaUtil(da: mascara) else { continue }
+                if escolhida == nil || medida.pontuacao > escolhida!.medida.pontuacao {
+                    escolhida = (mascara, medida)
+                }
+            }
+            guard let (mascara, medida) = escolhida else { return nil }
+            let limites = medida.limites
 
             let original = CIImage(cgImage: imagem)
             let mask = CIImage(cvPixelBuffer: mascara)
@@ -129,7 +142,12 @@ enum MiniaturaLocal {
 
     /// Bounding box e cobertura da máscara. Entre 3% e 95%: abaixo disso a
     /// detecção é ruído; acima disso ela não removeu fundo de forma útil.
-    private static func limitesUteis(da mascara: CVPixelBuffer) -> CGRect? {
+    private struct MedidaDaMascara {
+        let limites: CGRect
+        let pontuacao: Double
+    }
+
+    private static func medidaUtil(da mascara: CVPixelBuffer) -> MedidaDaMascara? {
         CVPixelBufferLockBaseAddress(mascara, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(mascara, .readOnly) }
         guard CVPixelBufferGetPixelFormatType(mascara) == kCVPixelFormatType_OneComponent8,
@@ -150,7 +168,14 @@ enum MiniaturaLocal {
         guard cobertura >= 0.03, cobertura <= 0.95, maxX >= minX, maxY >= minY else {
             return nil
         }
-        return CGRect(x: minX, y: minY,
-                      width: maxX - minX + 1, height: maxY - minY + 1)
+        let limites = CGRect(x: minX, y: minY,
+                             width: maxX - minX + 1, height: maxY - minY + 1)
+        // Área ativa domina; uma pequena preferência pelo centro desempata
+        // prop grande na borda sem derrubar roupa propositalmente assimétrica.
+        let centroX = Double(limites.midX) / Double(max(1, largura))
+        let centroY = Double(limites.midY) / Double(max(1, altura))
+        let distancia = hypot(centroX - 0.5, centroY - 0.5)
+        return MedidaDaMascara(limites: limites,
+                               pontuacao: cobertura - 0.04 * distancia)
     }
 }
