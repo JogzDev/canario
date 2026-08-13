@@ -132,14 +132,14 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         XCTAssertFalse(CorDaPeca.ehPele(0.07, 0.06, 0.05), "preto não é pele")
     }
 
-    // MARK: "1.15 o quê? Paçoquitas?"
+    // MARK: O número continua rastreável sem protagonizar o jargão
 
-    func testNumeroNuncaSaiSemUnidade() {
-        XCTAssertEqual(Explicacao.numeroComUnidade(1.15), "+1,15 desvios")
-        XCTAssertEqual(Explicacao.numeroComUnidade(-3.73), "-3,73 desvios")
+    func testNumeroTemEscalaDeclaradaNaLinhaDeApoio() {
+        XCTAssertEqual(Explicacao.numeroComUnidade(1.15), "+1,15")
+        XCTAssertEqual(Explicacao.numeroComUnidade(-3.73), "-3,73")
         XCTAssertEqual(Explicacao.numeroComUnidade(nil), "sem índice")
         XCTAssertTrue(Explicacao.unidadeDoIndice.contains("12 semanas"),
-                      "a unidade tem de dizer contra o que o desvio é medido")
+                      "a linha de apoio tem de dizer contra o que a escala é medida")
     }
 
     func testNumeroUsaVirgulaDecimal() {
@@ -148,7 +148,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         XCTAssertEqual(Leitura.numero(-2.18, casas: 2), "-2,18")
         XCTAssertEqual(Leitura.numero(1.15, casas: 2, sinal: true), "+1,15")
         XCTAssertEqual(Leitura.numero(11.9485, casas: 1), "11,9")
-        XCTAssertTrue(Leitura.explicacao(-2.18).hasPrefix("2,2 desvios abaixo"))
+        XCTAssertTrue(Leitura.explicacao(-2.18).contains("abaixo do comportamento normal"))
     }
 
     func testCadaPernaTemUnidadePropria() {

@@ -39,13 +39,14 @@ enum Explicacao {
 
     /// A unidade do índice em si. É a resposta literal ao "1,15 o quê?".
     static let unidadeDoIndice =
-        "desvios-padrão em relação à média das 12 semanas anteriores deste mesmo atributo"
+        "distância em relação ao comportamento normal das 12 semanas anteriores"
 
-    /// O número com a unidade colada, para nunca aparecer sozinho.
+    /// O valor compacto usado em comparação. A unidade/escala vem na linha de
+    /// apoio imediatamente abaixo, para não transformar jargão no título.
     static func numeroComUnidade(_ indice: Double?) -> String {
         guard let indice else { return "sem índice" }
         let n = Leitura.numero(indice, casas: 2, sinal: true)
-        return "\(n) desvio\(abs(indice) == 1 ? "" : "s")"
+        return "\(n)"
     }
 
     // MARK: Por que este estado
@@ -56,7 +57,7 @@ enum Explicacao {
     /// testado antes de "em alta" no Postgres, e aqui também.
     static func porQue(estado: String?, indice: IndiceSemanal, series: [PontoSerie]) -> String {
         guard let estado else {
-            return "Sem estado declarado: a §22 exige duas fontes concordando, e esta semana tem \(indice.nPernas ?? 0)."
+            return "Ainda não há duas fontes concordando para afirmar uma direção: esta atualização tem \(indice.nPernas ?? 0)."
         }
         let editorial = series.first { $0.fonte.hasPrefix("editorial") && $0.z != nil }
         let acima = indice.meta?.pernasAcimaDe1 ?? 0
@@ -64,9 +65,12 @@ enum Explicacao {
 
         switch estado {
         case "pico":
-            let z = editorial?.z.map { Leitura.numero($0, casas: 1) } ?? "vários"
-            return "A imprensa concentrou este termo numa semana só — \(z) desvios acima da média dela — e nenhuma outra fonte acompanhou. "
-                 + "Pico é atenção editorial isolada: pode virar tendência ou parar aí. Por isso não aparece como \"em alta\"."
+            let intensidade = editorial?.z.map(Leitura.emPalavras) ?? "muito acima do normal"
+            let referencia = editorial?.z.map {
+                " (\(Leitura.numero($0, casas: 1)) na escala estatística)"
+            } ?? ""
+            return "A atenção da imprensa ficou \(intensidade)\(referencia) numa semana, mas nenhuma outra fonte acompanhou. "
+                 + "Por enquanto é um destaque editorial isolado, não uma tendência confirmada."
         case "em alta":
             return "Duas semanas seguidas acima do normal, com \(acima) fontes concordando. "
                  + "Uma semana isolada não conta: o limiar existe para ruído de uma semana não virar notícia."

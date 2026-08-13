@@ -413,7 +413,7 @@ enum Leitura {
     /// O que o número é, dito por extenso. Vai na letra miúda, sempre.
     static func explicacao(_ z: Double) -> String {
         let lado = z >= 0 ? "acima" : "abaixo"
-        return "\(numero(abs(z), casas: 1)) desvios \(lado) da média das últimas 12 semanas deste mesmo atributo"
+        return "\(numero(abs(z), casas: 1)) na escala estatística, \(lado) do comportamento normal das últimas 12 semanas"
     }
 
     /// Variação percentual entre o valor mais recente e a média da janela.

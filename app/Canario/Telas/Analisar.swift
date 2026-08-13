@@ -42,6 +42,10 @@ struct Analisar: View {
         Set(casados.map(\.dimensao)).count >= 2
     }
 
+    private var descricaoDaBusca: String {
+        Traducao.descricaoAmigavel(casados, consulta: texto)
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -87,12 +91,13 @@ struct Analisar: View {
                 if descreveUmaPeca {
                     Section("Você descreveu uma peça") {
                         NavigationLink {
-                            RelatorioDaPeca(termos: casados, pecaSalva: nil)
+                            RelatorioDaPeca(termos: casados, pecaSalva: nil,
+                                           descricaoAmigavel: descricaoDaBusca)
                         } label: {
                             VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                                Text(casados.map(\.rotulo).joined(separator: " + "))
+                                Text(descricaoDaBusca)
                                     .font(Tokens.Fonte.corpo)
-                                LinhaInsumo(texto: "Ler como conjunto, e não como \(casados.count) atributos soltos.")
+                                LinhaInsumo(texto: "Ver a leitura e as peças parecidas para esta descrição.")
                             }
                         }
                     }
@@ -102,7 +107,8 @@ struct Analisar: View {
                         NavigationLink {
                             RelatorioDoTermo(termo: termo)
                         } label: {
-                            LinhaTermo(termo: termo, indice: indices[termo.id])
+                            LinhaTermo(termo: termo, indice: indices[termo.id],
+                                       rotulo: Traducao.rotuloAmigavel(termo, na: texto))
                         }
                     }
                 }
@@ -177,11 +183,12 @@ struct Analisar: View {
 struct LinhaTermo: View {
     let termo: Termo
     let indice: IndiceSemanal?
+    var rotulo: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
             HStack {
-                Text(termo.rotulo).font(Tokens.Fonte.corpo)
+                Text(rotulo ?? termo.rotulo).font(Tokens.Fonte.corpo)
                 Spacer()
                 SeloEstado(estado: indice?.estado,
                            motivo: "Menos de duas pernas ativas nesta semana.")
@@ -190,7 +197,8 @@ struct LinhaTermo: View {
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             if let indice {
-                LinhaInsumo(texto: Perna.frase(indice.pernasAtivas) + " · semana de \(Formato.data(indice.semana))")
+                LinhaInsumo(texto: Perna.frase(indice.pernasAtivas)
+                            + " · atualização disponível: \(Formato.data(indice.semana))")
             }
         }
         .padding(.vertical, Tokens.Espaco.xs)

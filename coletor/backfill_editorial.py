@@ -34,7 +34,7 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from coletor_editorial import (limpar, semana_de, carregar_termos_compilados,
-                               filtrar_por_categoria, JANELA_SEMANAS, SEGMENTO)
+                               filtrar_contexto_editorial, JANELA_SEMANAS, SEGMENTO)
 from descoberta_feeds import parse_data
 from matcher import termos_que_casam
 from teste_30s import buscar
@@ -138,7 +138,8 @@ def main():
         for titulo, link, quando, resumo in paginar_wpjson(base, dominio, desde):
             artigos.append({"veiculo": v["veiculo"], "url": link,
                             "titulo": titulo[:500], "data_pub": quando.isoformat()})
-            achados = filtrar_por_categoria(
+            achados = filtrar_contexto_editorial(
+                titulo, resumo,
                 termos_que_casam(titulo + " " + resumo, termos), categorias)
             if achados:
                 semana = semana_de(quando)

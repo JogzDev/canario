@@ -67,17 +67,9 @@ struct TelaInicialAdicionar: View {
 
             VStack {
                 HStack {
-                    Button(action: abrirMenu) {
-                        ZStack {
-                            Vidro(forma: Circle())
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundStyle(Tokens.Cor.noite)
-                        }
-                        .frame(width: 62, height: 62)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Open menu")
+                    BotaoCircularDoMenu(simbolo: "ellipsis",
+                                        acessibilidade: "Open menu",
+                                        acao: abrirMenu)
                     Spacer()
                 }
                 Spacer()
@@ -180,15 +172,29 @@ struct Vidro<S: InsettableShape>: View {
     init(forma: S) { self.forma = forma }
 
     var body: some View {
-        forma
-            .fill(.ultraThinMaterial)
+        ZStack {
+            forma.fill(.ultraThinMaterial)
+            forma.fill(
+                LinearGradient(
+                    colors: [.white.opacity(0.46), .white.opacity(0.10),
+                             Tokens.Cor.ceu.opacity(0.18)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing))
             .overlay {
                 forma.stroke(
-                    LinearGradient(colors: [.white.opacity(0.9), .white.opacity(0.25)],
+                    LinearGradient(colors: [.white, .white.opacity(0.42),
+                                            Tokens.Cor.azulMarca.opacity(0.16)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 1)
+                    lineWidth: 1.25)
             }
-            .shadow(color: Tokens.Cor.azulMarca.opacity(0.2), radius: 16, y: 8)
+            forma
+                .inset(by: 2)
+                .stroke(.white.opacity(0.28), lineWidth: 0.75)
+                .blur(radius: 0.35)
+        }
+        .compositingGroup()
+        .shadow(color: .white.opacity(0.35), radius: 2, x: -1, y: -1)
+        .shadow(color: Tokens.Cor.azulMarca.opacity(0.26), radius: 18, y: 9)
     }
 }
 

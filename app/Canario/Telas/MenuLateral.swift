@@ -15,17 +15,9 @@ struct MenuLateral: View {
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    Button(action: fechar) {
-                        ZStack {
-                            Vidro(forma: Circle())
-                            Image(systemName: "xmark")
-                                .font(.system(size: 29, weight: .medium))
-                                .foregroundStyle(Tokens.Cor.noite)
-                        }
-                        .frame(width: 62, height: 62)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close menu")
+                    BotaoCircularDoMenu(simbolo: "xmark",
+                                        acessibilidade: "Close menu",
+                                        acao: fechar)
                     .padding(.top, 4)
 
                     VStack(alignment: .leading, spacing: 0) {

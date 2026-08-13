@@ -74,6 +74,21 @@ final class TraducaoTests: XCTestCase {
         // §11: o que não casa gera resposta honesta, não um resultado plausível.
         XCTAssertTrue(Traducao.termos(para: "neoprene holográfico", em: todos).isEmpty)
     }
+
+    func testBuscaPreservaPalavraHumanaSemMudarTaxonomia() {
+        let vestido = termo("vestido", "Vestido", "categoria")
+        let estampa = termo("geometrica", "Geometrica e etnica", "estampa",
+                            "poa|bolinha|bolinhas|etnica")
+        XCTAssertEqual(Traducao.rotuloAmigavel(estampa, na: "vestido de bolinha"),
+                       "Bolinha")
+        XCTAssertEqual(Traducao.rotuloAmigavel(estampa, na: "vestido de poá"),
+                       "Poá")
+        XCTAssertEqual(Traducao.descricaoAmigavel([vestido, estampa],
+                                                  consulta: "vestido de bolinhas"),
+                       "Vestido · Bolinha")
+        XCTAssertEqual(estampa.id, "geometrica",
+                       "linguagem amigável não cria uma série nova nem altera o id")
+    }
 }
 
 /// O vocabulário de estado é onde a regra 2 pode ser violada em silêncio.
@@ -209,6 +224,20 @@ final class FormatoTests: XCTestCase {
     func testEntradaMalformadaNaoViraTraco() {
         // Esconder dado ruim atrás de "—" é pior que mostrá-lo: some o sintoma.
         XCTAssertEqual(Formato.data("sem data"), "sem data")
+    }
+
+    func testIdadeDaAtualizacaoUsaDataDeCalendario() {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        // Meio-dia UTC ainda é dia 13 em Brasília; meia-noite UTC seria 21h
+        // do dia 12 e não representaria o "hoje" declarado pelo teste.
+        let hoje = f.date(from: "2026-08-13 12:00")!
+        XCTAssertEqual(Formato.diasDesde("2026-08-10", hoje: hoje), 3)
+        XCTAssertEqual(Formato.diasDesde("2026-06-29", hoje: hoje), 45)
+        XCTAssertEqual(Formato.diasDesde("2026-08-14", hoje: hoje), 0)
+        XCTAssertEqual(Formato.diasDesde("sem data", hoje: hoje), 0)
     }
 
     func testHoraEmBrasiliaNaoEmUTC() {

@@ -28,6 +28,7 @@ Regras que este modulo cumpre:
 import csv
 import json
 import os
+import re
 import sys
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -180,6 +181,53 @@ def filtrar_por_categoria(achados, categorias):
     return achados
 
 
+def filtrar_contexto_editorial(titulo, resumo, achados, categorias):
+    """Recusa categoria citada fora de contexto de vestuário.
+
+    O falso positivo que motivou a trava foi real: a Harper's Bazaar publicou
+    um perfil do Vini Jr.; "camisa 7" era posição no futebol, mas virou sinal de
+    `camisa` no índice de moda. Exigir apenas alguma categoria no artigo não
+    resolve, porque a própria palavra ambígua é a categoria.
+
+    A exceção segura é título claramente de moda (look/moda/roupa etc.) ou uma
+    segunda evidência de vestuário no título+resumo. Assim "camisa branca" e
+    "looks com camisa" continuam; "camisa 7 do Real Madrid" sai.
+    """
+    categorias_achadas = achados & categorias
+    if not achados or not categorias_achadas:
+        return set()
+    # A trava nasce estreita, no caso que foi medido. Aplicá-la de uma vez a
+    # vestido/saia/calça etc. derrubaria cobertura sem ainda existir uma amostra
+    # de recall. Se outra categoria demonstrar ambiguidade real, ela entra aqui
+    # junto com uma regressão e uma medição cega — nunca por impressão.
+    if not categorias_achadas.issubset({"camisa"}):
+        return achados
+    texto = limpar((titulo or "") + " " + (resumo or "")).lower()
+    titulo_limpo = limpar(titulo or "").lower()
+    contexto_forte = (
+        "moda", "fashion", "look", "looks", "roupa", "roupas", "outfit",
+        "style", "estilo", "tendencia", "tendência", "colecao", "coleção",
+        "runway", "passarela", "wear", "styling", "alfaiataria",
+    )
+    evidencia_de_peca = (
+        "vestido", "saia", "calca", "calça", "short", "bermuda", "blusa",
+        "top", "camiseta", "t-shirt", "jaqueta", "casaco", "blazer",
+        "macacao", "macacão", "jeans", "malha", "trico", "tricô", "croche",
+        "crochê", "manga", "gola", "tecido", "silhueta", "estampa",
+        "shirt", "blouse", "skirt", "shorts", "pants", "trousers",
+        "dress", "jumpsuit", "jacket", "coat", "sleeve", "collar",
+        "fabric", "silhouette", "print",
+    )
+    if any(re.search(r"\b{}\b".format(re.escape(p)), titulo_limpo)
+           for p in contexto_forte):
+        return achados
+    evidencias = sum(1 for p in evidencia_de_peca
+                     if re.search(r"\b{}\b".format(re.escape(p)), texto))
+    if evidencias >= 2:
+        return achados
+    return set()
+
+
 def main():
     if not supabase_rest.configurado():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
@@ -220,7 +268,8 @@ def main():
         casados = 0
         for titulo, link, quando, resumo in itens:
             # K8: titulo + resumo, nunca o texto integral (§18).
-            achados = filtrar_por_categoria(
+            achados = filtrar_contexto_editorial(
+                titulo, resumo,
                 termos_que_casam(titulo + " " + limpar(resumo), termos), categorias)
             artigos_novos.append({"veiculo": v["veiculo"], "url": link,
                                   "titulo": titulo[:500],

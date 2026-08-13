@@ -29,6 +29,8 @@ struct Explorar: View {
     @State private var carregando = true
     @State private var erro: String?
 
+    private let diasMaximosDoDigest = 21
+
     /// Um termo por linha, com a mudança MAIS RECENTE dele.
     ///
     /// Sem isto o mesmo termo aparecia várias vezes — "Casaco e jaqueta" saía
@@ -36,7 +38,13 @@ struct Explorar: View {
     /// histórico: repetir o termo gasta a atenção do usuário sem informar.
     private var mudaram: [IndiceSemanal] {
         var vistos = Set<String>()
-        return todos.filter { vistos.insert($0.termoId).inserted }
+        return todos
+            .filter { Formato.diasDesde($0.semana) <= diasMaximosDoDigest }
+            .filter { vistos.insert($0.termoId).inserted }
+            .sorted {
+                let esquerda = prioridade($0), direita = prioridade($1)
+                return esquerda == direita ? $0.semana > $1.semana : esquerda < direita
+            }
     }
 
     var body: some View {
@@ -64,7 +72,6 @@ struct Explorar: View {
                 movimento(titulo: "Remarcações", tipo: "remarcacao",
                           vazio: "Nenhuma queda de preço de 5% ou mais nesta janela.")
                 digest
-                pendentes
             }
             .padding(Tokens.Espaco.m)
         }
@@ -148,25 +155,56 @@ struct Explorar: View {
 
     private var digest: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            Text("O que mudou").font(Tokens.Fonte.secao)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Tendências da semana").font(Tokens.Fonte.secao)
+                Spacer()
+                if let semana = mudaram.map(\.semana).max() {
+                    Text("atualizado em \(Formato.data(semana))")
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+            }
             if mudaram.isEmpty {
                 CoberturaInsuficiente(
-                    titulo: "Nenhum termo mudou de estado",
-                    explicacao: "Nas últimas semanas nada se moveu o suficiente para eu chamar de mudança.",
-                    oQueTem: "Isso é resultado, não ausência de dado: os limiares existem justamente para uma semana isolada não virar notícia.")
+                    titulo: "Sem tendência recente para destacar",
+                    explicacao: "A atualização mais nova com direção confirmada passou de \(diasMaximosDoDigest) dias.",
+                    oQueTem: "Os dados antigos continuam nos relatórios, mas não aparecem como novidade da semana.")
             } else {
-                ForEach(mudaram) { i in
-                    NavigationLink {
-                        if let termo = termoDe(i) { RelatorioDoTermo(termo: termo) }
-                    } label: {
-                        CartaoDeMudanca(indice: i,
-                                        rotulo: rotulos[i.termoId] ?? i.termoId,
-                                        series: series[i.termoId] ?? [])
+                ForEach(gruposDoDigest, id: \.titulo) { grupo in
+                    if !grupo.indices.isEmpty {
+                        Text(grupo.titulo)
+                            .font(Tokens.Fonte.miudo.weight(.semibold))
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                            .textCase(.uppercase)
+                            .padding(.top, Tokens.Espaco.xs)
+                        ForEach(grupo.indices) { i in
+                            NavigationLink {
+                                if let termo = termoDe(i) { RelatorioDoTermo(termo: termo) }
+                            } label: {
+                                CartaoDeMudanca(indice: i,
+                                                rotulo: rotulos[i.termoId] ?? i.termoId,
+                                                series: series[i.termoId] ?? [])
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
+    }
+
+    private var gruposDoDigest: [(titulo: String, indices: [IndiceSemanal])] {
+        [
+            ("Em alta", mudaram.filter { $0.estado == "em alta" }),
+            ("Destaques editoriais", mudaram.filter { $0.estado == "pico" }),
+            ("Estáveis", mudaram.filter { $0.estado == "estavel" }),
+            ("Em queda", mudaram.filter { $0.estado == "em queda" }),
+        ]
+    }
+
+    private func prioridade(_ indice: IndiceSemanal) -> Int {
+        let ordem = ["em alta": 0, "pico": 1, "estavel": 2, "em queda": 3]
+        return ordem[indice.estado ?? ""] ?? 4
     }
 
     private func termoDe(_ i: IndiceSemanal) -> Termo? {
@@ -175,24 +213,13 @@ struct Explorar: View {
                      sinonimos: nil, semPernaBusca: nil, palavrasPt: nil, palavrasEn: nil)
     }
 
-    /// Os blocos que a §27 pede e que ainda não têm dado. Declarados, não ocultos.
-    private var pendentes: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
-            Text("Ainda sem cobertura").font(Tokens.Fonte.secao)
-            CoberturaInsuficiente(
-                titulo: "Peças novas por combinação",
-                explicacao: "Depende do primeiro avistamento por produto ao longo de várias semanas.",
-                oQueTem: "O histórico necessário se acumula sozinho a cada noite de coleta.")
-        }
-    }
-
     private func carregar() async {
         carregando = true
         erro = nil
         do {
             async let i: [IndiceSemanal] = Supabase.shared.buscar(
                 "indices_do_app",
-                "select=*&estado=in.(\"em alta\",\"em queda\",pico)&order=semana.desc&limit=200")
+                "select=*&estado=in.(\"em alta\",\"em queda\",estavel,pico)&order=semana.desc&limit=200")
             async let t: [Termo] = Supabase.shared.buscar(
                 "termos", "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,palavras_pt,palavras_en")
             // UMA CONSULTA POR TIPO, de propósito.
@@ -376,16 +403,11 @@ struct CartaoDeMudanca: View {
             }
 
             // O número com a unidade colada. Antes saía "+1.15" sozinho.
-            HStack(alignment: .firstTextBaseline, spacing: Tokens.Espaco.xs) {
-                Text(Explicacao.numeroComUnidade(indice.indice))
+            if let v = indice.indice {
+                Text(Leitura.emPalavras(v))
                     .font(Tokens.Fonte.numero)
-                if let v = indice.indice {
-                    Text("· \(Leitura.emPalavras(v))")
-                        .font(Tokens.Fonte.apoio)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                }
             }
-            LinhaInsumo(texto: Explicacao.unidadeDoIndice + ".")
+            LinhaInsumo(texto: "Comparação com o comportamento normal das 12 semanas anteriores.")
 
             // Por que este estado, e não outro.
             Text(Explicacao.porQue(estado: indice.estado, indice: indice, series: series))
@@ -396,11 +418,11 @@ struct CartaoDeMudanca: View {
 
             // De onde veio, com nome de veículo.
             ForEach(Explicacao.origens(series), id: \.self) { LinhaInsumo(texto: $0) }
-            LinhaInsumo(texto: "Semana de \(Formato.data(indice.semana)).")
+            LinhaInsumo(texto: "Atualização desta leitura: \(Formato.data(indice.semana)).")
 
             let manchetes = Explicacao.manchetes(series)
             if !manchetes.isEmpty {
-                Text("O que o robô leu").font(Tokens.Fonte.miudo.weight(.semibold))
+                Text("Matérias relacionadas").font(Tokens.Fonte.miudo.weight(.semibold))
                 ForEach(manchetes, id: \.titulo) { m in
                     if let u = m.url, let link = URL(string: u) {
                         Link(destination: link) {

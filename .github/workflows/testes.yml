@@ -25,6 +25,8 @@ jobs:
         run: pip install --quiet pyyaml
       - name: Matcher compartilhado
         run: python3 coletor/teste_matcher.py
+      - name: Contexto de moda no editorial
+        run: python3 coletor/teste_contexto_editorial.py
       - name: Classificador de categorias
         run: python3 coletor/teste_classificador.py
       - name: Lista negra de vocabulario (§6)

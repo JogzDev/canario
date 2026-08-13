@@ -106,6 +106,31 @@ struct Cartao<Conteudo: View>: View {
     }
 }
 
+// MARK: - Controle circular do menu
+
+/// O mesmo componente abre e fecha o menu. Compartilhar tamanho, material e
+/// símbolo evita o salto de posição que aparecia na transição da home.
+struct BotaoCircularDoMenu: View {
+    let simbolo: String
+    let acessibilidade: String
+    let acao: () -> Void
+
+    var body: some View {
+        Button(action: acao) {
+            ZStack {
+                Vidro(forma: Circle())
+                Image(systemName: simbolo)
+                    .font(.system(size: simbolo == "xmark" ? 27 : 24,
+                                  weight: simbolo == "xmark" ? .medium : .bold))
+                    .foregroundStyle(Tokens.Cor.noite)
+            }
+            .frame(width: 62, height: 62)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(acessibilidade)
+    }
+}
+
 // MARK: - Estados de carga
 
 struct Carregando: View {

@@ -8,6 +8,29 @@ import Foundation
 /// é layout e leitura de rede.
 enum Traducao {
 
+    /// Nome que a pessoa usou, quando ele é mais claro que o rótulo interno.
+    ///
+    /// A taxonomia agrupa poá dentro de `geometrica`, porque o motor precisa de
+    /// uma série com volume. Isso não obriga a interface a responder "Geométrica
+    /// e étnica" para quem escreveu "vestido de bolinha". O cálculo continua
+    /// no id aprovado; só a conversa preserva a palavra de quem pesquisou.
+    static func rotuloAmigavel(_ termo: Termo, na consulta: String) -> String {
+        let palavras = Set(normalizar(consulta)
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init))
+        if termo.id == "geometrica" {
+            if !palavras.isDisjoint(with: ["bolinha", "bolinhas"]) { return "Bolinha" }
+            if palavras.contains("poa") { return "Poá" }
+        }
+        return termo.rotulo
+    }
+
+    /// Descrição da peça em linguagem de busca, sem expor ids ou agrupamentos
+    /// editoriais. O resultado é apenas apresentação; os ids não mudam.
+    static func descricaoAmigavel(_ termos: [Termo], consulta: String) -> String {
+        termos.map { rotuloAmigavel($0, na: consulta) }.joined(separator: " · ")
+    }
+
     /// Normaliza para comparação: sem acento, minúsculas, sem espaço nas pontas.
     static func normalizar(_ s: String) -> String {
         s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)

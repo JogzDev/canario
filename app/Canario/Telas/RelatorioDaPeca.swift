@@ -19,6 +19,9 @@ struct RelatorioDaPeca: View {
     var miniaturaJPEG: Data?
     /// Quando aberto pelo Closet, evita salvar uma duplicata da mesma peça.
     var pecaSalva: PecaSalva? = nil
+    /// Linguagem usada na busca. Preserva "vestido de bolinha" sem alterar os
+    /// ids `vestido` + `geometrica` que alimentam o cálculo.
+    var descricaoAmigavel: String? = nil
 
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
@@ -105,7 +108,8 @@ struct RelatorioDaPeca: View {
     private var resumo: some View {
         Cartao {
             if let r = similares?.resumo {
-                Text(Similares.paragrafo(r, atributos: termos))
+                Text(Similares.paragrafo(r, atributos: termos,
+                                         descricao: descricaoAmigavel))
                     .font(Tokens.Fonte.corpo)
                 Divider()
             }

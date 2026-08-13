@@ -9,7 +9,7 @@ dívida que mais apareceu, e sempre no meio de outra conversa.
 decisão nova nasce com uma linha aqui. Atualizado a cada commit que mexe no
 estado de algum item.
 
-Última varredura: **12/08/2026** (atualizado ao fim de cada etapa).
+Última varredura: **13/08/2026** (atualizado ao fim de cada etapa).
 
 **Lição de 31/07, que mudou como este arquivo é lido:** K1 e K4 estavam marcados
 como ✅ porque `computar_eventos()` existia e estava correta. Só que **nada a
@@ -44,7 +44,7 @@ coleção.
 
 ---
 
-## Decisões das instruções do JP (A1–A19)
+## Decisões das instruções do JP (A1–A20)
 
 | id | O que exige | Estado |
 |---|---|---|
@@ -68,6 +68,48 @@ coleção.
 | A17 | Calibrar Luna nas mesmas 24; só então abrir holdout de 300 | 🟡 Gabarito 24/24 adjudicado com comentários do JP; prompt v3 fechado e testado offline. Falta repetir as 24; só ≥20/24 em categoria e cor abre o holdout |
 | A18 | Home do Figma em Liquid Glass, paleta aprovada, menu e duas peças recentes | ✅ Feito e verificado no iPhone Simulator — miniaturas reais, locais, 720 px, sem EXIF e excluídas de backup |
 | A19 | Recorte local da peça, Closet em grade, foto substituível; imagens de similares/eventos; gráfico e último estado medido visíveis | 🟡 Migração aplicada e RPCs reais validadas: reposições 5/5 com imagem, remarcações 5/5, similares 8/8 e histórico com 52 pontos. Falta somente a conferência visual do pacote inteiro no device, incluindo o recorte de uma foto real |
+| A20 | Revisão de navegação: credibilidade da tela de tendências, linguagem humana, precisão editorial, acabamento visual e passagem de bastão completa | 🟡 Primeiro pacote feito e testado; fila NQ1–NQ19 abaixo é o escopo restante, sem esconder dívida antiga |
+
+---
+
+## Revisão real de navegação de 13/08 — fila consolidada (NQ1–NQ19)
+
+Esta seção transforma **cada reclamação do JP** nos três prints de 13/08 em
+trabalho verificável. “Ficou melhor” não fecha linha: o critério da última
+coluna precisa ser demonstrado no aparelho ou nos dados.
+
+| id | Pendência | Estado agora | Para ficar verde |
+|---|---|---|---|
+| NQ1 | **Tendências realmente semanais e frescas.** “Semana de 13/07” e manchetes de junho não podem ocupar a vitrine em agosto | 🟡 A vitrine agora recusa leituras com mais de 21 dias e explicita a data; o histórico continua acessível. A origem ainda precisa recuperar cadência | SLA de publicação semanal; alerta se categoria principal passar de 14 dias; nenhuma novidade exibida com mais de 21; backfill/reprocessamento termina sem vermelho |
+| NQ2 | **Precisão editorial e caso Vini Jr.** “Camisa 7” de futebol não é moda | 🟡 Filtro estreito para `camisa`, aplicado também ao backfill, com regressões do Vini Jr. e metáfora empresarial. Ele só afeta coleta futura/reprocessada | Amostra cega de pelo menos 100 matches: precisão ≥95% e recall ≥90%; depois reprocessar o período afetado e provar que o artigo não move série nem card |
+| NQ3 | **Linguagem de produto, não saída de modelo.** Tirar “desvios”, ids crus e textos apaziguadores | 🟡 Cards principais dizem intensidade humana; escala técnica fica como rastreabilidade. Busca preserva “bolinha”/“poá” na apresentação sem renomear a taxonomia | Auditoria de todas as strings; zero id interno, “robô”, “desvios” como unidade principal ou explicação defensiva na v1; teste de vocabulário ampliado |
+| NQ4 | **Transformar Search/Analytics na casa das tendências da semana.** Navegar, rolar, pesquisar e filtrar no mesmo fluxo | 🔴 A busca ainda abre separada e o Explorar ainda mistura curva, eventos e tendências | Uma tela semanal com busca fixa, filtros por categoria/estado/data, grupos Em alta · Estável · Em queda, cards tocáveis e preservação da frase do usuário |
+| NQ5 | **Taxonomia de categoria.** Rever `blusa_top`, considerar `camiseta` e outras classes sem criar fronteiras arbitrárias | 🔴 O id atual agrega blusa, top, cropped, regata e camiseta. Separar por gosto sem série histórica quebraria comparação | Matriz de confusão Luna+humano, amostra de títulos e volume por candidato; definições visuais mutuamente exclusivas; decisão de migração/alias; reclassificação e séries com cobertura antes de expor novo id |
+| NQ6 | **Mais marcas com curadoria nacional e internacional.** O painel de nove parece pequeno | 🔴 Há candidatas já catalogadas, mas fonte não entra apenas para aumentar contador | Matriz papel × faixa × segmento × país; teste de 30 s, robots/termos, estabilidade de 7 dias e impacto de cobertura. Marcas internacionais ficam como direção, não confirmam índice BR |
+| NQ7 | **Mais e melhores sinais externos.** Pesquisar Pinterest, TikTok, Google Trends oficial e Lyst sem inventar autorização | 🟡 Fontes oficiais e limitações mapeadas na passagem de bastão; nenhuma coleta nova foi autorizada | Piloto licenciado/documentado, escala e frequência declaradas, cobertura medida e papel metodológico definido. Nada de endpoint privado ou scraping não autorizado |
+| NQ8 | **Peça do usuário limpa, sem fundo, no Closet e na home** | 🟡 A19 recorta localmente com Vision, PNG transparente e fallback seguro; falta prova com fotos reais | Ensaio no iPhone com pelo menos 24 fotos (isolada, corpo, cabide e conjunto), taxa de recorte aceitável registrada e troca manual sempre disponível |
+| NQ9 | **Imagens remotas limpas em similares, reposições e remarcações** | 🔴 Hotlink mostra a imagem que a loja publicou; fundo, modelo e texto não são removidos hoje | Primeiro escolher a foto mais limpa entre URLs autorizadas. Só avaliar segmentação em memória depois de medir qualidade, latência, termos da loja e efeito no cache; nunca copiar para servidor/binário |
+| NQ10 | **Liquid Glass convincente** | 🟡 Reflexo, dupla borda e sombras melhorados com material nativo do iOS 17; simulador mostra profundidade maior | Comparação lado a lado no iPhone com Figma, claro/escuro e Reduce Transparency; aprovação visual do JP e contraste WCAG nas ações |
+| NQ11 | **Ellipsis e X exatamente na mesma posição** | 🟡 Agora são a mesma view, 62×62 e mesmos recuos; build passou e o menu foi inspecionado no simulador | Gravação no device abrindo/fechando sem salto perceptível; teste de snapshot das duas posições |
+| NQ12 | **Remover placeholders e fala robótica em todo o app** | 🔴 O placeholder “Ainda sem cobertura” do fim do Explorar saiu, mas os itens do menu ainda abrem alertas provisórios e há strings antigas | Inventário de telas/strings; conteúdo ou função real para cada ação visível; elemento não implementado não aparece como se funcionasse |
+| NQ13 | **Telas do menu: Favorites, Account, Terms, Settings, Privacy e Q&A** | 🔴 Só o menu visual existe | Fluxos reais, em inglês, acessíveis e testados. Privacy/Terms precisam refletir OpenAI, hotlink, câmera, miniatura local, conta e exclusão de dados — não texto jurídico inventado |
+| NQ14 | **Levar o restante do Figma a telas reais e completar frames incompletos** | 🔴 Home e Closet começaram; confirmação, loading, DNA/report, detalhes e estados vazios precisam de reconciliação | Inventário frame→view→estado; revisão de conteúdo; implementação responsiva em iPhones suportados; screenshot test e aceite visual |
+| NQ15 | **Interface final em inglês e nome do produto** | 🔴 A16 aprovada; app segue misto. Label/Labl e Stitched continuam candidatos | Nome decidido, catálogo de strings sem mistura PT/EN, datas/locales corretos e revisão humana do inglês antes da submissão |
+| NQ16 | **Luna: repetir 24 e integrar visão/redação só depois do portão** | 🟡 Gabarito e prompt v3 prontos; ainda não houve segunda inferência | Categoria e cor primária ≥20/24 separadamente; depois holdout cego de 300, meta 90%+, contrato/privacidade e fallback humano no runtime |
+| NQ17 | **Conta, sincronização e privacidade** | 🔴 A intenção é sincronizar o Closet entre aparelhos, mas não há modelo de conta nem revogação final da antiga promessa local-only | Escopo mínimo decidido; Supabase Auth/RLS; exportar/apagar conta e peças; disclosures da App Store; ameaça e teste de isolamento entre usuários |
+| NQ18 | **“Sem estado” e cobertura de duas fontes** | 🟡 A tela não transforma nulo em estável e explica a ausência; 52 pontos amostrados tinham só uma perna | Recuperar cobertura BR, health gate por frescor/célula e mostrar “sem direção confirmada” com causa/data. Estado só existe com duas fontes, nunca por conveniência visual |
+| NQ19 | **Performance e conferência A19 no device** | 🟡 Build/testes verdes; pacote visual e recorte ainda sem aceite completo no aparelho | Abrir a frio/quente, trocar foto, observar gráficos/imagens e registrar tempos. Nenhuma tela preta >1 s e nenhuma análise bloqueia a main thread |
+
+### Ordem de ataque que não mascara o produto
+
+1. **Credibilidade do dado:** NQ1, NQ2, NQ18.
+2. **Tela que vende a proposta:** NQ4, NQ3, NQ10, NQ11.
+3. **Fluxo completo do usuário:** NQ13, NQ14, NQ15, NQ17.
+4. **Qualidade/curadoria:** NQ5, NQ6, NQ7, NQ8, NQ9, NQ16.
+5. **Aceite físico:** NQ19 fecha o que estiver implementado; não é uma etapa única no fim.
+
+A execução detalhada, arquivos e comandos estão em
+`HANDOFF_13-08-2026_TELAS_CURADORIA.md`.
 
 ---
 

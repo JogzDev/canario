@@ -126,6 +126,22 @@ enum Formato {
         return f.string(from: Date())
     }
 
+    /// Idade de uma data de calendário do banco em relação a hoje em Brasília.
+    /// Um dado futuro ou malformado não é tratado como velho por conveniência.
+    static func diasDesde(_ texto: String, hoje: Date = Date()) -> Int {
+        guard let data = iso.date(from: String(texto.prefix(10))) else { return 0 }
+        var calendario = Calendar(identifier: .gregorian)
+        calendario.timeZone = TimeZone(identifier: "UTC") ?? .current
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = brasilia
+        f.dateFormat = "yyyy-MM-dd"
+        guard let hojeCalendario = iso.date(from: f.string(from: hoje)) else { return 0 }
+        let inicio = calendario.startOfDay(for: data)
+        let fim = calendario.startOfDay(for: hojeCalendario)
+        return max(0, calendario.dateComponents([.day], from: inicio, to: fim).day ?? 0)
+    }
+
     /// "31/07/2026 às 04:12" → só a hora, para o carimbo de atualização.
     static func hora(_ texto: String) -> String? {
         let f = DateFormatter()

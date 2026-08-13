@@ -110,10 +110,10 @@ enum Similares {
     /// A §29 dá o exemplo: *"No painel de {n_marcas} marcas, encontrei
     /// {n_similares} similares: {pct_preco_cheio}% a preço cheio e
     /// {pct_grade_quebrada}% com grade quebrando {formato}."*
-    static func paragrafo(_ r: Resumo, atributos: [Termo]) -> String {
+    static func paragrafo(_ r: Resumo, atributos: [Termo], descricao: String? = nil) -> String {
         var frases: [String] = []
 
-        let nomes = atributos.map(\.rotulo).joined(separator: " + ")
+        let nomes = descricao ?? atributos.map(\.rotulo).joined(separator: " + ")
         if r.nSimilares == 0 {
             return "Não encontrei nenhuma peça no painel com \(nomes). "
                  + "Pode ser combinação rara, ou pode ser que o painel ainda não tenha alcançado — as duas coisas são possíveis e não sei distinguir."
