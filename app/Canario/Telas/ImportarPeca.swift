@@ -1,6 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import PhotosUI
+import UIKit
 
 /// Entrada por arquivo: print, foto ou PDF (§28, com a revogação parcial do A7).
 ///
@@ -30,6 +31,10 @@ struct ImportarPeca: View {
     @State private var procedencia: [String] = []
     @State private var precoDigitado = ""
     @State private var miniaturaJPEG: Data?
+    @State private var imagemPendente: CGImage?
+    @State private var nomePendente: String?
+    @State private var opcoesDeAlvo: [MiniaturaLocal.OpcaoDeAlvo] = []
+    @State private var alvoEscolhido: Int?
     @FocusState private var precoEmFoco: Bool
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
@@ -59,6 +64,8 @@ struct ImportarPeca: View {
             Group {
                 if lendo {
                     Carregando()
+                } else if imagemPendente != nil {
+                    confirmacaoDoAlvo
                 } else if confirmou {
                     RelatorioDaPeca(termos: termos.filter { detectados.contains($0.id) },
                                     precoAlvo: precoAlvo,
@@ -87,7 +94,7 @@ struct ImportarPeca: View {
             CapturaDeCamera { imagem in
                 mostrandoCamera = false
                 guard let imagem else { return }   // cancelou
-                Task { await processarImagem(imagem, nome: "foto da câmera") }
+                Task { await prepararConfirmacao(imagem, nome: "camera photo") }
             }
             .ignoresSafeArea()
         }
@@ -99,15 +106,88 @@ struct ImportarPeca: View {
 
     // MARK: Formulário
 
+    /// A câmera não sabe qual peça da cena interessa, e o segmentador do iOS
+    /// sabe separar instâncias mas não sabe qual delas está à venda. Esta tela
+    /// fecha as duas lacunas antes de qualquer atributo ser sugerido.
+    private var confirmacaoDoAlvo: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                    Text("Which item should I analyze?")
+                        .font(Tokens.Fonte.titulo)
+                    Text("Select the garment you meant to add. Category, color and attributes will be read only after you confirm it.")
+                        .font(Tokens.Fonte.apoio)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+
+                if let escolhida = opcaoEscolhida {
+                    PreviaDoAlvo(dados: escolhida.dados, id: escolhida.id,
+                                 altura: 320, selecionada: true)
+                    Text(escolhida.tipo == .fotoCompleta
+                         ? "Use the full photo when the isolated options remove part of the garment."
+                         : "Background removed on this device.")
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+
+                if opcoesDeAlvo.count > 1 {
+                    VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                        Text("Other options")
+                            .font(Tokens.Fonte.secao)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: Tokens.Espaco.s) {
+                                ForEach(opcoesDeAlvo) { opcao in
+                                    Button {
+                                        alvoEscolhido = opcao.id
+                                    } label: {
+                                        VStack(spacing: Tokens.Espaco.xs) {
+                                            PreviaDoAlvo(dados: opcao.dados, id: opcao.id,
+                                                         altura: 112,
+                                                         selecionada: alvoEscolhido == opcao.id)
+                                            Text(opcao.rotulo)
+                                                .font(Tokens.Fonte.miudo)
+                                                .foregroundStyle(Tokens.Cor.tinta)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Select \(opcao.rotulo.lowercased())")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Button {
+                    Task { await confirmarAlvo() }
+                } label: {
+                    Label("Analyze this item", systemImage: "checkmark")
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(opcaoEscolhida == nil)
+
+                Button("Choose another photo") { cancelarConfirmacao() }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+            }
+            .padding(Tokens.Espaco.m)
+        }
+    }
+
+    private var opcaoEscolhida: MiniaturaLocal.OpcaoDeAlvo? {
+        opcoesDeAlvo.first { $0.id == alvoEscolhido }
+    }
+
     private var formulario: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
                 importador
                 if let erro {
                     CoberturaInsuficiente(
-                        titulo: "Não consegui ler o arquivo",
+                        titulo: "I couldn't read this file",
                         explicacao: erro,
-                        oQueTem: "Você pode marcar os atributos à mão abaixo — o resultado é o mesmo.")
+                        oQueTem: "You can select the attributes below and continue.")
                 }
                 if !procedencia.isEmpty { oQueLi }
                 atributos
@@ -116,7 +196,7 @@ struct ImportarPeca: View {
                     Button {
                         confirmou = true
                     } label: {
-                        Text("Ver leitura de \(detectados.count) atributo\(detectados.count == 1 ? "" : "s")")
+                        Text("Analyze \(detectados.count) attribute\(detectados.count == 1 ? "" : "s")")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -147,14 +227,14 @@ struct ImportarPeca: View {
                     erro = nil
                     mostrandoCamera = true
                 } label: {
-                    Label("Fotografar a peça", systemImage: "camera")
+                    Label("Take a photo", systemImage: "camera")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
             }
             PhotosPicker(selection: $daFototeca, matching: .images,
                          photoLibrary: .shared()) {
-                Label("Escolher da fototeca", systemImage: "photo.on.rectangle")
+                Label("Choose from Photos", systemImage: "photo.on.rectangle")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -162,12 +242,12 @@ struct ImportarPeca: View {
                 erro = nil
                 mostrandoSeletor = true
             } label: {
-                Label("Escolher arquivo ou PDF", systemImage: "doc.badge.plus")
+                Label("Choose a file or PDF", systemImage: "doc.badge.plus")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
             if let nomeDoArquivo {
-                LinhaInsumo(texto: "Lido: \(nomeDoArquivo)")
+                LinhaInsumo(texto: "Loaded: \(nomeDoArquivo)")
             }
         }
     }
@@ -177,9 +257,9 @@ struct ImportarPeca: View {
     /// lido por extenso, e as duas não têm a mesma força.
     private var oQueLi: some View {
         Cartao {
-            Text("O que eu li deste arquivo").font(Tokens.Fonte.secao)
+            Text("What I read from this file").font(Tokens.Fonte.secao)
             ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
-            LinhaInsumo(texto: "Confira e corrija o que estiver errado: é a sua marcação que vale.")
+            LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
         }
     }
 
@@ -189,10 +269,10 @@ struct ImportarPeca: View {
     private var atributos: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
             HStack {
-                Text("Atributos da peça").font(Tokens.Fonte.secao)
+                Text("Item attributes").font(Tokens.Fonte.secao)
                 Spacer()
                 if !detectados.isEmpty {
-                    Button("Limpar") { detectados.removeAll() }
+                    Button("Clear") { detectados.removeAll() }
                         .font(Tokens.Fonte.miudo)
                 }
             }
@@ -212,8 +292,8 @@ struct ImportarPeca: View {
     /// §29.5 — o único campo que o usuário digita, e ele é opcional.
     private var precoOpcional: some View {
         Cartao {
-            Text("Preço que você pretende praticar").font(Tokens.Fonte.secao)
-            Text("Opcional. Se preencher, mostro onde ele cai entre as peças parecidas do painel — é posição de preço, não julgamento do seu preço.")
+            Text("Your intended price").font(Tokens.Fonte.secao)
+            Text("Optional. If you add it, I show its position among similar pieces in the panel — a price position, not a judgment.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             TextField("R$ 0,00", text: $precoDigitado)
@@ -256,22 +336,72 @@ struct ImportarPeca: View {
         daFototeca = nil
         lendo = true
         erro = nil
-        defer { lendo = false }
         guard let dados = try? await item.loadTransferable(type: Data.self),
               let imagem = MiniaturaLocal.imagem(de: dados) else {
-            erro = "Não consegui abrir essa foto."
+            erro = "I couldn't open this photo."
+            lendo = false
             return
         }
-        await processarImagem(imagem, nome: "foto da fototeca")
+        await prepararConfirmacao(imagem, nome: "photo library image")
     }
 
-    /// Câmera e fototeca terminam aqui, no mesmo leitor do arquivo.
-    private func processarImagem(_ imagem: CGImage, nome: String) async {
+    /// Câmera e fototeca passam pelo mesmo portão visual. A opção pré-selecionada
+    /// ainda exige um toque explícito no botão de confirmação.
+    private func prepararConfirmacao(_ imagem: CGImage, nome: String) async {
+        lendo = true
+        erro = nil
+        procedencia = []
+        detectados = []
+        let opcoes = await MiniaturaLocal.opcoesDeAlvo(de: imagem)
+        guard !opcoes.isEmpty else {
+            erro = "I could not prepare this image. Choose another photo or file."
+            lendo = false
+            return
+        }
+        imagemPendente = imagem
+        nomePendente = nome
+        opcoesDeAlvo = opcoes
+        alvoEscolhido = opcoes.first?.id
+        lendo = false
+    }
+
+    private func confirmarAlvo() async {
+        guard let original = imagemPendente, let escolha = opcaoEscolhida else { return }
+        let imagem: CGImage?
+        switch escolha.tipo {
+        case .primeiroPlano:
+            imagem = MiniaturaLocal.imagem(de: escolha.dados)
+        case .fotoCompleta:
+            imagem = original
+        }
+        guard let imagem else {
+            erro = "I could not open the selected item. Choose another option."
+            return
+        }
+
+        let nome = nomePendente ?? "selected image"
+        imagemPendente = nil
+        nomePendente = nil
+        opcoesDeAlvo = []
+        alvoEscolhido = nil
+        miniaturaJPEG = escolha.dados
+        await analisarImagemConfirmada(imagem, nome: nome)
+    }
+
+    private func cancelarConfirmacao() {
+        imagemPendente = nil
+        nomePendente = nil
+        opcoesDeAlvo = []
+        alvoEscolhido = nil
+        daFototeca = nil
+    }
+
+    /// Só a peça confirmada termina no leitor compartilhado.
+    private func analisarImagemConfirmada(_ imagem: CGImage, nome: String) async {
         lendo = true
         erro = nil
         procedencia = []
         nomeDoArquivo = nome
-        miniaturaJPEG = await MiniaturaLocal.dados(de: imagem)
         let leitura = await LeitorDeArquivo.ler(imagem)
         let achado = Importacao.atributos(de: leitura, em: termos)
         let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
@@ -311,6 +441,47 @@ struct ImportarPeca: View {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }
         lendo = false
+    }
+}
+
+/// Decodifica as opções fora da main thread. Uma confirmação com quatro
+/// instâncias não pode reintroduzir o engasgo que A22 removeu do Closet.
+private struct PreviaDoAlvo: View {
+    let dados: Data
+    let id: Int
+    let altura: CGFloat
+    let selecionada: Bool
+
+    @State private var imagem: UIImage?
+
+    private var compacta: Bool { altura < 160 }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: Tokens.Raio.cartao)
+                .fill(Tokens.Cor.superficie)
+            if let imagem {
+                Image(uiImage: imagem)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(Tokens.Espaco.s)
+            } else {
+                ProgressView()
+            }
+        }
+        .frame(width: compacta ? 128 : nil)
+        .frame(maxWidth: compacta ? nil : .infinity)
+        .frame(height: altura)
+        .overlay {
+            RoundedRectangle(cornerRadius: Tokens.Raio.cartao)
+                .stroke(selecionada ? Tokens.Cor.acao : Tokens.Cor.borda,
+                        lineWidth: selecionada ? 3 : 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartao))
+        .task(id: id) {
+            imagem = nil
+            imagem = await MiniaturaParaTela.imagem(de: dados)
+        }
     }
 }
 

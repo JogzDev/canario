@@ -69,6 +69,22 @@ def checar_orquestracao(workflows):
         if "schedule" in gatilhos:
             falhar(arquivo, "workflow individual voltou a ter cron proprio")
 
+    for arquivo in ["coleta.yml", "coleta-shopify.yml",
+                    "coleta-editorial.yml", "coleta-trends.yml"]:
+        passos = workflows.get(arquivo, {}).get("jobs", {}).get(
+            "coletar", {}).get("steps", [])
+        portoes = [p for p in passos
+                   if "verificar_capacidade_banco.py" in str(p.get("run", ""))]
+        if len(portoes) != 1:
+            falhar(arquivo, "coleta sem portao unico de capacidade")
+            continue
+        portao = portoes[0]
+        ambiente = portao.get("env", {})
+        if (portao.get("continue-on-error") or
+                not {"SUPABASE_URL", "SUPABASE_SECRET_KEY"}.issubset(ambiente)):
+            falhar(arquivo,
+                   "portao de capacidade pode falhar aberto ou esta sem segredo")
+
     coleta_varejo = workflows.get("coleta.yml", {})
     passos_varejo = coleta_varejo.get("jobs", {}).get(
         "coletar", {}).get("steps", [])

@@ -9,7 +9,7 @@ dívida que mais apareceu, e sempre no meio de outra conversa.
 decisão nova nasce com uma linha aqui. Atualizado a cada commit que mexe no
 estado de algum item.
 
-Última varredura: **13/08/2026** (atualizado ao fim de cada etapa).
+Última varredura: **14/08/2026** (atualizado ao fim de cada etapa).
 
 **Lição de 31/07, que mudou como este arquivo é lido:** K1 e K4 estavam marcados
 como ✅ porque `computar_eventos()` existia e estava correta. Só que **nada a
@@ -70,6 +70,7 @@ coleção.
 | A19 | Recorte local da peça, Closet em grade, foto substituível; imagens de similares/eventos; gráfico e último estado medido visíveis | 🟡 Migração aplicada e RPCs reais validadas: reposições 5/5 com imagem, remarcações 5/5, similares 8/8 e histórico com 52 pontos. Falta somente a conferência visual do pacote inteiro no device, incluindo o recorte de uma foto real |
 | A20 | Revisão de navegação: credibilidade da tela de tendências, linguagem humana, precisão editorial, acabamento visual e passagem de bastão completa | 🟡 Primeiro pacote feito e testado; fila NQ1–NQ19 abaixo é o escopo restante, sem esconder dívida antiga |
 | A23 | Feedback consolidado do grupo: navegação nativa, formulário pertinente, avaliação de marca/produto e protótipo antes de mudanças estruturais | 🟡 Primeiro pacote implementado e documentado em `PLANO_PRIORIZADO_FEEDBACK_EQUIPE_13-08-2026.md`; String Catalog, ranking de similares, Luna e protótipo seguem na ordem registrada |
+| A24 | Confirmação visual da peça-alvo e portão de capacidade do banco | 🟡 App oferece até quatro instâncias locais + foto completa antes da leitura; estágio vazio recuperou 16,8 MB e toda coleta bloqueia a partir de 96% da cota Free. Falta conferir a escolha visual no iPhone e desenhar retenção antes de a margem voltar a cair |
 
 ---
 
@@ -88,7 +89,7 @@ coluna precisa ser demonstrado no aparelho ou nos dados.
 | NQ5 | **Taxonomia de categoria.** Rever `blusa_top`, considerar `camiseta` e outras classes sem criar fronteiras arbitrárias | 🔴 A matriz Luna v5 acertou **3/3 `blusa_top`**; nenhum dos quatro erros finais seria corrigido dividindo o id. Ainda falta medir títulos/volume e desenhar fronteiras úteis para o produto | Amostra de títulos e volume por candidato; definições visuais mutuamente exclusivas; decisão de migração/alias; reclassificação e séries com cobertura antes de expor novo id |
 | NQ6 | **Mais marcas com curadoria nacional e internacional.** O painel de nove parece pequeno | 🔴 Há candidatas já catalogadas, mas fonte não entra apenas para aumentar contador | Matriz papel × faixa × segmento × país; teste de 30 s, robots/termos, estabilidade de 7 dias e impacto de cobertura. Marcas internacionais ficam como direção, não confirmam índice BR |
 | NQ7 | **Mais e melhores sinais externos.** Pesquisar Pinterest, TikTok, Google Trends oficial e Lyst sem inventar autorização | ⚪ Adiado pelo JP para depois da v1: custo de integração supera o retorno agora. A matriz oficial permanece em `FONTES_OFICIAIS_INTERNACIONAIS.md` | Retomar na v1.1; nenhum scraper ou endpoint privado entra para “compensar” o adiamento |
-| NQ8 | **Peça do usuário limpa, sem fundo, no Closet e na home** | 🟡 A19 recorta localmente com Vision, PNG transparente e fallback seguro; falta prova com fotos reais | Ensaio no iPhone com pelo menos 24 fotos (isolada, corpo, cabide e conjunto), taxa de recorte aceitável registrada e troca manual sempre disponível |
+| NQ8 | **Peça do usuário limpa, sem fundo, no Closet e na home** | 🟡 A24 acrescentou confirmação visual: até quatro instâncias do Vision e a foto inteira aparecem antes da leitura; a escolhida alimenta análise e miniatura. Falta prova com fotos reais | Ensaio no iPhone com pelo menos 24 fotos (isolada, corpo, cabide e conjunto), taxa de recorte aceitável registrada e foto completa sempre disponível |
 | NQ9 | **Imagens remotas limpas em similares, reposições e remarcações** | 🔴 Hotlink mostra a imagem que a loja publicou; fundo, modelo e texto não são removidos hoje | Primeiro escolher a foto mais limpa entre URLs autorizadas. Só avaliar segmentação em memória depois de medir qualidade, latência, termos da loja e efeito no cache; nunca copiar para servidor/binário |
 | NQ10 | **Liquid Glass convincente** | 🟡 iOS 26 usa `glassEffect`, `GlassEffectContainer` e button style `.glass` nativos; iOS 17–25 mantém o melhor fallback possível com `ultraThinMaterial`. Build real no SDK 26.2 passou | Comparação lado a lado no iPhone 26 e no fallback 17, claro/escuro e Reduce Transparency; aprovação visual do JP e contraste nas ações |
 | NQ11 | **Ellipsis e X exatamente na mesma posição** | ✅ Um único botão da raiz troca somente o símbolo; screenshots do simulador confirmam o mesmo centro e o menu não possui segundo controle | Verde por construção e prova visual; reabrir apenas se houver salto numa gravação do aparelho |

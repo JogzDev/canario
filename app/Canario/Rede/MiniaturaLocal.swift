@@ -16,6 +16,28 @@ import Vision
 enum MiniaturaLocal {
     static let ladoMaximo: CGFloat = 720
 
+    /// Uma escolha visual apresentada antes da leitura da peça. `dados` já é
+    /// uma imagem nova, sem EXIF, localização ou nome do arquivo original.
+    /// A foto completa sempre fecha a lista como saída segura quando o Vision
+    /// separou a pessoa, um acessório ou outra instância que não era a roupa.
+    struct OpcaoDeAlvo: Identifiable {
+        enum Tipo: Equatable {
+            case primeiroPlano
+            case fotoCompleta
+        }
+
+        let id: Int
+        let dados: Data
+        let tipo: Tipo
+
+        var rotulo: String {
+            switch tipo {
+            case .primeiroPlano: return "Isolated item \(id + 1)"
+            case .fotoCompleta: return "Full photo"
+            }
+        }
+    }
+
     /// Decodifica a orientação EXIF antes da análise. `CGImage` puro não aplica
     /// essa transformação e faria fotos verticais chegarem deitadas ao leitor.
     static func imagem(de dados: Data, ladoMaximo: Int = 2_400) -> CGImage? {
@@ -41,6 +63,31 @@ enum MiniaturaLocal {
             }
             return redesenhar(imagem, transparente: false)?
                 .jpegData(compressionQuality: 0.82)
+        }.value
+    }
+
+    /// Prepara as alternativas para a confirmação humana, ainda no aparelho.
+    /// Não tenta dizer qual instância é uma roupa: ordena as máscaras mais
+    /// plausíveis e deixa essa decisão semântica para quem tirou a foto.
+    static func opcoesDeAlvo(de imagem: CGImage) async -> [OpcaoDeAlvo] {
+        await Task.detached(priority: .userInitiated) {
+            var opcoes = recortesDePrimeiroPlano(imagem)
+                .prefix(4)
+                .enumerated()
+                .compactMap { indice, recorte -> OpcaoDeAlvo? in
+                    guard let dados = redesenhar(recorte, transparente: true)?.pngData() else {
+                        return nil
+                    }
+                    return OpcaoDeAlvo(id: indice, dados: dados, tipo: .primeiroPlano)
+                }
+
+            if let completa = redesenhar(imagem, transparente: false)?
+                .jpegData(compressionQuality: 0.82) {
+                opcoes.append(OpcaoDeAlvo(id: opcoes.count,
+                                          dados: completa,
+                                          tipo: .fotoCompleta))
+            }
+            return opcoes
         }.value
     }
 
@@ -91,52 +138,53 @@ enum MiniaturaLocal {
     /// com várias roupas. Essa decisão semântica continua pertencendo à etapa
     /// de visão e ao usuário.
     private static func recortarPrimeiroPlano(_ imagem: CGImage) -> CGImage? {
+        recortesDePrimeiroPlano(imagem).first
+    }
+
+    /// Devolve instâncias úteis em ordem de área/centralidade. O limite de
+    /// quatro mantém a decisão rápida e evita expor ruído minúsculo do cenário.
+    private static func recortesDePrimeiroPlano(_ imagem: CGImage) -> [CGImage] {
         let pedido = VNGenerateForegroundInstanceMaskRequest()
         let manipulador = VNImageRequestHandler(cgImage: imagem)
         do {
             try manipulador.perform([pedido])
             guard let observacao = pedido.results?.first,
-                  !observacao.allInstances.isEmpty else { return nil }
-            // Peça sobre mesa/cabide costuma ser uma instância própria. Usar
-            // todas preservaria também mão, prop e objeto de cenário. A maior
-            // instância plausível vira o alvo; em foto vestida o Vision pode
-            // considerar a pessoa inteira uma instância, limite que a tela de
-            // captura precisa declarar em vez de fingir uma segmentação de SKU.
-            var escolhida: (mascara: CVPixelBuffer, medida: MedidaDaMascara)?
+                  !observacao.allInstances.isEmpty else { return [] }
+            var candidatas: [(mascara: CVPixelBuffer, medida: MedidaDaMascara)] = []
             for instancia in observacao.allInstances.prefix(16) {
                 let mascara = try observacao.generateScaledMaskForImage(
                     forInstances: IndexSet(integer: instancia), from: manipulador)
                 guard let medida = medidaUtil(da: mascara) else { continue }
-                if escolhida == nil || medida.pontuacao > escolhida!.medida.pontuacao {
-                    escolhida = (mascara, medida)
-                }
+                candidatas.append((mascara, medida))
             }
-            guard let (mascara, medida) = escolhida else { return nil }
-            let limites = medida.limites
-
+            let contexto = CIContext(options: [.cacheIntermediates: false])
             let original = CIImage(cgImage: imagem)
-            let mask = CIImage(cvPixelBuffer: mascara)
             let transparente = CIImage(color: .clear).cropped(to: original.extent)
-            let filtro = CIFilter.blendWithMask()
-            filtro.inputImage = original
-            filtro.backgroundImage = transparente
-            filtro.maskImage = mask
-            guard let composta = filtro.outputImage else { return nil }
+            return candidatas
+                .sorted { $0.medida.pontuacao > $1.medida.pontuacao }
+                .compactMap { candidata in
+                    let mask = CIImage(cvPixelBuffer: candidata.mascara)
+                    let filtro = CIFilter.blendWithMask()
+                    filtro.inputImage = original
+                    filtro.backgroundImage = transparente
+                    filtro.maskImage = mask
+                    guard let composta = filtro.outputImage else { return nil }
 
-            // O pixel buffer tem origem no topo; Core Image, embaixo.
-            let altura = CGFloat(CVPixelBufferGetHeight(mascara))
-            var recorte = CGRect(x: limites.minX,
-                                 y: altura - limites.maxY,
-                                 width: limites.width,
-                                 height: limites.height)
-            let margem = max(recorte.width, recorte.height) * 0.05
-            recorte = recorte.insetBy(dx: -margem, dy: -margem)
-                .intersection(original.extent)
-            guard recorte.width > 1, recorte.height > 1 else { return nil }
-            return CIContext(options: [.cacheIntermediates: false])
-                .createCGImage(composta, from: recorte)
+                    // O pixel buffer tem origem no topo; Core Image, embaixo.
+                    let altura = CGFloat(CVPixelBufferGetHeight(candidata.mascara))
+                    let limites = candidata.medida.limites
+                    var recorte = CGRect(x: limites.minX,
+                                         y: altura - limites.maxY,
+                                         width: limites.width,
+                                         height: limites.height)
+                    let margem = max(recorte.width, recorte.height) * 0.05
+                    recorte = recorte.insetBy(dx: -margem, dy: -margem)
+                        .intersection(original.extent)
+                    guard recorte.width > 1, recorte.height > 1 else { return nil }
+                    return contexto.createCGImage(composta, from: recorte)
+                }
         } catch {
-            return nil
+            return []
         }
     }
 

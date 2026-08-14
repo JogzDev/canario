@@ -78,6 +78,14 @@ def selecionar(tabela, params=""):
     return dados or []
 
 
+def rpc(nome, parametros=None, tentativas=3, timeout=None):
+    """Chama uma função PostgREST e devolve o JSON já decodificado."""
+    _, dados = _requisicao("POST", "rpc/" + nome,
+                           corpo=parametros or {}, tentativas=tentativas,
+                           timeout=timeout)
+    return dados
+
+
 def upsert(tabela, linhas, on_conflict, retornar=False):
     """Insere ou atualiza em lote, resolvendo por on_conflict."""
     if not linhas:

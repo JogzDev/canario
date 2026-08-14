@@ -47,6 +47,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Proteger capacidade do banco antes de escrever
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: python3 coletor/verificar_capacidade_banco.py
+
       - name: Pente fino do datacenter
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' }}
         env:

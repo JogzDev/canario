@@ -43,6 +43,8 @@ jobs:
         run: python3 coletor/teste_publicacao_motor.py
       - name: Portao operacional de saude
         run: python3 coletor/teste_saude.py
+      - name: Portao de capacidade do banco
+        run: python3 coletor/teste_capacidade_banco.py
       - name: Paginacao VTEX sem perda por empate de preco
         run: python3 coletor/teste_paginacao_vtex.py
       - name: Planejamento diario do Google Trends
