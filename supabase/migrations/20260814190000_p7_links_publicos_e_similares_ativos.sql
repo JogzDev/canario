@@ -2,6 +2,13 @@
 -- A auditoria de 14/08/2026 visitou 262 destinos reais. Ela encontrou o host
 -- administrativo da Maria Filó, produtos removidos e um produto esgotado.
 
+-- Trocar só o host NÃO resolve, e foi medido: numa amostra de 14/08/2026, das
+-- 10 URLs reescritas apenas 1 abriu uma página de produto, contra 5 de 5 das
+-- que já nasceram públicas. O slug interno da VTEX não existe na vitrine.
+-- Reescrever daria um destino pior que o atual: responde 200, com canonical,
+-- então passa por qualquer verificação automática -- e entrega página em branco
+-- ao usuário. Enquanto o coletor não reresolver essas 205 linhas antigas, o
+-- link é escondido. Card sem botão é honesto; botão que abre nada, não.
 create or replace function public.url_publica_produto(url text, marca text)
 returns text
 language sql
@@ -12,9 +19,7 @@ as $function$
     when url is null then null
     when marca = 'Maria Filo'
      and url like 'https://mariafilo.vtexcommercestable.com.br/%'
-      then replace(url,
-        'https://mariafilo.vtexcommercestable.com.br/',
-        'https://www.mariafilo.com.br/')
+      then null
     else url
   end;
 $function$;

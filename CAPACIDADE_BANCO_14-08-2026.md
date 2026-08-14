@@ -57,3 +57,42 @@ há duas rotas honestas:
 
 Não usar `VACUUM FULL`, apagar artigos ou reduzir séries durante o pipeline:
 essas ações exigem janela de manutenção e uma decisão de método registrada.
+
+## Compactação de 14/08/2026, à noite — decisão de método registrada
+
+A cota do plano não estava sendo consumida por história: estava sendo consumida
+por espaço morto. Medido linha a linha, com `pg_column_size` sobre a linha
+inteira contra `pg_relation_size`:
+
+| Tabela | Dados vivos | Heap ocupado | Morto |
+|---|---:|---:|---:|
+| `produtos` | 84,7 MiB | 178,2 MiB | 93,5 MiB |
+| `series_semanais` | 16,8 MiB | 48,9 MiB | 32,1 MiB |
+| `artigos` | 24,8 MiB | 34,9 MiB | 10,1 MiB |
+| `snapshots` | 30,8 MiB | 32,2 MiB | saudável |
+
+`VACUUM FULL (analyze)` foi aplicado em `artigos`, `series_semanais`,
+`produto_termos`, `indices_semanais` e `produtos`, nessa ordem — da menor para a
+maior, porque a operação escreve uma cópia nova antes de liberar a antiga e o
+pico de cada passo precisava caber na cota.
+
+| Medida | Antes | Depois |
+|---|---:|---:|
+| Banco | 448,8 MiB | **266,7 MiB** |
+| Em bytes decimais | ~470,6 MB | **~279,6 MB** |
+| Percentual do plano de 500 MB | ~94% | **~56%** |
+| `produtos` (total) | 194,3 MiB | **98,1 MiB** |
+
+Nenhum registro foi apagado. As contagens antes e depois batem exatamente:
+snapshots 233.315, produto_termos 206.598, artigos 120.191, produtos 82.332,
+series_semanais 25.554, eventos 18.271, indices_semanais 9.257.
+
+Por que a janela era segura: o pipeline diário estava parado pelo bloqueio de
+cobrança do GitHub Actions, nenhuma execução do motor estava pendente e o
+estágio reconstruível continuava vazio. Fora dessa condição, a regra acima
+continua valendo — `VACUUM FULL` toma lock exclusivo e não deve rodar com
+coleta ou motor em curso.
+
+O alívio agora é estrutural, não cosmético, mas também não é infinito: o espaço
+morto volta a crescer com `UPDATE`. Vale reavaliar `autovacuum_vacuum_scale_factor`
+em `produtos` antes de discutir retenção ou plano Pro.
