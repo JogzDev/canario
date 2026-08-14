@@ -221,6 +221,21 @@ def intervalo_wilson(acertos, total, z=1.959963984540054):
     return (max(0.0, centro - margem), min(1.0, centro + margem))
 
 
+def matriz_de_confusao(linhas, campo):
+    contagens = {}
+    for linha in linhas:
+        if campo == "primary_color":
+            ouro = "/".join(linha["accepted_primary_colors"])
+        else:
+            ouro = linha["gold"][campo]
+        chave = (ouro, linha["predicted"][campo])
+        contagens[chave] = contagens.get(chave, 0) + 1
+    return [
+        {"gold": ouro, "predicted": previsto, "count": quantidade}
+        for (ouro, previsto), quantidade in sorted(contagens.items())
+    ]
+
+
 def avaliar_contra_gabarito(gabarito, resultados):
     respostas = gabarito["answers"]
     if set(respostas) != set(resultados):
@@ -231,6 +246,9 @@ def avaliar_contra_gabarito(gabarito, resultados):
     versoes = {resultado.get("prompt_version") for resultado in resultados.values()}
     if len(versoes) != 1 or None in versoes:
         raise ValueError("Resultados nao registram uma unica prompt_version.")
+    hashes = {resultado.get("prompt_sha256") for resultado in resultados.values()}
+    if len(hashes) != 1 or None in hashes:
+        raise ValueError("Resultados nao registram um unico prompt_sha256.")
 
     contagens = {
         "category": 0,
@@ -247,8 +265,18 @@ def avaliar_contra_gabarito(gabarito, resultados):
             "primary_color": cores[0] if cores else "not_visible",
             "target_clarity": analise.get("target_clarity"),
         }
+        cores_aceitas = ouro.get("acceptable_primary_colors") or [
+            ouro["primary_color"]]
+        if ouro["primary_color"] not in cores_aceitas:
+            raise ValueError(
+                "Cor primaria canonica ausente das alternativas em {}".format(
+                    sample_id))
         correto = {
-            campo: previsto[campo] == ouro[campo]
+            campo: (
+                previsto[campo] in cores_aceitas
+                if campo == "primary_color"
+                else previsto[campo] == ouro[campo]
+            )
             for campo in contagens
         }
         for campo, acertou in correto.items():
@@ -256,6 +284,7 @@ def avaliar_contra_gabarito(gabarito, resultados):
         linhas.append({
             "sample_id": sample_id,
             "gold": {campo: ouro[campo] for campo in contagens},
+            "accepted_primary_colors": cores_aceitas,
             "predicted": previsto,
             "correct": correto,
         })
@@ -275,12 +304,17 @@ def avaliar_contra_gabarito(gabarito, resultados):
     )
     return {
         "prompt_version": next(iter(versoes)),
+        "prompt_sha256": next(iter(hashes)),
         "rubric_version": gabarito["rubric_version"],
         "gold_reviewer": gabarito["reviewer"],
         "sample_size": total,
         "metrics": metricas,
         "passed": passou,
         "rows": linhas,
+        "confusion_matrices": {
+            "category": matriz_de_confusao(linhas, "category"),
+            "primary_color": matriz_de_confusao(linhas, "primary_color"),
+        },
     }
 
 
@@ -347,6 +381,7 @@ def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
             "Prompt: `{}`. Amostra: **{}**. Portao: **{}**.".format(
                 avaliacao["prompt_version"], avaliacao["sample_size"],
                 "ABERTO" if avaliacao["passed"] else "FECHADO"),
+            "SHA-256 do prompt: `{}`.".format(avaliacao["prompt_sha256"]),
             "",
             "| medida | acertos | resultado | IC 95% Wilson |",
             "|---|---:|---:|---:|",
@@ -356,6 +391,17 @@ def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
             linhas.append("| {} | {}/{} | {:.1%} | {:.1%}–{:.1%} |".format(
                 campo, metrica["correct"], metrica["total"],
                 metrica["accuracy"], inferior, superior))
+        for campo in ("category", "primary_color"):
+            linhas += [
+                "",
+                "### Matriz de confusão — {}".format(campo),
+                "",
+                "| ouro | Luna | n |",
+                "|---|---|---:|",
+            ]
+            for celula in avaliacao["confusion_matrices"][campo]:
+                linhas.append("| {} | {} | {} |".format(
+                    celula["gold"], celula["predicted"], celula["count"]))
         divergentes = [
             linha for linha in avaliacao["rows"]
             if not all(linha["correct"].values())
@@ -364,9 +410,17 @@ def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
         if not divergentes:
             linhas.append("Nenhuma divergencia.")
         for linha in divergentes:
-            campos = [campo for campo, certo in linha["correct"].items() if not certo]
+            detalhes = []
+            for campo, certo in linha["correct"].items():
+                if certo:
+                    continue
+                ouro = ("/".join(linha["accepted_primary_colors"])
+                        if campo == "primary_color"
+                        else linha["gold"][campo])
+                detalhes.append("{}: {} → {}".format(
+                    campo, ouro, linha["predicted"][campo]))
             linhas.append("- **{}**: {}".format(
-                linha["sample_id"], ", ".join(campos)))
+                linha["sample_id"], "; ".join(detalhes)))
         linhas.append("")
     return "\n".join(linhas)
 
@@ -419,6 +473,7 @@ def main():
             raise SystemExit("--portao exige gabarito+resultados")
         portao = {
             "prompt_version": avaliacao["prompt_version"],
+            "prompt_sha256": avaliacao["prompt_sha256"],
             "rubric_version": avaliacao["rubric_version"],
             "sample_size": avaliacao["sample_size"],
             "category_accuracy": avaliacao["metrics"]["category"]["accuracy"],

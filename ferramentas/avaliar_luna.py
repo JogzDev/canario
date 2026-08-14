@@ -13,6 +13,7 @@ Exemplo (no runner i7):
 import argparse
 import base64
 import csv
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -26,7 +27,7 @@ import urllib.request
 
 
 MODELO = "gpt-5.6-luna"
-VERSAO_DO_PROMPT = "alvo-estrutura-v3"
+VERSAO_DO_PROMPT = "alvo-estrutura-v4"
 URL_RESPOSTAS = "https://api.openai.com/v1/responses"
 SEMENTE_PADRAO = 20260810
 CLAREZAS_DO_ALVO = (
@@ -108,6 +109,16 @@ def montar_schema(taxonomia):
             "type": "string",
             "enum": list(CATEGORIA_POR_ESTRUTURA),
             "description": "Visible construction of the target garment.",
+        },
+        "decision_evidence": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "One to four short pixel-grounded cues that justify the target, "
+                "structure, and primary color. Never cite title, brand, or filename."
+            ),
+            "minItems": 1,
+            "maxItems": 4,
         },
         "pattern": {
             "type": "string",
@@ -217,8 +228,10 @@ sale item, or hidden construction. Accuracy is more important than coverage.
 - upper_shirt_construction: upper garment with recognizable shirt construction.
   Strong evidence is a shirt collar together with a substantial front opening
   or placket and/or shirt cuffs. A tie-front shirt remains a shirt. Decorative
-  buttons alone are insufficient. A collar or buttons do not make a continuous
-  one-piece dress a shirt.
+  buttons alone are insufficient. A tank, camisole, bustier, strap top, tee, or
+  round-neck sleeveless top without a shirt placket is upper_other, even if a
+  person informally calls every upper garment a shirt. A collar or buttons do
+  not make a continuous one-piece dress a shirt.
 - upper_outer_layer: jacket, coat, blazer, cardigan, or another garment visibly
   constructed as an outer layer. Blazer lapels, tailored shoulders, structured
   fronts, welt or flap pockets, and double-breasted construction are strong
@@ -226,8 +239,15 @@ sale item, or hidden construction. Accuracy is more important than coverage.
   blouse or top.
 - upper_other: residual upper garment only after ruling out shirt construction
   and outerwear; includes blouse, top, tee, tank, cropped top, and bodysuit.
-- Sleeve length is never evidence for shorts. For a skort, label only the
-  exterior construction actually visible.
+- A long shirt is not a dress unless pixels establish that the same garment
+  continues below the pelvis as a lower panel meant to cover the lower body.
+- Sleeve length is never evidence for shorts. Use lower_two_legs_short only
+  with visible crotch, inseam, or two independent leg openings/tubes. A center
+  slit, wrap overlap, pleat, or two moving skirt panels is not enough. For a
+  skort, label only the exterior construction actually visible.
+- A visible midriff gap, top hem, separate waistband, or overlap at the waist
+  proves separate upper and lower garments. A sharp color or texture change by
+  itself does not prove separation in a color-blocked one-piece garment.
 
 The application derives its eight category ids deterministically from
 garment_structure. Do not perform a second semantic category guess.
@@ -246,23 +266,30 @@ metallic gold, silver, bronze, or copper surface to outras_cores; do not force
 it into amarelo_laranja, branco_cru, or cinza merely because of its highlights.
 Aesthetics has at most three ids. additional_visual_attributes has at most five
 short, concrete English phrases not already represented below. Never repeat an
-item or place a free-form guess in a taxonomy field.
+item or place a free-form guess in a taxonomy field. decision_evidence must
+name only visible cues and must not reveal or assume catalog metadata.
 
 4. Abstention contract
 For ambiguous_target, return garment_structure=target_not_determinable;
 pattern, length, silhouette, and waist=not_visible; and fabrics, aesthetics,
 colors, and additional_visual_attributes=[] . For every other target_clarity,
-choose a determinate structure and at least one color.
+choose a determinate structure and at least one color. decision_evidence is
+still required for an ambiguous target and should state why no garment wins.
 
 Taxonomy:
 {}""".format("\n".join(linhas))
+
+
+def hash_do_prompt(taxonomia):
+    return hashlib.sha256(
+        instrucoes(taxonomia).encode("utf-8")).hexdigest()
 
 
 def montar_payload(imagem_em_data_url, taxonomia):
     return {
         "model": MODELO,
         "store": False,
-        "reasoning": {"effort": "low"},
+        "reasoning": {"effort": "medium"},
         "max_output_tokens": 1200,
         "instructions": instrucoes(taxonomia),
         "input": [{
@@ -445,6 +472,15 @@ def normalizar_analise(analise, taxonomia):
         "aesthetics", analise["aesthetics"], ids(taxonomia, "estetica"), 3)
     _validar_lista("colors", analise["colors"], ids(taxonomia, "cor"), 3)
     _validar_lista(
+        "decision_evidence",
+        analise["decision_evidence"],
+        maximo=4,
+    )
+    if not analise["decision_evidence"] or any(
+            not item.strip() or len(item) > 120
+            for item in analise["decision_evidence"]):
+        raise ErroDaOpenAI("Evidencia de decisao vazia ou longa demais")
+    _validar_lista(
         "additional_visual_attributes",
         analise["additional_visual_attributes"],
         maximo=5,
@@ -478,7 +514,7 @@ def normalizar_analise(analise, taxonomia):
 
 
 def custo_estimado(uso):
-    """Preco oficial do Luna consultado em 11/08/2026, em dolares."""
+    """Preco oficial do Luna consultado em 13/08/2026, em dolares."""
     entrada = int(uso.get("input_tokens", 0))
     detalhes = uso.get("input_tokens_details") or {}
     cache = int(detalhes.get("cached_tokens", 0))
@@ -486,14 +522,14 @@ def custo_estimado(uso):
     saida = int(uso.get("output_tokens", 0))
     entrada_normal = max(0, entrada - cache - escrita_cache)
     return (
-        entrada_normal * 1.00
-        + cache * 0.10
-        + escrita_cache * 1.25
-        + saida * 6.00
+        entrada_normal * 0.20
+        + cache * 0.02
+        + escrita_cache * 0.25
+        + saida * 1.20
     ) / 1_000_000
 
 
-def validar_portao_24(caminho):
+def validar_portao_24(caminho, prompt_sha256=None):
     """Impede o benchmark pago antes do piso humano nas mesmas 24 imagens."""
     if not caminho.is_file():
         raise ValueError(
@@ -504,6 +540,8 @@ def validar_portao_24(caminho):
         raise ValueError("Portao humano das 24 invalido.") from erro
     if portao.get("prompt_version") != VERSAO_DO_PROMPT:
         raise ValueError("Portao humano pertence a outra versao do prompt.")
+    if prompt_sha256 and portao.get("prompt_sha256") != prompt_sha256:
+        raise ValueError("Portao humano pertence a outro conteudo de prompt.")
     if portao.get("sample_size") != 24:
         raise ValueError("Portao humano precisa cobrir exatamente 24 imagens.")
     categoria = float(portao.get("category_accuracy", 0))
@@ -531,12 +569,15 @@ def escrever_resumo(caminho, resultados, custo, duracao_total):
         for chave in ("input_tokens", "output_tokens", "total_tokens")
     }
     categorias = sorted({r["categoria_catalogo"] for r in resultados})
+    hashes = {r.get("prompt_sha256") for r in resultados}
+    hash_exibido = next(iter(hashes)) if len(hashes) == 1 else "inconsistente"
     linhas = [
         "## Luna — avaliacao estratificada",
         "",
-        "- Modelo: `{}` (`store=false`, reasoning low, image detail high)".format(MODELO),
+        "- Modelo: `{}` (`store=false`, reasoning medium, image detail high)".format(MODELO),
         "- Prompt: `{}` (alvo -> estrutura -> categoria derivada)".format(
             VERSAO_DO_PROMPT),
+        "- SHA-256 do prompt: `{}`".format(hash_exibido),
         "- Imagens: **{}**".format(total),
         "- Concordancia de categoria com o rotulo fraco do catalogo: "
         "**{}/{} ({:.1%})**".format(acertos, total, acertos / total),
@@ -611,9 +652,10 @@ def main():
         raise SystemExit("--quantidade precisa estar entre 8 e 300")
 
     taxonomia = carregar_taxonomia(args.taxonomia)
+    prompt_sha256 = hash_do_prompt(taxonomia)
     categorias = ids(taxonomia, "categoria")
     if args.quantidade > 24:
-        validar_portao_24(args.portao_24)
+        validar_portao_24(args.portao_24, prompt_sha256)
     amostra = selecionar_amostra_de_avaliacao(
         args.cache, categorias, args.quantidade, args.semente)
     resultados = []
@@ -642,11 +684,13 @@ def main():
                 "imagem": imagem.name,
                 "categoria_catalogo": esperada,
                 "prompt_version": VERSAO_DO_PROMPT,
+                "prompt_sha256": prompt_sha256,
                 "analysis": analise,
                 "acertou_categoria": analise.get("category") == esperada,
                 "latencia_s": round(latencia, 3),
                 "usage": uso,
                 "response_id": resposta.get("id"),
+                "model_resolved": resposta.get("model"),
             }
             resultados.append(resultado)
             print(

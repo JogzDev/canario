@@ -1,10 +1,12 @@
 {
-  "reviewer": "ADJUDICADO: JP + revisão técnica do comentário",
-  "rubric_version": "categoria-cor-v2",
+  "reviewer": "ADJUDICADO: Fadul + Bianca + JP + auditoria estrutural",
+  "rubric_version": "categoria-cor-v3",
   "source_reviewers": [
     "Fadul",
-    "Bianca"
+    "Bianca",
+    "JP (10 divergências do portão)"
   ],
+  "technical_audit": "13/08/2026: rótulos finais seguem a construção visível da rubrica, não o uso coloquial de camisa nem a pasta derivada do título.",
   "unresolved_non_gate_fields": [
     {
       "sample_id": "S03",
@@ -46,12 +48,13 @@
     {
       "sample_id": "S01",
       "target_clarity": "multiple_garments_target_clear",
-      "category": "camisa",
-      "structure": "upper_shirt_construction",
+      "category": "blusa_top",
+      "structure": "upper_other",
       "primary_color": "preto",
       "secondary_colors": [],
-      "notes": "Uma mulher morena em um fundo rosa com os braços expostos pois a camisa é uma regata preta.",
-      "reviewed_at": "2026-08-11T20:37:41.630Z"
+      "notes": "Regata preta de gola redonda, sem colarinho, abertura frontal, carcela ou punhos de camisaria.",
+      "reviewed_at": "2026-08-11T20:37:41.630Z",
+      "adjudication_basis": "Regata sem construção de camisaria pertence ao residual upper_other; o uso coloquial de camisa não define a estrutura."
     },
     {
       "sample_id": "S02",
@@ -72,12 +75,13 @@
     {
       "sample_id": "S03",
       "target_clarity": "clear",
-      "category": "camisa",
-      "structure": "upper_shirt_construction",
+      "category": "blusa_top",
+      "structure": "upper_other",
       "primary_color": "azul",
       "secondary_colors": [],
-      "notes": "Eu diria que tem a cor secundária prata.",
-      "reviewed_at": "2026-08-11T20:42:07.844Z"
+      "notes": "Top curto azul de alças finas com bordados, cristais e franjas metálicas; não há construção de camisa.",
+      "reviewed_at": "2026-08-11T20:42:07.844Z",
+      "adjudication_basis": "Alças, bojo e barra curta definem top; não existem colarinho, carcela ou punhos."
     },
     {
       "sample_id": "S04",
@@ -158,6 +162,10 @@
       "category": "vestido",
       "structure": "one_piece_no_separate_legs",
       "primary_color": "branco_cru",
+      "acceptable_primary_colors": [
+        "branco_cru",
+        "preto"
+      ],
       "secondary_colors": [
         "preto"
       ],
@@ -168,13 +176,14 @@
     },
     {
       "sample_id": "S11",
-      "target_clarity": "clear",
-      "category": "vestido",
-      "structure": "one_piece_no_separate_legs",
+      "target_clarity": "multiple_garments_target_clear",
+      "category": "saia",
+      "structure": "lower_continuous_panel",
       "primary_color": "verde",
       "secondary_colors": [],
-      "notes": "",
-      "reviewed_at": "2026-08-11T20:48:02.792Z"
+      "notes": "Conjunto verde com top cropped e saia longa; o espaço de pele separa inequivocamente as duas peças e a saia domina a área visível.",
+      "reviewed_at": "2026-08-11T20:48:02.792Z",
+      "adjudication_basis": "O midriff visível proíbe vestido. A saia longa, inteira e central domina a composição."
     },
     {
       "sample_id": "S12",
@@ -277,13 +286,13 @@
     {
       "sample_id": "S20",
       "target_clarity": "clear",
-      "category": "vestido",
-      "structure": "one_piece_no_separate_legs",
+      "category": "camisa",
+      "structure": "upper_shirt_construction",
       "primary_color": "lilas_roxo",
       "secondary_colors": [],
-      "notes": "Vestido com gola polo e sem mangas com amarracao na frente, só não é imagem perfeita porque tem fundo branco.",
+      "notes": "Camisa lilás sem mangas, com colarinho, abertura frontal, botões e amarração na cintura.",
       "reviewed_at": "2026-08-11T20:51:19.004Z",
-      "adjudication_basis": "A continuidade até o painel inferior define vestido; gola e abertura frontal não o transformam em camisa. Branco é fundo.",
+      "adjudication_basis": "Colarinho, carcela e botões são evidência forte de camisaria; a cauda abaixo do nó não forma um painel inferior inequívoco de vestido. Branco é fundo.",
       "original_selection": {
         "secondary_colors": [
           "outras_cores"
@@ -322,6 +331,10 @@
       "category": "camisa",
       "structure": "upper_shirt_construction",
       "primary_color": "vermelho_rosa",
+      "acceptable_primary_colors": [
+        "vermelho_rosa",
+        "branco_cru"
+      ],
       "secondary_colors": [
         "branco_cru"
       ],

@@ -128,6 +128,7 @@ def montar_avaliacao(acertos_categoria=20, acertos_cor=20):
         resultados[sample_id] = {
             "sample_id": sample_id,
             "prompt_version": "alvo-estrutura-v2",
+            "prompt_sha256": "a" * 64,
             "analysis": {
                 "category": "camisa" if numero <= acertos_categoria else "blusa_top",
                 "colors": ["branco_cru" if numero <= acertos_cor else "preto"],
@@ -154,6 +155,36 @@ def testar_portao_exige_categoria_e_cor():
     assert falhou["passed"] is False
 
 
+def testar_cor_primaria_empatada_aceita_as_duas_sem_esconder_a_matriz():
+    respostas = {"S01": resposta("S01", cor="branco_cru")}
+    respostas["S01"]["acceptable_primary_colors"] = [
+        "branco_cru", "preto"]
+    gabarito = {
+        "reviewer": "ADJUDICADO",
+        "rubric_version": "categoria-cor-v3",
+        "answers": respostas,
+    }
+    resultados = {
+        "S01": {
+            "sample_id": "S01",
+            "prompt_version": "alvo-estrutura-v4",
+            "prompt_sha256": "b" * 64,
+            "analysis": {
+                "category": "camisa",
+                "colors": ["preto", "branco_cru"],
+                "target_clarity": "clear",
+            },
+        },
+    }
+    avaliacao = MODULO.avaliar_contra_gabarito(gabarito, resultados)
+    assert avaliacao["metrics"]["primary_color"]["correct"] == 1
+    assert avaliacao["rows"][0]["accepted_primary_colors"] == [
+        "branco_cru", "preto"]
+    assert avaliacao["confusion_matrices"]["primary_color"] == [{
+        "gold": "branco_cru/preto", "predicted": "preto", "count": 1,
+    }]
+
+
 def testar_prompt_misto_e_recusado():
     respostas = {"S01": resposta("S01")}
     gabarito = {
@@ -165,6 +196,7 @@ def testar_prompt_misto_e_recusado():
         "S01": {
             "sample_id": "S01",
             "prompt_version": None,
+            "prompt_sha256": None,
             "analysis": {"category": "camisa", "colors": ["branco_cru"]},
         },
     }
@@ -182,6 +214,7 @@ def main():
         testar_csv_preserva_comentario_e_normaliza_cores,
         testar_adjudicacao_parcial_fecha_ouro,
         testar_portao_exige_categoria_e_cor,
+        testar_cor_primaria_empatada_aceita_as_duas_sem_esconder_a_matriz,
         testar_prompt_misto_e_recusado,
     ]
     for teste in testes:

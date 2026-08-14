@@ -24,6 +24,7 @@ def testar_taxonomia_e_schema():
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(schema["properties"])
     assert "category" not in schema["properties"]
+    assert schema["properties"]["decision_evidence"]["minItems"] == 1
     assert schema["properties"]["target_clarity"]["enum"][-1] == "ambiguous_target"
     assert schema["properties"]["garment_structure"]["enum"][-1] == "target_not_determinable"
     assert schema["properties"]["colors"]["items"]["enum"][-1] == "outras_cores"
@@ -31,6 +32,7 @@ def testar_taxonomia_e_schema():
     assert schema["properties"]["colors"]["maxItems"] == 3
 
     prompt = " ".join(MODULO.instrucoes(taxonomia).split())
+    assert len(MODULO.hash_do_prompt(taxonomia)) == 64
     assert "Do not simply choose the most colorful garment" in prompt
     assert "A tie-front shirt remains a shirt" in prompt
     assert "Decorative buttons alone are insufficient" in prompt
@@ -40,6 +42,9 @@ def testar_taxonomia_e_schema():
     assert "visible gap, separate waistband, overlapping hem" in prompt
     assert "sleeveless collared, button-front, or tie-front dress" in prompt
     assert "cropped length or deep neckline does not turn a blazer" in prompt
+    assert "tank, camisole, bustier, strap top, tee" in prompt
+    assert "two independent leg openings/tubes" in prompt
+    assert "sharp color or texture change by itself" in prompt
     assert "surface area on the target garment only" in prompt
     assert "metallic gold, silver, bronze, or copper" in prompt
 
@@ -73,6 +78,7 @@ def analise_valida(**mudancas):
     analise = {
         "target_clarity": "clear",
         "garment_structure": "upper_shirt_construction",
+        "decision_evidence": ["shirt collar", "front placket"],
         "pattern": "liso",
         "fabrics": [],
         "length": "not_visible",
@@ -130,7 +136,7 @@ def testar_extracao_e_custo():
         "input_tokens_details": {"cached_tokens": 200},
         "output_tokens": 100,
     })
-    assert abs(custo - 0.00142) < 1e-12
+    assert abs(custo - 0.000284) < 1e-12
     custo_com_escrita = MODULO.custo_estimado({
         "input_tokens": 1000,
         "input_tokens_details": {
@@ -139,7 +145,7 @@ def testar_extracao_e_custo():
         },
         "output_tokens": 100,
     })
-    assert abs(custo_com_escrita - 0.001495) < 1e-12
+    assert abs(custo_com_escrita - 0.000299) < 1e-12
 
 
 def testar_portao_pago_e_explicito():
@@ -173,7 +179,16 @@ def testar_portao_pago_e_explicito():
             "primary_color_accuracy": 20 / 24,
             "passed": True,
         }))
-        assert MODULO.validar_portao_24(caminho)["passed"] is True
+        dados = json.loads(caminho.read_text())
+        dados["prompt_sha256"] = "a" * 64
+        caminho.write_text(json.dumps(dados))
+        assert MODULO.validar_portao_24(caminho, "a" * 64)["passed"] is True
+        try:
+            MODULO.validar_portao_24(caminho, "b" * 64)
+        except ValueError as erro:
+            assert "conteudo de prompt" in str(erro)
+        else:
+            raise AssertionError("Portao abriu para outro conteudo de prompt")
 
 
 def main():
