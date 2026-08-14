@@ -51,7 +51,7 @@ def testar_taxonomia_e_schema():
     assert "A waist seam also does not prove separation" in prompt
     assert "surface area on the target garment only" in prompt
     assert "golden-yellow velvet and fabric stay amarelo_laranja" in prompt
-    assert MODULO.VERSAO_DO_PREPROCESSAMENTO == "vision-foreground-v1"
+    assert MODULO.VERSAO_DO_PREPROCESSAMENTO == "vision-saliency-mask-v1"
 
 
 def testar_amostra_balanceada_e_deterministica():
@@ -217,7 +217,8 @@ def testar_benchmark_exige_remocao_de_fundo():
     segmentador = (RAIZ / "ferramentas" / "segmentar_fundo.swift").read_text()
     assert "xcrun swiftc ferramentas/segmentar_fundo.swift" in workflow
     assert '--segmentador "$RUNNER_TEMP/segmentar-fundo"' in workflow
-    assert "VNGenerateForegroundInstanceMaskRequest" in segmentador
+    assert "VNGenerateAttentionBasedSaliencyImageRequest" in segmentador
+    assert "filtro.maskImage = mascaraEscalada" in segmentador
     assert "primeiro_plano_nao_encontrado" in segmentador
     assert "imagem bruta e proibida" in (
         RAIZ / "ferramentas" / "avaliar_luna.py").read_text()

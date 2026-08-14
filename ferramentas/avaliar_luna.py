@@ -28,7 +28,7 @@ import urllib.request
 
 MODELO = "gpt-5.6-luna"
 VERSAO_DO_PROMPT = "alvo-estrutura-v5"
-VERSAO_DO_PREPROCESSAMENTO = "vision-foreground-v1"
+VERSAO_DO_PREPROCESSAMENTO = "vision-saliency-mask-v1"
 URL_RESPOSTAS = "https://api.openai.com/v1/responses"
 SEMENTE_PADRAO = 20260810
 CLAREZAS_DO_ALVO = (
