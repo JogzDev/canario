@@ -477,17 +477,17 @@ def normalizar_analise(analise, taxonomia):
         maximo=4,
     )
     if not analise["decision_evidence"] or any(
-            not item.strip() or len(item) > 120
+            not item.strip()
             for item in analise["decision_evidence"]):
-        raise ErroDaOpenAI("Evidencia de decisao vazia ou longa demais")
+        raise ErroDaOpenAI("Evidencia de decisao vazia")
     _validar_lista(
         "additional_visual_attributes",
         analise["additional_visual_attributes"],
         maximo=5,
     )
-    if any(not item.strip() or len(item) > 80
+    if any(not item.strip()
            for item in analise["additional_visual_attributes"]):
-        raise ErroDaOpenAI("Atributo visual livre vazio ou longo demais")
+        raise ErroDaOpenAI("Atributo visual livre vazio")
 
     if clareza == "ambiguous_target":
         if estrutura != "target_not_determinable":
@@ -527,6 +527,24 @@ def custo_estimado(uso):
         + escrita_cache * 0.25
         + saida * 1.20
     ) / 1_000_000
+
+
+def iniciar_jsonl(caminho):
+    """Cria o artefato antes da primeira chamada e descarta rodada anterior."""
+    if caminho is None:
+        return
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text("", encoding="utf-8")
+
+
+def anexar_jsonl(caminho, resultado):
+    """Persiste cada resposta paga imediatamente para permitir auditoria parcial."""
+    if caminho is None:
+        return
+    with caminho.open("a", encoding="utf-8") as arquivo:
+        arquivo.write(json.dumps(resultado, ensure_ascii=False) + "\n")
+        arquivo.flush()
+        os.fsync(arquivo.fileno())
 
 
 def validar_portao_24(caminho, prompt_sha256=None):
@@ -661,6 +679,7 @@ def main():
     resultados = []
     custo = 0.0
     inicio_total = time.monotonic()
+    iniciar_jsonl(args.saida)
 
     with tempfile.TemporaryDirectory(prefix="canario-luna-") as temporaria:
         pasta_temporaria = Path(temporaria)
@@ -675,10 +694,16 @@ def main():
                 analise_bruta = json.loads(extrair_texto(resposta))
             except json.JSONDecodeError as erro:
                 raise ErroDaOpenAI("output_text nao e JSON valido") from erro
-            analise = normalizar_analise(analise_bruta, taxonomia)
-
             uso = resposta.get("usage") or {}
             custo += custo_estimado(uso)
+            erro_de_validacao = None
+            try:
+                analise = normalizar_analise(analise_bruta, taxonomia)
+            except ErroDaOpenAI as erro:
+                # A chamada ja aconteceu e deve permanecer auditavel. Uma saida
+                # fora do contrato conta como erro no portao, sem nova inferencia.
+                analise = None
+                erro_de_validacao = str(erro)
             resultado = {
                 "sample_id": "S{:02d}".format(indice),
                 "imagem": imagem.name,
@@ -686,16 +711,25 @@ def main():
                 "prompt_version": VERSAO_DO_PROMPT,
                 "prompt_sha256": prompt_sha256,
                 "analysis": analise,
-                "acertou_categoria": analise.get("category") == esperada,
+                "acertou_categoria": (
+                    analise is not None and analise.get("category") == esperada
+                ),
                 "latencia_s": round(latencia, 3),
                 "usage": uso,
                 "response_id": resposta.get("id"),
                 "model_resolved": resposta.get("model"),
             }
+            if erro_de_validacao:
+                resultado["validation_error"] = erro_de_validacao
+                resultado["raw_analysis"] = analise_bruta
             resultados.append(resultado)
+            anexar_jsonl(args.saida, resultado)
+            categoria_luna = (
+                analise.get("category") if analise is not None else "INVALIDA"
+            )
             print(
                 "[{}/{}] catalogo={} Luna={} {} | {:.1f}s | in={} out={} | {}".format(
-                    indice, len(amostra), esperada, analise.get("category"),
+                    indice, len(amostra), esperada, categoria_luna,
                     "OK" if resultado["acertou_categoria"] else "DIVERGIU",
                     latencia, uso.get("input_tokens", 0),
                     uso.get("output_tokens", 0), imagem.name),
@@ -703,10 +737,6 @@ def main():
             )
 
     duracao_total = time.monotonic() - inicio_total
-    if args.saida:
-        with open(args.saida, "w", encoding="utf-8") as arquivo:
-            for resultado in resultados:
-                arquivo.write(json.dumps(resultado, ensure_ascii=False) + "\n")
     if args.resumo:
         escrever_resumo(args.resumo, resultados, custo, duracao_total)
 

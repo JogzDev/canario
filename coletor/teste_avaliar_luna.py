@@ -120,6 +120,11 @@ def testar_categoria_derivada_e_abstencao():
     else:
         raise AssertionError("Alvo ambiguo com cor deveria ser recusado")
 
+    # Texto livre e apenas evidencia para auditoria. Tamanho nao pode invalidar
+    # uma chamada paga que ja respeitou a estrutura e a taxonomia fechadas.
+    longa = analise_valida(decision_evidence=["visible cue " * 100])
+    assert MODULO.normalizar_analise(longa, taxonomia)["category"] == "camisa"
+
 
 def testar_extracao_e_custo():
     analise = analise_valida()
@@ -146,6 +151,17 @@ def testar_extracao_e_custo():
         "output_tokens": 100,
     })
     assert abs(custo_com_escrita - 0.000299) < 1e-12
+
+
+def testar_jsonl_duravel_por_resposta():
+    with tempfile.TemporaryDirectory() as temporaria:
+        caminho = Path(temporaria) / "respostas" / "rodada.jsonl"
+        MODULO.iniciar_jsonl(caminho)
+        assert caminho.is_file() and caminho.read_text() == ""
+        MODULO.anexar_jsonl(caminho, {"sample_id": "S01", "ok": True})
+        MODULO.anexar_jsonl(caminho, {"sample_id": "S02", "ok": False})
+        linhas = [json.loads(linha) for linha in caminho.read_text().splitlines()]
+        assert [linha["sample_id"] for linha in linhas] == ["S01", "S02"]
 
 
 def testar_portao_pago_e_explicito():
@@ -197,6 +213,7 @@ def main():
         testar_amostra_balanceada_e_deterministica,
         testar_categoria_derivada_e_abstencao,
         testar_extracao_e_custo,
+        testar_jsonl_duravel_por_resposta,
         testar_portao_pago_e_explicito,
     ]
     for teste in testes:
