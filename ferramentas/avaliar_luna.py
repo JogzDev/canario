@@ -748,8 +748,12 @@ def main():
                 }
                 resultados.append(resultado)
                 anexar_jsonl(args.saida, resultado)
-                print("[{}/{}] PREPROCESSAMENTO_FALHOU | {}".format(
-                    indice, len(amostra), imagem.name), flush=True)
+                print(
+                    "[{}/{}] catalogo={} Luna=INVALIDA DIVERGIU | "
+                    "0.0s | in=0 out=0 | {}".format(
+                        indice, len(amostra), esperada, imagem.name),
+                    flush=True,
+                )
                 continue
             inicio = time.monotonic()
             resposta = chamar_openai(

@@ -19,7 +19,7 @@ from avaliar_luna import (
     SEMENTE_PADRAO,
     carregar_taxonomia,
     ids,
-    selecionar_imagens,
+    selecionar_amostra_de_avaliacao,
 )
 
 
@@ -143,27 +143,28 @@ Famílias: `preto`, `branco_cru`, `cinza`, `azul`, `verde`, `lilas_roxo`,
 """
 
 
-def _instrucoes(run_id):
+def _instrucoes(run_id, quantidade):
     return """# Revisão cega da amostra Luna
 
-1. Extraia o ZIP e abra `revisao.html`. O arquivo já contém as 24 imagens e
+1. Extraia o ZIP e abra `revisao.html`. O arquivo já contém as {quantidade} imagens e
    continua funcionando se for movido sozinho.
 2. Leia `RUBRICA.md`.
-3. Abra `revisao.html` em um navegador, informe seu nome e rotule as 24 peças.
+3. Abra `revisao.html` em um navegador, informe seu nome e rotule as {quantidade} peças.
 4. Exporte JSON e CSV. Cada revisor trabalha sem conversar com o outro.
 5. Somente depois dos dois exports, abra `predicoes-recuperadas.csv`.
 
 O pacote foi reconstruído do cache do i7 e dos logs do GitHub Actions da
 execução {run_id}. Nenhuma chamada à OpenAI foi feita para criá-lo. As imagens
 são cópias temporárias de avaliação interna e o artefato expira automaticamente.
-""".format(run_id=run_id)
+""".format(run_id=run_id, quantidade=quantidade)
 
 
 def preparar(cache, taxonomia_path, logs, template, saida, quantidade, semente,
              run_id):
     taxonomia = carregar_taxonomia(taxonomia_path)
     categorias = ids(taxonomia, "categoria")
-    amostra = selecionar_imagens(cache, categorias, quantidade, semente)
+    amostra = selecionar_amostra_de_avaliacao(
+        cache, categorias, quantidade, semente)
     predicoes = ler_predicoes(logs)
 
     saida.mkdir(parents=True, exist_ok=False)
@@ -216,7 +217,8 @@ def preparar(cache, taxonomia_path, logs, template, saida, quantidade, semente,
     )
     _escrever_csv(saida / "predicoes-recuperadas.csv", recuperadas)
     (saida / "RUBRICA.md").write_text(_rubrica(), encoding="utf-8")
-    (saida / "README.md").write_text(_instrucoes(run_id), encoding="utf-8")
+    (saida / "README.md").write_text(
+        _instrucoes(run_id, quantidade), encoding="utf-8")
     return amostra_cega, recuperadas
 
 

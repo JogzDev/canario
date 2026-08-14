@@ -36,7 +36,8 @@ def criar_cache_e_log(raiz):
                 CATEGORIAS.index(categoria), numero)
             imagem.write_bytes(b"jpeg-falso-" + categoria.encode("ascii"))
     taxonomia = MODULO.carregar_taxonomia(RAIZ / "anexos" / "taxonomia.csv")
-    amostra = MODULO.selecionar_imagens(cache, MODULO.ids(taxonomia, "categoria"), 24, 7)
+    amostra = MODULO.selecionar_amostra_de_avaliacao(
+        cache, MODULO.ids(taxonomia, "categoria"), 24, 7)
     for categoria, imagem in amostra:
         ordem += 1
         prevista = "blusa_top" if ordem == 1 else categoria
@@ -117,8 +118,19 @@ def testar_template_tem_contrato_de_exportacao():
         assert trecho in html, trecho
 
 
+def testar_workflow_aceita_holdout_de_300():
+    workflow = (RAIZ / ".github" / "workflows" / "revisar-luna.yml").read_text()
+    assert "options: ['24', '300']" in workflow
+    fonte = CAMINHO.read_text()
+    assert "selecionar_amostra_de_avaliacao" in fonte
+
+
 def main():
-    testes = [testar_parser_e_pacote_cego, testar_template_tem_contrato_de_exportacao]
+    testes = [
+        testar_parser_e_pacote_cego,
+        testar_template_tem_contrato_de_exportacao,
+        testar_workflow_aceita_holdout_de_300,
+    ]
     for teste in testes:
         teste()
     print("{} testes do pacote de revisao Luna, 0 falhas".format(len(testes)))
