@@ -1,18 +1,18 @@
 # Sonda do Actions — condicao 2.2
 
-**Executado (UTC):** 2026-08-02T20:19:18.540615+00:00  
+**Executado (UTC):** 2026-08-14T04:50:29.273326+00:00  
 
 **IP de origem:** datacenter do GitHub Actions (não o residencial do JP)
 
 
-## Veredito: BLOQUEIO PARCIAL — ver tabela; decidir antes de agendar
+## Veredito: SEM BLOQUEIO — datacenter do Actions responde nas duas plataformas; seguro agendar
 
 
 | Marca | Domínio | Plataforma | Tentativas HTTP | JSON ok | Catálogo | Bloqueado |
 |---|---|---|---|---|---|---|
-| Cantao | www.cantao.com.br | vtex | 206 | sim | 208 | não |
-| C&A | www.cea.com.br | vtex | 206 | sim | 12575 | não |
-| Amaro | amaro.com | shopify | 429 → 429 → 429 | não | — | SIM |
+| Cantao | www.cantao.com.br | vtex | 206 | sim | 188 | não |
+| C&A | www.cea.com.br | vtex | 206 | sim | 12422 | não |
+| Amaro | amaro.com | shopify | 200 | sim | — | não |
 | PatBo | www.patbo.com.br | shopify | 200 | sim | — | não |
 
 ## Supabase
