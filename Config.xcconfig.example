@@ -31,6 +31,11 @@
 SUPABASE_URL = https://SEU-PROJETO.supabase.co
 SUPABASE_PUBLISHABLE_KEY = sb_publishable_COLE_A_SUA_AQUI
 
+// Só troque para YES depois de aplicar a migração P6, implantar a função
+// `analisar-peca` e cadastrar OPENAI_API_KEY + AI_RATE_LIMIT_SALT nos secrets
+// da Edge Function. Em NO, o app mantém OCR/cor local e formulário manual.
+REMOTE_ANALYSIS_ENABLED = NO
+
 // Observação sobre o formato: este projeto usa o sistema NOVO de chaves do
 // Supabase (`sb_publishable_...` e `sb_secret_...`). A aba "Legacy anon,
 // service_role API keys" do painel NÃO é usada aqui — misturar os dois

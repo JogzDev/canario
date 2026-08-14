@@ -25,10 +25,10 @@ enum Importacao {
         if !porTexto.isEmpty {
             achado.marcados.formUnion(porTexto.map(\.id))
             let fonte = leitura.origem == .textoDoPDF
-                ? "texto do PDF"
-                : "texto reconhecido na imagem"
+                ? "PDF text"
+                : "text recognized in the image"
             achado.procedencia.append(
-                "Do \(fonte): " + porTexto.map(Traducao.rotuloExibido).joined(separator: ", ") + ".")
+                "From \(fonte): " + porTexto.map(Traducao.rotuloExibido).joined(separator: ", ") + ".")
         }
 
         if let cor = leitura.cor {
@@ -37,8 +37,8 @@ enum Importacao {
             if !jaTemCor, let termo = existe {
                 achado.marcados.insert(termo.id)
                 achado.procedencia.append(
-                    "Da cor da imagem: \(Traducao.rotuloExibido(termo)) — medida no próprio pixel, "
-                    + "é a marcação que mais pede conferência.")
+                    "From the image color: \(Traducao.rotuloExibido(termo)) — measured from the garment pixels, "
+                    + "and is the suggestion that most needs your review.")
             }
         }
 

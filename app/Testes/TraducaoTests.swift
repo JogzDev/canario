@@ -80,21 +80,21 @@ final class TraducaoTests: XCTestCase {
         let estampa = termo("geometrica", "Geometrica e etnica", "estampa",
                             "poa|bolinha|bolinhas|etnica")
         XCTAssertEqual(Traducao.rotuloAmigavel(estampa, na: "vestido de bolinha"),
-                       "Bolinha")
+                       "Polka dot")
         XCTAssertEqual(Traducao.rotuloAmigavel(estampa, na: "vestido de poá"),
-                       "Poá")
+                       "Polka dot")
         XCTAssertEqual(Traducao.descricaoAmigavel([vestido, estampa],
                                                   consulta: "vestido de bolinhas"),
-                       "Vestido · Bolinha")
+                       "Dress · Polka dot")
         XCTAssertEqual(estampa.id, "geometrica",
                        "linguagem amigável não cria uma série nova nem altera o id")
     }
 
-    func testRotulosCorrigemAcentosSemMudarIds() {
+    func testRotulosEmInglesSemMudarIds() {
         let calca = termo("calca", "Calca", "categoria")
         let romantico = termo("romantico", "Romantico", "estetica")
-        XCTAssertEqual(Traducao.rotuloExibido(calca), "Calça")
-        XCTAssertEqual(Traducao.rotuloExibido(romantico), "Romântico")
+        XCTAssertEqual(Traducao.rotuloExibido(calca), "Pants")
+        XCTAssertEqual(Traducao.rotuloExibido(romantico), "Romantic")
         XCTAssertEqual(calca.id, "calca", "a série histórica continua no mesmo id")
     }
 
@@ -156,9 +156,9 @@ final class EstadoTests: XCTestCase {
     func testFraseDePernasDeclaraOrigem() {
         // §8: a interface declara quais pernas sustentam o número.
         XCTAssertEqual(Perna.frase(["busca", "editorial_br"]),
-                       "baseado em: busca + editorial BR")
-        XCTAssertEqual(Perna.frase([]), "sem perna ativa")
-        XCTAssertEqual(Perna.frase(nil), "sem perna ativa")
+                       "based on: search + Brazilian editorial")
+        XCTAssertEqual(Perna.frase([]), "no active source")
+        XCTAssertEqual(Perna.frase(nil), "no active source")
     }
 }
 

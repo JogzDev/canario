@@ -75,7 +75,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
 
         XCTAssertEqual(achado.marcados, ["cinza"],
                        "arquivo sem texto tem de sair do formulário com pelo menos a cor marcada")
-        XCTAssertTrue(achado.procedencia.contains { $0.contains("cor da imagem") },
+        XCTAssertTrue(achado.procedencia.contains { $0.contains("image color") },
                       "a procedência precisa dizer que a cor veio do pixel, que é a marcação mais frágil")
     }
 
@@ -132,13 +132,26 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         XCTAssertFalse(CorDaPeca.ehPele(0.07, 0.06, 0.05), "preto não é pele")
     }
 
+    func testTransparenciaDoRecorteNaoViraRoupaPreta() throws {
+        // Três quartos do PNG não têm fundo; o quarto opaco é uma roupa azul.
+        // A implementação antiga incluía RGB 0/0/0 dos pixels transparentes e
+        // devolvia preto, exatamente o viés observado pelo JP no device.
+        let transparente: [UInt8] = [0, 0, 0, 0]
+        let azul: [UInt8] = [30, 80, 210, 255]
+        let bytes = Array(repeating: transparente, count: 3).flatMap { $0 } + azul
+        let amostra = try XCTUnwrap(
+            CorDaPeca.medianaRGBA(bytes, numeroDePixels: 4))
+        XCTAssertEqual(amostra.cobertura, 0.25, accuracy: 0.0001)
+        XCTAssertEqual(CorDaPeca.termo(paraRGB: amostra.rgb), "azul")
+    }
+
     // MARK: O número continua rastreável sem protagonizar o jargão
 
     func testNumeroTemEscalaDeclaradaNaLinhaDeApoio() {
         XCTAssertEqual(Explicacao.numeroComUnidade(1.15), "+1,15")
         XCTAssertEqual(Explicacao.numeroComUnidade(-3.73), "-3,73")
-        XCTAssertEqual(Explicacao.numeroComUnidade(nil), "sem índice")
-        XCTAssertTrue(Explicacao.unidadeDoIndice.contains("12 semanas"),
+        XCTAssertEqual(Explicacao.numeroComUnidade(nil), "no index")
+        XCTAssertTrue(Explicacao.unidadeDoIndice.contains("12 weeks"),
                       "a linha de apoio tem de dizer contra o que a escala é medida")
     }
 
@@ -148,11 +161,11 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         XCTAssertEqual(Leitura.numero(-2.18, casas: 2), "-2,18")
         XCTAssertEqual(Leitura.numero(1.15, casas: 2, sinal: true), "+1,15")
         XCTAssertEqual(Leitura.numero(11.9485, casas: 1), "11,9")
-        XCTAssertTrue(Leitura.explicacao(-2.18).contains("abaixo do comportamento normal"))
+        XCTAssertTrue(Leitura.explicacao(-2.18).contains("below this attribute's usual behavior"))
     }
 
     func testCadaPernaTemUnidadePropria() {
-        XCTAssertTrue(Explicacao.unidade(daFonte: "editorial_br").contains("matérias"))
+        XCTAssertTrue(Explicacao.unidade(daFonte: "editorial_br").contains("articles"))
         XCTAssertTrue(Explicacao.unidade(daFonte: "varejo").contains("%"))
         XCTAssertTrue(Explicacao.unidade(daFonte: "busca").contains("Google Trends"))
     }
@@ -181,19 +194,19 @@ final class BlocoDeReclamacoesTests: XCTestCase {
                                       series: [serieEditorial(z: 3.98)])
         XCTAssertTrue(texto.contains("3,9") || texto.contains("4,0"),
                       "o desvio do editorial tem de aparecer no texto")
-        XCTAssertTrue(texto.lowercased().contains("nenhuma outra fonte"),
+        XCTAssertTrue(texto.lowercased().contains("no other source"),
                       "é a condição que separa pico de alta, e o usuário precisa dela para decidir se segue")
     }
 
     func testEstadoAusenteDizQuantasPernasFaltam() {
         let texto = Explicacao.porQue(estado: nil, indice: indice(nil, nPernas: 1), series: [])
-        XCTAssertTrue(texto.contains("duas fontes"))
+        XCTAssertTrue(texto.contains("Two sources"))
         XCTAssertTrue(texto.contains("1"), "dizer quantas pernas há hoje é o que torna a recusa verificável")
     }
 
     func testEstavelEhResultadoMedidoENaoFaltaDeDado() {
         let texto = Explicacao.porQue(estado: "estavel", indice: indice("estavel"), series: [])
-        XCTAssertTrue(texto.lowercased().contains("resultado medido"))
+        XCTAssertTrue(texto.lowercased().contains("measured result"))
     }
 
     // MARK: "Quero o nome dos sites que fizeram o bot chegar a essa conclusão"
@@ -203,7 +216,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         XCTAssertEqual(linhas.count, 1)
         XCTAssertTrue(linhas[0].contains("Elle Brasil (4)"))
         XCTAssertTrue(linhas[0].contains("Vogue Brasil (2)"))
-        XCTAssertTrue(linhas[0].contains("9 matérias"), "a contagem vem com a unidade colada")
+        XCTAssertTrue(linhas[0].contains("9 published articles"), "a contagem vem com a unidade colada")
     }
 
     func testBuscaNaoHerdaAJanelaDoEditorial() {
@@ -214,8 +227,8 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         let busca = PontoSerie(id: 3, termoId: "azul", fonte: "busca", semana: "2026-06-08",
                                valorBruto: 62, z: -1.2, nAmostra: nil, meta: nil)
         let linha = Explicacao.origens([busca])[0]
-        XCTAssertTrue(linha.contains("62 de 100"))
-        XCTAssertFalse(linha.contains("4 semanas"))
+        XCTAssertTrue(linha.contains("62 out of 100"))
+        XCTAssertFalse(linha.contains("4 weeks"))
         XCTAssertFalse(linha.contains("—"), "não pode sair travessão onde há valor")
     }
 
@@ -228,7 +241,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
                                             nTotalSortimento: 60401))
         let linhas = Explicacao.origens([varejo])
         XCTAssertTrue(linhas[0].contains("11,9%"))
-        XCTAssertTrue(linhas[0].contains("7217 peças"))
+        XCTAssertTrue(linhas[0].contains("7217 panel items"))
     }
 
     // MARK: "*3ª reposição dos tamanhos PP/P em menos de 2 meses"
@@ -244,7 +257,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
     func testTerceiraReposicaoTrazTamanhoEPeriodo() {
         let frase = evento(ordinal: 3, dias: 54, tamanhos: ["PP", "P"])
             .repeticao(desde: "2026-07-24")
-        XCTAssertEqual(frase, "3ª reposição do tamanho PP/P em menos de 2 meses")
+        XCTAssertEqual(frase, "3rd restock for size PP/P in under 2 months")
     }
 
     func testPrimeiraReposicaoVemAncoradaNaDataDeInicio() {
@@ -252,14 +265,14 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         // houve outra antes — e isso não foi medido (regra 2).
         let frase = evento(ordinal: 1, dias: nil, tamanhos: ["M"])
             .repeticao(desde: "2026-07-24")
-        XCTAssertEqual(frase, "1ª reposição desde 24/07/2026")
+        XCTAssertEqual(frase, "First restock since 24/07/2026")
     }
 
     func testPeriodoEmLinguagemDeCompra() {
-        XCTAssertEqual(Formato.periodo(dias: 3), "3 dias")
-        XCTAssertEqual(Formato.periodo(dias: 21), "3 semanas")
-        XCTAssertEqual(Formato.periodo(dias: 54), "menos de 2 meses")
-        XCTAssertEqual(Formato.periodo(dias: 95), "menos de 4 meses")
+        XCTAssertEqual(Formato.periodo(dias: 3), "3 days")
+        XCTAssertEqual(Formato.periodo(dias: 21), "3 weeks")
+        XCTAssertEqual(Formato.periodo(dias: 54), "under 2 months")
+        XCTAssertEqual(Formato.periodo(dias: 95), "under 4 months")
     }
 
     // MARK: Datas continuam em dd/mm/aaaa

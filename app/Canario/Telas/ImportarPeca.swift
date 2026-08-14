@@ -35,6 +35,13 @@ struct ImportarPeca: View {
     @State private var nomePendente: String?
     @State private var opcoesDeAlvo: [MiniaturaLocal.OpcaoDeAlvo] = []
     @State private var alvoEscolhido: Int?
+    @State private var descricaoDoAlvo = ""
+    @State private var mostrandoEditorDeRecorte = false
+    @State private var pedindoConsentimentoDaNuvem = false
+    @State private var imagemConfirmadaPendente: CGImage?
+    @State private var dadosConfirmadosPendentes: Data?
+    @State private var nomeConfirmadoPendente: String?
+    @State private var descricaoConfirmadaPendente: String?
     @FocusState private var precoEmFoco: Bool
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
@@ -98,9 +105,29 @@ struct ImportarPeca: View {
             }
             .ignoresSafeArea()
         }
+        .sheet(isPresented: $mostrandoEditorDeRecorte) {
+            if let imagem = imagemPendente {
+                EditorDeRecorte(imagem: imagem) { recortada in
+                    mostrandoEditorDeRecorte = false
+                    let nome = nomePendente ?? "cropped image"
+                    Task { await prepararConfirmacao(recortada, nome: nome) }
+                }
+            }
+        }
         .onChange(of: daFototeca) { _, item in
             guard let item else { return }
             Task { await processarDaFototeca(item) }
+        }
+        .alert("Use cloud visual analysis?",
+               isPresented: $pedindoConsentimentoDaNuvem) {
+            Button("On-device only", role: .cancel) {
+                Task { await analisarPendente(usandoNuvem: false) }
+            }
+            Button("Continue") {
+                Task { await analisarPendente(usandoNuvem: true) }
+            }
+        } message: {
+            Text("To identify this garment, the app will send only the reduced, metadata-free image you just confirmed to OpenAI through its Supabase service. The app does not store the submitted image. OpenAI may keep abuse-monitoring logs for up to 30 days. You will review every suggested attribute before saving.")
         }
     }
 
@@ -129,6 +156,28 @@ struct ImportarPeca: View {
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
+
+                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                    Text("Optional target hint")
+                        .font(Tokens.Fonte.secao)
+                    TextField("e.g. the black half-zip jacket",
+                              text: $descricaoDoAlvo,
+                              axis: .vertical)
+                        .textFieldStyle(.roundedBorder)
+                        .lineLimit(1...3)
+                    Text("Use this only when the photo contains more than one item. Visible pixels always take precedence.")
+                        .font(Tokens.Fonte.miudo)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+
+                Button {
+                    mostrandoEditorDeRecorte = true
+                } label: {
+                    Label("Crop or zoom the photo", systemImage: "crop")
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(.bordered)
 
                 if opcoesDeAlvo.count > 1 {
                     VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
@@ -216,7 +265,9 @@ struct ImportarPeca: View {
     private var importador: some View {
         Cartao {
             Text("Photo or file").font(Tokens.Fonte.secao)
-            Text("Leio o arquivo no próprio aparelho. O original não é guardado; ao salvar no Closet, fica apenas uma miniatura local sem metadados.")
+            Text(Supabase.analiseRemotaHabilitada
+                 ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
+                 : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             // A câmera vem primeiro porque é o gesto mais direto de quem está
@@ -278,7 +329,7 @@ struct ImportarPeca: View {
             }
             ForEach(dimensoes, id: \.self) { dimensao in
                 VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                    Text(rotuloDaDimensao(dimensao))
+                    Text(Traducao.rotuloDaDimensao(dimensao))
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                     FluxoDeChips(
@@ -314,19 +365,6 @@ struct ImportarPeca: View {
             vistas.append(t.dimensao)
         }
         return vistas
-    }
-
-    private func rotuloDaDimensao(_ dimensao: String) -> String {
-        [
-            "categoria": "Category",
-            "cor": "Color",
-            "estampa": "Pattern",
-            "tecido": "Material",
-            "estetica": "Style",
-            "comprimento": "Length",
-            "silhueta": "Silhouette",
-            "cintura": "Waist",
-        ][dimensao] ?? dimensao.capitalized
     }
 
     // MARK: Leitura
@@ -385,7 +423,31 @@ struct ImportarPeca: View {
         opcoesDeAlvo = []
         alvoEscolhido = nil
         miniaturaJPEG = escolha.dados
-        await analisarImagemConfirmada(imagem, nome: nome)
+        if Supabase.analiseRemotaHabilitada {
+            imagemConfirmadaPendente = imagem
+            dadosConfirmadosPendentes = escolha.dados
+            nomeConfirmadoPendente = nome
+            descricaoConfirmadaPendente = descricaoDoAlvoNormalizada
+            pedindoConsentimentoDaNuvem = true
+        } else {
+            await analisarImagemConfirmada(imagem, nome: nome,
+                                            dadosParaNuvem: nil,
+                                            descricaoDoAlvo: nil)
+        }
+    }
+
+    private func analisarPendente(usandoNuvem: Bool) async {
+        guard let imagem = imagemConfirmadaPendente else { return }
+        let nome = nomeConfirmadoPendente ?? "selected image"
+        let dados = usandoNuvem ? dadosConfirmadosPendentes : nil
+        let descricao = usandoNuvem ? descricaoConfirmadaPendente : nil
+        imagemConfirmadaPendente = nil
+        dadosConfirmadosPendentes = nil
+        nomeConfirmadoPendente = nil
+        descricaoConfirmadaPendente = nil
+        await analisarImagemConfirmada(imagem, nome: nome,
+                                        dadosParaNuvem: dados,
+                                        descricaoDoAlvo: descricao)
     }
 
     private func cancelarConfirmacao() {
@@ -394,31 +456,99 @@ struct ImportarPeca: View {
         opcoesDeAlvo = []
         alvoEscolhido = nil
         daFototeca = nil
+        descricaoDoAlvo = ""
+    }
+
+    private var descricaoDoAlvoNormalizada: String? {
+        let limpa = descricaoDoAlvo
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !limpa.isEmpty else { return nil }
+        return String(limpa.prefix(160))
     }
 
     /// Só a peça confirmada termina no leitor compartilhado.
-    private func analisarImagemConfirmada(_ imagem: CGImage, nome: String) async {
+    private func analisarImagemConfirmada(_ imagem: CGImage, nome: String,
+                                          dadosParaNuvem: Data?,
+                                          descricaoDoAlvo: String?) async {
         lendo = true
         erro = nil
         procedencia = []
         nomeDoArquivo = nome
         let leitura = await LeitorDeArquivo.ler(imagem)
-        let achado = Importacao.atributos(de: leitura, em: termos)
-        let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
-        detectados = reconheceuPeca ? achado.marcados : []
-        procedencia = achado.procedencia
         let marcas = Importacao.marcasNoTexto(leitura.texto)
+
+        if let dadosParaNuvem {
+            do {
+                let analise = try await Supabase.shared.analisarPeca(
+                    dadosParaNuvem, alvo: descricaoDoAlvo)
+                if analise.alvoAmbiguo {
+                    detectados = []
+                    procedencia = analise.decisionEvidence.map {
+                        "Why the target was ambiguous: \($0)"
+                    }
+                    erro = "The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo."
+                } else {
+                    let existentes = Set(termos.map(\.id))
+                    detectados = analise.idsSugeridos(existentes: existentes)
+                    let porId = Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
+                    let lidos = detectados.compactMap { porId[$0] }
+                        .sorted { ($0.dimensao, $0.id) < ($1.dimensao, $1.id) }
+                        .map(Traducao.rotuloExibido)
+                    procedencia = [
+                        "Visual analysis suggested: \(lidos.joined(separator: ", ")).",
+                    ]
+                    procedencia.append(contentsOf: analise.decisionEvidence.map {
+                        "Visible evidence: \($0)"
+                    })
+                    if !analise.additionalVisualAttributes.isEmpty {
+                        procedencia.append(
+                            "Also observed, outside the market taxonomy: "
+                            + analise.additionalVisualAttributes.joined(separator: ", ") + ".")
+                    }
+                    procedencia.append("Review every suggestion. Only your confirmed attributes are saved.")
+                    if !FormularioDaPeca.temCategoria(detectados, termos: termos) {
+                        detectados = []
+                        erro = "The analysis returned an invalid category. Choose the attributes manually."
+                    }
+                }
+            } catch {
+                aplicarLeituraLocal(leitura,
+                    mensagem: "Cloud visual analysis is unavailable right now. I kept the on-device reading; choose the missing attributes manually.")
+            }
+        } else {
+            aplicarLeituraLocal(leitura)
+        }
+
         if !marcas.isEmpty {
             procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
-        }
-        if !reconheceuPeca {
-            erro = "I could not identify a garment with enough confidence. Choose its category below before adding any other attribute."
         }
         lendo = false
     }
 
+    private func aplicarLeituraLocal(_ leitura: LeitorDeArquivo.Leitura,
+                                     mensagem: String? = nil) {
+        let achado = Importacao.atributos(de: leitura, em: termos)
+        let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
+        detectados = reconheceuPeca ? achado.marcados : []
+        procedencia = achado.procedencia
+        if let mensagem {
+            erro = mensagem
+        } else if !reconheceuPeca {
+            erro = "The on-device reader could not identify a garment. Choose its category below before adding any other attribute."
+        }
+    }
+
     private func processar(_ resultado: Result<[URL], Error>) async {
         guard case .success(let urls) = resultado, let url = urls.first else { return }
+        if url.pathExtension.lowercased() != "pdf" {
+            let liberou = url.startAccessingSecurityScopedResource()
+            defer { if liberou { url.stopAccessingSecurityScopedResource() } }
+            if let dados = try? Data(contentsOf: url),
+               let imagem = MiniaturaLocal.imagem(de: dados) {
+                await prepararConfirmacao(imagem, nome: url.lastPathComponent)
+                return
+            }
+        }
         lendo = true
         erro = nil
         procedencia = []
@@ -441,6 +571,153 @@ struct ImportarPeca: View {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }
         lendo = false
+    }
+}
+
+/// Editor manual deliberadamente simples: o usuário enquadra a peça numa janela
+/// 3:4, sem o app persistir uma segunda cópia. Ao confirmar, o recorte volta ao
+/// mesmo `prepararConfirmacao`, portanto o Vision remove o fundo novamente e a
+/// Luna recebe somente a opção isolada que o usuário confirmar depois.
+private struct EditorDeRecorte: View {
+    let imagem: CGImage
+    let aoConfirmar: (CGImage) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var escala: CGFloat = 1
+    @State private var deslocamento: CGSize = .zero
+    @GestureState private var ampliacaoTemporaria: CGFloat = 1
+    @GestureState private var arrastoTemporario: CGSize = .zero
+
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geometria in
+                let area = tamanhoDoRecorte(em: geometria.size)
+                let escalaAtual = min(4, max(1, escala * ampliacaoTemporaria))
+                let offsetAtual = limitar(
+                    CGSize(width: deslocamento.width + arrastoTemporario.width,
+                           height: deslocamento.height + arrastoTemporario.height),
+                    escala: escalaAtual,
+                    area: area)
+
+                VStack(spacing: Tokens.Espaco.m) {
+                    Spacer(minLength: Tokens.Espaco.s)
+                    ZStack {
+                        Color.black
+                        Image(decorative: imagem, scale: 1)
+                            .resizable()
+                            .frame(width: tamanhoBase(area).width * escalaAtual,
+                                   height: tamanhoBase(area).height * escalaAtual)
+                            .offset(offsetAtual)
+                    }
+                    .frame(width: area.width, height: area.height)
+                    .clipped()
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Tokens.Raio.cartao)
+                            .stroke(.white.opacity(0.9), lineWidth: 2)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartao))
+                    .contentShape(Rectangle())
+                    .gesture(gestoDeArrasto(area: area)
+                        .simultaneously(with: gestoDeAmpliacao(area: area)))
+
+                    Text("Pinch to zoom and drag until the target garment fills the frame.")
+                        .font(Tokens.Fonte.apoio)
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .multilineTextAlignment(.center)
+
+                    Button {
+                        if let recortada = imagemRecortada(area: area) {
+                            aoConfirmar(recortada)
+                        }
+                    } label: {
+                        Label("Use this crop", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding(Tokens.Espaco.m)
+            }
+            .navigationTitle("Adjust target")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Reset") {
+                        escala = 1
+                        deslocamento = .zero
+                    }
+                }
+            }
+        }
+    }
+
+    private func tamanhoDoRecorte(em disponivel: CGSize) -> CGSize {
+        let largura = min(max(220, disponivel.width - 32), 430)
+        let alturaDesejada = largura * 4 / 3
+        let altura = min(alturaDesejada, max(260, disponivel.height - 190))
+        return CGSize(width: min(largura, altura * 3 / 4), height: altura)
+    }
+
+    private func tamanhoBase(_ area: CGSize) -> CGSize {
+        let largura = CGFloat(imagem.width)
+        let altura = CGFloat(imagem.height)
+        let fator = max(area.width / largura, area.height / altura)
+        return CGSize(width: largura * fator, height: altura * fator)
+    }
+
+    private func limitar(_ valor: CGSize, escala: CGFloat,
+                         area: CGSize) -> CGSize {
+        let base = tamanhoBase(area)
+        let maxX = max(0, (base.width * escala - area.width) / 2)
+        let maxY = max(0, (base.height * escala - area.height) / 2)
+        return CGSize(width: min(max(valor.width, -maxX), maxX),
+                      height: min(max(valor.height, -maxY), maxY))
+    }
+
+    private func gestoDeArrasto(area: CGSize) -> some Gesture {
+        DragGesture()
+            .updating($arrastoTemporario) { valor, estado, _ in
+                estado = valor.translation
+            }
+            .onEnded { valor in
+                deslocamento = limitar(
+                    CGSize(width: deslocamento.width + valor.translation.width,
+                           height: deslocamento.height + valor.translation.height),
+                    escala: escala,
+                    area: area)
+            }
+    }
+
+    private func gestoDeAmpliacao(area: CGSize) -> some Gesture {
+        MagnificationGesture()
+            .updating($ampliacaoTemporaria) { valor, estado, _ in
+                estado = valor
+            }
+            .onEnded { valor in
+                escala = min(4, max(1, escala * valor))
+                deslocamento = limitar(deslocamento, escala: escala, area: area)
+            }
+    }
+
+    private func imagemRecortada(area: CGSize) -> CGImage? {
+        let base = tamanhoBase(area)
+        let fatorBase = base.width / CGFloat(imagem.width)
+        let fator = fatorBase * escala
+        let offset = limitar(deslocamento, escala: escala, area: area)
+        let larguraFonte = area.width / fator
+        let alturaFonte = area.height / fator
+        let x = CGFloat(imagem.width) / 2 - offset.width / fator - larguraFonte / 2
+        let y = CGFloat(imagem.height) / 2 - offset.height / fator - alturaFonte / 2
+        return MiniaturaLocal.recortar(
+            imagem,
+            retanguloNormalizado: CGRect(
+                x: x / CGFloat(imagem.width),
+                y: y / CGFloat(imagem.height),
+                width: larguraFonte / CGFloat(imagem.width),
+                height: alturaFonte / CGFloat(imagem.height)))
     }
 }
 
@@ -497,7 +774,7 @@ struct FluxoDeChips: View {
                 Button {
                     if ativo { marcados.remove(termo.id) } else { marcados.insert(termo.id) }
                 } label: {
-                    Text(termo.rotulo)
+                    Text(Traducao.rotuloExibido(termo))
                         .font(Tokens.Fonte.miudo)
                         .padding(.horizontal, Tokens.Espaco.s)
                         .padding(.vertical, Tokens.Espaco.xs)

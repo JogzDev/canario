@@ -133,6 +133,28 @@ enum MiniaturaLocal {
         return await self.dados(de: imagem)
     }
 
+    /// Recorte manual em coordenadas normalizadas (origem no canto superior
+    /// esquerdo), usado antes de gerar novamente as máscaras de primeiro plano.
+    /// A imagem original continua somente em memória.
+    static func recortar(_ imagem: CGImage,
+                         retanguloNormalizado: CGRect) -> CGImage? {
+        let unidade = CGRect(x: 0, y: 0, width: 1, height: 1)
+        let normalizado = retanguloNormalizado.standardized.intersection(unidade)
+        guard !normalizado.isNull, normalizado.width > 0.01,
+              normalizado.height > 0.01 else { return nil }
+        let largura = CGFloat(imagem.width)
+        let altura = CGFloat(imagem.height)
+        let pixels = CGRect(
+            x: normalizado.minX * largura,
+            y: normalizado.minY * altura,
+            width: normalizado.width * largura,
+            height: normalizado.height * altura)
+            .integral
+            .intersection(CGRect(x: 0, y: 0, width: largura, height: altura))
+        guard pixels.width >= 8, pixels.height >= 8 else { return nil }
+        return imagem.cropping(to: pixels)
+    }
+
     /// `VNGenerateForegroundInstanceMaskRequest` é local e está disponível no
     /// iOS 17. Ele separa sujeito e fundo; não tenta adivinhar o SKU numa foto
     /// com várias roupas. Essa decisão semântica continua pertencendo à etapa

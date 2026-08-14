@@ -26,16 +26,16 @@ struct CurvaDeTamanhosView: View {
             } else if !temCobertura {
                 ScrollView {
                     CoberturaInsuficiente(
-                        titulo: "Cobertura insuficiente para a curva",
-                        explicacao: "São \(emRisco) tamanhos em risco nesta seleção, e o mínimo é \(CurvaDeTamanhos.minimoEmRisco). Abaixo disso a taxa oscila demais para ser lida.",
-                        oQueTem: "A base cresce a cada noite de coleta.")
+                        titulo: "Not enough coverage for this curve",
+                        explicacao: "This selection has \(emRisco) sizes at risk; the minimum is \(CurvaDeTamanhos.minimoEmRisco). Below that, the rate varies too much to interpret.",
+                        oQueTem: "The sample grows with each nightly collection.")
                     .padding(Tokens.Espaco.m)
                 }
             } else {
                 conteudo
             }
         }
-        .navigationTitle(termo == nil ? "Curva de tamanhos" : "Tamanhos · \(termo!.rotulo)")
+        .navigationTitle(termo == nil ? "Size availability" : "Sizes · \(Traducao.rotuloExibido(termo!))")
         .navigationBarTitleDisplayMode(.inline)
         .task { await carregar() }
     }
@@ -64,11 +64,11 @@ struct CurvaDeTamanhosView: View {
 
     private var manchete: some View {
         Cartao {
-            Text("O que a grade do painel está dizendo").font(Tokens.Fonte.secao)
+            Text("What panel sizing is showing").font(Tokens.Fonte.secao)
             if let frase = CurvaDeTamanhos.manchete(porRotulo: tamanhos) {
                 Text(frase).font(Tokens.Fonte.corpo)
             } else {
-                Text("Nenhum tamanho se destacou nesta janela.").font(Tokens.Fonte.corpo)
+                Text("No size stood out in this window.").font(Tokens.Fonte.corpo)
             }
             LinhaInsumo(texto: CurvaDeTamanhos.insumo(tamanhos))
         }
@@ -80,8 +80,8 @@ struct CurvaDeTamanhosView: View {
         let linhas = CurvaDeTamanhos.emOrdem(tamanhos)
         let maximo = linhas.compactMap(\.taxaQuebra).max() ?? 1
         return Cartao {
-            Text("Taxa de saída por tamanho").font(Tokens.Fonte.secao)
-            Text("Dos tamanhos que estavam disponíveis quando a janela abriu, quantos ficaram indisponíveis.")
+            Text("Availability loss by size").font(Tokens.Fonte.secao)
+            Text("Of the sizes available when the window opened, how many became unavailable.")
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             ForEach(linhas) { linha in
@@ -96,10 +96,10 @@ struct CurvaDeTamanhosView: View {
         return Group {
             if let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores) {
                 Cartao {
-                    Text("Formato da quebra").font(Tokens.Fonte.secao)
+                    Text("Shape of the break").font(Tokens.Fonte.secao)
                     Text(frase).font(Tokens.Fonte.corpo)
                     if let m = menores, let g = maiores {
-                        LinhaInsumo(texto: "Menores: \(m.nQuebrou) de \(m.nEmRisco). Maiores: \(g.nQuebrou) de \(g.nEmRisco).")
+                        LinhaInsumo(texto: "Smaller sizes: \(m.nQuebrou) of \(m.nEmRisco). Larger sizes: \(g.nQuebrou) of \(g.nEmRisco).")
                     }
                 }
             }
@@ -111,7 +111,7 @@ struct CurvaDeTamanhosView: View {
         Group {
             if let frase = CurvaDeTamanhos.composicao(porRotulo: tamanhos) {
                 Cartao {
-                    Text("Composição de grade").font(Tokens.Fonte.secao)
+                    Text("Size-mix context").font(Tokens.Fonte.secao)
                     Text(frase).font(Tokens.Fonte.corpo)
                 }
             }
@@ -120,7 +120,7 @@ struct CurvaDeTamanhosView: View {
 
     private var ressalvas: some View {
         Cartao {
-            Text("Antes de usar isto").font(Tokens.Fonte.secao)
+            Text("Before using this").font(Tokens.Fonte.secao)
             ForEach(CurvaDeTamanhos.ressalvas, id: \.self) { LinhaInsumo(texto: $0) }
         }
     }
@@ -177,10 +177,10 @@ struct BarraDeTamanho: View {
                     .font(Tokens.Fonte.numero)
                     .frame(width: 58, alignment: .trailing)
             }
-            LinhaInsumo(texto: "\(linha.nQuebrou) de \(linha.nEmRisco) saíram de linha")
+            LinhaInsumo(texto: "\(linha.nQuebrou) of \(linha.nEmRisco) became unavailable")
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Tamanho \(linha.rotulo ?? ""), \(Leitura.numero(linha.taxaQuebra ?? 0, casas: 1)) por cento, \(linha.nQuebrou) de \(linha.nEmRisco)")
+        .accessibilityLabel("Size \(linha.rotulo ?? ""), \(Leitura.numero(linha.taxaQuebra ?? 0, casas: 1)) percent, \(linha.nQuebrou) of \(linha.nEmRisco)")
     }
 
     private var proporcao: Double {

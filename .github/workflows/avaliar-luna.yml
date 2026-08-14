@@ -36,8 +36,13 @@ jobs:
           QUANTIDADE: ${{ inputs.quantidade }}
         run: |
           set -euo pipefail
+          xcrun swiftc ferramentas/segmentar_fundo.swift \
+            -framework Vision -framework CoreImage -framework ImageIO \
+            -framework UniformTypeIdentifiers \
+            -o "$RUNNER_TEMP/segmentar-fundo"
           python3 ferramentas/avaliar_luna.py \
             --quantidade "$QUANTIDADE" \
+            --segmentador "$RUNNER_TEMP/segmentar-fundo" \
             --saida "$RUNNER_TEMP/avaliacao-luna.jsonl" \
             --resumo "$RUNNER_TEMP/avaliacao-luna.md"
 

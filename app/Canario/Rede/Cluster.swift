@@ -79,16 +79,16 @@ enum Cluster {
     /// A frase principal. Só afirma direção quando o dado sustenta.
     static func manchete(_ r: Resposta) -> String {
         guard let indice = r.indice, r.nAtributos > 0 else {
-            return "Não há número do conjunto para esta peça."
+            return "There is no combined reading for this item yet."
         }
         if r.nAtributos == 1 {
-            return "Com um atributo só, o número do conjunto é o do próprio atributo: "
+            return "With one attribute, the combined reading is that attribute's own reading: "
                  + Leitura.emPalavras(indice) + "."
         }
         if !r.haDirecao {
-            return "Os atributos desta peça não apontam para o mesmo lado."
+            return "This item's attributes do not point in the same direction."
         }
-        return "O conjunto está \(Leitura.emPalavras(indice))."
+        return "Together, these attributes are \(Leitura.emPalavras(indice))."
     }
 
     /// A explicação de baixo da manchete: o número, a unidade e a base.
@@ -98,12 +98,12 @@ enum Cluster {
     /// perigoso possível, que é o número que resume a peça.
     static func explicacao(_ r: Resposta) -> String? {
         guard let indice = r.indice, r.nAtributos > 0 else { return nil }
-        var partes = ["\(Leitura.numero(indice, casas: 2, sinal: true)) desvios-padrão, "
-                    + "média de \(r.nAtributos) atributo\(r.nAtributos == 1 ? "" : "s") "
-                    + "ponderada pela raridade de cada um no painel"]
+        var partes = ["\(Leitura.numero(indice, casas: 2, sinal: true)) standard deviations, "
+                    + "an average of \(r.nAtributos) attribute\(r.nAtributos == 1 ? "" : "s") "
+                    + "weighted by how uncommon each one is in the panel"]
         if !r.haDirecao, let d = r.dispersao {
-            partes.append("Eles se espalham \(Leitura.numero(d, casas: 2)) desvios em torno dessa média — "
-                        + "mais do que a média se afasta de zero. Por isso não digo para que lado")
+            partes.append("They spread \(Leitura.numero(d, casas: 2)) deviations around that average — "
+                        + "more than the average moves away from zero. That is why no direction is stated")
         }
         return partes.joined(separator: ". ") + "."
     }
@@ -117,34 +117,33 @@ enum Cluster {
     static func concentracao(_ r: Resposta) -> String? {
         guard let efetivos = r.atributosEfetivos, r.nAtributos > 1,
               efetivos < Double(r.nAtributos) * 0.7 else { return nil }
-        return "Na prática o número se apoia em \(Leitura.numero(efetivos, casas: 1)) "
-             + "dos \(r.nAtributos) atributos: os pesos são desiguais."
+        return "In practice, the number rests on \(Leitura.numero(efetivos, casas: 1)) "
+             + "of the \(r.nAtributos) attributes because their weights are uneven."
     }
 
     /// Como a raridade foi calculada, em uma frase que o comprador entende.
     static func criterioDaRaridade(_ r: Resposta) -> String {
         let base: String
         if let c = r.categoriaUsada, c != "(todas)" {
-            base = "entre as peças de \(c) do painel"
+            base = "among the panel's \(c) items"
         } else {
-            base = "no painel inteiro, porque não há uma categoria única marcada"
+            base = "across the whole panel because no single category was selected"
         }
-        return "Atributo raro pesa mais que atributo comum, e a raridade é medida \(base), "
-             + "dentro da própria dimensão dele — \"midi\" se compara com outros comprimentos, "
-             + "não com cores."
+        return "An uncommon attribute weighs more than a common one. Rarity is measured \(base), "
+             + "within its own dimension — midi is compared with other lengths, not with colors."
     }
 
     /// A linha de auditoria de um atributo: peso, e de onde o peso saiu.
     static func porQuePesa(_ a: Atributo) -> String? {
         guard let rel = a.pesoRelativo else { return nil }
-        var frase = "\(Leitura.numero(rel * 100, casas: 0))% do peso"
+        var frase = "\(Leitura.numero(rel * 100, casas: 0))% of the weight"
         if a.papel == "denominador" {
-            return frase + " · não tem raridade própria: existe na taxonomia como "
-                 + "base de comparação, então recebe o peso médio da dimensão"
+            return frase + " · it has no rarity of its own: it is a taxonomy baseline, "
+                 + "so it receives the dimension's average weight"
         }
         if let pct = a.pctNaDimensao, let n = a.pecasNoPainel {
-            frase += " · \(Leitura.numero(pct, casas: 0))% das peças com essa dimensão "
-                   + "(\(Formato.contagem(n)) no painel)"
+            frase += " · \(Leitura.numero(pct, casas: 0))% of items with this dimension "
+                   + "(\(Formato.contagem(n)) in the panel)"
         }
         return frase
     }
@@ -166,8 +165,8 @@ enum Cluster {
         guard semanas.count > 1 else { return nil }
         let ordenadas = semanas.sorted()
         guard let mais = ordenadas.last, let menos = ordenadas.first else { return nil }
-        return "Os atributos não são todos da mesma semana: vão de \(Formato.data(menos)) "
-             + "a \(Formato.data(mais)). Cada fonte tem a própria cadência, e uso a leitura "
-             + "mais recente de cada atributo."
+        return "The attributes are not all from the same week: they range from \(Formato.data(menos)) "
+             + "to \(Formato.data(mais)). Each source has its own cadence, so the latest reading "
+             + "for each attribute is used."
     }
 }

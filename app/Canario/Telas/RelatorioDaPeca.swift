@@ -68,7 +68,7 @@ struct RelatorioDaPeca: View {
                 .foregroundStyle(.secondary)
         case false:
             // O teto é dito, e não engole a peça em silêncio.
-            Text("Lista cheia (\(PecasSalvas.teto))")
+            Text("Closet full (\(PecasSalvas.teto))")
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(.secondary)
         case nil:
@@ -258,19 +258,19 @@ struct RelatorioDaPeca: View {
                 && Elegibilidade.indice(indice, cobertura: coberturas[$0.id])
         }
         if comLeitura.isEmpty {
-            return "Marquei \(termos.count) atributo\(termos.count == 1 ? "" : "s"), mas nenhum tem leitura disponível neste recorte."
+            return "You selected \(termos.count) attribute\(termos.count == 1 ? "" : "s"), but none has an available reading in this panel cut."
         }
         let acima = comLeitura.filter { (indices[$0.id]?.indice ?? 0) >= 1 }
         let abaixo = comLeitura.filter { (indices[$0.id]?.indice ?? 0) <= -1 }
-        var partes = ["Esta peça tem \(termos.count) atributo\(termos.count == 1 ? "" : "s"), \(comLeitura.count) com leitura."]
+        var partes = ["This item has \(termos.count) attribute\(termos.count == 1 ? "" : "s"), with readings for \(comLeitura.count)."]
         if !acima.isEmpty {
-            partes.append("Acima do normal: \(acima.map(Traducao.rotuloExibido).joined(separator: ", ")).")
+            partes.append("Above the usual range: \(acima.map(Traducao.rotuloExibido).joined(separator: ", ")).")
         }
         if !abaixo.isEmpty {
-            partes.append("Abaixo do normal: \(abaixo.map(Traducao.rotuloExibido).joined(separator: ", ")).")
+            partes.append("Below the usual range: \(abaixo.map(Traducao.rotuloExibido).joined(separator: ", ")).")
         }
         if acima.isEmpty && abaixo.isEmpty {
-            partes.append("Todos dentro da faixa normal deles.")
+            partes.append("All are within their usual ranges.")
         }
         return partes.joined(separator: " ")
     }
@@ -278,13 +278,13 @@ struct RelatorioDaPeca: View {
     /// Um bloco por atributo, cada um com o próprio portão de cobertura.
     private var porAtributo: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            Text("Por atributo").font(Tokens.Fonte.secao)
+            Text("By attribute").font(Tokens.Fonte.secao)
             ForEach(termos) { termo in
                 Cartao {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                             Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
-                            Text(termo.dimensao)
+                            Text(Traducao.rotuloDaDimensao(termo.dimensao))
                                 .font(Tokens.Fonte.miudo)
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                         }
@@ -294,8 +294,8 @@ struct RelatorioDaPeca: View {
                             indice, cobertura: coberturas[termo.id])
                         SeloEstado(estado: podeMostrar ? indice?.estado : nil,
                                    motivo: podeMostrar
-                                       ? "Só afirmo uma direção quando duas fontes concordam."
-                                       : "Sem cobertura suficiente da mesma semana.",
+                                       ? "A direction is stated only when two sources agree."
+                                       : "Not enough same-week coverage.",
                                    leitura: podeMostrar ? indice?.indice : nil)
                     }
                     conteudo(de: termo)
@@ -309,18 +309,18 @@ struct RelatorioDaPeca: View {
         let i = indices[termo.id]
         let c = coberturas[termo.id]
         if c == nil {
-            LinhaInsumo(texto: "Não há medição de cobertura para este atributo nesta semana.")
+            LinhaInsumo(texto: "There is no coverage measurement for this attribute this week.")
         } else if !Elegibilidade.indice(i, cobertura: c) {
             // §8: sem cobertura, nem índice nem estado. O mesmo portão da
             // outra tela, aplicado atributo a atributo.
-            LinhaInsumo(texto: "Cobertura insuficiente: \(c?.oQueFalta ?? "sem medição").")
+            LinhaInsumo(texto: "Insufficient coverage: \(c?.oQueFalta ?? "not measured").")
         } else if let valor = i?.indice {
             Text(Leitura.emPalavras(valor)).font(Tokens.Fonte.apoio)
             LinhaInsumo(texto: Leitura.explicacao(valor))
             LinhaInsumo(texto: Perna.frase(i?.pernasAtivas)
-                        + " · semana de \(Formato.data(i?.semana ?? ""))")
+                        + " · week of \(Formato.data(i?.semana ?? ""))")
         } else {
-            LinhaInsumo(texto: "Sem leitura para este atributo neste recorte.")
+            LinhaInsumo(texto: "No reading for this attribute in this panel cut.")
         }
     }
 
@@ -331,14 +331,14 @@ struct RelatorioDaPeca: View {
     @ViewBuilder
     private var blocoDoHistorico: some View {
         Cartao {
-            Text("Como esse conjunto se moveu").font(Tokens.Fonte.secao)
+            Text("How these attributes moved").font(Tokens.Fonte.secao)
             if carregandoSerie {
                 ProgressView().frame(maxWidth: .infinity, alignment: .center)
             } else if let erroDaSerie {
-                Text("Não consegui carregar o gráfico: \(erroDaSerie)")
+                Text("The chart could not be loaded: \(erroDaSerie)")
                     .font(Tokens.Fonte.corpo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
-                Button("Tentar gráfico novamente") { Task { await carregar() } }
+                Button("Try the chart again") { Task { await carregar() } }
                     .buttonStyle(.bordered)
             } else if let motivo = SerieDoCluster.porQueNaoDesenha(serie) {
                 // Nunca um espaço em branco: a tela diz o que falta.
@@ -347,20 +347,20 @@ struct RelatorioDaPeca: View {
                     .foregroundStyle(Tokens.Cor.tintaFraca)
             } else if let s = serie {
                 Chart(s.pontos.filter { $0.data != nil }) { p in
-                    AreaMark(x: .value("Semana", p.data!),
-                             yStart: .value("Base", 0),
-                             yEnd: .value("Índice", p.indice))
+                    AreaMark(x: .value("Week", p.data!),
+                             yStart: .value("Baseline", 0),
+                             yEnd: .value("Index", p.indice))
                         .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.12))
-                    LineMark(x: .value("Semana", p.data!),
-                             y: .value("Índice", p.indice))
+                    LineMark(x: .value("Week", p.data!),
+                             y: .value("Index", p.indice))
                         .interpolationMethod(.monotone)
                         .foregroundStyle(Tokens.Cor.azulMarca)
                     // Semana com menos atributos que o pedido ganha ponto
                     // visível: a linha sozinha mente por omissão, porque parece
                     // uniforme mesmo quando metade dela veio de um atributo só.
                     if SerieDoCluster.ralo(p, de: s.atributosPedidos) {
-                        PointMark(x: .value("Semana", p.data!),
-                                  y: .value("Índice", p.indice))
+                        PointMark(x: .value("Week", p.data!),
+                                  y: .value("Index", p.indice))
                             .symbolSize(28)
                             .foregroundStyle(Tokens.Cor.semDado)
                     }
@@ -375,10 +375,10 @@ struct RelatorioDaPeca: View {
                 .chartYAxisLabel(s.unidade ?? "")
                 .frame(height: 160)
                 .accessibilityLabel(
-                    "Histórico do conjunto em \(s.pontos.count) semanas")
+                    "Combined history across \(s.pontos.count) weeks")
                 if let r = SerieDoCluster.ressalva(s) { LinhaInsumo(texto: r) }
                 if let c = s.categoriaUsada, c != "(todas)" {
-                    LinhaInsumo(texto: "Raridade medida dentro de \(c).")
+                    LinhaInsumo(texto: "Rarity measured within \(c).")
                 }
             }
         }
@@ -398,13 +398,13 @@ struct RelatorioDaPeca: View {
             falhaLocal(titulo: "Combined reading", mensagem: erroDoCluster)
         } else if let c = cluster, c.nAtributos > 0 {
             Cartao {
-                Text("O conjunto").font(Tokens.Fonte.secao)
+                Text("Combined reading").font(Tokens.Fonte.secao)
                 Text(Cluster.manchete(c)).font(Tokens.Fonte.corpo)
                 if let e = Cluster.explicacao(c) { LinhaInsumo(texto: e) }
                 if let k = Cluster.concentracao(c) { LinhaInsumo(texto: k) }
 
                 Divider()
-                Text("De onde vem esse número").font(Tokens.Fonte.miudo.weight(.semibold))
+                Text("Where this number comes from").font(Tokens.Fonte.miudo.weight(.semibold))
                 LinhaInsumo(texto: Cluster.criterioDaRaridade(c))
                 ForEach(Cluster.dentro(c)) { a in
                     HStack(alignment: .firstTextBaseline) {
@@ -424,27 +424,27 @@ struct RelatorioDaPeca: View {
                 let fora = Cluster.deFora(c)
                 if !fora.isEmpty {
                     Divider()
-                    Text("Fora da conta").font(Tokens.Fonte.miudo.weight(.semibold))
+                    Text("Not included").font(Tokens.Fonte.miudo.weight(.semibold))
                     ForEach(fora) { a in
-                        LinhaInsumo(texto: "\(a.rotulo): \(a.foraPor ?? "sem motivo registrado")")
+                        LinhaInsumo(texto: "\(a.rotulo): \(a.foraPor ?? "no reason recorded")")
                     }
                 }
             }
         } else {
             CoberturaInsuficiente(
-                titulo: "Ainda não há número do conjunto para esta peça",
-                explicacao: "Nenhum dos atributos marcados tem leitura com cobertura suficiente neste recorte, então não existe média a fazer.",
-                oQueTem: "A leitura honesta é atributo por atributo, acima.")
+                titulo: "No combined reading for this item yet",
+                explicacao: "None of the selected attributes has a sufficiently covered reading in this panel cut, so there is no valid average.",
+                oQueTem: "The available attribute-by-attribute reading is shown above.")
         }
     }
 
     /// §29.6 — limites declarados, sempre.
     private var limites: some View {
         Cartao {
-            Text("Limites").font(Tokens.Fonte.secao)
-            LinhaInsumo(texto: "Não consideramos: seu histórico de vendas, seus custos, sua capacidade de produção.")
-            LinhaInsumo(texto: "Sinal editorial carrega viés comercial de publicidade.")
-            LinhaInsumo(texto: "A imagem original foi lida e descartada. Se você salvar no Closet, fica somente uma miniatura local sem metadados, apagada junto com a peça.")
+            Text("Limits").font(Tokens.Fonte.secao)
+            LinhaInsumo(texto: "Not included: your sales history, costs or production capacity.")
+            LinhaInsumo(texto: "Editorial signals can carry commercial and advertising bias.")
+            LinhaInsumo(texto: "The original image was read and discarded. If you save the item, only a metadata-free local thumbnail remains and is deleted with it.")
         }
     }
 

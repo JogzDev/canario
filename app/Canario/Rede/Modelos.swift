@@ -122,10 +122,10 @@ enum Estado: String {
 
     var rotulo: String {
         switch self {
-        case .emAlta: return "Em alta"
-        case .emQueda: return "Em queda"
-        case .pico: return "Pico"
-        case .estavel: return "Estável"
+        case .emAlta: return "Trending up"
+        case .emQueda: return "Trending down"
+        case .pico: return "Spike"
+        case .estavel: return "Within the usual range"
         }
     }
 
@@ -202,18 +202,18 @@ struct PontoSerie: Codable, Identifiable, Hashable {
 enum Perna {
     static func rotulo(_ fonte: String) -> String {
         switch fonte {
-        case "busca": return "busca"
-        case "editorial_br": return "editorial BR"
-        case "editorial_intl": return "editorial internacional"
-        case "varejo": return "varejo"
+        case "busca": return "search"
+        case "editorial_br": return "Brazilian editorial"
+        case "editorial_intl": return "international editorial"
+        case "varejo": return "retail"
         case "lyst": return "Lyst"
         default: return fonte
         }
     }
 
     static func frase(_ pernas: [String]?) -> String {
-        guard let pernas, !pernas.isEmpty else { return "sem perna ativa" }
-        return "baseado em: " + pernas.map(rotulo).joined(separator: " + ")
+        guard let pernas, !pernas.isEmpty else { return "no active source" }
+        return "based on: " + pernas.map(rotulo).joined(separator: " + ")
     }
 }
 
@@ -248,12 +248,12 @@ struct Cobertura: Decodable, Hashable {
     var oQueFalta: String {
         var partes: [String] = []
         if let p = pecasNaCelula, p < minimoPecas {
-            partes.append("\(p) peças no painel nesta semana, mínimo \(minimoPecas)")
+            partes.append("\(p) panel items this week, minimum \(minimoPecas)")
         }
         if let m = marcasExternas, m < minimoMarcas {
-            partes.append("\(m) marcas externas coletando, mínimo \(minimoMarcas)")
+            partes.append("\(m) external brands reporting, minimum \(minimoMarcas)")
         }
-        return partes.isEmpty ? "cobertura abaixo do mínimo" : partes.joined(separator: "; ")
+        return partes.isEmpty ? "coverage below the minimum" : partes.joined(separator: "; ")
     }
 }
 
@@ -336,12 +336,12 @@ struct EventoVarejo: Codable, Identifiable, Hashable {
         switch tipo {
         case "reposicao":
             let t = detalhe?.tamanhos?.joined(separator: ", ") ?? "—"
-            return "Tamanho \(t) voltou e permaneceu disponível"
+            return "Size \(t) returned and remained available"
         case "remarcacao":
-            if let pct = detalhe?.quedaPct { return String(format: "Preço caiu %.1f%%", pct) }
-            return "Preço caiu"
+            if let pct = detalhe?.quedaPct { return String(format: "Price dropped %.1f%%", pct) }
+            return "Price dropped"
         case "saida_de_linha":
-            return "Saiu do catálogo"
+            return "Removed from the catalog"
         default:
             return tipo
         }
@@ -359,18 +359,30 @@ struct EventoVarejo: Codable, Identifiable, Hashable {
     /// foi medido.
     func repeticao(desde inicioDaColeta: String) -> String? {
         guard let ordinal else { return nil }
-        let coisa = tipo == "reposicao" ? "reposição" : (tipo == "remarcacao" ? "remarcação" : nil)
+        let coisa = tipo == "reposicao" ? "restock" : (tipo == "remarcacao" ? "markdown" : nil)
         guard let coisa else { return nil }
 
         if ordinal == 1 {
-            return "1ª \(coisa) desde \(Formato.data(inicioDaColeta))"
+            return "First \(coisa) since \(Formato.data(inicioDaColeta))"
         }
-        var frase = "\(ordinal)ª \(coisa)"
+        let mod100 = ordinal % 100
+        let suffix: String
+        if 11...13 ~= mod100 {
+            suffix = "th"
+        } else {
+            switch ordinal % 10 {
+            case 1: suffix = "st"
+            case 2: suffix = "nd"
+            case 3: suffix = "rd"
+            default: suffix = "th"
+            }
+        }
+        var frase = "\(ordinal)\(suffix) \(coisa)"
         if tipo == "reposicao", let t = detalhe?.tamanhos, !t.isEmpty {
-            frase += " do tamanho \(t.joined(separator: "/"))"
+            frase += " for size \(t.joined(separator: "/"))"
         }
         if let dias = diasDesdeAPrimeira {
-            frase += " em \(Formato.periodo(dias: dias))"
+            frase += " in \(Formato.periodo(dias: dias))"
         }
         return frase
     }
@@ -400,20 +412,20 @@ enum Leitura {
     /// Frase curta para o número principal.
     static func emPalavras(_ z: Double) -> String {
         switch z {
-        case 2.0...:        return "muito acima do normal"
-        case 1.0..<2.0:     return "acima do normal"
-        case 0.35..<1.0:    return "levemente acima"
-        case -0.35..<0.35:  return "dentro do normal"
-        case -1.0 ..< -0.35: return "levemente abaixo"
-        case -2.0 ..< -1.0: return "abaixo do normal"
-        default:            return "muito abaixo do normal"
+        case 2.0...:        return "far above the usual range"
+        case 1.0..<2.0:     return "above the usual range"
+        case 0.35..<1.0:    return "slightly above the usual range"
+        case -0.35..<0.35:  return "within the usual range"
+        case -1.0 ..< -0.35: return "slightly below the usual range"
+        case -2.0 ..< -1.0: return "below the usual range"
+        default:            return "far below the usual range"
         }
     }
 
     /// O que o número é, dito por extenso. Vai na letra miúda, sempre.
     static func explicacao(_ z: Double) -> String {
-        let lado = z >= 0 ? "acima" : "abaixo"
-        return "\(numero(abs(z), casas: 1)) na escala estatística, \(lado) do comportamento normal das últimas 12 semanas"
+        let lado = z >= 0 ? "above" : "below"
+        return "\(numero(abs(z), casas: 1)) on the statistical scale, \(lado) this attribute's usual behavior over the previous 12 weeks"
     }
 
     /// Variação percentual entre o valor mais recente e a média da janela.
@@ -421,7 +433,7 @@ enum Leitura {
     static func variacao(recente: Double?, media: Double?) -> String? {
         guard let recente, let media, media > 0 else { return nil }
         let pct = 100.0 * (recente - media) / media
-        return "\(numero(pct, casas: 0, sinal: true))% vs. a média da janela"
+        return "\(numero(pct, casas: 0, sinal: true))% vs. the window average"
     }
 
     /// Número em português: **vírgula decimal**.

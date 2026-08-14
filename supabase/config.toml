@@ -1,0 +1,8 @@
+project_id = "canario"
+
+# The iOS app has no user accounts in v1, so this function authenticates the
+# project publishable key in its own handler. New `sb_publishable_…` keys are
+# API keys, not JWTs; leaving the legacy platform JWT check enabled would
+# reject every legitimate request before the handler runs.
+[functions.analisar-peca]
+verify_jwt = false

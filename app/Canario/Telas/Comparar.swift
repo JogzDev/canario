@@ -49,7 +49,7 @@ struct Comparar: View {
                     conteudo
                 }
             }
-            .navigationTitle("Comparar")
+            .navigationTitle("Compare")
         }
         .task { await carregar() }
     }
@@ -57,16 +57,16 @@ struct Comparar: View {
     private var conteudo: some View {
         List {
             Section {
-                Text("Para que serve").font(Tokens.Fonte.secao)
-                Text("Escolha de 2 a \(maximo) atributos que disputam o mesmo espaço na coleção. Mostro quanto do painel já tem cada um e o que a imprensa fez com eles na mesma semana.")
+                Text("What this compares").font(Tokens.Fonte.secao)
+                Text("Choose 2 to \(maximo) attributes that compete for the same space in a collection. The screen aligns panel presence with press movement in the same week.")
                     .font(Tokens.Fonte.apoio)
-                Text("A comparação é entre os atributos que você escolheu, sobre dados já coletados. Não é previsão de venda, e não considera seu custo, seu prazo nem seu histórico.")
+                Text("This compares already collected market data. It is not a sales forecast and does not include your costs, timing or history.")
                     .font(Tokens.Fonte.miudo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
             }
 
             if escolhidos.count >= 2 {
-                Section("Lado a lado") {
+                Section("Side by side") {
                     ForEach(comparados) { termo in
                         LinhaComparada(termo: termo,
                                        indice: indices[termo.id],
@@ -75,19 +75,19 @@ struct Comparar: View {
                     }
                 }
                 if let leitura = leituraDaDistancia {
-                    Section("Onde eles se separam") {
+                    Section("Where they diverge") {
                         Text(leitura).font(Tokens.Fonte.apoio)
                     }
                 }
             } else {
                 Section {
-                    Text("Escolha pelo menos 2 atributos abaixo.")
+                    Text("Choose at least 2 attributes below.")
                         .font(Tokens.Fonte.apoio)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
             }
 
-            Section(escolhidos.count >= 2 ? "Trocar seleção" : "Atributos") {
+            Section(escolhidos.count >= 2 ? "Change selection" : "Attributes") {
                 ForEach(termos) { termo in
                     Button {
                         alternar(termo.id)
@@ -99,7 +99,7 @@ struct Comparar: View {
                                                  ? Tokens.Cor.tinta : Tokens.Cor.semDado)
                             Text(Traducao.rotuloExibido(termo)).foregroundStyle(Tokens.Cor.tinta)
                             Spacer()
-                            Text(termo.dimensao)
+                            Text(Traducao.rotuloDaDimensao(termo.dimensao))
                                 .font(Tokens.Fonte.miudo)
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                         }
@@ -132,7 +132,7 @@ struct Comparar: View {
             return (t, share, indice)
         }
         guard comOsDois.count >= 2 else {
-            return "Ainda não dá para ler a distância: nem todos os escolhidos têm as duas pernas nesta semana."
+            return "The gap cannot be read yet because not every selected attribute has both sources this week."
         }
         guard let maisEditorial = comOsDois.max(by: { $0.2 < $1.2 }),
               let maisVarejo = comOsDois.max(by: { $0.1 < $1.1 }) else { return nil }
@@ -141,9 +141,9 @@ struct Comparar: View {
         let pctV = Leitura.numero(maisVarejo.1, casas: 1)
 
         if maisEditorial.0.id == maisVarejo.0.id {
-            return "\(Traducao.rotuloExibido(maisEditorial.0)) lidera nos dois eixos: é o mais citado pela imprensa e o mais presente no painel (\(pctE)% do sortimento). Quando os dois andam juntos, a leitura é de atributo já estabelecido, não de movimento novo."
+            return "\(Traducao.rotuloExibido(maisEditorial.0)) leads both axes: it is the most cited by the press and the most present in the panel (\(pctE)% of the assortment). When both move together, it reads as an established attribute rather than a new movement."
         }
-        return "\(Traducao.rotuloExibido(maisEditorial.0)) é o que a imprensa mais moveu nesta semana, e ocupa \(pctE)% do sortimento do painel. \(Traducao.rotuloExibido(maisVarejo.0)) é o mais presente nas vitrines, com \(pctV)%. Essa distância entre o que a imprensa cita e o que as marcas já penduraram é o que esta tela existe para mostrar — o que fazer com ela depende do seu custo e do seu prazo, que eu não conheço."
+        return "\(Traducao.rotuloExibido(maisEditorial.0)) moved most in press coverage this week and occupies \(pctE)% of the panel assortment. \(Traducao.rotuloExibido(maisVarejo.0)) is most present in stores at \(pctV)%. The screen shows this gap between press attention and what brands already carry; what to do with it depends on your costs and timing."
     }
 
     private func alternar(_ id: String) {
@@ -211,31 +211,31 @@ struct LinhaComparada: View {
                 Spacer()
                 SeloEstado(estado: podeMostrar ? indice?.estado : nil,
                            motivo: podeMostrar
-                               ? "Menos de duas pernas nesta semana."
-                               : "Sem cobertura suficiente da mesma semana.",
+                               ? "Fewer than two sources this week."
+                               : "Not enough same-week coverage.",
                            leitura: podeMostrar ? indice?.indice : nil)
             }
 
             if cobertura == nil {
-                LinhaInsumo(texto: "Não há medição de cobertura para este atributo nesta semana.")
+                LinhaInsumo(texto: "There is no coverage measurement for this attribute this week.")
             } else if !podeMostrar {
                 // §8: sem cobertura, nem índice nem share.
-                LinhaInsumo(texto: "Cobertura insuficiente ou fora do mesmo recorte: \(cobertura?.oQueFalta ?? "sem medição").")
+                LinhaInsumo(texto: "Insufficient or mismatched coverage: \(cobertura?.oQueFalta ?? "not measured").")
             } else {
                 HStack(alignment: .top, spacing: Tokens.Espaco.g) {
-                    eixo(titulo: "No painel",
+                    eixo(titulo: "In the panel",
                          valor: varejo?.valorBruto.map {
                              Leitura.numero($0, casas: 1) + "%"
                          } ?? "—",
-                         detalhe: varejo?.nAmostra.map { "\($0) peças" } ?? "sem dado")
-                    eixo(titulo: "No editorial",
+                         detalhe: varejo?.nAmostra.map { "\($0) items" } ?? "no data")
+                    eixo(titulo: "In editorial",
                          valor: Explicacao.numeroComUnidade(indice?.indice),
-                         detalhe: indice?.indice.map { Leitura.emPalavras($0) } ?? "sem índice")
+                         detalhe: indice?.indice.map { Leitura.emPalavras($0) } ?? "no index")
                 }
-                LinhaInsumo(texto: "No painel: \(Explicacao.unidade(daFonte: "varejo")). No editorial: \(Explicacao.unidadeDoIndice).")
+                LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")). Editorial: \(Explicacao.unidadeDoIndice).")
             }
             if let semana = varejo?.semana ?? indice?.semana {
-                LinhaInsumo(texto: "Semana de \(Formato.data(semana)).")
+                LinhaInsumo(texto: "Week of \(Formato.data(semana)).")
             }
         }
         .padding(.vertical, Tokens.Espaco.xs)

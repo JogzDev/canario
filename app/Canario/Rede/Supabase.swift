@@ -1,5 +1,49 @@
 import Foundation
 
+/// Resposta auditável da análise visual remota (A15).
+///
+/// Os nomes livres nunca entram no motor de tendências. Somente ids que já
+/// existem na taxonomia podem pré-preencher o formulário, e a escolha humana
+/// continua sendo o dado final salvo no Closet.
+struct AnaliseVisualRemota: Decodable, Equatable {
+    let targetClarity: String
+    let garmentStructure: String
+    let category: String
+    let decisionEvidence: [String]
+    let pattern: String
+    let fabrics: [String]
+    let length: String
+    let silhouette: String
+    let waist: String
+    let aesthetics: [String]
+    let colors: [String]
+    let additionalVisualAttributes: [String]
+    let model: String
+    let promptVersion: String
+
+    enum CodingKeys: String, CodingKey {
+        case category, pattern, fabrics, length, silhouette, waist, aesthetics, colors, model
+        case targetClarity = "target_clarity"
+        case garmentStructure = "garment_structure"
+        case decisionEvidence = "decision_evidence"
+        case additionalVisualAttributes = "additional_visual_attributes"
+        case promptVersion = "prompt_version"
+    }
+
+    /// Converte a saída fechada em sugestões, sem permitir que `not_visible`
+    /// ou texto livre virem ids acidentalmente.
+    func idsSugeridos(existentes: Set<String>) -> Set<String> {
+        let escalares = [category, pattern, length, silhouette, waist]
+            .filter { $0 != "not_visible" }
+        return Set(escalares + fabrics + aesthetics + colors)
+            .intersection(existentes)
+    }
+
+    var alvoAmbiguo: Bool {
+        targetClarity == "ambiguous_target" || category == "not_visible"
+    }
+}
+
 /// Cliente de leitura do Supabase.
 ///
 /// O app **só lê** (§33: servidor calcula, app consulta). A chave é a
@@ -25,13 +69,13 @@ actor Supabase {
         var errorDescription: String? {
             switch self {
             case .semConfiguracao:
-                return "Config.xcconfig ausente ou incompleto. Copie o Config.xcconfig.example."
+                return "Config.xcconfig is missing or incomplete. Copy Config.xcconfig.example."
             case .rede:
-                return "Não foi possível falar com o servidor."
+                return "The server could not be reached."
             case .resposta(let codigo, _):
-                return "O servidor respondeu \(codigo)."
+                return "The server returned \(codigo)."
             case .urlInvalida(let caminho, _):
-                return "Consulta malformada para \(caminho)."
+                return "Malformed request for \(caminho)."
             }
         }
     }
@@ -63,6 +107,14 @@ actor Supabase {
 
     var configurado: Bool {
         !chave.isEmpty && url.host != "invalido.invalido"
+    }
+
+    /// O interruptor só fica verde depois que a migração, a Edge Function e os
+    /// secrets foram implantados. Uma substituição ausente chega literalmente
+    /// como `$(REMOTE_ANALYSIS_ENABLED)` e, portanto, permanece desligada.
+    static var analiseRemotaHabilitada: Bool {
+        let valor = (Bundle.main.infoDictionary?["REMOTE_ANALYSIS_ENABLED"] as? String) ?? ""
+        return ["YES", "TRUE", "1"].contains(valor.uppercased())
     }
 
     /// Caracteres que o PostgREST usa como sintaxe e que NÃO podem ser
@@ -182,6 +234,54 @@ actor Supabase {
             throw falha
         } catch {
             throw Falha.rede(error)
+        }
+    }
+
+    /// Envia apenas a miniatura já reamostrada e sem metadados para a função
+    /// segura do projeto. A chave da OpenAI nunca atravessa esta fronteira.
+    func analisarPeca(_ dados: Data, alvo: String? = nil) async throws
+        -> AnaliseVisualRemota {
+        guard configurado, Self.analiseRemotaHabilitada else {
+            throw Falha.semConfiguracao
+        }
+        guard !dados.isEmpty, dados.count <= 3_000_000 else {
+            throw Falha.resposta(413, "image_size_not_allowed")
+        }
+
+        let tipo: String
+        if dados.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
+            tipo = "image/png"
+        } else if dados.starts(with: [0xFF, 0xD8, 0xFF]) {
+            tipo = "image/jpeg"
+        } else {
+            throw Falha.resposta(415, "unsupported_image_type")
+        }
+
+        let endereco = url.appendingPathComponent("functions/v1/analisar-peca")
+        var req = URLRequest(url: endereco,
+                             cachePolicy: .reloadIgnoringLocalCacheData,
+                             timeoutInterval: 30)
+        req.httpMethod = "POST"
+        // Publishable keys are API keys, not JWTs. The Edge Function validates
+        // this header with Supabase's `publishable` auth mode.
+        req.setValue(chave, forHTTPHeaderField: "apikey")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        var corpo: [String: Any] = [
+            "image_base64": dados.base64EncodedString(),
+            "media_type": tipo,
+        ]
+        if let alvo {
+            let limpo = alvo.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !limpo.isEmpty { corpo["target_hint"] = String(limpo.prefix(160)) }
+        }
+        req.httpBody = try JSONSerialization.data(withJSONObject: corpo)
+
+        let resposta = try await comUmaSegundaChance(req)
+        do {
+            return try JSONDecoder().decode(AnaliseVisualRemota.self, from: resposta)
+        } catch {
+            throw Falha.resposta(502, "analysis_contract_failed")
         }
     }
 }

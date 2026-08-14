@@ -116,31 +116,31 @@ enum Similares {
         let nomes = descricao
             ?? atributos.map(Traducao.rotuloExibido).joined(separator: " + ")
         if r.nSimilares == 0 {
-            return "Não encontrei nenhuma peça no painel com \(nomes). "
-                 + "Pode ser combinação rara, ou pode ser que o painel ainda não tenha alcançado — as duas coisas são possíveis e não sei distinguir."
+            return "I found no panel item with \(nomes). It may be an uncommon combination, "
+                 + "or the panel may not cover it yet; the data cannot distinguish those cases."
         }
 
-        frases.append("No painel de \(r.nMarcas) marca\(r.nMarcas == 1 ? "" : "s"), "
-                    + "encontrei \(r.nSimilares) peça\(r.nSimilares == 1 ? "" : "s") com \(nomes).")
+        frases.append("Across \(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s"), "
+                    + "I found \(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s") with \(nomes).")
 
         // A porcentagem só entra quando o conjunto a sustenta.
         if r.nSimilares >= minimoParaPorcentagem {
             if let cheio = r.pctPrecoCheio {
-                frases.append("\(Leitura.numero(cheio, casas: 0))% seguem a preço cheio.")
+                frases.append("\(Leitura.numero(cheio, casas: 0))% remain at full price.")
             }
             if let quebrada = r.pctGradeQuebrada {
-                var f = "\(Leitura.numero(quebrada, casas: 0))% estão com a grade quebrada"
+                var f = "\(Leitura.numero(quebrada, casas: 0))% have missing sizes"
                 if let esgotada = r.pctEsgotada, esgotada >= 5 {
-                    f += ", e \(Leitura.numero(esgotada, casas: 0))% já sem nenhum tamanho"
+                    f += ", and \(Leitura.numero(esgotada, casas: 0))% have no size left"
                 }
                 frases.append(f + ".")
             }
         } else {
-            frases.append("São poucas para porcentagem significar algo — abaixo de \(minimoParaPorcentagem) similares, prefiro mostrar as peças e não a estatística.")
+            frases.append("There are too few for percentages to be meaningful. Below \(minimoParaPorcentagem) matches, the items are shown without a summary statistic.")
         }
 
         if let mediana = r.precoMediana {
-            frases.append("O preço do meio é \(Formato.dinheiro(mediana)).")
+            frases.append("The median price is \(Formato.dinheiro(mediana)).")
         }
         return frases.joined(separator: " ")
     }
@@ -153,24 +153,24 @@ enum Similares {
         let pct = Int(p.rounded())
         let posicao: String
         switch pct {
-        case ..<25:  posicao = "abaixo da maior parte deles"
-        case 25..<45: posicao = "na metade de baixo"
-        case 45..<55: posicao = "bem no meio"
-        case 55..<75: posicao = "na metade de cima"
-        default:      posicao = "acima da maior parte deles"
+        case ..<25:  posicao = "below most of them"
+        case 25..<45: posicao = "in the lower half"
+        case 45..<55: posicao = "near the middle"
+        case 55..<75: posicao = "in the upper half"
+        default:      posicao = "above most of them"
         }
-        return "\(Formato.dinheiro(alvo)) fica no percentil \(pct) dos similares com preço — \(posicao). "
-             + "É posição de preço no painel, não julgamento do seu preço: margem e custo são seus."
+        return "\(Formato.dinheiro(alvo)) is at the \(pct)th percentile among priced matches — \(posicao). "
+             + "This is a panel price position, not a judgment of your price; your costs and margin are not included."
     }
 
     /// Como o limiar de semelhança foi aplicado. Regra 3: o usuário precisa
     /// poder auditar o que "parecida" significou nesta tela.
     static func criterio(_ r: Resumo) -> String {
         if r.minimoEmComum == r.atributosPedidos {
-            return "Peças que têm os \(r.atributosPedidos) atributos que você marcou."
+            return "Items with all \(r.atributosPedidos) attributes you selected."
         }
-        return "Peças com pelo menos \(r.minimoEmComum) dos \(r.atributosPedidos) atributos marcados; "
-             + "\(r.nComTodos) tem\(r.nComTodos == 1 ? "" : "êm") todos."
+        return "Items with at least \(r.minimoEmComum) of the \(r.atributosPedidos) selected attributes; "
+             + "\(r.nComTodos) match\(r.nComTodos == 1 ? "es" : "") all of them."
     }
 
     /// Uma linha de desfecho por peça — o "e o desfecho delas" da §5.
@@ -178,20 +178,20 @@ enum Similares {
         var partes: [String] = []
         if let g = p.grade, g.degraus > 0 {
             if g.esgotada {
-                partes.append("sem nenhum tamanho disponível")
+                partes.append("no size available")
             } else if g.quebrada {
                 let faltam = g.faltando.prefix(3).joined(separator: ", ")
-                partes.append("\(g.disponiveis) de \(g.degraus) tamanhos, faltando \(faltam)")
+                partes.append("\(g.disponiveis) of \(g.degraus) sizes, missing \(faltam)")
             } else {
-                partes.append("grade cheia, \(g.degraus) tamanhos")
+                partes.append("full size range, \(g.degraus) sizes")
             }
         }
         if let q = p.quedaPct {
-            partes.append("remarcada \(Leitura.numero(q, casas: 0))%")
+            partes.append("marked down \(Leitura.numero(q, casas: 0))%")
         } else if p.preco != nil {
-            partes.append("a preço cheio")
+            partes.append("at full price")
         }
-        return partes.isEmpty ? "sem dado de preço nem de grade" : partes.joined(separator: " · ")
+        return partes.isEmpty ? "no price or size data" : partes.joined(separator: " · ")
     }
 
     /// Produto explicitamente esgotado não é alternativa útil. Falta de grade

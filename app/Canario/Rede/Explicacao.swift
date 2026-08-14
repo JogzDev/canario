@@ -61,15 +61,15 @@ enum Explicacao {
     static func unidade(daFonte fonte: String) -> String {
         switch fonte {
         case "editorial_br", "editorial_intl":
-            return "matérias publicadas que citaram o termo"
+            return "published articles that mentioned the term"
         case "busca":
-            return "índice de interesse do Google Trends (0 a 100)"
+            return "Google Trends search-interest index (0 to 100)"
         case "lyst_indice":
-            return "posição no índice da Lyst"
+            return "position in the Lyst Index"
         case "varejo":
-            return "% das peças do painel que têm este atributo"
+            return "% of panel items with this attribute"
         case "lyst":
-            return "posição no índice da Lyst"
+            return "position in the Lyst Index"
         default:
             return fonte
         }
@@ -77,12 +77,12 @@ enum Explicacao {
 
     /// A unidade do índice em si. É a resposta literal ao "1,15 o quê?".
     static let unidadeDoIndice =
-        "distância em relação ao comportamento normal das 12 semanas anteriores"
+        "distance from the usual behavior of the previous 12 weeks"
 
     /// O valor compacto usado em comparação. A unidade/escala vem na linha de
     /// apoio imediatamente abaixo, para não transformar jargão no título.
     static func numeroComUnidade(_ indice: Double?) -> String {
-        guard let indice else { return "sem índice" }
+        guard let indice else { return "no index" }
         let n = Leitura.numero(indice, casas: 2, sinal: true)
         return "\(n)"
     }
@@ -95,7 +95,7 @@ enum Explicacao {
     /// testado antes de "em alta" no Postgres, e aqui também.
     static func porQue(estado: String?, indice: IndiceSemanal, series: [PontoSerie]) -> String {
         guard let estado else {
-            return "Ainda não há duas fontes concordando para afirmar uma direção: esta atualização tem \(indice.nPernas ?? 0)."
+            return "Two sources do not yet agree on a direction; this update has \(indice.nPernas ?? 0)."
         }
         let editorial = series.first { $0.fonte.hasPrefix("editorial") && $0.z != nil }
         let acima = indice.meta?.pernasAcimaDe1 ?? 0
@@ -103,20 +103,20 @@ enum Explicacao {
 
         switch estado {
         case "pico":
-            let intensidade = editorial?.z.map(Leitura.emPalavras) ?? "muito acima do normal"
+            let intensidade = editorial?.z.map(Leitura.emPalavras) ?? "far above the usual range"
             let referencia = editorial?.z.map {
-                " (\(Leitura.numero($0, casas: 1)) na escala estatística)"
+                " (\(Leitura.numero($0, casas: 1)) on the statistical scale)"
             } ?? ""
-            return "A atenção da imprensa ficou \(intensidade)\(referencia) numa semana, mas nenhuma outra fonte acompanhou. "
-                 + "Por enquanto é um destaque editorial isolado, não uma tendência confirmada."
+            return "Press attention was \(intensidade)\(referencia) for one week, but no other source followed. "
+                 + "For now this is an isolated editorial spike, not a confirmed trend."
         case "em alta":
-            return "Duas semanas seguidas acima do normal, com \(acima) fontes concordando. "
-                 + "Uma semana isolada não conta: o limiar existe para ruído de uma semana não virar notícia."
+            return "Two consecutive weeks above the usual range, with \(acima) sources agreeing. "
+                 + "One isolated week does not count; the threshold keeps one-week noise from becoming a trend."
         case "em queda":
-            return "Duas semanas seguidas abaixo do normal, com \(abaixo) fontes concordando. "
-                 + "Vale a mesma trava da alta: uma semana fraca sozinha não vira queda."
+            return "Two consecutive weeks below the usual range, with \(abaixo) sources agreeing. "
+                 + "The same safeguard applies: one weak week alone is not a decline."
         case "estavel":
-            return "Dentro da faixa normal deste atributo nas duas últimas semanas. Estável é resultado medido, não falta de dado."
+            return "Within this attribute's usual range for the last two weeks. Stable is a measured result, not missing data."
         default:
             return estado
         }
@@ -137,20 +137,20 @@ enum Explicacao {
                 switch p.fonte {
                 case "varejo":
                     let v = p.valorBruto.map { Leitura.numero($0, casas: 1) } ?? "—"
-                    let n = p.nAmostra.map { "\($0) peças do painel" } ?? "amostra não registrada"
-                    linha += "\(v)% do sortimento (\(n))"
+                    let n = p.nAmostra.map { "\($0) panel items" } ?? "sample not recorded"
+                    linha += "\(v)% of the assortment (\(n))"
                 case let f where f.hasPrefix("editorial"):
                     // Só a perna editorial trabalha em janela de 4 semanas
                     // (§18). Dizer "em 4 semanas" para a busca era colar a
                     // janela de uma perna no número de outra.
                     let n = p.nAmostra.map(String.init) ?? "—"
-                    linha += "\(n) \(unidade(daFonte: p.fonte)) em 4 semanas"
+                    linha += "\(n) \(unidade(daFonte: p.fonte)) over 4 weeks"
                     if let crua = p.meta?.contagemSemanaCrua {
-                        linha += ", \(crua) nesta semana"
+                        linha += ", \(crua) this week"
                     }
                 default:
                     let v = p.valorBruto.map { Leitura.numero($0, casas: 0) } ?? "—"
-                    linha += "\(v) de 100 no \(unidade(daFonte: p.fonte).replacingOccurrences(of: "índice de interesse do ", with: ""))"
+                    linha += "\(v) out of 100 on the \(unidade(daFonte: p.fonte).replacingOccurrences(of: "search-interest index ", with: ""))"
                 }
                 if let quem = p.meta?.veiculosEmTexto {
                     linha += " — \(quem)"

@@ -83,9 +83,9 @@ final class CurvaDeTamanhosTests: XCTestCase {
         XCTAssertTrue(CurvaDeTamanhos.empatados(m, p))
 
         let frase = CurvaDeTamanhos.manchete(porRotulo: painelComEmpate) ?? ""
-        XCTAssertTrue(frase.contains("P e M") || frase.contains("M e P"),
+        XCTAssertTrue(frase.contains("P and M") || frase.contains("M and P"),
                       "empate tem de nomear os dois, não coroar um")
-        XCTAssertTrue(frase.contains("mesmo ritmo"))
+        XCTAssertTrue(frase.contains("same pace"))
     }
 
     func testDiferencaRealContinuaSendoDeclarada() {
@@ -100,8 +100,8 @@ final class CurvaDeTamanhosTests: XCTestCase {
                        faixa("M", "meio",    emRisco: 10000, quebrou: 402, taxa: 4.02),
                        faixa("G", "maiores", emRisco: 10000, quebrou: 398, taxa: 3.98)]
         let frase = CurvaDeTamanhos.composicao(porRotulo: chapado) ?? ""
-        XCTAssertTrue(frase.contains("margem de erro"))
-        XCTAssertFalse(frase.contains("deslocar participação"))
+        XCTAssertTrue(frase.contains("margin of error"))
+        XCTAssertFalse(frase.contains("shifting share"))
     }
 
     // MARK: A manchete nomeia o tamanho, e isso não é estilo
@@ -116,7 +116,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         // próprio teste antigo quebrou e apontou o exagero.
         let frase = CurvaDeTamanhos.manchete(porRotulo: painel)
         XCTAssertNotNil(frase)
-        XCTAssertTrue(frase!.contains("P e M") || frase!.contains("M e P"),
+        XCTAssertTrue(frase!.contains("P and M") || frase!.contains("M and P"),
                       "P e M empatam dentro da margem; nomear só um exagera o achado")
         XCTAssertTrue(frase!.contains("2,2%"), "o vale entra junto, senão a taxa não tem contra o quê")
     }
@@ -137,7 +137,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         // atrás só do GG. Um comprador que lesse "os menores quebram mais" e
         // reforçasse PP estaria agindo sobre uma leitura errada.
         let frase = CurvaDeTamanhos.manchete(porRotulo: painel) ?? ""
-        XCTAssertFalse(frase.lowercased().contains("menores"),
+        XCTAssertFalse(frase.lowercased().contains("smaller sizes"),
                        "a manchete tem de nomear o tamanho, não generalizar a ponta da grade")
     }
 
@@ -154,7 +154,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let maiores = faixa(nil, "maiores", emRisco: 24276, quebrou: 641, taxa: 2.64)
         let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores)
         XCTAssertNotNil(frase)
-        XCTAssertTrue(frase!.contains("menores"))
+        XCTAssertTrue(frase!.contains("smaller sizes"))
         XCTAssertTrue(frase!.contains("1,18"))
     }
 
@@ -162,7 +162,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let menores = faixa(nil, "menores", emRisco: 1000, quebrou: 30, taxa: 3.00)
         let maiores = faixa(nil, "maiores", emRisco: 1000, quebrou: 29, taxa: 2.90)
         let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores) ?? ""
-        XCTAssertTrue(frase.contains("ritmo parecido"),
+        XCTAssertTrue(frase.contains("similar pace"),
                       "diferença de 3% não é formato; declarar empate é a leitura honesta")
     }
 
@@ -170,7 +170,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let menores = faixa(nil, "menores", emRisco: 1000, quebrou: 20, taxa: 2.0)
         let maiores = faixa(nil, "maiores", emRisco: 1000, quebrou: 40, taxa: 4.0)
         let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores) ?? ""
-        XCTAssertTrue(frase.contains("maiores"))
+        XCTAssertTrue(frase.contains("larger sizes"))
         XCTAssertTrue(frase.contains("2,00"))
     }
 
@@ -180,10 +180,10 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let frase = CurvaDeTamanhos.composicao(porRotulo: painel) ?? ""
         XCTAssertFalse(frase.isEmpty)
         // §24 autoriza composição de grade (soma zero) e proíbe volume.
-        XCTAssertTrue(frase.contains("sem mexer no total de peças"),
+        XCTAssertTrue(frase.contains("not the total number of items"),
                       "a soma zero é o que mantém a frase do lado permitido")
-        XCTAssertTrue(frase.contains("deslocar participação"))
-        for proibido in ["compre", "produza", "aumente a quantidade", "peças a mais"] {
+        XCTAssertTrue(frase.contains("shifting share"))
+        for proibido in ["buy more", "produce more", "increase quantity", "extra items"] {
             XCTAssertFalse(frase.lowercased().contains(proibido),
                            "recomendação de volume é proibida pela regra 1: \(proibido)")
         }
@@ -191,18 +191,18 @@ final class CurvaDeTamanhosTests: XCTestCase {
 
     func testComposicaoEhCondicional() {
         let frase = CurvaDeTamanhos.composicao(porRotulo: painel) ?? ""
-        XCTAssertTrue(frase.hasPrefix("Se a sua grade"),
+        XCTAssertTrue(frase.hasPrefix("If your size mix"),
                       "§24 exige linguagem condicional: o público do usuário não é o do painel")
-        XCTAssertTrue(frase.contains("seu custo"))
+        XCTAssertTrue(frase.contains("your costs"))
     }
 
     func testRessalvasCarregamOConfundidorDeProfundidade() {
         let todas = CurvaDeTamanhos.ressalvas.joined(separator: " ").lowercased()
-        XCTAssertTrue(todas.contains("não vemos quantidade em estoque"),
+        XCTAssertTrue(todas.contains("inventory quantities are not visible"),
                       "sem esta ressalva a taxa parece medir demanda, e ela mede saída do ar")
-        XCTAssertTrue(todas.contains("público médio do painel"),
+        XCTAssertTrue(todas.contains("panel's average audience"),
                       "ressalva obrigatória da §24")
-        XCTAssertTrue(todas.contains("não é venda"))
+        XCTAssertTrue(todas.contains("not a sales measure"))
     }
 
     // MARK: Ordem da escada
@@ -224,9 +224,9 @@ final class CurvaDeTamanhosTests: XCTestCase {
 
     func testInsumoDeclaraOQueSustentaONumero() {
         let texto = CurvaDeTamanhos.insumo(painel)
-        XCTAssertTrue(texto.contains("49756 tamanhos em risco"))
+        XCTAssertTrue(texto.contains("49756 sizes at risk"))
         XCTAssertTrue(texto.contains("27/07/2026"), "data em dd/mm/aaaa, como todo o resto")
-        XCTAssertTrue(texto.contains("14 dias"))
+        XCTAssertTrue(texto.contains("14-day"))
     }
 
     func testMinimoDeCoberturaExiste() {

@@ -81,7 +81,7 @@ private struct FavoritosDoMenu: View {
     @State private var termos: [Termo] = []
 
     private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0.rotulo) })
+        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
     }
 
     var body: some View {
@@ -269,10 +269,17 @@ private struct PrivacidadeDoMenu: View {
             PaginaInformativa {
                 Text("Privacy in this build")
                     .font(.title2.bold())
-                BlocoInformativo(
-                    icone: "camera",
-                    titulo: "Photos you choose",
-                    texto: "Camera and Photo Library access happen only after you tap the corresponding action. Analysis currently runs on the iPhone; this build does not send your clothing photo to an AI service.")
+                if Supabase.analiseRemotaHabilitada {
+                    BlocoInformativo(
+                        icone: "camera",
+                        titulo: "Photos you choose",
+                        texto: "Camera and Photo Library access happen only after you tap the corresponding action. After you select the target garment, the app asks for separate permission before sending a reduced, metadata-free copy through Supabase to OpenAI for attribute suggestions. The app does not store the submitted image. OpenAI may retain abuse-monitoring logs for up to 30 days.")
+                } else {
+                    BlocoInformativo(
+                        icone: "camera",
+                        titulo: "Photos you choose",
+                        texto: "Camera and Photo Library access happen only after you tap the corresponding action. Visual reading in this build stays on the iPhone; cloud analysis is disabled.")
+                }
                 BlocoInformativo(
                     icone: "internaldrive",
                     titulo: "A small local thumbnail",
@@ -284,7 +291,7 @@ private struct PrivacidadeDoMenu: View {
                 BlocoInformativo(
                     icone: "person.crop.circle.badge.xmark",
                     titulo: "No account data yet",
-                    texto: "There is no sign-in in this build, so the app does not collect an email address, password or synced Closet. This notice must change before account sync or remote photo analysis ships.")
+                    texto: "There is no sign-in in this build, so the app does not collect an email address, password or synced Closet. A cloud-analyzed photo is not linked to an account or advertising identifier.")
             }
         }
     }

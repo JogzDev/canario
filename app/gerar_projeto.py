@@ -213,9 +213,9 @@ def main():
       "LastUpgradeCheck = 1600; };")
     A("\t\t\tbuildConfigurationList = {} ;".format(lista_proj))
     A('\t\t\tcompatibilityVersion = "Xcode 14.0";')
-    A("\t\t\tdevelopmentRegion = pt_BR;")
+    A("\t\t\tdevelopmentRegion = en;")
     A("\t\t\thasScannedForEncodings = 0;")
-    A("\t\t\tknownRegions = (pt_BR, Base, );")
+    A("\t\t\tknownRegions = (en, Base, );")
     A("\t\t\tmainGroup = {} ;".format(grupo_raiz))
     A("\t\t\tproductRefGroup = {} ;".format(grupo_produtos))
     A('\t\t\tprojectDirPath = "";')
@@ -276,7 +276,7 @@ def main():
         'INFOPLIST_KEY_UILaunchScreen_Generation = YES;',
         'INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;',
         'LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );',
-        'MARKETING_VERSION = 0.1;',
+        'MARKETING_VERSION = 1.0;',
         'PRODUCT_BUNDLE_IDENTIFIER = "{}";'.format(BUNDLE),
         'PRODUCT_NAME = "$(TARGET_NAME)";',
         'SWIFT_EMIT_LOC_STRINGS = YES;',

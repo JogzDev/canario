@@ -51,6 +51,7 @@ def testar_taxonomia_e_schema():
     assert "A waist seam also does not prove separation" in prompt
     assert "surface area on the target garment only" in prompt
     assert "golden-yellow velvet and fabric stay amarelo_laranja" in prompt
+    assert MODULO.VERSAO_DO_PREPROCESSAMENTO == "vision-foreground-v1"
 
 
 def testar_amostra_balanceada_e_deterministica():
@@ -211,6 +212,17 @@ def testar_portao_pago_e_explicito():
             raise AssertionError("Portao abriu para outro conteudo de prompt")
 
 
+def testar_benchmark_exige_remocao_de_fundo():
+    workflow = (RAIZ / ".github" / "workflows" / "avaliar-luna.yml").read_text()
+    segmentador = (RAIZ / "ferramentas" / "segmentar_fundo.swift").read_text()
+    assert "xcrun swiftc ferramentas/segmentar_fundo.swift" in workflow
+    assert '--segmentador "$RUNNER_TEMP/segmentar-fundo"' in workflow
+    assert "VNGenerateForegroundInstanceMaskRequest" in segmentador
+    assert "primeiro_plano_nao_encontrado" in segmentador
+    assert "imagem bruta e proibida" in (
+        RAIZ / "ferramentas" / "avaliar_luna.py").read_text()
+
+
 def main():
     testes = [
         testar_taxonomia_e_schema,
@@ -219,6 +231,7 @@ def main():
         testar_extracao_e_custo,
         testar_jsonl_duravel_por_resposta,
         testar_portao_pago_e_explicito,
+        testar_benchmark_exige_remocao_de_fundo,
     ]
     for teste in testes:
         teste()

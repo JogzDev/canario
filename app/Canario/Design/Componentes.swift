@@ -23,7 +23,7 @@ struct SeloEstado: View {
                 .background(cor(e).opacity(0.15))
                 .foregroundStyle(cor(e))
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
-                .accessibilityLabel("Estado: \(e.rotulo)")
+                .accessibilityLabel("Status: \(e.rotulo)")
         } else if let leitura {
             Label(Leitura.emPalavras(leitura), systemImage: "waveform.path.ecg")
                 .font(Tokens.Fonte.miudo.weight(.semibold))
@@ -160,7 +160,7 @@ struct Carregando: View {
     var body: some View {
         HStack(spacing: Tokens.Espaco.s) {
             ProgressView()
-            Text("Consultando…").font(Tokens.Fonte.apoio)
+            Text("Loading…").font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -176,13 +176,13 @@ struct FalhaDeRede: View {
 
     var body: some View {
         VStack(spacing: Tokens.Espaco.s) {
-            Label("Não consegui consultar", systemImage: "wifi.exclamationmark")
+            Label("Couldn't load data", systemImage: "wifi.exclamationmark")
                 .font(Tokens.Fonte.secao)
             Text(mensagem)
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
                 .multilineTextAlignment(.center)
-            Button("Tentar de novo", action: tentarNovamente)
+            Button("Try again", action: tentarNovamente)
                 .buttonStyle(.bordered)
         }
         .frame(maxWidth: .infinity)

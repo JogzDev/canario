@@ -28,6 +28,7 @@ import urllib.request
 
 MODELO = "gpt-5.6-luna"
 VERSAO_DO_PROMPT = "alvo-estrutura-v5"
+VERSAO_DO_PREPROCESSAMENTO = "vision-foreground-v1"
 URL_RESPOSTAS = "https://api.openai.com/v1/responses"
 SEMENTE_PADRAO = 20260810
 CLAREZAS_DO_ALVO = (
@@ -376,19 +377,33 @@ def selecionar_amostra_de_avaliacao(raiz, categorias, quantidade, semente):
         raiz, categorias, quantidade, semente, excluir=excluir)
 
 
-def preparar_imagem(origem, destino):
-    """Normaliza a imagem para JPEG de ate 1024 px e custo previsivel."""
+def preparar_imagem(origem, destino, segmentador=None):
+    """Remove o fundo e normaliza em PNG de ate 1024 px.
+
+    O benchmark pago falha fechado quando o segmentador foi solicitado: jamais
+    substitui silenciosamente a peça isolada pela foto bruta.
+    """
+    fonte = origem
+    if segmentador is not None:
+        foreground = destino.with_name(destino.stem + "-foreground.png")
+        processo = subprocess.run(
+            [str(segmentador), str(origem), str(foreground)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        if processo.returncode != 0 or not foreground.is_file():
+            raise RuntimeError(
+                "Vision nao isolou o primeiro plano de {} ({})".format(
+                    origem.name, processo.stderr.strip()[:80] or "sem_saida"))
+        fonte = foreground
     comando = [
         "/usr/bin/sips", "-Z", "1024",
-        "--setProperty", "format", "jpeg",
-        "--setProperty", "formatOptions", "82",
-        str(origem), "--out", str(destino),
+        "--setProperty", "format", "png",
+        str(fonte), "--out", str(destino),
     ]
     processo = subprocess.run(
         comando, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     if processo.returncode != 0 or not destino.is_file():
         raise RuntimeError("sips nao conseguiu normalizar {}".format(origem.name))
-    return "data:image/jpeg;base64," + base64.b64encode(
+    return "data:image/png;base64," + base64.b64encode(
         destino.read_bytes()).decode("ascii")
 
 
@@ -612,6 +627,8 @@ def escrever_resumo(caminho, resultados, custo, duracao_total):
         "- Modelo: `{}` (`store=false`, reasoning medium, image detail high)".format(MODELO),
         "- Prompt: `{}` (alvo -> estrutura -> categoria derivada)".format(
             VERSAO_DO_PROMPT),
+        "- Pre-processamento: `{}` (Vision, fundo transparente; sem fallback bruto)".format(
+            VERSAO_DO_PREPROCESSAMENTO),
         "- SHA-256 do prompt: `{}`".format(hash_exibido),
         "- Imagens: **{}**".format(total),
         "- Concordancia de categoria com o rotulo fraco do catalogo: "
@@ -647,6 +664,10 @@ def escrever_resumo(caminho, resultados, custo, duracao_total):
     ]
     for r in resultados:
         analise = r["analysis"]
+        if analise is None:
+            linhas.append("| {} | {} | INVALIDA | — | — | {:.1f}s |".format(
+                r["imagem"], r["categoria_catalogo"], r["latencia_s"]))
+            continue
         linhas.append("| {} | {} | {} | {} | {} | {:.1f}s |".format(
             r["imagem"], r["categoria_catalogo"], analise["category"],
             analise["pattern"], ", ".join(analise["colors"]), r["latencia_s"]))
@@ -670,6 +691,7 @@ def argumentos():
     )
     parser.add_argument("--saida", type=Path)
     parser.add_argument("--resumo", type=Path)
+    parser.add_argument("--segmentador", type=Path)
     parser.add_argument(
         "--portao-24",
         type=Path,
@@ -685,6 +707,11 @@ def main():
         raise SystemExit("OPENAI_API_KEY ausente")
     if args.quantidade < 8 or args.quantidade > 300:
         raise SystemExit("--quantidade precisa estar entre 8 e 300")
+    if args.segmentador is not None and not args.segmentador.is_file():
+        raise SystemExit("--segmentador nao encontrado")
+    if args.quantidade > 24 and args.segmentador is None:
+        raise SystemExit(
+            "Benchmark de 300 exige --segmentador; imagem bruta e proibida")
 
     taxonomia = carregar_taxonomia(args.taxonomia)
     prompt_sha256 = hash_do_prompt(taxonomia)
@@ -701,8 +728,29 @@ def main():
     with tempfile.TemporaryDirectory(prefix="canario-luna-") as temporaria:
         pasta_temporaria = Path(temporaria)
         for indice, (esperada, imagem) in enumerate(amostra, 1):
-            normalizada = pasta_temporaria / "{:03d}.jpg".format(indice)
-            data_url = preparar_imagem(imagem, normalizada)
+            normalizada = pasta_temporaria / "{:03d}.png".format(indice)
+            try:
+                data_url = preparar_imagem(
+                    imagem, normalizada, segmentador=args.segmentador)
+            except RuntimeError as erro:
+                resultado = {
+                    "sample_id": "S{:02d}".format(indice),
+                    "imagem": imagem.name,
+                    "categoria_catalogo": esperada,
+                    "prompt_version": VERSAO_DO_PROMPT,
+                    "prompt_sha256": prompt_sha256,
+                    "preprocessing_version": VERSAO_DO_PREPROCESSAMENTO,
+                    "analysis": None,
+                    "acertou_categoria": False,
+                    "latencia_s": 0.0,
+                    "usage": {},
+                    "preprocessing_error": str(erro),
+                }
+                resultados.append(resultado)
+                anexar_jsonl(args.saida, resultado)
+                print("[{}/{}] PREPROCESSAMENTO_FALHOU | {}".format(
+                    indice, len(amostra), imagem.name), flush=True)
+                continue
             inicio = time.monotonic()
             resposta = chamar_openai(
                 montar_payload(data_url, taxonomia), chave)
@@ -727,6 +775,8 @@ def main():
                 "categoria_catalogo": esperada,
                 "prompt_version": VERSAO_DO_PROMPT,
                 "prompt_sha256": prompt_sha256,
+                "preprocessing_version": (
+                    VERSAO_DO_PREPROCESSAMENTO if args.segmentador else "none"),
                 "analysis": analise,
                 "acertou_categoria": (
                     analise is not None and analise.get("category") == esperada

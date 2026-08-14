@@ -82,28 +82,26 @@ enum SerieDoCluster {
         let umaFonte = r.pontos.filter { ($0.nPernasMin ?? 2) < 2 }.count
         guard ralos > 0 else { return nil }
         if ralos == r.pontos.count {
-            return "Todos os pontos têm cobertura parcial de atributos ou fontes; "
-                 + "a linha mostra o índice disponível, não um estado direcional."
+            return "Every point has partial attribute or source coverage; "
+                 + "the line shows the available index, not a directional state."
         }
-        var causas = ["\(ralos) de \(r.pontos.count) pontos têm cobertura parcial"]
-        if umaFonte > 0 { causas.append("\(umaFonte) usam apenas uma fonte") }
-        return causas.joined(separator: "; ") + ". Eles estão marcados no gráfico."
+        var causas = ["\(ralos) of \(r.pontos.count) points have partial coverage"]
+        if umaFonte > 0 { causas.append("\(umaFonte) use only one source") }
+        return causas.joined(separator: "; ") + ". They are marked on the chart."
     }
 
     /// Por que o gráfico não aparece, quando não aparece. Sempre uma frase que
     /// diz o que falta — nunca um espaço em branco.
     static func porQueNaoDesenha(_ r: Resposta?) -> String? {
         guard let r else {
-            return "Ainda não consegui carregar o histórico destes atributos."
+            return "The history for these attributes could not be loaded."
         }
         if r.atributosComPeso == 0 {
-            return "Estes atributos ainda não têm peso calculado no painel, "
-                 + "então não dá para compor uma linha com eles."
+            return "These attributes do not have panel weights yet, so a combined line cannot be drawn."
         }
         if r.pontos.count < pontosMinimos {
-            return "São \(r.pontos.count) semana\(r.pontos.count == 1 ? "" : "s") "
-                 + "com leitura, e eu só desenho a partir de \(pontosMinimos). "
-                 + "O histórico se acumula sozinho a cada coleta."
+            return "There are \(r.pontos.count) week\(r.pontos.count == 1 ? "" : "s") with readings; "
+                 + "at least \(pontosMinimos) are required to draw the chart. History grows with each collection."
         }
         return nil
     }

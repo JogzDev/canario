@@ -81,7 +81,7 @@ struct PecaSalva: Codable, Equatable, Identifiable {
     func nome(comRotulos rotulos: [String: String]) -> String {
         if !apelido.trimmingCharacters(in: .whitespaces).isEmpty { return apelido }
         let partes = termoIds.compactMap { rotulos[$0] ?? $0 }
-        return partes.isEmpty ? "Peça sem atributos" : partes.joined(separator: " · ")
+        return partes.isEmpty ? "Item without attributes" : partes.joined(separator: " · ")
     }
 }
 

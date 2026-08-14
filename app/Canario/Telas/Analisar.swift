@@ -136,7 +136,9 @@ struct Analisar: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(termos.isEmpty)
-                Text("This build analyzes the file on your iPhone. Nothing is uploaded or stored unless you save the item.")
+                Text(Supabase.analiseRemotaHabilitada
+                     ? "The photo stays on your iPhone until you explicitly approve a one-time visual analysis."
+                     : "This build analyzes the file on your iPhone. Nothing is uploaded or stored unless you save the item.")
                     .font(Tokens.Fonte.miudo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
             }
@@ -190,12 +192,12 @@ struct LinhaTermo: View {
                            motivo: "Fewer than two independent sources agree.",
                            leitura: indice?.indice)
             }
-            Text(termo.dimensao)
+            Text(Traducao.rotuloDaDimensao(termo.dimensao))
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             if let indice {
                 LinhaInsumo(texto: Perna.frase(indice.pernasAtivas)
-                            + " · atualização disponível: \(Formato.data(indice.semana))")
+                            + " · updated \(Formato.data(indice.semana))")
             }
         }
         .padding(.vertical, Tokens.Espaco.xs)

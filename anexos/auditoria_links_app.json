@@ -1,0 +1,3308 @@
+[
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Blusa Manga Longa De Malha Marrom",
+    "url": "https://www.animale.com.br/blusa-manga-longa-de-malha-marrom-marrom-biscoito-52-13-6108-10056/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/blusa-manga-longa-de-malha-marrom-marrom-biscoito-52-13-6108-10056/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Blusa Manga Longa De Malha Marrom",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1893957/52136108_10056_1-BLUSA-OMBRO-FRANZIDO.jpg?v=638822250339100000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1893957/52136108_10056_1-BLUSA-OMBRO-FRANZIDO.jpg?v=638822250339100000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Blusa De Tricot Canelado Com Manga Longa Básica",
+    "url": "https://www.animale.com.br/blusa-de-tricot-canelado-com-manga-longa-basica-rose-gold-52-13-5769-5471/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/blusa-de-tricot-canelado-com-manga-longa-basica-rose-gold-52-13-5769-5471/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Blusa De Tricot Canelado Com Manga Longa Básica",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1857844/52135769_5471_2-BLUSA-DE-TRICOT-CANELADO-COM-MANGA-LONGA-BASICA.jpg?v=638737855198700000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1857844/52135769_5471_2-BLUSA-DE-TRICOT-CANELADO-COM-MANGA-LONGA-BASICA.jpg?v=638737855198700000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Maria Filo",
+    "titulo": "Vestido Curto Estampa Sicília",
+    "url": "https://mariafilo.vtexcommercestable.com.br/vestido-curto-estampa-sicilia-est-sicilia---15-17954-27758/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fvestido-curto-estampa-sicilia-est-sicilia---15-17954-27758%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Maria Filo",
+    "titulo": "Vestido Curto Estampa Sicília",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/433785/1517954_27758_1-VESTIDO-CURTO-ESTAMPA-SICILIA.jpg?v=638307386862400000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/433785/1517954_27758_1-VESTIDO-CURTO-ESTAMPA-SICILIA.jpg?v=638307386862400000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Curto Estampado Milena",
+    "url": "https://secure.farmrio.com.br/vestido-curto-estampado-milena-milena_loc-medio_vm-cereja-360701-57234/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-curto-estampado-milena-milena_loc-medio_vm-cereja-360701-57234/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Curto Estampado Milena",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3765735/360701_57234_1-VESTIDO-CURTO-MILENA.jpg?v=639060221424100000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3765735/360701_57234_1-VESTIDO-CURTO-MILENA.jpg?v=639060221424100000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Maria Filo",
+    "titulo": "Calça Jeans Black Barrel",
+    "url": "https://mariafilo.vtexcommercestable.com.br/calca-jeans-black-barrel-jeans-black-escuro-15-26420-2291/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fcalca-jeans-black-barrel-jeans-black-escuro-15-26420-2291%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Maria Filo",
+    "titulo": "Calça Jeans Black Barrel",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/548685/1526420_2291_1-AI-CALCA-JEANS-BLACK-BARREL.jpg?v=639096362255200000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/548685/1526420_2291_1-AI-CALCA-JEANS-BLACK-BARREL.jpg?v=639096362255200000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Hering",
+    "titulo": "Vestido Longo Evasê Com Recorte Assimétrico - Amarelo",
+    "url": "https://www.hering.com.br/vestido-longo-evase-com-recorte-assimetrico-khww10gsn/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/vestido-longo-evase-com-recorte-assimetrico-khww10gsn/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Hering",
+    "titulo": "Vestido Longo Evasê Com Recorte Assimétrico - Amarelo",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/5221182/KHWW-10GSN-C1.jpg?v=639033238110430000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/5221182/KHWW-10GSN-C1.jpg?v=639033238110430000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Hering",
+    "titulo": "Vestido Midi Em Ribana Canelada - Azul",
+    "url": "https://www.hering.com.br/vestido-midi-em-ribana-canelada-0bfgav2en/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/vestido-midi-em-ribana-canelada-0bfgav2en/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Hering",
+    "titulo": "Vestido Midi Em Ribana Canelada - Azul",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/6470346/0BFG-AV2EN-C1.jpg?v=639168746896600000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/6470346/0BFG-AV2EN-C1.jpg?v=639168746896600000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Saia Reta Cropped Textura",
+    "url": "https://secure.farmrio.com.br/saia-reta-cropped-textura-preto-368230-0013/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/saia-reta-cropped-textura-preto-368230-0013/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Saia Reta Cropped Textura",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3829951/368230_0013_1-SAIA-RETA-CROPPED-TEXTURA.jpg?v=639181498654500000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3829951/368230_0013_1-SAIA-RETA-CROPPED-TEXTURA.jpg?v=639181498654500000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Curto Drapeado",
+    "url": "https://secure.farmrio.com.br/vestido-curto-drapeado-marrom-chocolate-362643-07684/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-curto-drapeado-marrom-chocolate-362643-07684/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Curto Drapeado",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3775182/362643_07684_1-VESTIDO-CURTO-DRAPEADO.jpg?v=639060495417930000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3775182/362643_07684_1-VESTIDO-CURTO-DRAPEADO.jpg?v=639060495417930000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Cropped Estampado Jardim Boho",
+    "url": "https://secure.farmrio.com.br/vestido-cropped-estampado-jardim-boho-jardim-boho_bg-seda-370713-58913/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-cropped-estampado-jardim-boho-jardim-boho_bg-seda-370713-58913/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Cropped Estampado Jardim Boho",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3823289/370713_58913_1-VESTIDO-CROPPED-JARDIM-BOHO.jpg?v=639181104073200000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3823289/370713_58913_1-VESTIDO-CROPPED-JARDIM-BOHO.jpg?v=639181104073200000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Ombro Só Estampado Flor De Romã",
+    "url": "https://secure.farmrio.com.br/vestido-ombro-so-estampado-flor-de-roma-flor-de-roma_bg-seda-360645-56692/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-ombro-so-estampado-flor-de-roma-flor-de-roma_bg-seda-360645-56692/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Ombro Só Estampado Flor De Romã",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3764911/360645_56692_1-VESTIDO-OMBRO-SO-FLOR-DE-ROMA.jpg?v=639060196632530000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3764911/360645_56692_1-VESTIDO-OMBRO-SO-FLOR-DE-ROMA.jpg?v=639060196632530000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Bermuda Estampada Reino Místico",
+    "url": "https://secure.farmrio.com.br/bermuda-estampada-reino-mistico-reino-mistico_mini_preto-361304-57237/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/bermuda-estampada-reino-mistico-reino-mistico_mini_preto-361304-57237/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Bermuda Estampada Reino Místico",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3769402/361304_57237_1-BERMUDA-REINO-MISTICO.jpg?v=639060329465630000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3769402/361304_57237_1-BERMUDA-REINO-MISTICO.jpg?v=639060329465630000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Cardigan Slim Namíbia",
+    "url": "https://secure.farmrio.com.br/cardigan-slim-namibia-namibia_preto-362983-57226/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/cardigan-slim-namibia-namibia_preto-362983-57226/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Cardigan Slim Namíbia",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3776093/362983_57226_1-CARDIGAN-SLIM-NAMIBIA.jpg?v=639060522465930000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3776093/362983_57226_1-CARDIGAN-SLIM-NAMIBIA.jpg?v=639060522465930000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Frente Única Devore Lia Flor",
+    "url": "https://secure.farmrio.com.br/vestido-frente-unica-devore-lia-flor-est-lia-flor_bg-barbante-364011-56700/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-frente-unica-devore-lia-flor-est-lia-flor_bg-barbante-364011-56700/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Frente Única Devore Lia Flor",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3778366/364011_56700_1-VESTIDO-FRENTE-UNICA-DEVORE-LIA-FLOR.jpg?v=639060584307170000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3778366/364011_56700_1-VESTIDO-FRENTE-UNICA-DEVORE-LIA-FLOR.jpg?v=639060584307170000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Cropped Estampado Nara Floral",
+    "url": "https://secure.farmrio.com.br/vestido-cropped-estampado-nara-floral-nara-floral_az-cumuru-361776-56710/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-cropped-estampado-nara-floral-nara-floral_az-cumuru-361776-56710/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Cropped Estampado Nara Floral",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3771973/361776_56710_1-VESTIDO-CROPED-NARA-FLORAL.jpg?v=639060403754230000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3771973/361776_56710_1-VESTIDO-CROPED-NARA-FLORAL.jpg?v=639060403754230000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Longo Frente Única Estampado Conchita",
+    "url": "https://secure.farmrio.com.br/vestido-longo-frente-unica-estampado-conchita-conchita_off-white-361105-56860/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-longo-frente-unica-estampado-conchita-conchita_off-white-361105-56860/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Farm",
+    "titulo": "Vestido Longo Frente Única Estampado Conchita",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3768617/361105_56860_1-VESTIDO-LONGO-FRENTE-UNICA-CONCHITA.jpg?v=639060306486830000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3768617/361105_56860_1-VESTIDO-LONGO-FRENTE-UNICA-CONCHITA.jpg?v=639060306486830000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Regata De Tricot Lurex Com Decote v",
+    "url": "https://www.animale.com.br/regata-de-tricot-lurex-com-decote-v-verde-exotique-52-15-1371-5339/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/regata-de-tricot-lurex-com-decote-v-verde-exotique-52-15-1371-5339/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Regata De Tricot Lurex Com Decote v",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1826519/52151371_5339_1-REGATA-DE-TRICOT-LUREX-COM-DECOTE-V.jpg?v=638645290557430000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1826519/52151371_5339_1-REGATA-DE-TRICOT-LUREX-COM-DECOTE-V.jpg?v=638645290557430000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Macacão Sem Manga Pantalona Recorte Na Cintura De Viscose Estampado",
+    "url": "https://www.animale.com.br/macacao-sem-manga-pantalona-recorte-na-cintura-de-viscose-estampado-est-textura-fingers-color-08-42-0394-50969/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/macacao-sem-manga-pantalona-recorte-na-cintura-de-viscose-estampado-est-textura-fingers-color-08-42-0394-50969/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Macacão Sem Manga Pantalona Recorte Na Cintura De Viscose Estampado",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1903076/08420394_50969_1-MACACAO-TEXTURA-FINGERS.jpg?v=638835221641270000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1903076/08420394_50969_1-MACACAO-TEXTURA-FINGERS.jpg?v=638835221641270000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Camisa Manga Curta Com Linho Off White",
+    "url": "https://www.animale.com.br/camisa-manga-curta-com-linho-off-white-off-white-52-05-1765-0003/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/camisa-manga-curta-com-linho-off-white-off-white-52-05-1765-0003/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Camisa Manga Curta Com Linho Off White",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1878237/52051765_0003_1-CAMISA-CROPPED-OFF-WHITE.jpg?v=638792909443700000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1878237/52051765_0003_1-CAMISA-CROPPED-OFF-WHITE.jpg?v=638792909443700000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Calça De Georgette Pesado Reta Estampada",
+    "url": "https://www.animale.com.br/calca-de-georgette-pesado-reta-estampada-est-bar-pois-penas-color-25-34-2701-52837/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/calca-de-georgette-pesado-reta-estampada-est-bar-pois-penas-color-25-34-2701-52837/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_reposicao",
+    "marca": "Animale",
+    "titulo": "Calça De Georgette Pesado Reta Estampada",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1948715/25342701_52837_1-CALCA-BARRADO-POIS-PENAS.jpg?v=638925227667470000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1948715/25342701_52837_1-CALCA-BARRADO-POIS-PENAS.jpg?v=638925227667470000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Dress To",
+    "titulo": "Calça Estampa Mar Aberto",
+    "url": "https://www.dressto.com.br/calca-estampa-mar-aberto-03130637-471/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/calca-estampa-mar-aberto-03130637-471/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Dress To",
+    "titulo": "Calça Estampa Mar Aberto",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/714233/03130637_471_1-CALCA-ESTAMPA-MAR-ABERTO.jpg?v=638271795465800000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/714233/03130637_471_1-CALCA-ESTAMPA-MAR-ABERTO.jpg?v=638271795465800000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Dress To",
+    "titulo": "Colete Linho Botões Frente",
+    "url": "https://www.dressto.com.br/colete-linho-botoes-frente-08220093-2275/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/colete-linho-botoes-frente-08220093-2275/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Dress To",
+    "titulo": "Colete Linho Botões Frente",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/892880/08220093_2275_1-COLETE-LINHO-BOTOES-FRENTE.png?v=638645133672030000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/892880/08220093_2275_1-COLETE-LINHO-BOTOES-FRENTE.png?v=638645133672030000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Maria Filo",
+    "titulo": "Vestido Midi Decote Recorte",
+    "url": "https://mariafilo.vtexcommercestable.com.br/vestido-midi-decote-recorte-preto-15-25690-0005/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fvestido-midi-decote-recorte-preto-15-25690-0005%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Maria Filo",
+    "titulo": "Vestido Midi Decote Recorte",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/535404/1525690_0005_1-AV-VESTIDO-MIDI-DECOTE-V-RECORTE.jpg?v=638990686776270000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/535404/1525690_0005_1-AV-VESTIDO-MIDI-DECOTE-V-RECORTE.jpg?v=638990686776270000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Maria Filo",
+    "titulo": "Calça Pantalona Detalhe Franzido",
+    "url": "https://mariafilo.vtexcommercestable.com.br/calca-pantalona-detalhe-franzido-rock-15-27111-07535/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fcalca-pantalona-detalhe-franzido-rock-15-27111-07535%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Maria Filo",
+    "titulo": "Calça Pantalona Detalhe Franzido",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/552648/1527111_07535_1-AI-CALCA-PANTALONA-DETALHE-FRANZIDO.jpg?v=639142801038830000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/552648/1527111_07535_1-AI-CALCA-PANTALONA-DETALHE-FRANZIDO.jpg?v=639142801038830000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Hering",
+    "titulo": "Shorts De Sarja Estampado Hering + Cosmo - Laranja",
+    "url": "https://www.hering.com.br/shorts-de-sarja-estampado-hering--cosmo-hcd51bsn/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/shorts-de-sarja-estampado-hering--cosmo-hcd51bsn/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Hering",
+    "titulo": "Shorts De Sarja Estampado Hering + Cosmo - Laranja",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/3856579/HCD5-1BSN-C1-F.jpg?v=638841472216730000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/3856579/HCD5-1BSN-C1-F.jpg?v=638841472216730000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blusão unissex de moletom com capuz mindset working title cinza",
+    "url": "https://www.cea.com.br/blusao-unissex-de-moletom-com-capuz-mindset-working-title-cinza--1113925-cinza_mes1/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/blusao-unissex-de-moletom-com-capuz-mindset-working-title-cinza--1113925-cinza_mes1/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blusão unissex de moletom com capuz mindset working title cinza",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59358903/Foto-0.jpg?v=639142796489230000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59358903/Foto-0.jpg?v=639142796489230000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina de poliuretano balonê marrom",
+    "url": "https://www.cea.com.br/jaqueta-feminina-de-poliuretano-balone-marrom-1108352-marrom_esc/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/jaqueta-feminina-de-poliuretano-balone-marrom-1108352-marrom_esc/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina de poliuretano balonê marrom",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59390286/Foto-0.jpg?v=639216244704430000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59390286/Foto-0.jpg?v=639216244704430000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta militar feminina jeans mindset azul",
+    "url": "https://www.cea.com.br/jaqueta-militar-feminina-jeans-mindset-azul-1119133-jeans-md/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/jaqueta-militar-feminina-jeans-mindset-azul-1119133-jeans-md/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta militar feminina jeans mindset azul",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59382536/Foto-0.jpg?v=639199265761170000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59382536/Foto-0.jpg?v=639199265761170000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina de suede com bolsos bege",
+    "url": "https://www.cea.com.br/jaqueta-feminina-de-suede-com-bolsos-bege-1108380-kaki/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/jaqueta-feminina-de-suede-com-bolsos-bege-1108380-kaki/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina de suede com bolsos bege",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59390103/Foto-0.jpg?v=639215555781100000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59390103/Foto-0.jpg?v=639215555781100000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Farm",
+    "titulo": "Blusa Estampada Posto 6",
+    "url": "https://secure.farmrio.com.br/blusa-estampada-posto-6-posto-6_ow-368581-57776/p",
+    "http_status": 404,
+    "final_url": "https://secure.farmrio.com.br/Sistema/404?ProductLinkNotFound=blusa-estampada-posto-6-posto-6_ow-368581-57776",
+    "content_type": "text/html",
+    "flags": [
+      "http_404",
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Farm",
+    "titulo": "Blusa Estampada Posto 6",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3830939/368581_57776_1-BLUSA-POSTO-6.jpg?v=639181551529130000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3830939/368581_57776_1-BLUSA-POSTO-6.jpg?v=639181551529130000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina poliamida funnel neck com bolsos bege",
+    "url": "https://www.cea.com.br/jaqueta-feminina-poliamida-funnel-neck-com-bolsos-bege-1112023-beige_7/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/jaqueta-feminina-poliamida-funnel-neck-com-bolsos-bege-1112023-beige_7/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina poliamida funnel neck com bolsos bege",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59390033/Foto-0.jpg?v=639215521005230000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59390033/Foto-0.jpg?v=639215521005230000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blusão feminino de moletom com capuz mickey off white",
+    "url": "https://www.cea.com.br/blusao-feminino-de-moletom-com-capuz-mickey-off-white-1059855-off_white/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/blusao-feminino-de-moletom-com-capuz-mickey-off-white-1059855-off_white/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blusão feminino de moletom com capuz mickey off white",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59389317/Foto-0.jpg?v=639213765669400000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59389317/Foto-0.jpg?v=639213765669400000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Dress To",
+    "titulo": "Calça Cargo Alfaiataria",
+    "url": "https://www.dressto.com.br/calca-cargo-alfaiataria-03130665-2204/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/calca-cargo-alfaiataria-03130665-2204/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Dress To",
+    "titulo": "Calça Cargo Alfaiataria",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/735881/03130665_2204_1-CALCA-CARGO-ALFAIATARIA.png?v=638319564807730000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/735881/03130665_2204_1-CALCA-CARGO-ALFAIATARIA.png?v=638319564807730000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blusão feminino de moletom stitch com capuz azul",
+    "url": "https://www.cea.com.br/blusao-feminino-de-moletom-stitch-com-capuz-azul-1064366-azul_escu/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/blusao-feminino-de-moletom-stitch-com-capuz-azul-1064366-azul_escu/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blusão feminino de moletom stitch com capuz azul",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59387926/Foto-0.jpg?v=639210342344730000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59387926/Foto-0.jpg?v=639210342344730000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "Lanca Perfume",
+    "titulo": "Regata Canelada Com Bordado Brasil",
+    "url": "https://www.lancaperfume.com.br/regata-canelada-com-bordado-brasil-502rg001313/p",
+    "http_status": 200,
+    "final_url": "https://www.lancaperfume.com.br/regata-canelada-com-bordado-brasil-502rg001313/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "Lanca Perfume",
+    "titulo": "Regata Canelada Com Bordado Brasil",
+    "url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/738249/1.jpg?v=639129107804770000",
+    "http_status": 200,
+    "final_url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/738249/1.jpg?v=639129107804770000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blazer de alfaiataria feminino com ombreiras acetinado amarelo",
+    "url": "https://www.cea.com.br/blazer-de-alfaiataria-feminino-com-ombreiras-acetinado-amarelo-1111508-amarelo_c1/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/blazer-de-alfaiataria-feminino-com-ombreiras-acetinado-amarelo-1111508-amarelo_c1/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "blazer de alfaiataria feminino com ombreiras acetinado amarelo",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59386963/Foto-0.jpg?v=639208626148630000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59386963/Foto-0.jpg?v=639208626148630000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta dupla face feminina de pu e veludo cotelê mindset preta",
+    "url": "https://www.cea.com.br/jaqueta-dupla-face-feminina-de-pu-e-veludo-cotele-mindset-preta-1108423-preto/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/jaqueta-dupla-face-feminina-de-pu-e-veludo-cotele-mindset-preta-1108423-preto/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta dupla face feminina de pu e veludo cotelê mindset preta",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59365744/Foto-0.jpg?v=639160153857430000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59365744/Foto-0.jpg?v=639160153857430000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "casaco longo feminino com bolsos cinza",
+    "url": "https://www.cea.com.br/casaco-longo-feminino-com-bolsos-cinza-1103949-preto/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/casaco-longo-feminino-com-bolsos-cinza-1103949-preto/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "casaco longo feminino com bolsos cinza",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59367730/Foto-0.jpg?v=639166924514830000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59367730/Foto-0.jpg?v=639166924514830000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "casaco sobretudo feminino xadrez azul",
+    "url": "https://www.cea.com.br/casaco-sobretudo-feminino-xadrez-azul-1102818-azul_escu/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/casaco-sobretudo-feminino-xadrez-azul-1102818-azul_escu/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "casaco sobretudo feminino xadrez azul",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59359033/Foto-0.jpg?v=639142910713170000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59359033/Foto-0.jpg?v=639142910713170000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina de veludo cotelê com bolsos marrom",
+    "url": "https://www.cea.com.br/jaqueta-feminina-de-veludo-cotele-com-bolsos-marrom-1103965-caramelo/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/jaqueta-feminina-de-veludo-cotele-com-bolsos-marrom-1103965-caramelo/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "evento_remarcacao",
+    "marca": "C&A",
+    "titulo": "jaqueta feminina de veludo cotelê com bolsos marrom",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59367574/Foto-0.jpg?v=639166229094130000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59367574/Foto-0.jpg?v=639166229094130000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "PatBo",
+    "titulo": "VESTIDO CURTO POÁ P&B OFF WHITE",
+    "url": "https://www.patbo.com.br/products/vestido-curto-poa-p-b-off-white",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/vestido-curto-poa-p-b-off-white",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "PatBo",
+    "titulo": "VESTIDO CURTO POÁ P&B OFF WHITE",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/VEC33993_01.jpg?v=1766769675",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/VEC33993_01.jpg?v=1766769675",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Cantao",
+    "titulo": "Vestido alcinha linho bordado étnico",
+    "url": "https://www.cantao.com.br/vestido-alcinha-linho-bordado-etnico-540905031/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/vestido-alcinha-linho-bordado-etnico-540905031/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Cantao",
+    "titulo": "Vestido alcinha linho bordado étnico",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/304374/539595_031_1_M.jpg?v=639057392837600000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/304374/539595_031_1_M.jpg?v=639057392837600000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Animale",
+    "titulo": "Vestido De Tule Longo Poá Preto Manga Comprida",
+    "url": "https://www.animale.com.br/vestido-de-tule-longo-poa-preto-manga-comprida-preto-07-20-6195-0005/p",
+    "http_status": 404,
+    "final_url": "https://www.animale.com.br/vestido-de-tule-longo-poa-preto-manga-comprida-preto-07-20-6195-0005/p",
+    "content_type": "text/html",
+    "flags": [
+      "http_404",
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Animale",
+    "titulo": "Vestido De Tule Longo Poá Preto Manga Comprida",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1735629/07206195_0005_1-VESTIDO-LONGO-TULE-POA.jpg?v=638447523242800000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1735629/07206195_0005_1-VESTIDO-LONGO-TULE-POA.jpg?v=638447523242800000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Bo.Bo",
+    "titulo": "Chemise Samanta Poa Longo Bo.Bô Feminino",
+    "url": "https://www.bobo.com.br/chemise-samanta-poa-longo-bo-bo-feminino-preto-15-01-2783/p",
+    "http_status": 200,
+    "final_url": "https://www.bobo.com.br/chemise-samanta-poa-longo-bo-bo-feminino-preto-15-01-2783/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Bo.Bo",
+    "titulo": "Chemise Samanta Poa Longo Bo.Bô Feminino",
+    "url": "https://vistabobo.vteximg.com.br/arquivos/ids/180788/15012783_09_1-CHEMISE-SAMANTA-POA-MIDI.jpg?v=638556272438770000",
+    "http_status": 200,
+    "final_url": "https://vistabobo.vteximg.com.br/arquivos/ids/180788/15012783_09_1-CHEMISE-SAMANTA-POA-MIDI.jpg?v=638556272438770000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Farm",
+    "titulo": "Vestido T-Shirt Estampado Poá Ararinha",
+    "url": "https://secure.farmrio.com.br/vestido-t-shirt-estampado-poa-ararinha-poa-ararinha_preto-366687-57895/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-t-shirt-estampado-poa-ararinha-poa-ararinha_preto-366687-57895/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Farm",
+    "titulo": "Vestido T-Shirt Estampado Poá Ararinha",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3835764/366687_57895_2-VESTIDO-TSHIRT-POA-ARARINHA.jpg?v=639183453041800000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3835764/366687_57895_2-VESTIDO-TSHIRT-POA-ARARINHA.jpg?v=639183453041800000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Maria Filo",
+    "titulo": "Vestido Poá Mini",
+    "url": "https://mariafilo.vtexcommercestable.com.br/vestido-poa-mini-preto-15-19035-0005/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fvestido-poa-mini-preto-15-19035-0005%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Maria Filo",
+    "titulo": "Vestido Poá Mini",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/445601/1519035_0005_1-VESTIDO-POA-MINI.jpg?v=638397966597270000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/445601/1519035_0005_1-VESTIDO-POA-MINI.jpg?v=638397966597270000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Dress To",
+    "titulo": "Vestido Cropped Estampa Poá Folhagem",
+    "url": "https://www.dressto.com.br/vestido-cropped-estampa-poa-folhagem-01342727-471/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/vestido-cropped-estampa-poa-folhagem-01342727-471/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Dress To",
+    "titulo": "Vestido Cropped Estampa Poá Folhagem",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/949824/01342727_471_1-VESTIDO-CROPPED-ESTAMPA-POA-FOLHAGEM.png?v=638878599258370000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/949824/01342727_471_1-VESTIDO-CROPPED-ESTAMPA-POA-FOLHAGEM.png?v=638878599258370000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "C&A",
+    "titulo": "Vestido com Estampa Abstrata Preto",
+    "url": "https://www.cea.com.br/vestido-com-estampa-abstrata-preto-8012991-preto/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/vestido-com-estampa-abstrata-preto-8012991-preto/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "C&A",
+    "titulo": "Vestido com Estampa Abstrata Preto",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/488939/Vestido-com-Estampa-Abstrata-Preto-8012991-Preto_1.jpg?v=635727237279630000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/488939/Vestido-com-Estampa-Abstrata-Preto-8012991-Preto_1.jpg?v=635727237279630000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Zinzane",
+    "titulo": "Vestido Midi Manga Curta Poá - Rosa",
+    "url": "https://www.zinzane.com.br/vestido-midi-manga-curta-poa-rosa-034170-0012/p",
+    "http_status": 200,
+    "final_url": "https://www.zinzane.com.br/vestido-midi-manga-curta-poa-rosa-034170-0012/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Zinzane",
+    "titulo": "Vestido Midi Manga Curta Poá - Rosa",
+    "url": "https://zinzane.vteximg.com.br/arquivos/ids/885135/034170_0012_1-VESTIDO-MIDI-MANGA-CURTA-POA.jpg?v=639219798764270000",
+    "http_status": 200,
+    "final_url": "https://zinzane.vteximg.com.br/arquivos/ids/885135/034170_0012_1-VESTIDO-MIDI-MANGA-CURTA-POA.jpg?v=639219798764270000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "PatBo",
+    "titulo": "VESTIDO CURTO POÁ WOW ROSA",
+    "url": "https://www.patbo.com.br/products/vestido-curto-poa-wow-rosa",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/vestido-curto-poa-wow-rosa",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "PatBo",
+    "titulo": "VESTIDO CURTO POÁ WOW ROSA",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/VEC33573_01.jpg?v=1758131217",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/VEC33573_01.jpg?v=1758131217",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Farm",
+    "titulo": "Vestido Frente Única Estampado Petit Poá",
+    "url": "https://secure.farmrio.com.br/vestido-frente-unica-estampado-petit-poa-petit-poa_mr-chocolate-365990-57225/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-frente-unica-estampado-petit-poa-petit-poa_mr-chocolate-365990-57225/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Farm",
+    "titulo": "Vestido Frente Única Estampado Petit Poá",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3795164/365990_57225_1-VESTIDO-FRENTE-UNICA-PETIT-POA.jpg?v=639117717899900000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3795164/365990_57225_1-VESTIDO-FRENTE-UNICA-PETIT-POA.jpg?v=639117717899900000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Dress To",
+    "titulo": "Vestido Balonê Estampa Poá Folhagem",
+    "url": "https://www.dressto.com.br/vestido-balone-estampa-poa-folhagem-01342679-471/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/vestido-balone-estampa-poa-folhagem-01342679-471/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_vestido+geometrica",
+    "marca": "Dress To",
+    "titulo": "Vestido Balonê Estampa Poá Folhagem",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/947939/01342679_471_2-VESTIDO-BALONE-ESTAMPA-POA-FOLHAGEM.png?v=639099799247700000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/947939/01342679_471_2-VESTIDO-BALONE-ESTAMPA-POA-FOLHAGEM.png?v=639099799247700000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "PatBo",
+    "titulo": "CAMISA LISTRADO ARTSY PINK",
+    "url": "https://www.patbo.com.br/products/camisa-listrado-artsy-pink",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/camisa-listrado-artsy-pink",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "PatBo",
+    "titulo": "CAMISA LISTRADO ARTSY PINK",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/V22BOCAM19414BR1_00080_1.jpg?v=1742996103",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/V22BOCAM19414BR1_00080_1.jpg?v=1742996103",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Cantao",
+    "titulo": "Blusa algodão listra bordado dadinho",
+    "url": "https://www.cantao.com.br/blusa-algodao-listra-bordado-dadinho-541483031/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/blusa-algodao-listra-bordado-dadinho-541483031/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Cantao",
+    "titulo": "Blusa algodão listra bordado dadinho",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/312057/541006_031_1_M.jpg?v=639207604003600000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/312057/541006_031_1_M.jpg?v=639207604003600000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Animale",
+    "titulo": "Camisa Cropped Listras Oversized",
+    "url": "https://www.animale.com.br/camisa-cropped-listras-oversized-listrado-52-05-1815-0015/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/camisa-cropped-listras-oversized-listrado-52-05-1815-0015/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Animale",
+    "titulo": "Camisa Cropped Listras Oversized",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1933516/52051815_0015_1-CAMISA-CROPPED-LISTRAS-OVERSIZED.jpg?v=638894378376700000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1933516/52051815_0015_1-CAMISA-CROPPED-LISTRAS-OVERSIZED.jpg?v=638894378376700000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Bo.Bo",
+    "titulo": "Camisa Cora Stripes Bo.Bô Feminina",
+    "url": "https://www.bobo.com.br/camisa-cora-stripes-bo-bo-feminina-marrom-escuro-13-01-6495/p",
+    "http_status": 200,
+    "final_url": "https://www.bobo.com.br/camisa-cora-stripes-bo-bo-feminina-marrom-escuro-13-01-6495/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Bo.Bo",
+    "titulo": "Camisa Cora Stripes Bo.Bô Feminina",
+    "url": "https://vistabobo.vteximg.com.br/arquivos/ids/295120/13016495_59_1-CAMISA-CORA-STRIPES.jpg?v=639112547422700000",
+    "http_status": 200,
+    "final_url": "https://vistabobo.vteximg.com.br/arquivos/ids/295120/13016495_59_1-CAMISA-CORA-STRIPES.jpg?v=639112547422700000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Farm",
+    "titulo": "Camisa Listra Brasil",
+    "url": "https://secure.farmrio.com.br/camisa-listra-brasil-listra-brasil_multi-365764-57664/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/camisa-listra-brasil-listra-brasil_multi-365764-57664/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Farm",
+    "titulo": "Camisa Listra Brasil",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3793979/365764_57664_1-CAMISA-LISTRA-BRASIL.jpg?v=639111912364130000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3793979/365764_57664_1-CAMISA-LISTRA-BRASIL.jpg?v=639111912364130000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Hering",
+    "titulo": "Camisa Feminina Fio Tinto Listrada - Off white",
+    "url": "https://www.hering.com.br/camisa-feminina-fio-tinto-listrada-k6qc1csi/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/camisa-feminina-fio-tinto-listrada-k6qc1csi/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Hering",
+    "titulo": "Camisa Feminina Fio Tinto Listrada - Off white",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/6574017/K6QC-1CSI-C1.jpg?v=639192975678130000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/6574017/K6QC-1CSI-C1.jpg?v=639192975678130000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Le Lis Blanc",
+    "titulo": "Camisa Listrada Le Lis Jaqueline Feminina",
+    "url": "https://www.lelis.com.br/camisa-listrada-le-lis-jaqueline-feminina-listrado-5-13-01-6553/p",
+    "http_status": 200,
+    "final_url": "https://www.lelis.com.br/camisa-listrada-le-lis-jaqueline-feminina-listrado-5-13-01-6553/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Le Lis Blanc",
+    "titulo": "Camisa Listrada Le Lis Jaqueline Feminina",
+    "url": "https://vistalelis.vteximg.com.br/arquivos/ids/536450/13016553_169_1-CAMISA-JAQUELINE.jpg?v=639204071383500000",
+    "http_status": 200,
+    "final_url": "https://vistalelis.vteximg.com.br/arquivos/ids/536450/13016553_169_1-CAMISA-JAQUELINE.jpg?v=639204071383500000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Maria Filo",
+    "titulo": "Camisa Listrada Linho",
+    "url": "https://mariafilo.vtexcommercestable.com.br/camisa-listrada-linho-listrado-15-27910-0015/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fcamisa-listrada-linho-listrado-15-27910-0015%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Maria Filo",
+    "titulo": "Camisa Listrada Linho",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/558748/1527910_0015_1-V-CAMISA-LISTRADA-LINHO.jpg?v=639197381059430000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/558748/1527910_0015_1-V-CAMISA-LISTRADA-LINHO.jpg?v=639197381059430000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Dress To",
+    "titulo": "Camisa Algodão Listras Lurex",
+    "url": "https://www.dressto.com.br/camisa-algodao-listras-lurex-02083268-011/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/camisa-algodao-listras-lurex-02083268-011/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Dress To",
+    "titulo": "Camisa Algodão Listras Lurex",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/993242/02083268_011_1-CAMISA-ALGODAO-LISTRAS-LUREX.png?v=638993313616670000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/993242/02083268_011_1-CAMISA-ALGODAO-LISTRAS-LUREX.png?v=638993313616670000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "C&A",
+    "titulo": "camisa feminina de algodão com pregas listrada bege",
+    "url": "https://www.cea.com.br/camisa-feminina-de-algodao-com-pregas-listrada-bege--1103270-bege_l/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/camisa-feminina-de-algodao-com-pregas-listrada-bege--1103270-bege_l/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "C&A",
+    "titulo": "camisa feminina de algodão com pregas listrada bege",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59340414/Foto-0.jpg?v=639100406862100000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59340414/Foto-0.jpg?v=639100406862100000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Lanca Perfume",
+    "titulo": "Camisa Regular Listrada De Algodão",
+    "url": "https://www.lancaperfume.com.br/camisa-regular-listrada-de-algodao-502ca001820/p",
+    "http_status": 200,
+    "final_url": "https://www.lancaperfume.com.br/camisa-regular-listrada-de-algodao-502ca001820/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Lanca Perfume",
+    "titulo": "Camisa Regular Listrada De Algodão",
+    "url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/764192/3.jpg?v=639204358957030000",
+    "http_status": 200,
+    "final_url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/764192/3.jpg?v=639204358957030000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_camisa+listra",
+    "marca": "Zinzane",
+    "titulo": "Camisa Manga Longa Listras - Azul Marinho",
+    "url": "https://www.zinzane.com.br/camisa-manga-longa-listras-azul-marinho-033659-1055/p",
+    "http_status": 200,
+    "final_url": "https://www.zinzane.com.br/camisa-manga-longa-listras-azul-marinho-033659-1055/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_camisa+listra",
+    "marca": "Zinzane",
+    "titulo": "Camisa Manga Longa Listras - Azul Marinho",
+    "url": "https://zinzane.vteximg.com.br/arquivos/ids/881300/033659_1055_1-CAMISA-MANGA-LONGA-LISTRAS.png?v=639202516096500000",
+    "http_status": 200,
+    "final_url": "https://zinzane.vteximg.com.br/arquivos/ids/881300/033659_1055_1-CAMISA-MANGA-LONGA-LISTRAS.png?v=639202516096500000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "PatBo",
+    "titulo": "TOP MATELASSÊ CECÍLIA PRETO",
+    "url": "https://www.patbo.com.br/products/top-patbo-preto-3",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/top-patbo-preto-3",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "PatBo",
+    "titulo": "TOP MATELASSÊ CECÍLIA PRETO",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/TOP34125_CAL34127_4.jpg?v=1781288016",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/TOP34125_CAL34127_4.jpg?v=1781288016",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Cantao",
+    "titulo": "T-shirt classic faz de conta preto",
+    "url": "https://www.cantao.com.br/t-shirt-classic-faz-de-conta-preto-541769021/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/t-shirt-classic-faz-de-conta-preto-541769021/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Cantao",
+    "titulo": "T-shirt classic faz de conta preto",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/308459/541006_031_1_M.jpg?v=639117605708800000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/308459/541006_031_1_M.jpg?v=639117605708800000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Animale",
+    "titulo": "Top De Couro Cropped Detalhe Vivo Preto",
+    "url": "https://www.animale.com.br/top-de-couro-cropped-detalhe-vivo-preto-preto-52-10-5100-0005/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/top-de-couro-cropped-detalhe-vivo-preto-preto-52-10-5100-0005/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Animale",
+    "titulo": "Top De Couro Cropped Detalhe Vivo Preto",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1881969/52105100_0005_4-TOP-DE-COURO-CROPPED-DETALHE-VIVO.jpg?v=638799902438730000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1881969/52105100_0005_4-TOP-DE-COURO-CROPPED-DETALHE-VIVO.jpg?v=638799902438730000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Bo.Bo",
+    "titulo": "Regata Ember Preta Tricot Bo.Bô Feminina",
+    "url": "https://www.bobo.com.br/regata-ember-preta-tricot-bo-bo-feminina-preto-12-18-1306/p",
+    "http_status": 200,
+    "final_url": "https://www.bobo.com.br/regata-ember-preta-tricot-bo-bo-feminina-preto-12-18-1306/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Bo.Bo",
+    "titulo": "Regata Ember Preta Tricot Bo.Bô Feminina",
+    "url": "https://vistabobo.vteximg.com.br/arquivos/ids/291193/12181306_09_1-REGATA-EMBER-PRETA-TRICOT.jpg?v=639074689857600000",
+    "http_status": 200,
+    "final_url": "https://vistabobo.vteximg.com.br/arquivos/ids/291193/12181306_09_1-REGATA-EMBER-PRETA-TRICOT.jpg?v=639074689857600000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Farm",
+    "titulo": "Vestido Cropped Estampado Sonho De Concha Preto",
+    "url": "https://secure.farmrio.com.br/vestido-cropped-estampado-sonho-de-concha-preto-sonho-de-concha_preto-360652-56714/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/vestido-cropped-estampado-sonho-de-concha-preto-sonho-de-concha_preto-360652-56714/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Farm",
+    "titulo": "Vestido Cropped Estampado Sonho De Concha Preto",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3765056/360652_56714_1-VESTIDO-CROPPED-SONHO-DE-CONCHA.jpg?v=639060200935570000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3765056/360652_56714_1-VESTIDO-CROPPED-SONHO-DE-CONCHA.jpg?v=639060200935570000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Hering",
+    "titulo": "Blusa Feminina Gola Alta Canelada - Preto",
+    "url": "https://www.hering.com.br/blusa-feminina-gola-alta-canelada-4h9kn10en/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/blusa-feminina-gola-alta-canelada-4h9kn10en/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Hering",
+    "titulo": "Blusa Feminina Gola Alta Canelada - Preto",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/6636857/4H9K-N10EN-C1.jpg?v=639198127768370000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/6636857/4H9K-N10EN-C1.jpg?v=639198127768370000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Le Lis Blanc",
+    "titulo": "Blusa Le Lis Lica Preta Seda Feminina",
+    "url": "https://www.lelis.com.br/blusa-le-lis-lica-preta-seda-feminina-preto-11-03-4547/p",
+    "http_status": 200,
+    "final_url": "https://www.lelis.com.br/blusa-le-lis-lica-preta-seda-feminina-preto-11-03-4547/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Le Lis Blanc",
+    "titulo": "Blusa Le Lis Lica Preta Seda Feminina",
+    "url": "https://vistalelis.vteximg.com.br/arquivos/ids/403816/11034547_09_1-BLUSA-LICA-PRETA.jpg?v=638887357806900000",
+    "http_status": 200,
+    "final_url": "https://vistalelis.vteximg.com.br/arquivos/ids/403816/11034547_09_1-BLUSA-LICA-PRETA.jpg?v=638887357806900000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Maria Filo",
+    "titulo": "Regata Flame Black",
+    "url": "https://mariafilo.vtexcommercestable.com.br/regata-flame-black-preto-15-26679-0005/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fregata-flame-black-preto-15-26679-0005%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Maria Filo",
+    "titulo": "Regata Flame Black",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/543915/1526679_0005_1-I-REGATA-FLAME-BLACK.jpg?v=639051329513000000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/543915/1526679_0005_1-I-REGATA-FLAME-BLACK.jpg?v=639051329513000000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Morena Rosa",
+    "titulo": "Blusa Morena Rosa Ajustada Gola Alta Manga Longa Padrão Preto",
+    "url": "https://www.morenarosa.com.br/blusa-morena-rosa-ajustada-gola-alta-manga-longa-padrao-preto-375776/p",
+    "http_status": 200,
+    "final_url": "https://www.morenarosa.com.br/blusa-morena-rosa-ajustada-gola-alta-manga-longa-padrao-preto-375776/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Morena Rosa",
+    "titulo": "Blusa Morena Rosa Ajustada Gola Alta Manga Longa Padrão Preto",
+    "url": "https://lojamorenarosa.vteximg.com.br/arquivos/ids/422649/BLUSA-AJUSTADA-GOLA-ALTA-MANGA-LONGA-PADRAO---PRETO---P.jpg?v=639161097503370000",
+    "http_status": 200,
+    "final_url": "https://lojamorenarosa.vteximg.com.br/arquivos/ids/422649/BLUSA-AJUSTADA-GOLA-ALTA-MANGA-LONGA-PADRAO---PRETO---P.jpg?v=639161097503370000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "NV",
+    "titulo": "T-Shirt Karen - Preto",
+    "url": "https://www.bynv.com.br/t-shirt-karen-preto-v272802-nv089/p",
+    "http_status": 200,
+    "final_url": "https://www.bynv.com.br/t-shirt-karen-preto-v272802-nv089/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "NV",
+    "titulo": "T-Shirt Karen - Preto",
+    "url": "https://bynv.vteximg.com.br/arquivos/ids/859617/V272802_NV089_1-T-SHIRT-KAREN.jpg?v=639196632501070000",
+    "http_status": 200,
+    "final_url": "https://bynv.vteximg.com.br/arquivos/ids/859617/V272802_NV089_1-T-SHIRT-KAREN.jpg?v=639196632501070000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Dress To",
+    "titulo": "Blusa Jeans Pespontos Black",
+    "url": "https://www.dressto.com.br/blusa-jeans-pespontos-black-02083787-352/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/blusa-jeans-pespontos-black-02083787-352/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "Dress To",
+    "titulo": "Blusa Jeans Pespontos Black",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/1032837/02083787_352_1-BLUSA-JEANS-PESPONTOS-BLACK.png?v=639130040352300000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/1032837/02083787_352_1-BLUSA-JEANS-PESPONTOS-BLACK.png?v=639130040352300000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_blusa_top+preto",
+    "marca": "C&A",
+    "titulo": "top esportivo feminino de poliamida alça fina preto",
+    "url": "https://www.cea.com.br/top-esportivo-feminino-de-poliamida-alca-fina-preto-1115471-preto/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/top-esportivo-feminino-de-poliamida-alca-fina-preto-1115471-preto/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_blusa_top+preto",
+    "marca": "C&A",
+    "titulo": "top esportivo feminino de poliamida alça fina preto",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59373689/Foto-0.jpg?v=639179223851200000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59373689/Foto-0.jpg?v=639179223851200000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "PatBo",
+    "titulo": "CASACO CHARM TWILL CINZA",
+    "url": "https://www.patbo.com.br/products/casaco-charm-twill-cinza",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/casaco-charm-twill-cinza",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "PatBo",
+    "titulo": "CASACO CHARM TWILL CINZA",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/I24BOCAS28319BR_00023_1.png?v=1744207292",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/I24BOCAS28319BR_00023_1.png?v=1744207292",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Animale",
+    "titulo": "Jaqueta Parka Tecnológica Cinza",
+    "url": "https://www.animale.com.br/jaqueta-parka-tecnologica-cinza-cinza-ash-03-03-0185-0801/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/jaqueta-parka-tecnologica-cinza-cinza-ash-03-03-0185-0801/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Animale",
+    "titulo": "Jaqueta Parka Tecnológica Cinza",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1949563/03030185_0801_2-PARKA-TECNOLOGICA.jpg?v=638925507182800000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1949563/03030185_0801_2-PARKA-TECNOLOGICA.jpg?v=638925507182800000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Farm",
+    "titulo": "Moletom Mescla Pedalinho",
+    "url": "https://secure.farmrio.com.br/moletom-mescla-pedalinho-cinza-mescla-374027-0195/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/moletom-mescla-pedalinho-cinza-mescla-374027-0195/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Farm",
+    "titulo": "Moletom Mescla Pedalinho",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3858375/374027_0195_1-MOLETOM-MESCLA-PEDALINHO.jpg?v=639199188974330000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3858375/374027_0195_1-MOLETOM-MESCLA-PEDALINHO.jpg?v=639199188974330000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Hering",
+    "titulo": "Jaqueta Feminina Bomber Em Tecido Plano - Cinza",
+    "url": "https://www.hering.com.br/jaqueta-feminina-bomber-em-tecido-plano-k6tc1asi/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/jaqueta-feminina-bomber-em-tecido-plano-k6tc1asi/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Hering",
+    "titulo": "Jaqueta Feminina Bomber Em Tecido Plano - Cinza",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/6545105/K6TC-1ASI-C1.jpg?v=639189443960200000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/6545105/K6TC-1ASI-C1.jpg?v=639189443960200000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "NV",
+    "titulo": "Blazer Zoe - Cinza Mescla",
+    "url": "https://www.bynv.com.br/blazer-zoe-cinza-mescla-v271717-nv032/p",
+    "http_status": 200,
+    "final_url": "https://www.bynv.com.br/blazer-zoe-cinza-mescla-v271717-nv032/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "NV",
+    "titulo": "Blazer Zoe - Cinza Mescla",
+    "url": "https://bynv.vteximg.com.br/arquivos/ids/855253/V271717_NV032_1-BLAZER-ZOE.jpg?v=639189561420930000",
+    "http_status": 200,
+    "final_url": "https://bynv.vteximg.com.br/arquivos/ids/855253/V271717_NV032_1-BLAZER-ZOE.jpg?v=639189561420930000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "C&A",
+    "titulo": "suéter de tricot com pérolas cinza",
+    "url": "https://www.cea.com.br/sueter-de-tricot-com-perolas-cinza-1067811-cinza/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/sueter-de-tricot-com-perolas-cinza-1067811-cinza/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "C&A",
+    "titulo": "suéter de tricot com pérolas cinza",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59339252/Foto-0.jpg?v=639096235439930000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59339252/Foto-0.jpg?v=639096235439930000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Lanca Perfume",
+    "titulo": "Blazer Regular Em Alfaiataria Mescla",
+    "url": "https://www.lancaperfume.com.br/blazer-regular-em-alfaiataria-mescla-502bz001078/p",
+    "http_status": 200,
+    "final_url": "https://www.lancaperfume.com.br/blazer-regular-em-alfaiataria-mescla-502bz001078/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Lanca Perfume",
+    "titulo": "Blazer Regular Em Alfaiataria Mescla",
+    "url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/736638/1.jpg?v=639128987826870000",
+    "http_status": 200,
+    "final_url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/736638/1.jpg?v=639128987826870000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Zinzane",
+    "titulo": "Casaco Botões - Cinza",
+    "url": "https://www.zinzane.com.br/casaco-botoes-cinza-034047-0016/p",
+    "http_status": 200,
+    "final_url": "https://www.zinzane.com.br/casaco-botoes-cinza-034047-0016/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Zinzane",
+    "titulo": "Casaco Botões - Cinza",
+    "url": "https://zinzane.vteximg.com.br/arquivos/ids/877246/034047_0016_1-CAMISA--BOTOES-TEXTURA.jpg?v=639198190542830000",
+    "http_status": 200,
+    "final_url": "https://zinzane.vteximg.com.br/arquivos/ids/877246/034047_0016_1-CAMISA--BOTOES-TEXTURA.jpg?v=639198190542830000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Amaro",
+    "titulo": "Jaqueta com Botão de Lã Acrílica - Cinza Mescla Claro",
+    "url": "https://amaro.com/products/jaqueta-com-botao-de-la-acrilica-cinza-mescla-claro",
+    "http_status": 200,
+    "final_url": "https://amaro.com/products/jaqueta-com-botao-de-la-acrilica-cinza-mescla-claro",
+    "content_type": "text/html",
+    "flags": [
+      "esgotado_na_loja"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Amaro",
+    "titulo": "Jaqueta com Botão de Lã Acrílica - Cinza Mescla Claro",
+    "url": "https://cdn.shopify.com/s/files/1/0623/5871/6577/files/11016450.jpg?v=1783630017",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0623/5871/6577/files/11016450.jpg?v=1783630017",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "PatBo",
+    "titulo": "BLAZER URBAN REFUGE CINZA",
+    "url": "https://www.patbo.com.br/products/blazer-urban-refuge-cinza",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/blazer-urban-refuge-cinza",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "PatBo",
+    "titulo": "BLAZER URBAN REFUGE CINZA",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/Copiade2024_10_15_PATBO_BLA32175_CAL32177_1889_1.jpg?v=1750172225",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/Copiade2024_10_15_PATBO_BLA32175_CAL32177_1889_1.jpg?v=1750172225",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Hering",
+    "titulo": "Jaqueta Feminina Bomber - Cinza",
+    "url": "https://www.hering.com.br/jaqueta-feminina-bomber-k5zm6csi/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/jaqueta-feminina-bomber-k5zm6csi/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "Hering",
+    "titulo": "Jaqueta Feminina Bomber - Cinza",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/6541747/K5ZM-6CSI-C1.jpg?v=639181056407800000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/6541747/K5ZM-6CSI-C1.jpg?v=639181056407800000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "NV",
+    "titulo": "Blazer Nine Alfa - Cinza Mescla",
+    "url": "https://www.bynv.com.br/blazer-nine-alfa-cinza-mescla-v271969-nv032/p",
+    "http_status": 200,
+    "final_url": "https://www.bynv.com.br/blazer-nine-alfa-cinza-mescla-v271969-nv032/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_casaco_jaqueta+cinza",
+    "marca": "NV",
+    "titulo": "Blazer Nine Alfa - Cinza Mescla",
+    "url": "https://bynv.vteximg.com.br/arquivos/ids/855614/V271969_NV032_1-BLAZER-NINE-ALFA.jpg?v=639189563282730000",
+    "http_status": 200,
+    "final_url": "https://bynv.vteximg.com.br/arquivos/ids/855614/V271969_NV032_1-BLAZER-NINE-ALFA.jpg?v=639189563282730000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "PatBo",
+    "titulo": "CALÇA LAISE FLORA AMARELO",
+    "url": "https://www.patbo.com.br/products/calca-laise-flora-amarelo",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/calca-laise-flora-amarelo",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "PatBo",
+    "titulo": "CALÇA LAISE FLORA AMARELO",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/CAL33309_2163a147-5de0-4633-bd21-cc548bc699c4.jpg?v=1764074648",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/CAL33309_2163a147-5de0-4633-bd21-cc548bc699c4.jpg?v=1764074648",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Cantao",
+    "titulo": "Calça liocel ilha dos sonhos amarelo",
+    "url": "https://www.cantao.com.br/calca-liocel-ilha-dos-sonhos-amarelo-540502441/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/calca-liocel-ilha-dos-sonhos-amarelo-540502441/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Cantao",
+    "titulo": "Calça liocel ilha dos sonhos amarelo",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/302877/539595_031_1_M.jpg?v=639057376781370000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/302877/539595_031_1_M.jpg?v=639057376781370000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Animale",
+    "titulo": "Calça Algodao Amarelo Vintage",
+    "url": "https://www.animale.com.br/calca-algodao-amarelo-vintage-amarelo-vintage-25-34-2898-07504/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/calca-algodao-amarelo-vintage-amarelo-vintage-25-34-2898-07504/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Animale",
+    "titulo": "Calça Algodao Amarelo Vintage",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1972801/25342898_07504_1-CALCA-ALGODAO-AMARELO-VINTAGE.jpg?v=639002257188500000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1972801/25342898_07504_1-CALCA-ALGODAO-AMARELO-VINTAGE.jpg?v=639002257188500000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Hering",
+    "titulo": "Calça Feminina Reta Em Tricô - Amarelo",
+    "url": "https://www.hering.com.br/calca-feminina-reta-em-trico-k6km10gsi/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/calca-feminina-reta-em-trico-k6km10gsi/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Hering",
+    "titulo": "Calça Feminina Reta Em Tricô - Amarelo",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/6433403/K6KM-10GSI-C1.jpg?v=639154288872630000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/6433403/K6KM-10GSI-C1.jpg?v=639154288872630000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Morena Rosa",
+    "titulo": "Conjunto Morena Rosa Blusa Sem Manga Calça Reta Cintura Alta Amarelo",
+    "url": "https://www.morenarosa.com.br/conjunto-morena-rosa-blusa-sem-manga-calca-reta-cintura-alta-amarelo-381400/p",
+    "http_status": 200,
+    "final_url": "https://www.morenarosa.com.br/conjunto-morena-rosa-blusa-sem-manga-calca-reta-cintura-alta-amarelo-381400/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Morena Rosa",
+    "titulo": "Conjunto Morena Rosa Blusa Sem Manga Calça Reta Cintura Alta Amarelo",
+    "url": "https://lojamorenarosa.vteximg.com.br/arquivos/ids/432059/CONJUNTO-BLUSA-SEM-MANGA-CALCA-RETA-CINTURA-ALTA---AMARELO---P.jpg?v=639208582488730000",
+    "http_status": 404,
+    "final_url": "https://lojamorenarosa.vteximg.com.br/arquivos/ids/432059/CONJUNTO-BLUSA-SEM-MANGA-CALCA-RETA-CINTURA-ALTA---AMARELO---P.jpg?v=639208582488730000",
+    "content_type": "application/json",
+    "flags": [
+      "http_404",
+      "nao_e_imagem"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "NV",
+    "titulo": "Calça New Helena - Laranja Flame",
+    "url": "https://www.bynv.com.br/calca-new-helena-laranja-flame-v252906-nv291/p",
+    "http_status": 200,
+    "final_url": "https://www.bynv.com.br/calca-new-helena-laranja-flame-v252906-nv291/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "NV",
+    "titulo": "Calça New Helena - Laranja Flame",
+    "url": "https://bynv.vteximg.com.br/arquivos/ids/754214/V252906_NV291_1-CALCA-NEW-HELENA.jpg?v=638887953799700000",
+    "http_status": 200,
+    "final_url": "https://bynv.vteximg.com.br/arquivos/ids/754214/V252906_NV291_1-CALCA-NEW-HELENA.jpg?v=638887953799700000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "C&A",
+    "titulo": "calça cenoura feminina com linho e cinto laranja",
+    "url": "https://www.cea.com.br/calca-cenoura-feminina-com-linho-e-cinto-laranja-1091250-ocre/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/calca-cenoura-feminina-com-linho-e-cinto-laranja-1091250-ocre/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "C&A",
+    "titulo": "calça cenoura feminina com linho e cinto laranja",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59208837/Foto-0.jpg?v=638756674390170000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59208837/Foto-0.jpg?v=638756674390170000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Zinzane",
+    "titulo": "Calça Pantalona Detalhe Pesponto - Amarelo",
+    "url": "https://www.zinzane.com.br/calca-pantalona-detalhe-pesponto-amarelo-031667-0008/p",
+    "http_status": 200,
+    "final_url": "https://www.zinzane.com.br/calca-pantalona-detalhe-pesponto-amarelo-031667-0008/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Zinzane",
+    "titulo": "Calça Pantalona Detalhe Pesponto - Amarelo",
+    "url": "https://zinzane.vteximg.com.br/arquivos/ids/739406/031667_0008_1-CALCA-PANTALONA-DETALHE-PESPONTO.jpg?v=639015309888600000",
+    "http_status": 200,
+    "final_url": "https://zinzane.vteximg.com.br/arquivos/ids/739406/031667_0008_1-CALCA-PANTALONA-DETALHE-PESPONTO.jpg?v=639015309888600000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Amaro",
+    "titulo": "Calça Wide Leg de Viscose - Ocre",
+    "url": "https://amaro.com/products/calca-wide-leg-de-viscose-ocre",
+    "http_status": 404,
+    "final_url": "https://amaro.com/products/calca-wide-leg-de-viscose-ocre",
+    "content_type": "text/html",
+    "flags": [
+      "http_404",
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Amaro",
+    "titulo": "Calça Wide Leg de Viscose - Ocre",
+    "url": "https://cdn.shopify.com/s/files/1/0623/5871/6577/files/9990643_e0778eca-4132-4bbc-9b89-0d10bb0b2912.jpg?v=1779114912",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0623/5871/6577/files/9990643_e0778eca-4132-4bbc-9b89-0d10bb0b2912.jpg?v=1779114912",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Bo.Bo",
+    "titulo": "Calça Philipa Butter Couro Bo.Bô Feminina",
+    "url": "https://www.bobo.com.br/calca-philipa-butter-couro-bo-bo-feminina-amarelo-claro-18-14-0318/p",
+    "http_status": 200,
+    "final_url": "https://www.bobo.com.br/calca-philipa-butter-couro-bo-bo-feminina-amarelo-claro-18-14-0318/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Bo.Bo",
+    "titulo": "Calça Philipa Butter Couro Bo.Bô Feminina",
+    "url": "https://vistabobo.vteximg.com.br/arquivos/ids/306717/18140318_16_1-CALCA-PHILIPA-BUTTER-COURO.jpg?v=639201033535300000",
+    "http_status": 200,
+    "final_url": "https://vistabobo.vteximg.com.br/arquivos/ids/306717/18140318_16_1-CALCA-PHILIPA-BUTTER-COURO.jpg?v=639201033535300000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "PatBo",
+    "titulo": "HOT PANTS GROOVY LYCRA  LARANJA",
+    "url": "https://www.patbo.com.br/products/hot-pants-groovy-lycra-laranja",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/hot-pants-groovy-lycra-laranja",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "PatBo",
+    "titulo": "HOT PANTS GROOVY LYCRA  LARANJA",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/I25BWHOT31391BR_00012_1.jpg?v=1744213870",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/I25BWHOT31391BR_00012_1.jpg?v=1744213870",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Cantao",
+    "titulo": "Calca sarja i reta basic amarelo",
+    "url": "https://www.cantao.com.br/calca-sarja-i-reta-basic-amarelo-5418240377/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/calca-sarja-i-reta-basic-amarelo-5418240377/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_calca+amarelo_laranja",
+    "marca": "Cantao",
+    "titulo": "Calca sarja i reta basic amarelo",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/308592/541006_031_1_M.jpg?v=639117607772600000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/308592/541006_031_1_M.jpg?v=639117607772600000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "PatBo",
+    "titulo": "SAIA MÍDI BOTÕES FLORAL OLGA AZUL",
+    "url": "https://www.patbo.com.br/products/saia-midi-botoes-floral-olga-azul",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/saia-midi-botoes-floral-olga-azul",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "PatBo",
+    "titulo": "SAIA MÍDI BOTÕES FLORAL OLGA AZUL",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/I22BOSAM21579BR1_745_1.jpg?v=1741232692",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/I22BOSAM21579BR1_745_1.jpg?v=1741232692",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Cantao",
+    "titulo": "Saia estampada floral glitch",
+    "url": "https://www.cantao.com.br/saia-estampada-floral-glitch-540553031/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/saia-estampada-floral-glitch-540553031/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Cantao",
+    "titulo": "Saia estampada floral glitch",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/303111/539595_031_1_M.jpg?v=639057379766530000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/303111/539595_031_1_M.jpg?v=639057379766530000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Animale",
+    "titulo": "Saia Est Floral Anemona e Ondas e Navy",
+    "url": "https://www.animale.com.br/saia-est-floral-anemona-e-ondas-e-navy-est-floral-anemonas-onda-e-navy-aj-25-13-0119-53066/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/saia-est-floral-anemona-e-ondas-e-navy-est-floral-anemonas-onda-e-navy-aj-25-13-0119-53066/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Animale",
+    "titulo": "Saia Est Floral Anemona e Ondas e Navy",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1937956/25130119_53066_1-SAIA-EST-FLORAL-ANEMONA-E-ONDAS-E-NAVY.jpg?v=638894445597330000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1937956/25130119_53066_1-SAIA-EST-FLORAL-ANEMONA-E-ONDAS-E-NAVY.jpg?v=638894445597330000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Farm",
+    "titulo": "Saia Estampada Nara Floral",
+    "url": "https://secure.farmrio.com.br/saia-estampada-nara-floral-nara-floral_az-cumuru-361775-56710/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/saia-estampada-nara-floral-nara-floral_az-cumuru-361775-56710/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Farm",
+    "titulo": "Saia Estampada Nara Floral",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3771953/361775_56710_1-SAIA-NARA-FLORAL-E.jpg?v=639060403137130000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3771953/361775_56710_1-SAIA-NARA-FLORAL-E.jpg?v=639060403137130000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Dress To",
+    "titulo": "Saia Midi Linho Bordado Flores",
+    "url": "https://www.dressto.com.br/saia-midi-linho-bordado-flores-05260597-2342/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/saia-midi-linho-bordado-flores-05260597-2342/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Dress To",
+    "titulo": "Saia Midi Linho Bordado Flores",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/930130/05260597_2342_2-SAIA-MIDI-LINHO-BORDADO-FLORES.png?v=638948415390570000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/930130/05260597_2342_2-SAIA-MIDI-LINHO-BORDADO-FLORES.png?v=638948415390570000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "C&A",
+    "titulo": "Macaquinho Short Saia Feminino Estampado Floral com Sobreposição Alça Fina Preto",
+    "url": "https://www.cea.com.br/macaquinho-short-saia-feminino-estampado-floral-com-sobreposicao-alca-fina-preto-9957260-preto/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macaquinho-short-saia-feminino-estampado-floral-com-sobreposicao-alca-fina-preto-9957260-preto/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "C&A",
+    "titulo": "Macaquinho Short Saia Feminino Estampado Floral com Sobreposição Alça Fina Preto",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/23127762/Macaquinho-Short-Saia-Feminino-Estampado-Floral-com-Sobreposicao-Alca-Fina-Preto-9957260-Preto_1.jpg?v=637438302511200000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/23127762/Macaquinho-Short-Saia-Feminino-Estampado-Floral-com-Sobreposicao-Alca-Fina-Preto-9957260-Preto_1.jpg?v=637438302511200000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Lanca Perfume",
+    "titulo": "Short Saia Estampa Floral",
+    "url": "https://www.lancaperfume.com.br/short-saia-estampa-floral-502sh001442/p",
+    "http_status": 200,
+    "final_url": "https://www.lancaperfume.com.br/short-saia-estampa-floral-502sh001442/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Lanca Perfume",
+    "titulo": "Short Saia Estampa Floral",
+    "url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/505476/1.jpg?v=638578581379930000",
+    "http_status": 200,
+    "final_url": "https://lojalancaperfume.vteximg.com.br/arquivos/ids/505476/1.jpg?v=638578581379930000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Zinzane",
+    "titulo": "Short Saia Laise Floral - Branco",
+    "url": "https://www.zinzane.com.br/short-saia-laise-floral-branco-031700-0001/p",
+    "http_status": 200,
+    "final_url": "https://www.zinzane.com.br/short-saia-laise-floral-branco-031700-0001/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Zinzane",
+    "titulo": "Short Saia Laise Floral - Branco",
+    "url": "https://zinzane.vteximg.com.br/arquivos/ids/737117/031700_0001_1-SHORT-SAIA-LAISE-FLORAL.jpg?v=639015298113130000",
+    "http_status": 200,
+    "final_url": "https://zinzane.vteximg.com.br/arquivos/ids/737117/031700_0001_1-SHORT-SAIA-LAISE-FLORAL.jpg?v=639015298113130000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "PatBo",
+    "titulo": "SAIA MÍDI ENTREMEIO FLORAL GROOVE VERDE",
+    "url": "https://www.patbo.com.br/products/saia-midi-entremeio-floral-groove-verde",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/saia-midi-entremeio-floral-groove-verde",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "PatBo",
+    "titulo": "SAIA MÍDI ENTREMEIO FLORAL GROOVE VERDE",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/V23BOSAM22792BR1_00252_1.jpg?v=1742993203",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/V23BOSAM22792BR1_00252_1.jpg?v=1742993203",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Cantao",
+    "titulo": "Saia estampada floral yaya",
+    "url": "https://www.cantao.com.br/saia-estampada-floral-yaya-540664031/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/saia-estampada-floral-yaya-540664031/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Cantao",
+    "titulo": "Saia estampada floral yaya",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/303544/539595_031_1_M.jpg?v=639057384884270000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/303544/539595_031_1_M.jpg?v=639057384884270000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Farm",
+    "titulo": "Saia Estampada Floral Orquídea",
+    "url": "https://secure.farmrio.com.br/saia-estampada-floral-orquidea-floral-orquidea_preto-361131-56703/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/saia-estampada-floral-orquidea-floral-orquidea_preto-361131-56703/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Farm",
+    "titulo": "Saia Estampada Floral Orquídea",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3768874/361131_56703_1-SAIA-FLORAL-ORQUIDEA-E.jpg?v=639060313828530000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3768874/361131_56703_1-SAIA-FLORAL-ORQUIDEA-E.jpg?v=639060313828530000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_saia+floral",
+    "marca": "Dress To",
+    "titulo": "Saia Midi Linho Bordado Floral",
+    "url": "https://www.dressto.com.br/saia-midi-linho-bordado-floral-05260651-198/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/saia-midi-linho-bordado-floral-05260651-198/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_saia+floral",
+    "marca": "Dress To",
+    "titulo": "Saia Midi Linho Bordado Floral",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/1019752/05260651_198_1-SAIA-MIDI-LINHO-BORDADO-FLORAL.png?v=639081378111630000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/1019752/05260651_198_1-SAIA-MIDI-LINHO-BORDADO-FLORAL.png?v=639081378111630000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "PatBo",
+    "titulo": "SHORT LINHO ACQUA MIST AZUL ESVERDEADO",
+    "url": "https://www.patbo.com.br/products/short-linho-acqua-mist-azul-esverdeado-1",
+    "http_status": 200,
+    "final_url": "https://www.patbo.com.br/products/short-linho-acqua-mist-azul-esverdeado-1",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "PatBo",
+    "titulo": "SHORT LINHO ACQUA MIST AZUL ESVERDEADO",
+    "url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/SHO33110-1.png?v=1770745303",
+    "http_status": 200,
+    "final_url": "https://cdn.shopify.com/s/files/1/0728/0233/7023/files/SHO33110-1.png?v=1770745303",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Cantao",
+    "titulo": "Bermuda classic blue jeans",
+    "url": "https://www.cantao.com.br/bermuda-classic-blue-jeans-5415403172/p",
+    "http_status": 200,
+    "final_url": "https://www.cantao.com.br/bermuda-classic-blue-jeans-5415403172/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Cantao",
+    "titulo": "Bermuda classic blue jeans",
+    "url": "https://cantao.vteximg.com.br/arquivos/ids/307447/541006_031_1_M.jpg?v=639117589844230000",
+    "http_status": 200,
+    "final_url": "https://cantao.vteximg.com.br/arquivos/ids/307447/541006_031_1_M.jpg?v=639117589844230000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Animale",
+    "titulo": "Short De Georgette Pesado Marinho Com Recortes",
+    "url": "https://www.animale.com.br/short-de-georgette-pesado-marinho-com-recortes-marinho-mila-25-05-3764-5463/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/short-de-georgette-pesado-marinho-com-recortes-marinho-mila-25-05-3764-5463/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Animale",
+    "titulo": "Short De Georgette Pesado Marinho Com Recortes",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1761242/25053764_5463_1-SHORT-DE-GEORGETTE-PESADO-MARINHO-COM-RECORTES.jpg?v=638500871520670000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1761242/25053764_5463_1-SHORT-DE-GEORGETTE-PESADO-MARINHO-COM-RECORTES.jpg?v=638500871520670000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Bo.Bo",
+    "titulo": "Bermuda Phillipa Waffle Blue Jeans Bo.Bô Feminina",
+    "url": "https://www.bobo.com.br/bermuda-phillipa-waffle-blue-jeans-bo-bo-feminina-jeans-medio-17-08-1610/p",
+    "http_status": 200,
+    "final_url": "https://www.bobo.com.br/bermuda-phillipa-waffle-blue-jeans-bo-bo-feminina-jeans-medio-17-08-1610/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Bo.Bo",
+    "titulo": "Bermuda Phillipa Waffle Blue Jeans Bo.Bô Feminina",
+    "url": "https://vistabobo.vteximg.com.br/arquivos/ids/305688/17081610_74_1-BERMUDA-PHILLIPA-WAFFLE-BLUE.jpg?v=639198934790230000",
+    "http_status": 200,
+    "final_url": "https://vistabobo.vteximg.com.br/arquivos/ids/305688/17081610_74_1-BERMUDA-PHILLIPA-WAFFLE-BLUE.jpg?v=639198934790230000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Farm",
+    "titulo": "Short Sonho Azul",
+    "url": "https://secure.farmrio.com.br/short-sonho-azul-est-sonho-fundo-azul-cannes-5-20982-55295/p",
+    "http_status": 200,
+    "final_url": "https://secure.farmrio.com.br/short-sonho-azul-est-sonho-fundo-azul-cannes-5-20982-55295/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Farm",
+    "titulo": "Short Sonho Azul",
+    "url": "https://lojafarm.vteximg.com.br/arquivos/ids/3791901/520982_55295_1-SHORT-SONHO-AZUL.jpg?v=639105860550500000",
+    "http_status": 200,
+    "final_url": "https://lojafarm.vteximg.com.br/arquivos/ids/3791901/520982_55295_1-SHORT-SONHO-AZUL.jpg?v=639105860550500000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Hering",
+    "titulo": "Shorts Saia Esportivo Plissado - Azul",
+    "url": "https://www.hering.com.br/shorts-saia-esportivo-plissado-schxa48si/p",
+    "http_status": 200,
+    "final_url": "https://www.hering.com.br/shorts-saia-esportivo-plissado-schxa48si/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Hering",
+    "titulo": "Shorts Saia Esportivo Plissado - Azul",
+    "url": "https://hering.vteximg.com.br/arquivos/ids/6603360/SCHX-A48SI-C1.jpg?v=639197509076030000",
+    "http_status": 200,
+    "final_url": "https://hering.vteximg.com.br/arquivos/ids/6603360/SCHX-A48SI-C1.jpg?v=639197509076030000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Maria Filo",
+    "titulo": "Short Estampa Blues",
+    "url": "https://mariafilo.vtexcommercestable.com.br/short-estampa-blues-est-blues---15-24038-51854/p",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vtexcommercestable.com.br/admin/login/?portal=true&ReturnUrl=%2Fadmin%2Fsite%2FLogin.aspx%3FReturnUrl%3D%252Fshort-estampa-blues-est-blues---15-24038-51854%252Fp",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Maria Filo",
+    "titulo": "Short Estampa Blues",
+    "url": "https://mariafilo.vteximg.com.br/arquivos/ids/517324/1524038_51854_1-V-SHORT-ESTAMPA-BLUES.jpg?v=638912366568970000",
+    "http_status": 200,
+    "final_url": "https://mariafilo.vteximg.com.br/arquivos/ids/517324/1524038_51854_1-V-SHORT-ESTAMPA-BLUES.jpg?v=638912366568970000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Morena Rosa",
+    "titulo": "Bermuda Morena Rosa Reta Alta Azul",
+    "url": "https://www.morenarosa.com.br/bermuda-morena-rosa-reta-alta-azul-376485/p",
+    "http_status": 200,
+    "final_url": "https://www.morenarosa.com.br/bermuda-morena-rosa-reta-alta-azul-376485/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Morena Rosa",
+    "titulo": "Bermuda Morena Rosa Reta Alta Azul",
+    "url": "https://lojamorenarosa.vteximg.com.br/arquivos/ids/419230/BERMUDA-RETA-ALTA---AZUL---36.jpg?v=639125539088170000",
+    "http_status": 200,
+    "final_url": "https://lojamorenarosa.vteximg.com.br/arquivos/ids/419230/BERMUDA-RETA-ALTA---AZUL---36.jpg?v=639125539088170000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "NV",
+    "titulo": "Short Heritage Reebok + Nv - Blue",
+    "url": "https://www.bynv.com.br/short-heritage-reebok-nv-blue-v262297-nv965/p",
+    "http_status": 200,
+    "final_url": "https://www.bynv.com.br/short-heritage-reebok-nv-blue-v262297-nv965/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "NV",
+    "titulo": "Short Heritage Reebok + Nv - Blue",
+    "url": "https://bynv.vteximg.com.br/arquivos/ids/789654/V262297_NV965_1-SHORT-HERITAGE-RBK-NV.jpg?v=638967591982870000",
+    "http_status": 200,
+    "final_url": "https://bynv.vteximg.com.br/arquivos/ids/789654/V262297_NV965_1-SHORT-HERITAGE-RBK-NV.jpg?v=638967591982870000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Dress To",
+    "titulo": "Short Jeans Boyfriend Blue",
+    "url": "https://www.dressto.com.br/short-jeans-boyfriend-blue-04300733-352/p",
+    "http_status": 200,
+    "final_url": "https://www.dressto.com.br/short-jeans-boyfriend-blue-04300733-352/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Dress To",
+    "titulo": "Short Jeans Boyfriend Blue",
+    "url": "https://dresstoshop.vteximg.com.br/arquivos/ids/1044024/04300733_352_1-SHORT-JEANS-BOYFRIEND-BLUE.png?v=639136818170670000",
+    "http_status": 200,
+    "final_url": "https://dresstoshop.vteximg.com.br/arquivos/ids/1044024/04300733_352_1-SHORT-JEANS-BOYFRIEND-BLUE.png?v=639136818170670000",
+    "content_type": "image/png",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "C&A",
+    "titulo": "macaquinho short saia feminino jeans azul",
+    "url": "https://www.cea.com.br/macaquinho-short-saia-feminino-jeans-azul-1108968-jeans-md/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macaquinho-short-saia-feminino-jeans-azul-1108968-jeans-md/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "C&A",
+    "titulo": "macaquinho short saia feminino jeans azul",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/59311304/Foto-0.jpg?v=639035669136900000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/59311304/Foto-0.jpg?v=639035669136900000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_short+azul",
+    "marca": "Zinzane",
+    "titulo": "Short Bolso Laterais - Azul Claro",
+    "url": "https://www.zinzane.com.br/short-bolso-laterais-azul-claro-031494-1002/p",
+    "http_status": 200,
+    "final_url": "https://www.zinzane.com.br/short-bolso-laterais-azul-claro-031494-1002/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_short+azul",
+    "marca": "Zinzane",
+    "titulo": "Short Bolso Laterais - Azul Claro",
+    "url": "https://zinzane.vteximg.com.br/arquivos/ids/734041/031494_1002_1-SHORT-BOLSO-LATERAIS.jpg?v=639015104513100000",
+    "http_status": 200,
+    "final_url": "https://zinzane.vteximg.com.br/arquivos/ids/734041/031494_1002_1-SHORT-BOLSO-LATERAIS.jpg?v=639015104513100000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_macacao+liso",
+    "marca": "Animale",
+    "titulo": "Macacão De Malha Estruturada Pantalona Alças Largas Detalhe Busto Torcido Liso",
+    "url": "https://www.animale.com.br/macacao-de-malha-estruturada-pantalona-alcas-largas-detalhe-busto-torcido-liso-marrom-rum-08-42-0237-09032/p",
+    "http_status": 200,
+    "final_url": "https://www.animale.com.br/macacao-de-malha-estruturada-pantalona-alcas-largas-detalhe-busto-torcido-liso-marrom-rum-08-42-0237-09032/p",
+    "content_type": "text/html",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_macacao+liso",
+    "marca": "Animale",
+    "titulo": "Macacão De Malha Estruturada Pantalona Alças Largas Detalhe Busto Torcido Liso",
+    "url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1734338/08420237_09032_1-MACACAO-DE-MALHA-ESTRUTURADA-PANTALONA-ALCAS-LARGAS-DETALHE-BUSTO-TORCIDO-LISO.jpg?v=638447247213170000",
+    "http_status": 200,
+    "final_url": "https://lojaanimale.vteximg.com.br/arquivos/ids/1734338/08420237_09032_1-MACACAO-DE-MALHA-ESTRUTURADA-PANTALONA-ALCAS-LARGAS-DETALHE-BUSTO-TORCIDO-LISO.jpg?v=638447247213170000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macacão Liso Branco",
+    "url": "https://www.cea.com.br/macacao-em-algodao-feminino-branco-branco-7829483-branco/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macacao-em-algodao-feminino-branco-branco-7829483-branco/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macacão Liso Branco",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/226152/7829485_01.jpg?v=635552192689600000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/226152/7829485_01.jpg?v=635552192689600000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macacão Liso Tomara Que Caia Branco",
+    "url": "https://www.cea.com.br/macacao-em-algodao-feminino-tomara-que-caia-branco-7829465-branco/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macacao-em-algodao-feminino-tomara-que-caia-branco-7829465-branco/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macacão Liso Tomara Que Caia Branco",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/168397/7829467_01.jpg?v=635528123065500000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/168397/7829467_01.jpg?v=635528123065500000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macaquinho Liso Verde",
+    "url": "https://www.cea.com.br/macaquinho-de-malha-feminino-liso-verde-7690692-verde/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macaquinho-de-malha-feminino-liso-verde-7690692-verde/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macaquinho Liso Verde",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/239809/7690745_01.jpg?v=635570167531970000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/239809/7690745_01.jpg?v=635570167531970000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macaquinho Liso Pink",
+    "url": "https://www.cea.com.br/macaquinho-de-malha-feminino-liso-pink-7690692-pink/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macaquinho-de-malha-feminino-liso-pink-7690692-pink/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macaquinho Liso Pink",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/187997/7690740_01.jpg?v=635534650032200000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/187997/7690740_01.jpg?v=635534650032200000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macaquinho Liso Amarelo",
+    "url": "https://www.cea.com.br/macaquinho-de-malha-feminino-liso-amarelo-7690692-amarelo/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macaquinho-de-malha-feminino-liso-amarelo-7690692-amarelo/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macaquinho Liso Amarelo",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/187883/7690735_01.jpg?v=635534649229000000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/187883/7690735_01.jpg?v=635534649229000000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  },
+  {
+    "tipo": "produto",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macacão Liso com Renda Preto",
+    "url": "https://www.cea.com.br/macacao-em-poliester-feminino-com-renda-preto-7693242-preto/p",
+    "http_status": 200,
+    "final_url": "https://www.cea.com.br/macacao-em-poliester-feminino-com-renda-preto-7693242-preto/p",
+    "content_type": "text/html",
+    "flags": [
+      "titulo_sem_confirmacao"
+    ],
+    "ok": false
+  },
+  {
+    "tipo": "imagem",
+    "origem": "similar_macacao+liso",
+    "marca": "C&A",
+    "titulo": "Macacão Liso com Renda Preto",
+    "url": "https://cea.vteximg.com.br/arquivos/ids/196441/7693304_01.jpg?v=635534723918800000",
+    "http_status": 200,
+    "final_url": "https://cea.vteximg.com.br/arquivos/ids/196441/7693304_01.jpg?v=635534723918800000",
+    "content_type": "image/jpeg",
+    "flags": [],
+    "ok": true
+  }
+]

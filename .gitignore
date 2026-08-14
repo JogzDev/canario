@@ -25,6 +25,9 @@ xcuserdata/
 # Pagina de revisao gerada localmente (regenerar com o script)
 VERIFICACAO_TRENDS.html
 
+# Checkpoint bruto da auditoria HTTP; o JSON final e o relatorio ficam versionados.
+anexos/auditoria_links_app.jsonl
+
 # Xcode (alem do que ja estava acima)
 *.xcuserdatad/
 *.moved-aside

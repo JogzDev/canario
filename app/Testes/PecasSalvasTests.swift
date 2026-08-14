@@ -73,7 +73,7 @@ final class PecasSalvasTests: XCTestCase {
 
     func testPecaSemAtributosTemNomeHonesto() {
         let p = PecaSalva(termoIds: [])
-        XCTAssertEqual(p.nome(comRotulos: [:]), "Peça sem atributos")
+        XCTAssertEqual(p.nome(comRotulos: [:]), "Item without attributes")
     }
 
     // MARK: - Persistência

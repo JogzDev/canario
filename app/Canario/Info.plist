@@ -7,7 +7,7 @@
 	     Xcode não aceita chaves próprias. Sem as chaves obrigatórias abaixo, o
 	     simulador recusa a instalação com "Missing bundle ID". -->
 	<key>CFBundleDevelopmentRegion</key>
-	<string>pt_BR</string>
+	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -17,13 +17,13 @@
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Canário</string>
+	<string>DataDrobe</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
+	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchScreen</key>
@@ -50,9 +50,9 @@
 	     o app não salva foto nenhuma, então NSPhotoLibraryAddUsageDescription
 	     não existe aqui de propósito. -->
 	<key>NSCameraUsageDescription</key>
-	<string>Para fotografar uma peça e reconhecer os atributos dela no próprio aparelho. A foto não é salva nem enviada.</string>
+	<string>Take a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Para ler uma foto que você escolher e reconhecer os atributos da peça no próprio aparelho. A foto não é salva nem enviada.</string>
+	<string>Choose a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
 
 	<!-- Lidos pelo Supabase.swift. Vêm do Config.xcconfig, que está no
 	     .gitignore: nenhum valor real entra no repositório. -->
@@ -60,5 +60,7 @@
 	<string>$(SUPABASE_URL)</string>
 	<key>SUPABASE_PUBLISHABLE_KEY</key>
 	<string>$(SUPABASE_PUBLISHABLE_KEY)</string>
+	<key>REMOTE_ANALYSIS_ENABLED</key>
+	<string>$(REMOTE_ANALYSIS_ENABLED)</string>
 </dict>
 </plist>

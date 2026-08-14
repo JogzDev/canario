@@ -64,11 +64,11 @@ enum LeitorDeArquivo {
         var errorDescription: String? {
             switch self {
             case .semAcesso:
-                return "Não consegui abrir o arquivo."
+                return "The file could not be opened."
             case .formatoNaoSuportado:
-                return "Formato não suportado. Envie um print, uma foto (JPG, PNG, HEIC) ou um PDF."
+                return "Unsupported format. Choose a screenshot, photo (JPG, PNG, HEIC) or PDF."
             case .nadaReconhecido:
-                return "Abri o arquivo, mas não reconheci texto nem cor de peça nele."
+                return "The file opened, but no clothing text or color was recognized."
             }
         }
     }

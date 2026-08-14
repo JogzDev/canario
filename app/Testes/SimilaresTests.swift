@@ -59,11 +59,11 @@ final class SimilaresTests: XCTestCase {
 
     func testParagrafoTrazOsNumerosDoPainel() {
         let t = Similares.paragrafo(resumo(), atributos: atributos)
-        XCTAssertTrue(t.contains("9 marcas"))
-        XCTAssertTrue(t.contains("230 peças"))
-        XCTAssertTrue(t.contains("Vestido + Floral + Midi"))
-        XCTAssertTrue(t.contains("22% seguem a preço cheio"))
-        XCTAssertTrue(t.contains("88% estão com a grade quebrada"))
+        XCTAssertTrue(t.contains("9 brands"))
+        XCTAssertTrue(t.contains("230 panel items"))
+        XCTAssertTrue(t.contains("Dress + Floral + Midi"))
+        XCTAssertTrue(t.contains("22% remain at full price"))
+        XCTAssertTrue(t.contains("88% have missing sizes"))
         XCTAssertTrue(t.contains("R$ 130"), "o preço do meio entra na frase")
     }
 
@@ -81,9 +81,9 @@ final class SimilaresTests: XCTestCase {
         // exatamente para impedir esse tipo de número.
         let t = Similares.paragrafo(resumo(similares: 4, comTodos: 4, comPreco: 4),
                                     atributos: atributos)
-        XCTAssertTrue(t.contains("4 peças"))
+        XCTAssertTrue(t.contains("4 panel items"))
         XCTAssertFalse(t.contains("%"), "porcentagem sobre 4 peças não se sustenta")
-        XCTAssertTrue(t.contains("prefiro mostrar as peças"))
+        XCTAssertTrue(t.contains("items are shown without a summary statistic"))
     }
 
     func testNenhumSimilarDizOsDoisMotivosPossiveis() {
@@ -93,31 +93,31 @@ final class SimilaresTests: XCTestCase {
                                            cheio: nil, quebrada: nil,
                                            esgotada: nil, mediana: nil),
                                     atributos: atributos)
-        XCTAssertTrue(t.contains("combinação rara"))
-        XCTAssertTrue(t.contains("não sei distinguir"))
+        XCTAssertTrue(t.contains("uncommon combination"))
+        XCTAssertTrue(t.contains("cannot distinguish"))
     }
 
     // MARK: O critério, que precisa ser auditável (regra 3)
 
     func testCriterioDizQuandoExigiuTodos() {
         let t = Similares.criterio(resumo(pedidos: 3, minimo: 3))
-        XCTAssertTrue(t.contains("os 3 atributos"))
+        XCTAssertTrue(t.contains("all 3 attributes"))
     }
 
     func testCriterioDizQuandoTolerouDiferenca() {
         // 6 atributos marcados exigem 5 (70% arredondado para cima).
         let t = Similares.criterio(resumo(similares: 34, pedidos: 6, minimo: 5, comTodos: 4))
-        XCTAssertTrue(t.contains("pelo menos 5 dos 6"))
-        XCTAssertTrue(t.contains("4 tem"), "quantos batem em todos é o número mais forte")
+        XCTAssertTrue(t.contains("at least 5 of the 6"))
+        XCTAssertTrue(t.contains("4 match"), "quantos batem em todos é o número mais forte")
     }
 
     // MARK: A fronteira da regra 1, no percentil de preço
 
     func testPercentilDescrevePosicaoSemJulgarOPreco() {
         let t = Similares.leituraDoPreco(resumo(percentil: 78), alvo: 450) ?? ""
-        XCTAssertTrue(t.contains("percentil 78"))
-        XCTAssertTrue(t.contains("acima da maior parte"))
-        XCTAssertTrue(t.contains("não julgamento do seu preço"),
+        XCTAssertTrue(t.contains("78th percentile"))
+        XCTAssertTrue(t.contains("above most"))
+        XCTAssertTrue(t.contains("not a judgment of your price"),
                       "sem esta ressalva o percentil vira conselho de precificação")
         for proibido in ["caro", "barato", "deveria", "ideal", "recomendo"] {
             XCTAssertFalse(t.lowercased().contains(proibido))
@@ -136,8 +136,8 @@ final class SimilaresTests: XCTestCase {
     func testDesfechoDaPecaEsgotada() {
         let t = Similares.desfecho(peca("Dress To", preco: 429, queda: 50,
                                         disponiveis: 0, degraus: 5))
-        XCTAssertTrue(t.contains("sem nenhum tamanho disponível"))
-        XCTAssertTrue(t.contains("remarcada 50%"))
+        XCTAssertTrue(t.contains("no size available"))
+        XCTAssertTrue(t.contains("marked down 50%"))
     }
 
     func testDesfechoDaGradeCheiaAPrecoCheio() {
@@ -146,22 +146,22 @@ final class SimilaresTests: XCTestCase {
         // existe ainda (A1).
         let t = Similares.desfecho(peca("Cantao", preco: 1199, queda: nil,
                                         disponiveis: 5, degraus: 5))
-        XCTAssertTrue(t.contains("grade cheia, 5 tamanhos"))
-        XCTAssertTrue(t.contains("a preço cheio"))
+        XCTAssertTrue(t.contains("full size range, 5 sizes"))
+        XCTAssertTrue(t.contains("at full price"))
     }
 
     func testDesfechoNomeiaOsTamanhosQueFaltam() {
         let t = Similares.desfecho(peca("Farm", preco: 297, queda: 38,
                                         disponiveis: 2, degraus: 5,
                                         faltando: ["PP", "P", "M"]))
-        XCTAssertTrue(t.contains("2 de 5 tamanhos"))
-        XCTAssertTrue(t.contains("faltando PP, P, M"))
+        XCTAssertTrue(t.contains("2 of 5 sizes"))
+        XCTAssertTrue(t.contains("missing PP, P, M"))
     }
 
     func testDesfechoSemDadoNaoInventa() {
         let t = Similares.desfecho(peca("X", preco: nil, queda: nil,
                                         disponiveis: 0, degraus: 0))
-        XCTAssertEqual(t, "sem dado de preço nem de grade")
+        XCTAssertEqual(t, "no price or size data")
     }
 
     func testVitrineNaoOfereceProdutoExplicitamenteEsgotado() {

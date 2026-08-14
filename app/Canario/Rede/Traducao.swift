@@ -12,17 +12,49 @@ enum Traducao {
     /// rótulos gravados no servidor continuam imutáveis: acento é assunto da
     /// interface, não uma migração de série histórica.
     private static let rotulosCorrigidos: [String: String] = [
-        "calca": "Calça",
-        "macacao": "Macacão",
-        "geometrica": "Geométrica e étnica",
-        "algodao": "Algodão",
-        "trico_croche": "Tricô e crochê",
-        "romantico": "Romântico",
-        "lilas_roxo": "Lilás e roxo",
+        // Category
+        "vestido": "Dress", "saia": "Skirt",
+        "blusa_top": "Tops & T-shirts", "camisa": "Shirt",
+        "calca": "Pants", "short": "Shorts & bermudas",
+        "casaco_jaqueta": "Coats & jackets", "macacao": "Jumpsuit",
+        // Pattern
+        "liso": "Solid", "floral": "Floral", "listra": "Stripes",
+        "animal_print": "Animal print", "xadrez": "Checks & plaid",
+        "geometrica": "Graphic & geometric",
+        // Material
+        "algodao": "Cotton", "linho": "Linen", "jeans": "Denim",
+        "malha": "Knit", "trico_croche": "Knitwear & crochet",
+        "viscose_fluido": "Viscose & fluid fabrics",
+        // Length, silhouette and waist
+        "curto": "Short", "midi": "Midi", "longo": "Long",
+        "flare": "Flared & A-line", "reta_wide": "Straight & wide-leg",
+        "cintura_alta": "High waist",
+        // Aesthetic
+        "basico": "Essential", "romantico": "Romantic",
+        "boho_artesanal": "Boho & artisanal", "alfaiataria": "Tailored",
+        "festa_brilho": "Party & shine",
+        // Color families
+        "preto": "Black", "branco_cru": "White & cream", "cinza": "Gray",
+        "azul": "Blue", "verde": "Green", "lilas_roxo": "Purple & lilac",
+        "vermelho_rosa": "Red & pink", "amarelo_laranja": "Yellow & orange",
+        "terrosos": "Earth tones", "outras_cores": "Other colors",
     ]
 
     static func rotuloExibido(_ termo: Termo) -> String {
         rotulosCorrigidos[termo.id] ?? termo.rotulo
+    }
+
+    static func rotuloDaDimensao(_ dimensao: String) -> String {
+        [
+            "categoria": "Category",
+            "cor": "Color",
+            "estampa": "Pattern",
+            "tecido": "Material",
+            "estetica": "Style",
+            "comprimento": "Length",
+            "silhueta": "Silhouette",
+            "cintura": "Waist",
+        ][dimensao] ?? dimensao.capitalized
     }
 
     /// Nome que a pessoa usou, quando ele é mais claro que o rótulo interno.
@@ -36,8 +68,9 @@ enum Traducao {
             .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
             .map(String.init))
         if termo.id == "geometrica" {
-            if !palavras.isDisjoint(with: ["bolinha", "bolinhas"]) { return "Bolinha" }
-            if palavras.contains("poa") { return "Poá" }
+            if !palavras.isDisjoint(with: ["bolinha", "bolinhas", "poa"]) {
+                return "Polka dot"
+            }
         }
         return rotuloExibido(termo)
     }

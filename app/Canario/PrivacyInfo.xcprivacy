@@ -7,10 +7,10 @@
 
 	  As três respostas abaixo são verdadeiras e verificáveis no código:
 
-	  * NÃO coletamos dado nenhum do usuário. O app lê `termos`,
-	    `indices_semanais`, `series_semanais`, `eventos_da_semana` e
-	    `curva_tamanhos` do Supabase, e não escreve em nada — a RLS do banco
-	    garante isso do lado do servidor, não só do nosso lado.
+	  * A15 envia uma cópia reduzida, reamostrada e sem metadados da foto
+	    escolhida para a Edge Function e para a OpenAI, somente após consentimento
+	    explícito. Isso é Photos or Videos / App Functionality, não rastreamento
+	    e não é ligado a uma identidade (a v1 não tem conta).
 
 	  * NÃO rastreamos. Não há SDK de terceiro, nem analytics, nem identificador
 	    de publicidade.
@@ -19,17 +19,16 @@
 	    o app não toca em UserDefaults, em data de arquivo, em espaço em disco
 	    nem em tempo de atividade do sistema.
 
-	  A entrada por imagem (§28) merece nota, porque é o ponto em que alguém
-	  poderia supor coleta. São três caminhos — arquivo, fototeca e câmera — e os
-	  três terminam iguais: a imagem é lida EM MEMÓRIA, o texto (OCR) e a cor
-	  (pixel) são extraídos no próprio aparelho, e nada é copiado, salvo ou
-	  enviado. Não existe caminho de disco em nenhum deles.
+	  A entrada por imagem (§28) mantém OCR, cor e formulário locais como
+	  fallback. Quando a análise remota está habilitada, o usuário escolhe a peça
+	  visualmente e recebe um disclosure antes do envio. `store=false` impede
+	  armazenamento como estado da Responses API, mas não elimina a possível
+	  retenção de logs de monitoramento de abuso por até 30 dias.
 
 	  Desde 07/08 (A12) o app PEDE duas permissões: câmera e leitura da
-	  fototeca. Isso não muda o que ele coleta, que continua sendo nada:
-	  permissão de acesso e coleta de dado são coisas diferentes, e por isso
-	  `NSPrivacyCollectedDataTypes` segue vazio. Pedir para LER não é o mesmo
-	  que guardar.
+	  fototeca. Permissão de acesso e coleta continuam sendo coisas diferentes;
+	  neste binário a foto entra no manifesto porque efetivamente cruza o
+	  aparelho quando a pessoa confirma a análise visual.
 
 	  Não pedimos escrita na fototeca (`NSPhotoLibraryAddUsageDescription` não
 	  existe no Info.plist): o app não salva foto nenhuma, nem a que ele mesmo
@@ -40,7 +39,20 @@
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
-	<array/>
+	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array/>
 </dict>

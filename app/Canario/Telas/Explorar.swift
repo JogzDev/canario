@@ -107,10 +107,10 @@ struct Explorar: View {
                 radarEditorial
                 digest
                 curvaDoPainel
-                movimento(titulo: "Reposições", tipo: "reposicao",
-                          vazio: "Nenhuma reposição confirmada nesta janela. Ela exige ver um tamanho sair e voltar, e depois continuar disponível.")
-                movimento(titulo: "Remarcações", tipo: "remarcacao",
-                          vazio: "Nenhuma queda de preço de 5% ou mais nesta janela.")
+                movimento(titulo: "Restocks", tipo: "reposicao",
+                          vazio: "No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available.")
+                movimento(titulo: "Markdowns", tipo: "remarcacao",
+                          vazio: "No price reduction of 5% or more was confirmed in this window.")
             }
             .padding(Tokens.Espaco.m)
             .padding(.bottom, 20)
@@ -141,7 +141,7 @@ struct Explorar: View {
             if carregandoEventos && porMarca.isEmpty {
                 ProgressView().frame(maxWidth: .infinity, alignment: .center)
             } else if porMarca.isEmpty {
-                CoberturaInsuficiente(titulo: "Sem registro nesta janela",
+                CoberturaInsuficiente(titulo: "No record in this window",
                                       explicacao: vazio, oQueTem: nil)
             } else {
                 ForEach(porMarca, id: \.key) { marca, lista in
@@ -154,7 +154,7 @@ struct Explorar: View {
                     .buttonStyle(.plain)
                 }
                 if tipo == "reposicao" {
-                    LinhaInsumo(texto: "A reposição só entra depois de confirmada numa segunda visita: um tamanho que volta por um dia pode ser correção de catálogo, não decisão de compra. Por isso a mais recente costuma ser a de ontem.")
+                    LinhaInsumo(texto: "A restock appears only after a second visit confirms it. A size that returns for one day may be a catalog correction rather than a buying decision, so the newest confirmed event is usually from yesterday.")
                 }
             }
         }
@@ -169,13 +169,13 @@ struct Explorar: View {
         } label: {
             Cartao {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Curva de tamanhos").font(Tokens.Fonte.secao)
+                    Text("Size availability").font(Tokens.Fonte.secao)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
-                Text("Onde a grade do painel está quebrando ao longo da escada de tamanhos.")
+                Text("Where size availability is breaking across the panel.")
                     .font(Tokens.Fonte.apoio)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
             }
@@ -190,7 +190,7 @@ struct Explorar: View {
     /// que o usuário mais precisa saber se o número envelheceu. A data resolve
     /// as duas coisas de uma vez.
     private func carimbo(_ data: String) -> String {
-        "ocorrência mais recente: \(Formato.data(data))"
+        "most recent event: \(Formato.data(data))"
     }
 
     // MARK: Radares atuais
@@ -326,7 +326,7 @@ struct Explorar: View {
                 Text("Confirmed movements").font(Tokens.Fonte.secao)
                 Spacer()
                 if let semana = mudaram.map(\.semana).max() {
-                    Text("atualizado em \(Formato.data(semana))")
+                    Text("updated \(Formato.data(semana))")
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
@@ -359,10 +359,10 @@ struct Explorar: View {
 
     private var gruposDoDigest: [(titulo: String, indices: [IndiceSemanal])] {
         [
-            ("Em alta", mudaram.filter { $0.estado == "em alta" }),
-            ("Destaques editoriais", mudaram.filter { $0.estado == "pico" }),
-            ("Estáveis", mudaram.filter { $0.estado == "estavel" }),
-            ("Em queda", mudaram.filter { $0.estado == "em queda" }),
+            ("Trending up", mudaram.filter { $0.estado == "em alta" }),
+            ("Editorial highlights", mudaram.filter { $0.estado == "pico" }),
+            ("Within the usual range", mudaram.filter { $0.estado == "estavel" }),
+            ("Trending down", mudaram.filter { $0.estado == "em queda" }),
         ]
     }
 
@@ -609,14 +609,14 @@ struct LinhaDeMarca: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(NomeDeMarca.exibido(marca)), \(eventos.count) peças. \(resumo)")
+        .accessibilityLabel("\(NomeDeMarca.exibido(marca)), \(eventos.count) items. \(resumo)")
     }
 
     private var resumo: String {
         let repetidas = eventos.filter { ($0.ordinal ?? 1) > 1 }.count
         var partes: [String] = []
         if let d = eventos.map(\.data).max() { partes.append("mais recente em \(Formato.data(d))") }
-        if repetidas > 0 { partes.append("\(repetidas) já tinham acontecido antes") }
+        if repetidas > 0 { partes.append("\(repetidas) had happened before") }
         return partes.joined(separator: " · ")
     }
 }
@@ -669,7 +669,7 @@ struct ListaDeEventos: View {
                         }
                         // Regra 3: todo número carrega o caminho até a origem.
                         if let url = e.urlDaPeca, let link = URL(string: url) {
-                            Link("ver no site da marca", destination: link)
+                            Link("View on the brand's website", destination: link)
                                 .font(Tokens.Fonte.miudo)
                         }
                     }
@@ -704,7 +704,7 @@ struct CartaoDeMudanca: View {
                 Text(Leitura.emPalavras(v))
                     .font(Tokens.Fonte.numero)
             }
-            LinhaInsumo(texto: "Comparação com o comportamento normal das 12 semanas anteriores.")
+            LinhaInsumo(texto: "Compared with this attribute's usual behavior over the previous 12 weeks.")
 
             // Por que este estado, e não outro.
             Text(Explicacao.porQue(estado: indice.estado, indice: indice, series: series))
@@ -715,11 +715,11 @@ struct CartaoDeMudanca: View {
 
             // De onde veio, com nome de veículo.
             ForEach(Explicacao.origens(series), id: \.self) { LinhaInsumo(texto: $0) }
-            LinhaInsumo(texto: "Atualização desta leitura: \(Formato.data(indice.semana)).")
+            LinhaInsumo(texto: "Reading updated: \(Formato.data(indice.semana)).")
 
             let manchetes = Explicacao.manchetes(series)
             if !manchetes.isEmpty {
-                Text("Matérias relacionadas").font(Tokens.Fonte.miudo.weight(.semibold))
+                Text("Related articles").font(Tokens.Fonte.miudo.weight(.semibold))
                 ForEach(manchetes, id: \.titulo) { m in
                     if let u = m.url, let link = URL(string: u) {
                         Link(destination: link) {

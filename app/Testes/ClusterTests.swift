@@ -56,10 +56,10 @@ final class ClusterTests: XCTestCase {
         XCTAssertFalse(r.haDirecao)
 
         let m = Cluster.manchete(r)
-        XCTAssertEqual(m, "Os atributos desta peça não apontam para o mesmo lado.")
+        XCTAssertEqual(m, "This item's attributes do not point in the same direction.")
 
         // E não pode escorregar para nenhuma das frases de direção.
-        for proibida in ["acima do normal", "abaixo do normal", "em queda", "em alta"] {
+        for proibida in ["above the usual range", "below the usual range", "trending down", "trending up"] {
             XCTAssertFalse(m.lowercased().contains(proibida),
                            "a manchete afirmou \"\(proibida)\" com atributos discordantes")
         }
@@ -69,7 +69,7 @@ final class ClusterTests: XCTestCase {
         let r = try decodificar(jsonDiscordante)
         let e = try XCTUnwrap(Cluster.explicacao(r))
         XCTAssertTrue(e.contains("1,28"), "faltou a dispersão medida: \(e)")
-        XCTAssertTrue(e.contains("não digo para que lado"))
+        XCTAssertTrue(e.contains("no direction is stated"))
     }
 
     /// A média existe e continua visível — o app não esconde o número, ele
@@ -78,7 +78,7 @@ final class ClusterTests: XCTestCase {
         let r = try decodificar(jsonDiscordante)
         let e = try XCTUnwrap(Cluster.explicacao(r))
         XCTAssertTrue(e.contains("-0,77"), "faltou o índice: \(e)")
-        XCTAssertTrue(e.contains("desvios-padrão"),
+        XCTAssertTrue(e.contains("standard deviations"),
                       "K6: número sem unidade é o \"1,15 o quê?\" de 31/07")
     }
 
@@ -99,7 +99,7 @@ final class ClusterTests: XCTestCase {
            "pct_na_dimensao":10.0,"fora_por":null}]}
         """
         let r = try decodificar(json)
-        XCTAssertEqual(Cluster.manchete(r), "O conjunto está acima do normal.")
+        XCTAssertEqual(Cluster.manchete(r), "Together, these attributes are above the usual range.")
     }
 
     func testComUmAtributoSoDizQueNaoHaConjunto() throws {
@@ -113,7 +113,7 @@ final class ClusterTests: XCTestCase {
            "pct_na_dimensao":22.5,"fora_por":null}]}
         """
         let r = try decodificar(json)
-        XCTAssertTrue(Cluster.manchete(r).contains("Com um atributo só"),
+        XCTAssertTrue(Cluster.manchete(r).contains("With one attribute"),
                       "um atributo não é conjunto, e a tela tem de dizer isso")
     }
 
@@ -124,7 +124,7 @@ final class ClusterTests: XCTestCase {
          "unidade": "z", "atributos": []}
         """
         let r = try decodificar(json)
-        XCTAssertEqual(Cluster.manchete(r), "Não há número do conjunto para esta peça.")
+        XCTAssertEqual(Cluster.manchete(r), "There is no combined reading for this item yet.")
         XCTAssertNil(Cluster.explicacao(r))
     }
 
@@ -134,7 +134,7 @@ final class ClusterTests: XCTestCase {
         let r = try decodificar(jsonDiscordante)
         let vestido = try XCTUnwrap(r.atributos.first { $0.termoId == "vestido" })
         let linha = try XCTUnwrap(Cluster.porQuePesa(vestido))
-        XCTAssertTrue(linha.contains("22% do peso"), linha)
+        XCTAssertTrue(linha.contains("22% of the weight"), linha)
         XCTAssertTrue(linha.contains("11.579"),
                       "o N do painel tem de sair com separador de milhar: \(linha)")
     }
@@ -163,8 +163,8 @@ final class ClusterTests: XCTestCase {
         let r = try decodificar(json)
         let liso = try XCTUnwrap(r.atributos.first { $0.termoId == "liso" })
         let linha = try XCTUnwrap(Cluster.porQuePesa(liso))
-        XCTAssertTrue(linha.contains("não tem raridade própria"), linha)
-        XCTAssertFalse(linha.contains("das peças com essa dimensão"),
+        XCTAssertTrue(linha.contains("no rarity of its own"), linha)
+        XCTAssertFalse(linha.contains("of items with this dimension"),
                        "denominador não pode anunciar uma fatia que não é medição")
     }
 
@@ -283,8 +283,8 @@ final class ClusterTests: XCTestCase {
     func testOCriterioDaRaridadeDizOndeAConteFoiFeita() throws {
         let r = try decodificar(jsonDiscordante)
         let c = Cluster.criterioDaRaridade(r)
-        XCTAssertTrue(c.contains("peças de vestido"), c)
-        XCTAssertTrue(c.contains("dentro da própria dimensão"), c)
+        XCTAssertTrue(c.contains("panel's vestido items"), c)
+        XCTAssertTrue(c.contains("within its own dimension"), c)
     }
 
     func testSemCategoriaUnicaOCriterioAvisaQueUsouOPainelInteiro() throws {
@@ -294,7 +294,7 @@ final class ClusterTests: XCTestCase {
          "unidade": "z", "atributos": []}
         """
         let c = Cluster.criterioDaRaridade(try decodificar(json))
-        XCTAssertTrue(c.contains("painel inteiro"), c)
-        XCTAssertTrue(c.contains("não há uma categoria única"), c)
+        XCTAssertTrue(c.contains("whole panel"), c)
+        XCTAssertTrue(c.contains("no single category"), c)
     }
 }

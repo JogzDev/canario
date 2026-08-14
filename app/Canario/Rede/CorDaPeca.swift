@@ -141,19 +141,44 @@ enum CorDaPeca {
         else { return nil }
         ctx.draw(corte, in: CGRect(x: 0, y: 0, width: n, height: n))
 
+        guard let amostra = medianaRGBA(buf, numeroDePixels: n * n),
+              amostra.cobertura >= coberturaMinima else { return nil }
+        let cobertura = amostra.cobertura
+        let rgb = amostra.rgb
+        return Leitura(termoId: termo(paraRGB: rgb), rgb: rgb, cobertura: cobertura)
+    }
+
+    /// Extrai a mediana dos pixels realmente visíveis de um bitmap RGBA.
+    ///
+    /// Uma miniatura recortada pelo Vision é PNG transparente. Antes, os pixels
+    /// transparentes eram desenhados como preto no `CGContext` e entravam na
+    /// mediana: o app media a ausência de fundo como se fosse a cor da roupa.
+    /// O alfa agora é um portão explícito, antes inclusive do filtro de pele.
+    static func medianaRGBA(_ bytes: [UInt8], numeroDePixels: Int)
+        -> (rgb: [Double], cobertura: Double)? {
+        guard numeroDePixels > 0, bytes.count >= numeroDePixels * 4 else {
+            return nil
+        }
         var canais: [[Double]] = [[], [], []]
-        for i in stride(from: 0, to: n * n * 4, by: 4) {
-            let r = Double(buf[i]) / 255
-            let g = Double(buf[i + 1]) / 255
-            let b = Double(buf[i + 2]) / 255
+        for pixel in 0..<numeroDePixels {
+            let i = pixel * 4
+            let alfa = Double(bytes[i + 3]) / 255
+            // Bordas antialiasadas parcialmente transparentes ainda carregam
+            // cor misturada com o fundo. Só pixels majoritariamente opacos
+            // sustentam a leitura dominante.
+            guard alfa >= 0.5 else { continue }
+            let r = Double(bytes[i]) / 255
+            let g = Double(bytes[i + 1]) / 255
+            let b = Double(bytes[i + 2]) / 255
             if ehPele(r, g, b) { continue }
             canais[0].append(r); canais[1].append(g); canais[2].append(b)
         }
-
-        let cobertura = Double(canais[0].count) / Double(n * n)
-        guard cobertura >= coberturaMinima else { return nil }
+        guard !canais[0].isEmpty else { return nil }
         // Mediana, não média: resiste melhor a sombra funda e a costura clara.
-        let rgb = canais.map { c -> Double in c.sorted()[c.count / 2] }
-        return Leitura(termoId: termo(paraRGB: rgb), rgb: rgb, cobertura: cobertura)
+        let rgb = canais.map { canal -> Double in
+            let ordenado = canal.sorted()
+            return ordenado[ordenado.count / 2]
+        }
+        return (rgb, Double(canais[0].count) / Double(numeroDePixels))
     }
 }

@@ -48,7 +48,7 @@ enum Formato {
         let f = DateFormatter()
         f.locale = Locale(identifier: "pt_BR")
         f.timeZone = brasilia
-        f.dateFormat = "dd/MM/yyyy 'às' HH:mm"
+        f.dateFormat = "dd/MM/yyyy 'at' HH:mm"
         return f
     }()
 
@@ -110,16 +110,16 @@ enum Formato {
     static func periodo(dias: Int) -> String {
         switch dias {
         case ..<0:   return "—"
-        case 0...13: return "\(max(dias, 1)) dia\(dias == 1 ? "" : "s")"
+        case 0...13: return "\(max(dias, 1)) day\(dias == 1 ? "" : "s")"
         case 14...44:
             let semanas = Int((Double(dias) / 7).rounded())
-            return "\(semanas) semanas"
+            return "\(semanas) week\(semanas == 1 ? "" : "s")"
         default:
             // `dias/30 + 1` e não `ceil`: com ceil, 90 dias viraria "menos de 3
             // meses", que é falso — 90 dias são três meses cravados. Somar um ao
             // piso deixa a frase sempre verdadeira, que é o que a regra 2 pede.
             let meses = dias / 30 + 1
-            return "menos de \(meses) meses"
+            return "under \(meses) months"
         }
     }
 

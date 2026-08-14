@@ -52,9 +52,9 @@ struct RelatorioDoTermo: View {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else if !temCobertura {
                     CoberturaInsuficiente(
-                        titulo: "Ainda não vi peças suficientes",
-                        explicacao: "Para mostrar um número aqui eu preciso de pelo menos \(coberturaDaSemana?.minimoPecas ?? 30) peças de \(coberturaDaSemana?.minimoMarcas ?? 8) marcas diferentes nesta semana. \(coberturaDaSemana?.oQueFalta ?? "Esta semana ainda não foi medida").",
-                        oQueTem: "Prefiro dizer que não sei do que mostrar um número frágil.")
+                        titulo: "Not enough items yet",
+                        explicacao: "A reading requires at least \(coberturaDaSemana?.minimoPecas ?? 30) items from \(coberturaDaSemana?.minimoMarcas ?? 8) different brands this week. \(coberturaDaSemana?.oQueFalta ?? "This week has not been measured yet").",
+                        oQueTem: "No reading is shown until the sample supports it.")
                     grafico
                     curva
                     insumos
@@ -70,7 +70,7 @@ struct RelatorioDoTermo: View {
             }
             .padding(Tokens.Espaco.m)
         }
-        .navigationTitle(termo.rotulo)
+        .navigationTitle(Traducao.rotuloExibido(termo))
         .navigationBarTitleDisplayMode(.large)
         .task { await carregar() }
     }
@@ -88,16 +88,16 @@ struct RelatorioDoTermo: View {
         } label: {
             Cartao {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Curva de tamanhos").font(Tokens.Fonte.secao)
+                    Text("Size availability").font(Tokens.Fonte.secao)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
-                Text("Onde a grade quebra nas peças do painel que têm \(termo.rotulo.lowercased()).")
+                Text("Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()).")
                     .font(Tokens.Fonte.apoio)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
-                LinhaInsumo(texto: "Descritivo de varejo: não entra no índice nem no estado.")
+                LinhaInsumo(texto: "Retail context only; it does not affect the index or state.")
             }
         }
         .buttonStyle(.plain)
@@ -113,16 +113,16 @@ struct RelatorioDoTermo: View {
 
     private var frase: String {
         guard let atual, let valor = atual.indice else {
-            return "Ainda não tenho índice para \(termo.rotulo) neste recorte."
+            return "There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet."
         }
         let pernas = Perna.frase(atual.pernasAtivas)
         if let bruto = atual.estado, let e = Estado(rawValue: bruto) {
             let prefixo = atual.semana == maisRecente?.semana
-                ? "Na semana mais recente com leitura"
-                : "Na última semana em que as duas fontes se encontraram"
-            return "\(prefixo), \(Formato.data(atual.semana)), \(termo.rotulo) ficou \(e.rotulo.lowercased()) e \(Leitura.emPalavras(valor)). Leitura \(pernas)."
+                ? "In the latest week with a reading"
+                : "In the latest week when two sources overlapped"
+            return "\(prefixo), \(Formato.data(atual.semana)), \(Traducao.rotuloExibido(termo)) was \(e.rotulo.lowercased()) and \(Leitura.emPalavras(valor)). Reading \(pernas)."
         }
-        return "\(termo.rotulo) tem índice \(fmt(valor)) na semana de \(Formato.data(atual.semana)), mas não há cobertura para declarar um estado: isso exige duas fontes concordando. Leitura \(pernas)."
+        return "\(Traducao.rotuloExibido(termo)) has an index of \(fmt(valor)) for the week of \(Formato.data(atual.semana)), but a state requires two agreeing sources. Reading \(pernas)."
     }
 
     /// §29.3 — índice, estado e as pernas ativas declaradas.
@@ -132,7 +132,7 @@ struct RelatorioDoTermo: View {
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                     // K6: a leitura vem primeiro; o número técnico fica ao lado,
                     // menor, e nunca é apresentado como se fosse porcentagem.
-                    Text(atual?.indice.map { Leitura.emPalavras($0) } ?? "sem leitura")
+                    Text(atual?.indice.map { Leitura.emPalavras($0) } ?? "no reading")
                         .font(Tokens.Fonte.secao)
                     Text(atual?.indice.map(fmt) ?? "—")
                         .font(Tokens.Fonte.miudo)
@@ -140,7 +140,7 @@ struct RelatorioDoTermo: View {
                 }
                 Spacer()
                 SeloEstado(estado: atual?.estado,
-                           motivo: "Só afirmo uma direção quando duas fontes concordam.",
+                           motivo: "A direction is stated only when two sources agree.",
                            leitura: temCobertura ? atual?.indice : nil)
             }
             if let z = atual?.indice {
@@ -148,7 +148,7 @@ struct RelatorioDoTermo: View {
             }
             LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
             if atual?.estado == nil {
-                LinhaInsumo(texto: "Mostro o número, mas ainda não digo se subiu ou caiu: por enquanto só uma fonte tem histórico suficiente.")
+                LinhaInsumo(texto: "The number is available, but there is not enough multi-source history to call it up or down yet.")
             }
         }
     }
@@ -159,15 +159,15 @@ struct RelatorioDoTermo: View {
         let comZ = serieComparavel
         if comZ.isEmpty {
             CoberturaInsuficiente(
-                titulo: "Ainda estou juntando histórico",
-                explicacao: "Preciso de algumas semanas seguidas de um mesmo lugar antes de dizer se algo mudou. Nenhuma fonte chegou lá ainda.",
-                oQueTem: serie.isEmpty ? nil : "Já coletei \(serie.count) medições — elas ficam guardadas até virarem histórico.")
+                titulo: "Building comparable history",
+                explicacao: "Several consecutive weeks from the same source are needed before change can be measured. No source has enough yet.",
+                oQueTem: serie.isEmpty ? nil : "\(serie.count) measurements are already stored and will remain available as history grows.")
         } else {
             Cartao {
                 HStack {
-                    Text("Histórico comparável").font(Tokens.Fonte.secao)
+                    Text("Comparable history").font(Tokens.Fonte.secao)
                     Spacer()
-                    Picker("Período", selection: $janelaEmMeses) {
+                    Picker("Period", selection: $janelaEmMeses) {
                         Text("3M").tag(3)
                         Text("6M").tag(6)
                         Text("1Y").tag(12)
@@ -177,10 +177,10 @@ struct RelatorioDoTermo: View {
                 }
                 Chart(comZ) { ponto in
                     LineMark(
-                        x: .value("Semana", Formato.dataISO(ponto.semana) ?? .distantPast),
+                        x: .value("Week", Formato.dataISO(ponto.semana) ?? .distantPast),
                         y: .value("z", ponto.z ?? 0)
                     )
-                    .foregroundStyle(by: .value("Fonte", Perna.rotulo(ponto.fonte)))
+                    .foregroundStyle(by: .value("Source", Perna.rotulo(ponto.fonte)))
                 }
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) {
@@ -189,8 +189,8 @@ struct RelatorioDoTermo: View {
                     }
                 }
                 .frame(height: 160)
-                .accessibilityLabel("Histórico por fonte ao longo das semanas")
-                LinhaInsumo(texto: "Para comparar as linhas, o gráfico mostra somente semanas em que todas as fontes exibidas têm uma medição. Cada fonte mantém sua última data abaixo.")
+                .accessibilityLabel("Weekly history by source")
+                LinhaInsumo(texto: "To keep lines comparable, the chart shows only weeks measured by every displayed source. Each source's latest date remains listed below.")
             }
         }
     }
@@ -218,7 +218,7 @@ struct RelatorioDoTermo: View {
     /// §29.4 — um bloco por fator, com fonte e data.
     private var insumos: some View {
         Cartao {
-            Text("Insumos").font(Tokens.Fonte.secao)
+            Text("Sources").font(Tokens.Fonte.secao)
             ForEach(porFonte, id: \.0) { fonte, pontos in
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                     Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.apoio)
@@ -227,7 +227,7 @@ struct RelatorioDoTermo: View {
                         media: mediaDaJanela(pontos)) {
                         Text(v).font(Tokens.Fonte.apoio)
                     }
-                    LinhaInsumo(texto: "\(pontos.count) semanas · mais recente em \(Formato.data(pontos.first?.semana ?? "—"))")
+                    LinhaInsumo(texto: "\(pontos.count) weeks · latest on \(Formato.data(pontos.first?.semana ?? "—"))")
                 }
                 .padding(.vertical, Tokens.Espaco.xs)
             }
@@ -243,11 +243,11 @@ struct RelatorioDoTermo: View {
     /// §29.6 — limites declarados. Fica no relatório sempre, não só quando dá ruim.
     private var limites: some View {
         Cartao {
-            Text("Limites").font(Tokens.Fonte.secao)
-            LinhaInsumo(texto: "Não consideramos: seu histórico de vendas, seus custos, sua capacidade de produção.")
-            LinhaInsumo(texto: "Sinal editorial carrega viés comercial de publicidade.")
+            Text("Limits").font(Tokens.Fonte.secao)
+            LinhaInsumo(texto: "Not included: your sales history, costs or production capacity.")
+            LinhaInsumo(texto: "Editorial signals can carry commercial and advertising bias.")
             if termo.semPernaBusca == "sim" {
-                LinhaInsumo(texto: "Não acompanho buscas para este atributo: o volume no Google é baixo demais para ser confiável.")
+                LinhaInsumo(texto: "Search interest is not tracked for this attribute because Google volume is too low to be reliable.")
             }
         }
     }

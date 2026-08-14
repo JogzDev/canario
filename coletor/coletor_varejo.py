@@ -227,15 +227,36 @@ def _fq_preco(pmin, pmax):
     return "&fq=" + urllib.parse.quote("P:[{} TO {}]".format(pmin, pmax))
 
 
-def _contar(dominio, cat_id, pmin=None, pmax=None):
+def _registrar_erro_vtex(estado, mensagem):
+    """Preserva o primeiro diagnóstico que explica uma coleta VTEX vazia.
+
+    Uma falha de contagem encerrava o gerador sem lançar exceção. O resultado
+    chegava à saúde como zero com ``alertas=None`` e o portão, corretamente,
+    bloqueava por não saber o motivo. Guardar o primeiro erro mantém a causa
+    original mesmo que tentativas de reparo posteriores também falhem.
+    """
+    if estado is not None and not estado.get("erro"):
+        estado["erro"] = mensagem
+
+
+def _contar(dominio, cat_id, pmin=None, pmax=None, estado=None):
     """Conta produtos de uma categoria. `cat_id` pode ser um id ou um CAMINHO
     de ids ("1000003/1004161") -- ver a nota em `_paginar`."""
     url = ("https://{}/api/catalog_system/pub/products/search"
            "?fq=C:{}{}&_from=0&_to=0".format(dominio, cat_id, _fq_preco(pmin, pmax)))
     codigo, _, _, cab = buscar_varejo(url, dominio)
     if codigo not in (200, 206):
+        _registrar_erro_vtex(
+            estado, "http {} ao contar categoria VTEX {}".format(
+                codigo, cat_id))
         return None
-    return _total_do_header(cab) or 0
+    total = _total_do_header(cab)
+    if total is None:
+        _registrar_erro_vtex(
+            estado, "resposta VTEX sem header Resources na categoria {}".format(
+                cat_id))
+        return None
+    return total
 
 
 def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
@@ -324,8 +345,13 @@ def _filhos(dominio, caminho):
 
 def vtex_departamento(dominio, cat_id, estado):
     """Todos os produtos de um departamento, descendo a arvore ate caber."""
-    total = _contar(dominio, str(cat_id))
-    if not total:
+    total = _contar(dominio, str(cat_id), estado=estado)
+    if total is None:
+        return
+    if total == 0:
+        _registrar_erro_vtex(
+            estado, "catalogo VTEX declarou zero na categoria {}".format(
+                cat_id))
         return
     yield from _por_categoria(dominio, str(cat_id), estado, total)
 
@@ -339,7 +365,7 @@ def _por_categoria(dominio, caminho, estado, total=None, nivel=1):
     sem ter como dividir mais -- foi o que truncou o Dress To em 4540 de 7178.
     """
     if total is None:
-        total = _contar(dominio, caminho)
+        total = _contar(dominio, caminho, estado=estado)
     if not total:
         return
     if total <= TETO_OFFSET:
@@ -371,7 +397,7 @@ def _por_categoria(dominio, caminho, estado, total=None, nivel=1):
 def _por_preco(dominio, cat_id, estado):
     """Ultimo recurso: parte a faixa de preco ao meio ate caber no teto."""
     def particao(pmin, pmax):
-        t = _contar(dominio, cat_id, pmin, pmax)
+        t = _contar(dominio, cat_id, pmin, pmax, estado=estado)
         if not t:
             return
         if t <= TETO_OFFSET:
@@ -397,7 +423,29 @@ def _por_preco(dominio, cat_id, estado):
     yield from particao(0, PRECO_TETO)
 
 
-def vtex_extrair(p):
+DOMINIOS_PUBLICOS_VTEX = {
+    # A Search API da Maria Filó vive no host administrativo legado. O campo
+    # `link` devolvido por ele aponta para esse mesmo host e termina numa tela
+    # de login, embora a rota pública exista no domínio da loja.
+    "mariafilo.vtexcommercestable.com.br": "www.mariafilo.com.br",
+}
+
+
+def _url_publica_vtex(p, dominio):
+    """Converte uma rota de catálogo VTEX numa URL que o cliente pode abrir."""
+    host = DOMINIOS_PUBLICOS_VTEX.get(dominio, dominio)
+    link_text = str(p.get("linkText") or "").strip("/")
+    if link_text:
+        return "https://{}/{}/p".format(host, link_text)
+    url = p.get("link") or None
+    if url and host != dominio:
+        partes = urllib.parse.urlsplit(url)
+        return urllib.parse.urlunsplit(("https", host, partes.path,
+                                        partes.query, partes.fragment))
+    return url
+
+
+def vtex_extrair(p, dominio=None):
     itens = p.get("items") or []
     grade = {}
     preco_atual = preco_orig = None
@@ -429,7 +477,7 @@ def vtex_extrair(p):
         imagem = itens[0]["images"][0].get("imageUrl")
     return {
         "id_externo": str(p.get("productId") or ""),
-        "url": p.get("link") or None,
+        "url": _url_publica_vtex(p, dominio) if dominio else (p.get("link") or None),
         "titulo": p.get("productName"),
         "descricao": p.get("description") or None,
         "categoria_site": (p.get("categories") or [None])[0],
@@ -648,7 +696,7 @@ def coletar_marca(marca, hoje, cache_deps):
             deps = []
         for cat_id, _nome in deps:
             for p in vtex_departamento(dominio, cat_id, estado):
-                d = vtex_extrair(p)
+                d = vtex_extrair(p, dominio)
                 if not d["id_externo"] or d["id_externo"] in vistos:
                     continue
                 vistos.add(d["id_externo"])

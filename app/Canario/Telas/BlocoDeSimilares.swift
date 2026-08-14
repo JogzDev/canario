@@ -22,12 +22,12 @@ struct BlocoDeSimilares: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            Text("Peças parecidas no painel").font(Tokens.Fonte.secao)
+            Text("Similar pieces in the panel").font(Tokens.Fonte.secao)
             LinhaInsumo(texto: Similares.criterio(resumo))
 
             if let leitura = Similares.leituraDoPreco(resumo, alvo: precoAlvo) {
                 Cartao {
-                    Text("Onde o seu preço cai").font(Tokens.Fonte.miudo.weight(.semibold))
+                    Text("Where your price falls").font(Tokens.Fonte.miudo.weight(.semibold))
                     Text(leitura).font(Tokens.Fonte.apoio)
                 }
             }
@@ -37,8 +37,8 @@ struct BlocoDeSimilares: View {
             }
 
             if resumo.nSimilares > pecas.count {
-                LinhaInsumo(texto: "Mostrando \(pecas.count) de \(resumo.nSimilares), "
-                          + "uma das mais parecidas por marca. As porcentagens acima são sobre as \(resumo.nSimilares).")
+                LinhaInsumo(texto: "Showing \(pecas.count) of \(resumo.nSimilares), "
+                          + "including one of the closest matches per brand. Percentages above use all \(resumo.nSimilares) matches.")
             }
         }
     }
@@ -64,7 +64,7 @@ struct CartaoDeSimilar: View {
                         .fixedSize(horizontal: false, vertical: true)
                     LinhaInsumo(texto: Similares.desfecho(peca))
                     if let u = peca.url, let link = URL(string: u) {
-                        Link("ver no site da marca", destination: link)
+                        Link("View on the brand's website", destination: link)
                             .font(Tokens.Fonte.miudo)
                     }
                 }

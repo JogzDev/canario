@@ -153,16 +153,16 @@ enum CurvaDeTamanhos {
 
         let sujeito: String
         if nomes.count == 1 {
-            sujeito = "O tamanho \(nomes[0]) é o que mais sai de linha no painel"
+            sujeito = "Size \(nomes[0]) leaves availability fastest in the panel"
         } else {
-            let lista = nomes.dropLast().joined(separator: ", ") + " e " + (nomes.last ?? "")
-            sujeito = "Os tamanhos \(lista) saem de linha no mesmo ritmo, e são os mais rápidos do painel"
+            let lista = nomes.dropLast().joined(separator: ", ") + " and " + (nomes.last ?? "")
+            sujeito = "Sizes \(lista) leave availability at the same pace and are the panel's fastest"
         }
 
         return sujeito + ": "
-             + "\(Leitura.numero(taxaPico, casas: 1))% dos que estavam disponíveis ficaram "
-             + "indisponíveis na janela, contra \(Leitura.numero(taxaVale, casas: 1))% do \(rotuloVale) — "
-             + "\(vezes) vez\(vezes == "1,0" ? "" : "es") a taxa dele."
+             + "\(Leitura.numero(taxaPico, casas: 1))% of available sizes became unavailable "
+             + "during the window, versus \(Leitura.numero(taxaVale, casas: 1))% for \(rotuloVale) — "
+             + "\(vezes) times its rate."
     }
 
     /// O formato da quebra, que é o que a §24 chama de "à esquerda" ou "à direita".
@@ -171,13 +171,13 @@ enum CurvaDeTamanhos {
         let razao = m / g
         let vezes = Leitura.numero(razao, casas: 2)
         if razao >= 1.15 {
-            return "A quebra pende para os tamanhos menores da grade: eles saem \(vezes) vezes mais que os maiores."
+            return "Availability breaks more often among smaller sizes: they leave \(vezes) times faster than larger sizes."
         }
         if razao <= 0.87 {
             let inverso = Leitura.numero(1 / razao, casas: 2)
-            return "A quebra pende para os tamanhos maiores da grade: eles saem \(inverso) vezes mais que os menores."
+            return "Availability breaks more often among larger sizes: they leave \(inverso) times faster than smaller sizes."
         }
-        return "As duas pontas da grade saem em ritmo parecido nesta janela. Sem formato declarado."
+        return "Both ends of the size range moved at a similar pace in this window; no directional shape is declared."
     }
 
     /// **Composição de grade, soma zero.** É o único tipo de recomendação que a
@@ -196,23 +196,22 @@ enum CurvaDeTamanhos {
         // Sem diferença que se sustente, não há composição a sugerir. Mandar
         // deslocar grade sobre ruído seria pior que não dizer nada.
         guard !empatados(pico, vale) else {
-            return "Nesta seleção os tamanhos saem em ritmo parecido, dentro da margem de erro. "
-                 + "Não há deslocamento de grade que este dado sustente."
+            return "Sizes in this selection moved at a similar pace within the margin of error. "
+                 + "The data does not support reallocating the size mix."
         }
         let noTopo = ordenado.filter { $0.id == pico.id || empatados(pico, $0) }
             .compactMap(\.rotulo)
-        let destino = noTopo.count == 1 ? noTopo[0] : noTopo.joined(separator: " e ")
-        return "Se a sua grade hoje for uniforme e o seu público se parecer com o do painel, "
-             + "o que este dado sugere é deslocar participação de \(rVale) para \(destino) — "
-             + "trocando proporção entre tamanhos, sem mexer no total de peças. "
-             + "Quantas peças comprar depende do seu custo, do seu prazo e do seu histórico, que não estão aqui."
+        let destino = noTopo.count == 1 ? noTopo[0] : noTopo.joined(separator: " and ")
+        return "If your size mix is currently even and your audience resembles the panel's, "
+             + "this data supports shifting share from \(rVale) to \(destino) — changing proportions, "
+             + "not the total number of items. Purchase volume depends on your costs, timing and history, which are not included."
     }
 
     /// §24, ressalva obrigatória. Não é rodapé: é a condição de uso do número.
     static let ressalvas = [
-        "O público da sua marca não é o público médio do painel: modelagem e clientela são suas. Isto é referência de mercado, não prescrição.",
-        "Não vemos quantidade em estoque. Marca costuma comprar menos nas pontas da grade, e isso sozinho já acelera a saída de PP e GG.",
-        "A taxa conta tamanhos que estavam disponíveis e deixaram de estar. Não é venda: é saída do ar, que pode ser venda, remanejamento ou fim de linha.",
+        "Your brand's audience is not the panel's average audience. Fit and customer mix are yours; this is market context, not a prescription.",
+        "Inventory quantities are not visible. Brands often buy fewer units at the ends of a size range, which alone can make them disappear faster.",
+        "The rate counts sizes that were available and then became unavailable. It is not a sales measure; removal can mean a sale, transfer or end of line.",
     ]
 
     /// O que sustenta o número, em uma linha (regra 3).
@@ -220,7 +219,7 @@ enum CurvaDeTamanhos {
         let risco = linhas.reduce(0) { $0 + $1.nEmRisco }
         let grades = linhas.map(\.nGrades).max() ?? 0
         let semana = linhas.first?.semana ?? ""
-        return "\(risco) tamanhos em risco em \(grades) grades do painel, janela de \(janelaDias) dias, semana de \(Formato.data(semana))."
+        return "\(risco) sizes at risk across \(grades) panel size ranges, a \(janelaDias)-day window, week of \(Formato.data(semana))."
     }
 
     /// Ordena os rótulos do menor para o maior, para a tela desenhar a curva na

@@ -61,10 +61,18 @@ def main():
         "limit 12",
         "p.segmento = 'feminino_casual_br'",
         "least(greatest(coalesce($2, 12), 1), 24)",
+        "p.ultimo_snapshot_em >= current_date - 14",
+        "coalesce(g.esgotada, false) = false",
+        "public.url_publica_produto(p.url, m.nome)",
     ]
     for trecho in exigencias_similares:
         if trecho not in similares:
             return falhar("similares final nao garante: {}".format(trecho))
+
+    _, eventos_recentes = ultima_definicao(
+        arquivos, "create or replace function public.eventos_recentes")
+    if "public.url_publica_produto(p.url, m.nome)" not in eventos_recentes:
+        return falhar("eventos recentes ainda devolvem host administrativo")
 
     estado_final = "\n".join(
         open(c, encoding="utf-8").read().lower() for c in arquivos)
@@ -172,6 +180,19 @@ def main():
         return falhar("timeout do cron nao e configurado antes do dispatcher")
     if "set work_mem = '64mb';" not in estado_final:
         return falhar("dispatcher nao reserva memoria para evitar spill")
+
+    _, limite_visao = ultima_definicao(
+        arquivos, "create or replace function public._reservar_analise_visual")
+    exigencias_limite_visao = [
+        "pg_advisory_xact_lock",
+        "p_limite_origem",
+        "p_limite_global",
+        "grant execute on function public._reservar_analise_visual",
+        "to service_role",
+    ]
+    for trecho in exigencias_limite_visao:
+        if trecho not in limite_visao:
+            return falhar("limite da visao nao garante: {}".format(trecho))
 
     _, curva = ultima_definicao(
         arquivos, "create or replace function public.computar_curva_tamanhos")
