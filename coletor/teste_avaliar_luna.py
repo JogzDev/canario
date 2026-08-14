@@ -51,7 +51,10 @@ def testar_taxonomia_e_schema():
     assert "A waist seam also does not prove separation" in prompt
     assert "surface area on the target garment only" in prompt
     assert "golden-yellow velvet and fabric stay amarelo_laranja" in prompt
-    assert MODULO.VERSAO_DO_PREPROCESSAMENTO == "vision-saliency-mask-v1"
+    # A saliência de atenção media o rosto, não a peça: 24/24 das saídas eram
+    # retângulos pretos. A versão fica travada no teste para que uma troca de
+    # pré-processamento nunca passe despercebida numa comparação de números.
+    assert MODULO.VERSAO_DO_PREPROCESSAMENTO == "vision-instance-mask-v2"
 
 
 def testar_amostra_balanceada_e_deterministica():
@@ -217,9 +220,18 @@ def testar_benchmark_exige_remocao_de_fundo():
     segmentador = (RAIZ / "ferramentas" / "segmentar_fundo.swift").read_text()
     assert "xcrun swiftc ferramentas/segmentar_fundo.swift" in workflow
     assert '--segmentador "$RUNNER_TEMP/segmentar-fundo"' in workflow
-    assert "VNGenerateAttentionBasedSaliencyImageRequest" in segmentador
-    assert "filtro.maskImage = mascaraEscalada" in segmentador
+    # O benchmark tem de medir a MESMA imagem que o iPhone enviaria, então usa
+    # o mesmo pedido do app. A saliência de atenção acha onde o olho pousa —
+    # numa foto de moda, o rosto — e produziu 24/24 saídas degeneradas.
+    assert "VNGenerateForegroundInstanceMaskRequest" in segmentador
+    assert "VNGenerateAttentionBasedSaliencyImageRequest" not in segmentador
+    # Transparência chega achatada sobre preto na API de visão: a saída é opaca.
+    assert "CGImageAlphaInfo.noneSkipLast" in segmentador
     assert "primeiro_plano_nao_encontrado" in segmentador
+    # Sem SDK com máscara de instância aborta, não cai em saliência escondida.
+    assert "sdk_sem_mascara_de_instancia" in segmentador
+    # A conferência é da imagem gravada, não da máscara.
+    assert "composta.cobertura >= coberturaMinima" in segmentador
     assert "imagem bruta e proibida" in (
         RAIZ / "ferramentas" / "avaliar_luna.py").read_text()
 

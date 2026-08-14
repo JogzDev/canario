@@ -27,7 +27,12 @@ enum MiniaturaLocal {
         }
 
         let id: Int
+        /// PNG com transparência: serve para exibir e guardar no closet.
         let dados: Data
+        /// A mesma peça achatada sobre branco, opaca. É esta que vai para a
+        /// análise: PNG transparente chega achatado sobre **preto** numa API de
+        /// visão, e foi assim que o benchmark de 300 mediu retângulos pretos.
+        let dadosParaAnalise: Data
         let tipo: Tipo
 
         var rotulo: String {
@@ -75,16 +80,20 @@ enum MiniaturaLocal {
                 .prefix(4)
                 .enumerated()
                 .compactMap { indice, recorte -> OpcaoDeAlvo? in
-                    guard let dados = redesenhar(recorte, transparente: true)?.pngData() else {
+                    guard let dados = redesenhar(recorte, transparente: true)?.pngData(),
+                          let opaca = redesenhar(recorte, transparente: false)?
+                              .jpegData(compressionQuality: 0.82) else {
                         return nil
                     }
-                    return OpcaoDeAlvo(id: indice, dados: dados, tipo: .primeiroPlano)
+                    return OpcaoDeAlvo(id: indice, dados: dados,
+                                       dadosParaAnalise: opaca, tipo: .primeiroPlano)
                 }
 
             if let completa = redesenhar(imagem, transparente: false)?
                 .jpegData(compressionQuality: 0.82) {
                 opcoes.append(OpcaoDeAlvo(id: opcoes.count,
                                           dados: completa,
+                                          dadosParaAnalise: completa,
                                           tipo: .fotoCompleta))
             }
             return opcoes
@@ -172,7 +181,8 @@ enum MiniaturaLocal {
             try manipulador.perform([pedido])
             guard let observacao = pedido.results?.first,
                   !observacao.allInstances.isEmpty else { return [] }
-            var candidatas: [(mascara: CVPixelBuffer, medida: MedidaDaMascara)] = []
+            var candidatas: [(mascara: CVPixelBuffer,
+                              medida: MascaraDeInstancia.Medida)] = []
             for instancia in observacao.allInstances.prefix(16) {
                 let mascara = try observacao.generateScaledMaskForImage(
                     forInstances: IndexSet(integer: instancia), from: manipulador)
@@ -210,42 +220,10 @@ enum MiniaturaLocal {
         }
     }
 
-    /// Bounding box e cobertura da máscara. Entre 3% e 95%: abaixo disso a
-    /// detecção é ruído; acima disso ela não removeu fundo de forma útil.
-    private struct MedidaDaMascara {
-        let limites: CGRect
-        let pontuacao: Double
-    }
-
-    private static func medidaUtil(da mascara: CVPixelBuffer) -> MedidaDaMascara? {
-        CVPixelBufferLockBaseAddress(mascara, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(mascara, .readOnly) }
-        guard CVPixelBufferGetPixelFormatType(mascara) == kCVPixelFormatType_OneComponent8,
-              let base = CVPixelBufferGetBaseAddress(mascara) else { return nil }
-        let largura = CVPixelBufferGetWidth(mascara)
-        let altura = CVPixelBufferGetHeight(mascara)
-        let passo = CVPixelBufferGetBytesPerRow(mascara)
-        let bytes = base.assumingMemoryBound(to: UInt8.self)
-        var minX = largura, minY = altura, maxX = -1, maxY = -1, ativos = 0
-        for y in 0..<altura {
-            for x in 0..<largura where bytes[y * passo + x] > 127 {
-                ativos += 1
-                minX = min(minX, x); maxX = max(maxX, x)
-                minY = min(minY, y); maxY = max(maxY, y)
-            }
-        }
-        let cobertura = Double(ativos) / Double(max(1, largura * altura))
-        guard cobertura >= 0.03, cobertura <= 0.95, maxX >= minX, maxY >= minY else {
-            return nil
-        }
-        let limites = CGRect(x: minX, y: minY,
-                             width: maxX - minX + 1, height: maxY - minY + 1)
-        // Área ativa domina; uma pequena preferência pelo centro desempata
-        // prop grande na borda sem derrubar roupa propositalmente assimétrica.
-        let centroX = Double(limites.midX) / Double(max(1, largura))
-        let centroY = Double(limites.midY) / Double(max(1, altura))
-        let distancia = hypot(centroX - 0.5, centroY - 0.5)
-        return MedidaDaMascara(limites: limites,
-                               pontuacao: cobertura - 0.04 * distancia)
+    /// A medição vive em `MascaraDeInstancia`, que é testada sem simulador.
+    private static func medidaUtil(da mascara: CVPixelBuffer)
+        -> MascaraDeInstancia.Medida? {
+        guard let leitura = try? MascaraDeInstancia.ler(mascara) else { return nil }
+        return MascaraDeInstancia.medir(leitura)
     }
 }
