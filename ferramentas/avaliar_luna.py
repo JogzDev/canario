@@ -27,7 +27,7 @@ import urllib.request
 
 
 MODELO = "gpt-5.6-luna"
-VERSAO_DO_PROMPT = "alvo-estrutura-v4"
+VERSAO_DO_PROMPT = "alvo-estrutura-v5"
 URL_RESPOSTAS = "https://api.openai.com/v1/responses"
 SEMENTE_PADRAO = 20260810
 CLAREZAS_DO_ALVO = (
@@ -197,14 +197,20 @@ sale item, or hidden construction. Accuracy is more important than coverage.
   studio background is still a background and never part of the garment.
 - In a worn look with several garments, use
   multiple_garments_target_clear only when one garment is unambiguously the
-  visual subject because the crop, scale, centering, and detail strongly favor
-  it. Showing one garment completely while cropping another can support the
-  target, but only together with the other composition cues. Do not simply
-  choose the most colorful garment.
+  visual subject. Evaluate target evidence in this order: completeness versus
+  cropping; visible garment surface and vertical extent; centering and product
+  detail; then distinctive styling or color contrast. Require at least two
+  independent composition cues. A garment shown completely and occupying
+  clearly more garment surface or vertical extent can be the target even when
+  another garment is also visible. Distinctive color alone is never enough,
+  but color together with centered construction details such as a waistband,
+  belt, pockets, or closures can break a real compositional tie.
 - A coordinated matching set is still multiple garments. If the image presents
   the top and bottom as peers and no single target dominates, use
   ambiguous_target rather than inventing one target or calling the set a
-  jumpsuit.
+  jumpsuit. Matching color or material does not by itself make the target
+  ambiguous: when one piece occupies roughly twice the visible garment surface
+  or the other is materially cropped, select the dominant piece.
 - If two or more garments are plausible targets, use ambiguous_target. Never
   guess which item the catalog or user intended.
 - Ignore body, skin, hair, pose, background, props, footwear, bags, jewelry,
@@ -241,13 +247,20 @@ sale item, or hidden construction. Accuracy is more important than coverage.
   and outerwear; includes blouse, top, tee, tank, cropped top, and bodysuit.
 - A long shirt is not a dress unless pixels establish that the same garment
   continues below the pelvis as a lower panel meant to cover the lower body.
+  A shirt collar plus a substantial placket and free tie-front tails remains
+  shirt construction even at tunic length. Tie tails, side tails, or a short
+  extension below a waist knot are not a dress panel. A dress needs a visibly
+  continuous lower-body panel with its own width and hem below the pelvis.
 - Sleeve length is never evidence for shorts. Use lower_two_legs_short only
   with visible crotch, inseam, or two independent leg openings/tubes. A center
   slit, wrap overlap, pleat, or two moving skirt panels is not enough. For a
   skort, label only the exterior construction actually visible.
 - A visible midriff gap, top hem, separate waistband, or overlap at the waist
   proves separate upper and lower garments. A sharp color or texture change by
-  itself does not prove separation in a color-blocked one-piece garment.
+  itself does not prove separation in a color-blocked one-piece garment. A
+  waist seam also does not prove separation. With no skin gap, separate top
+  hem, waistband, or overlap, prefer one-piece construction when the lateral
+  outline continues from a fitted bodice into one lower panel.
 
 The application derives its eight category ids deterministically from
 garment_structure. Do not perform a second semantic category guess.
@@ -262,8 +275,12 @@ color must cover about 10 percent of the target or recur materially in its
 print. Rank colors by visible surface area on the target garment only, never by
 surface area of the whole image or by saturation. Ignore colors from another
 garment, tiny trim, buttons, crystals, shadows, skin, and background. Map a
-metallic gold, silver, bronze, or copper surface to outras_cores; do not force
-it into amarelo_laranja, branco_cru, or cinza merely because of its highlights.
+genuinely metallic gold, silver, bronze, or copper surface to outras_cores; do
+not force it into amarelo_laranja, branco_cru, or cinza merely because of its
+highlights. Metallic means the garment surface itself visibly behaves like
+metal, foil, or mirror. Mustard, ochre, or golden-yellow velvet and fabric stay
+amarelo_laranja even when they have reflective highlights, gold-colored trim,
+sequins, or rhinestones.
 Aesthetics has at most three ids. additional_visual_attributes has at most five
 short, concrete English phrases not already represented below. Never repeat an
 item or place a free-form guess in a taxonomy field. decision_evidence must

@@ -33,7 +33,7 @@ def testar_taxonomia_e_schema():
 
     prompt = " ".join(MODULO.instrucoes(taxonomia).split())
     assert len(MODULO.hash_do_prompt(taxonomia)) == 64
-    assert "Do not simply choose the most colorful garment" in prompt
+    assert "Distinctive color alone is never enough" in prompt
     assert "A tie-front shirt remains a shirt" in prompt
     assert "Decorative buttons alone are insufficient" in prompt
     assert "Sleeve length is never evidence for shorts" in prompt
@@ -45,8 +45,12 @@ def testar_taxonomia_e_schema():
     assert "tank, camisole, bustier, strap top, tee" in prompt
     assert "two independent leg openings/tubes" in prompt
     assert "sharp color or texture change by itself" in prompt
+    assert "Require at least two independent composition cues" in prompt
+    assert "roughly twice the visible garment surface" in prompt
+    assert "free tie-front tails remains shirt construction" in prompt
+    assert "A waist seam also does not prove separation" in prompt
     assert "surface area on the target garment only" in prompt
-    assert "metallic gold, silver, bronze, or copper" in prompt
+    assert "golden-yellow velvet and fabric stay amarelo_laranja" in prompt
 
 
 def testar_amostra_balanceada_e_deterministica():
