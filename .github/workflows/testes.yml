@@ -15,7 +15,11 @@ permissions:
 jobs:
   coletores:
     name: Coletores (Python)
-    runs-on: ubuntu-latest
+    # Este job custa 1x o minuto e roda em ~15 s: sozinho ele nunca esgotaria a
+    # cota. Vai para o i7 junto porque, com a conta bloqueada, qualquer job em
+    # runner do GitHub falha antes de comecar -- e um teste que nao roda nao
+    # protege ninguem.
+    runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -80,7 +84,12 @@ jobs:
 
   app:
     name: App (Swift)
-    runs-on: macos-latest
+    # O maior gasto de todos, e por uma margem larga. Runner macOS do GitHub
+    # custa 10x o minuto do Linux; medido nas runs de 14/08, este job leva
+    # ~2m20 e portanto consome ~30 minutos de cota a cada push. Trinta pushes
+    # no mes ja passam de 900 minutos, quase metade do plano gratuito, para
+    # rodar `swift test` numa maquina que o projeto ja tem.
+    runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Logica pura em macOS
