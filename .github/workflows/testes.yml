@@ -15,81 +15,79 @@ permissions:
 jobs:
   coletores:
     name: Coletores (Python)
-    # Este job custa 1x o minuto e roda em ~15 s: sozinho ele nunca esgotaria a
-    # cota. Vai para o i7 junto porque, com a conta bloqueada, qualquer job em
-    # runner do GitHub falha antes de comecar -- e um teste que nao roda nao
-    # protege ninguem.
+    # Vai para o i7: com a conta bloqueada, job em runner do GitHub falha antes
+    # de comecar, e teste que nao roda nao protege ninguem. Custa pouco de todo
+    # jeito -- 1x o minuto, ~15 s.
     runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: '3.11'
+      - uses: ./.github/actions/python-mac
       - name: Instalar pyyaml (usado pelo teste de workflows)
-        run: pip install --quiet pyyaml
+        run: "$PY -m pip install --quiet pyyaml"
       - name: Matcher compartilhado
-        run: python3 coletor/teste_matcher.py
+        run: "$PY coletor/teste_matcher.py"
       - name: Contexto de moda no editorial
-        run: python3 coletor/teste_contexto_editorial.py
+        run: "$PY coletor/teste_contexto_editorial.py"
       - name: Classificador de categorias
-        run: python3 coletor/teste_classificador.py
+        run: "$PY coletor/teste_classificador.py"
       - name: Lista negra de vocabulario (§6)
-        run: python3 coletor/teste_vocabulario.py
+        run: "$PY coletor/teste_vocabulario.py"
       - name: Normalizador de tamanhos (§24)
-        run: python3 coletor/teste_tamanhos.py
+        run: "$PY coletor/teste_tamanhos.py"
       - name: Filtro de populacao (nome da marca, acessorio)
-        run: python3 coletor/teste_populacao.py
+        run: "$PY coletor/teste_populacao.py"
       - name: Materializacao nao apaga estado medido
-        run: python3 coletor/teste_materializacao.py
+        run: "$PY coletor/teste_materializacao.py"
       - name: Estado final das migrations
-        run: python3 coletor/teste_migrations.py
+        run: "$PY coletor/teste_migrations.py"
       - name: Publicacao atomica do motor
-        run: python3 coletor/teste_publicacao_motor.py
+        run: "$PY coletor/teste_publicacao_motor.py"
       - name: Portao operacional de saude
-        run: python3 coletor/teste_saude.py
+        run: "$PY coletor/teste_saude.py"
       - name: Portao de capacidade do banco
-        run: python3 coletor/teste_capacidade_banco.py
+        run: "$PY coletor/teste_capacidade_banco.py"
       - name: Paginacao VTEX sem perda por empate de preco
-        run: python3 coletor/teste_paginacao_vtex.py
+        run: "$PY coletor/teste_paginacao_vtex.py"
       - name: Planejamento diario do Google Trends
-        run: python3 coletor/teste_trends.py
+        run: "$PY coletor/teste_trends.py"
       - name: Fila da perna de busca (§19)
-        run: python3 coletor/teste_fila_de_busca.py
+        run: "$PY coletor/teste_fila_de_busca.py"
       # O deslocamento de seis dias entre busca e editorial nao levantava
       # excecao e nao quebrava teste: o numero existia e parecia razoavel, so
       # media outro periodo. Este confere que as duas pernas usam o mesmo
       # calendario, comparando com a funcao real do coletor editorial.
       - name: Busca e editorial na mesma semana (§22)
-        run: python3 coletor/teste_semana_da_busca.py
+        run: "$PY coletor/teste_semana_da_busca.py"
       - name: Workflows do Actions
-        run: python3 coletor/teste_workflows.py
+        run: "$PY coletor/teste_workflows.py"
       - name: Contrato do avaliador Luna (sem rede)
-        run: python3 coletor/teste_avaliar_luna.py
+        run: "$PY coletor/teste_avaliar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)
-        run: python3 coletor/teste_edge_luna.py
+        run: "$PY coletor/teste_edge_luna.py"
       - name: Pacote cego de revisao Luna (sem rede)
-        run: python3 coletor/teste_preparar_revisao_luna.py
+        run: "$PY coletor/teste_preparar_revisao_luna.py"
       - name: Consolidacao humana do Luna (sem rede)
-        run: python3 coletor/teste_consolidar_revisao_luna.py
+        run: "$PY coletor/teste_consolidar_revisao_luna.py"
       - name: Adjudicacao cega do Luna (sem rede)
-        run: python3 coletor/teste_preparar_adjudicacao_luna.py
+        run: "$PY coletor/teste_preparar_adjudicacao_luna.py"
       - name: Modulos compilam
-        run: python3 -m py_compile coletor/*.py
+        run: "$PY -m py_compile coletor/*.py"
       # `py_compile` acima confere SINTAXE. Nome usado e nunca definido passa
       # limpo por ele e so estoura em execucao -- foi assim que `ja_tem` chegou
       # ao runner em 05/08 e derrubou a coleta de busca depois de meia hora de
       # trabalho ja feito.
       - name: Nome usado e nunca definido
-        run: python3 coletor/teste_nomes.py
+        run: "$PY coletor/teste_nomes.py"
 
   app:
     name: App (Swift)
-    # O maior gasto de todos, e por uma margem larga. Runner macOS do GitHub
-    # custa 10x o minuto do Linux; medido nas runs de 14/08, este job leva
-    # ~2m20 e portanto consome ~30 minutos de cota a cada push. Trinta pushes
-    # no mes ja passam de 900 minutos, quase metade do plano gratuito, para
-    # rodar `swift test` numa maquina que o projeto ja tem.
-    runs-on: [self-hosted, macOS]
+    # Este e o maior gasto do projeto e continua no runner pago do GitHub,
+    # porque a alternativa nao existe: o i7 nao tem Xcode. Foi medido em
+    # 15/08 -- `swift test` la responde "XCTest not available", e a propria
+    # acao python-mac ja documentava que a maquina nao tem nem as Command
+    # Line Tools. Mover este job para o i7 exige instalar Xcode nele; ate la,
+    # cortar aqui seria trocar cobertura por economia.
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Logica pura em macOS
