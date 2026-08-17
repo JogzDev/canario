@@ -26,6 +26,7 @@
 		8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */; };
 		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
 		9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */; };
+		A1C7E5D20B93F4416ADE0001 /* MascaraDeInstancia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C7E5D20B93F4416ADE0002 /* MascaraDeInstancia.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
 		B5F4296D54E2C90E4074A18A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */; };
 		BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */; };
@@ -38,7 +39,6 @@
 		E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907420D533A7734E5A3F0DE7 /* Analisar.swift */; };
 		E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1ACCCE153B6FA384A39863 /* Formato.swift */; };
 		EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */; };
-		A1C7E5D20B93F4416ADE0001 /* MascaraDeInstancia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C7E5D20B93F4416ADE0002 /* MascaraDeInstancia.swift */; };
 		F74BC81F9574E9A897EBDA2E /* MinhasPecas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918F2D159B1FA7F2DB11A730 /* MinhasPecas.swift */; };
 		FD257BCD1FC049D0AD24E2CC /* SemelhancaVisual.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */; };
 /* End PBXBuildFile section */
@@ -63,12 +63,12 @@
 		7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatorioDaPeca.swift; sourceTree = "<group>"; };
 		810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniaturaLocal.swift; sourceTree = "<group>"; };
-		A1C7E5D20B93F4416ADE0002 /* MascaraDeInstancia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MascaraDeInstancia.swift; sourceTree = "<group>"; };
 		8AB286CF60DF319C5A6A8541 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Config.xcconfig; path = ../Config.xcconfig; sourceTree = SOURCE_ROOT; };
 		8EAE067E291E7143C7B5D2FD /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cluster.swift; sourceTree = "<group>"; };
 		907420D533A7734E5A3F0DE7 /* Analisar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analisar.swift; sourceTree = "<group>"; };
 		918F2D159B1FA7F2DB11A730 /* MinhasPecas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinhasPecas.swift; sourceTree = "<group>"; };
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurvaDeTamanhos.swift; sourceTree = "<group>"; };
+		A1C7E5D20B93F4416ADE0002 /* MascaraDeInstancia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MascaraDeInstancia.swift; sourceTree = "<group>"; };
 		C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Similares.swift; sourceTree = "<group>"; };
 		CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorDaPeca.swift; sourceTree = "<group>"; };
 		CD1ACCCE153B6FA384A39863 /* Formato.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formato.swift; sourceTree = "<group>"; };
@@ -298,8 +298,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.canario.app;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = br.com.canario.ch3.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -363,8 +363,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.canario.app;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = br.com.canario.ch3.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 1;

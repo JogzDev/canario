@@ -5,9 +5,13 @@
 	<!-- Escrito à mão (GENERATE_INFOPLIST_FILE = NO) porque precisamos das
 	     variáveis do Supabase no fim deste arquivo, e a geração automática do
 	     Xcode não aceita chaves próprias. Sem as chaves obrigatórias abaixo, o
-	     simulador recusa a instalação com "Missing bundle ID". -->
+	     simulador recusa a instalação com "Missing bundle ID".
+	     O Xcode reordena e remove comentários ao salvar o projeto; se este
+	     bloco sumir de novo, é isso, e não perda de chave. -->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>DataDrobe</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -16,51 +20,31 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundleDisplayName</key>
-	<string>DataDrobe</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
+	<key>REMOTE_ANALYSIS_ENABLED</key>
+	<string>$(REMOTE_ANALYSIS_ENABLED)</string>
+	<key>SUPABASE_PUBLISHABLE_KEY</key>
+	<string>$(SUPABASE_PUBLISHABLE_KEY)</string>
+	<key>SUPABASE_URL</key>
+	<string>$(SUPABASE_URL)</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-
-	<!-- Conformidade de exportação. O app só faz HTTPS com o Supabase, que é
-	     criptografia isenta pelas regras da Apple. Declarar aqui evita a
-	     pergunta a cada envio ao TestFlight — e a resposta é a mesma sempre. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-
-	<!-- Câmera e fototeca (A12, decisão do JP em 07/08, desfazendo o corte do
-	     A7). O texto que aparece no pedido de permissão diz o que o app faz com
-	     a foto e o que ele NÃO faz — a revisão da App Store lê essa frase, e o
-	     usuário também. Retenção zero continua valendo: a imagem é lida em
-	     memória, os atributos saem dela no próprio aparelho e nada é copiado,
-	     salvo ou enviado.
-
-	     Só leitura da fototeca (NSPhotoLibraryUsageDescription), nunca escrita:
-	     o app não salva foto nenhuma, então NSPhotoLibraryAddUsageDescription
-	     não existe aqui de propósito. -->
-	<key>NSCameraUsageDescription</key>
-	<string>Take a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
-
-	<!-- Lidos pelo Supabase.swift. Vêm do Config.xcconfig, que está no
-	     .gitignore: nenhum valor real entra no repositório. -->
-	<key>SUPABASE_URL</key>
-	<string>$(SUPABASE_URL)</string>
-	<key>SUPABASE_PUBLISHABLE_KEY</key>
-	<string>$(SUPABASE_PUBLISHABLE_KEY)</string>
-	<key>REMOTE_ANALYSIS_ENABLED</key>
-	<string>$(REMOTE_ANALYSIS_ENABLED)</string>
 </dict>
 </plist>
