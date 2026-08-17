@@ -40,25 +40,23 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # No Mac self-hosted isso pode falhar (toolcache ausente); nao e bloqueador:
-      # os coletores rodam tambem no Python 3.9 que vem com o macOS.
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        continue-on-error: true
-        with:
-          python-version: '3.11'
+      # O comentario antigo dizia que o Python 3.9 do macOS serviria de reserva.
+      # Nao serve: no i7 o `python3` e um atalho que exige as Command Line Tools
+      # do Xcode, que a maquina nao tem. A acao abaixo resolve os dois runners.
+      - uses: ./.github/actions/python-mac
 
       - name: Proteger capacidade do banco antes de escrever
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python3 coletor/verificar_capacidade_banco.py
+        run: "$PY coletor/verificar_capacidade_banco.py"
 
       - name: Pente fino do datacenter
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python3 coletor/pente_fino_datacenter.py
+        run: "$PY coletor/pente_fino_datacenter.py"
 
       - name: Commitar veredito do pente fino
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' }}
@@ -75,7 +73,7 @@ jobs:
           # Divisao de trabalho por plataforma: as Shopify (Amaro, PatBo) dao
           # 429 daqui e ficam com o runner residencial (coleta-shopify.yml).
           COLETA_PLATAFORMA: vtex
-        run: python3 coletor/coletor_varejo.py
+        run: "$PY coletor/coletor_varejo.py"
 
       # Um único job ao fim do pipeline publica SAUDE.md. Aqui persiste apenas
       # a árvore VTEX descoberta, que tem um único escritor.

@@ -37,14 +37,12 @@ jobs:
   saude:
     if: ${{ always() }}
     needs: [recuperar-shopify, recuperar-busca]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: '3.11'
+      - uses: ./.github/actions/python-mac
 
       - name: Consolidar fontes e aplicar portao de saude
         id: portao
@@ -52,7 +50,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: python3 coletor/gerar_saude.py
+        run: "$PY coletor/gerar_saude.py"
 
       - name: Validar recuperacao das duas fontes
         id: dependencias
