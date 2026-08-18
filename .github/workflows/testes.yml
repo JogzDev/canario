@@ -81,13 +81,16 @@ jobs:
 
   app:
     name: App (Swift)
-    # Este e o maior gasto do projeto e continua no runner pago do GitHub,
-    # porque a alternativa nao existe: o i7 nao tem Xcode. Foi medido em
-    # 15/08 -- `swift test` la responde "XCTest not available", e a propria
-    # acao python-mac ja documentava que a maquina nao tem nem as Command
-    # Line Tools. Mover este job para o i7 exige instalar Xcode nele; ate la,
-    # cortar aqui seria trocar cobertura por economia.
-    runs-on: macos-latest
+    # Era o maior gasto do projeto: em `macos-latest` custava ~30 minutos de
+    # cota por push, porque runner macOS do GitHub vale 10x o minuto do Linux.
+    # Nao dava para mandar ao i7, que nao tem Xcode -- medido em 15/08, la o
+    # `swift test` responde "XCTest not available". Agora vai para o Mac do JP,
+    # pelo rotulo `xcode`, e o custo cai a zero.
+    #
+    # Se o runner dele estiver parado, este job espera na fila em vez de
+    # falhar, e roda assim que ele ligar. Fila e sinal honesto de "ninguem
+    # testou ainda"; vermelho por falta de runner nao e.
+    runs-on: [self-hosted, macOS, xcode]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Logica pura em macOS
