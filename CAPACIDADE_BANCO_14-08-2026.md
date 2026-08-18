@@ -96,3 +96,55 @@ coleta ou motor em curso.
 O alívio agora é estrutural, não cosmético, mas também não é infinito: o espaço
 morto volta a crescer com `UPDATE`. Vale reavaliar `autovacuum_vacuum_scale_factor`
 em `produtos` antes de discutir retenção ou plano Pro.
+
+## 18/08/2026 — a causa, e não mais o sintoma
+
+O `VACUUM FULL` de 14/08 liberou 182 MiB. Em **72 horas o banco voltou a 468,7 MB
+(93,7% do plano)**, a caminho de deixar o projeto somente-leitura durante a
+revisão da Apple. Ficou provado que compactar é analgésico.
+
+A causa, medida e não suposta:
+
+| Medida | Valor |
+|---|---:|
+| Linha média de `produtos` | 1.079 bytes |
+| `descricao` dentro dela | 769 bytes (**60,8%**) |
+| O que a coleta diária muda | preço, grade e data — ~58 bytes |
+| Produtos atualizados por dia | ~53.000 |
+
+O Postgres versiona a linha inteira. Mudar 58 bytes descartava 1.079 e escrevia
+1.079 novos, 53 mil vezes por dia.
+
+### A correção (P8)
+
+`fillfactor = 70` em `produtos`. A folga na página permite que a versão nova
+caiba junto da antiga — o HOT update — e a antiga seja reaproveitada ali mesmo
+em vez de virar página nova. Só é possível porque **nenhuma coluna volátil é
+indexada**: os três índices cobrem `id`, `(marca_id, id_externo)` e `segmento`.
+
+Ensaio com 5.000 linhas, mudando só coluna volátil:
+
+| | Antes | Depois |
+|---|---:|---:|
+| Updates HOT | — | **4.995 de 5.000 (99,9%)** |
+| Crescimento do heap | ~2 MB | **8.192 bytes (uma página)** |
+
+Custo: a tabela fica ~1,43x maior de forma permanente, +44 MiB. Paga-se uma vez.
+
+### Hipótese que falhou, registrada de propósito
+
+`toast_tuple_target = 512` deveria empurrar a `descricao` para fora da linha,
+já que valor TOAST não modificado não é reescrito no UPDATE. **Não funcionou:**
+o Postgres comprime antes de mover, e a descrição comprimida já cabe no alvo.
+O TOAST ficou em 3,4 MiB.
+
+Quem tentar de novo precisa de `STORAGE EXTERNAL`, que desliga a compressão e
+troca ~60 MB de disco por menos reescrita. Com o plano em 500 MB essa conta não
+fecha hoje. Fica anotado para não se repetir a tentativa achando que é nova.
+
+### O que observar
+
+O teste real é o crescimento entre coletas. Se o banco ficar estável de um dia
+para o outro, o problema estrutural acabou e o que resta é o crescimento
+legítimo de `snapshots`, ~7.000 linhas por dia (~1 MB). Se voltar a subir dezenas
+de MB, a próxima suspeita é `series_semanais`, que o motor reescreve.
