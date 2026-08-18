@@ -82,3 +82,74 @@ A correção foi republicar do disco pela CLI. Deploy por transcrição de conte
 amarra o portão das 24 ao que roda em produção. Um caractere trocado muda o
 comportamento pago sem que nenhum teste local perceba — o `teste_edge_luna.py`
 confere o arquivo, não a implantação.
+
+
+## O `AI_RATE_LIMIT_SALT`, explicado
+
+**Não é credencial de ninguém.** É um valor aleatório que só existe dentro deste
+projeto — o que em criptografia se chama *pepper*.
+
+### Para que serve
+
+A função precisa limitar quantas análises cada origem faz por dia, senão a
+publishable key, que é pública por desenho, viraria uma torneira aberta na sua
+conta da OpenAI. Limitar exige identificar a origem. Guardar o IP cru seria
+coletar dado pessoal — e o `PrivacyInfo.xcprivacy` afirma que o app não coleta.
+
+A saída é guardar `sha256(salt + ":" + ip)` em vez do IP. Só que hash de IPv4,
+sozinho, não esconde nada: são 4 bilhões de valores possíveis e qualquer
+máquina os percorre em segundos. O salt é o que torna essa reversão inviável.
+
+Por isso o código exige pelo menos 24 caracteres e recusa a análise sem ele:
+
+```ts
+if (!apiKey || !salt || salt.length < 24) return response(503, { error: "analysis_not_configured" });
+```
+
+### Como gerar e cadastrar
+
+```
+openssl rand -base64 32
+```
+
+Copie a saída — 44 caracteres — e cadastre em **Edge Functions → Secrets**,
+no painel do projeto, com o nome `AI_RATE_LIMIT_SALT`.
+
+Pela CLI, evitando deixar o valor no histórico do shell:
+
+```
+umask 077
+printf 'AI_RATE_LIMIT_SALT=%s\n' "$(openssl rand -base64 32)" > /tmp/salt.env
+supabase secrets set --env-file /tmp/salt.env --project-ref tbluoqpnjqsflfoclmms
+rm -f /tmp/salt.env
+```
+
+### O que NÃO fazer
+
+- Não commitar, não colar em chat, não reaproveitar como senha de nada.
+- Não usar algo memorável. Se for adivinhável, não protege: quem tiver a tabela
+  testa o palpite contra os IPv4 e recupera os endereços.
+
+### Se você perder o valor
+
+Não faz falta. Ninguém precisa dele além da própria função, e não há nada para
+restaurar. Gerar um novo só faz os contadores do dia recomeçarem do zero, porque
+os hashes antigos deixam de casar. A tabela é efêmera de qualquer forma: a P6
+apaga linhas com mais de sete dias.
+
+Trocar o salt é, portanto, uma operação barata — o oposto da `OPENAI_API_KEY`,
+que é credencial de verdade e cuja troca exige revogar a antiga na OpenAI.
+
+## Verificar depois de cadastrar
+
+```
+python3 ferramentas/testar_edge_luna.py --so-contrato
+```
+
+Tem de sair *"sobe e os secrets estão cadastrados"*. Depois, o teste pago com
+uma foto real, de cerca de US$ 0,0007:
+
+```
+python3 ferramentas/testar_edge_luna.py ~/canario-imagens-treino/short/3142.jpg \
+  --alvo "o short laranja"
+```
