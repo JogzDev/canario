@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 19/08/2026, 05:40 UTC (02:40 em São Paulo)
+**Última atualização:** 19/08/2026, 09:45 UTC (06:45 em São Paulo)
 
 Este é o **único** documento que descreve o estado atual do projeto. Se outro
 arquivo discordar dele, ele está velho — e provavelmente está em `historico/`.
@@ -19,60 +19,72 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Frente | Estado | Número que importa |
 |---|---|---|
 | Dados e pipeline | funcionando | 15 de 15 marcas coletando |
-| Banco | apertado, veredito pendente | **75,3% de 500 MB** (376.474.771 bytes) |
+| Banco | **veredito veio e foi ruim** | 83,2% depois de emergência; bateu **97,2%** hoje |
 | Rota paga de visão (Luna) | de pé, com credenciais | responde `invalid_image` |
 | App na loja | **aguardando resposta da Apple** | 1.0 · `br.com.canario.ch3.app` |
 | Testes | 165 Swift · 25 suítes Python | 0 telas com teste de interface |
 
 ---
 
-## 1. Banco — o número mais apertado do projeto
+## 1. Banco — o veredito do P8/P9 chegou, e foi ruim
 
-**376.474.771 bytes — 75,3% de 500 MB**, medido em 19/08 às 05:40 UTC.
+A coleta de 19/08 foi a primeira a rodar com P8 e P9 no lugar:
 
-> **Cuidado com a unidade, porque ela já me enganou.** `pg_size_pretty` devolve
-> **MiB** (1.048.576 bytes), e o limite do plano é 500 **milhões** de bytes
-> decimais — é assim que `verificar_capacidade_banco.py` conta. Os dois diferem
-> em 4,9%, o bastante para parecer que o banco encolheu quando não encolheu.
-> Sempre compare **bytes com bytes**.
+```
+antes    376.474.771 bytes    75,3%
+depois   486.141.075 bytes    97,2%     +104,6 MiB numa noite
+```
 
-Estava em 393.216.000 bytes (78,6%) e caiu 16 MiB em 19/08 com um `REINDEX` nas
-duas tabelas de estágio do motor — ver abaixo. As migrações P8 e P9, sozinhas,
-**não** reduziram nada: o banco ficou parado nos 78,6% desde 18/08.
+O portão de capacidade corta em 96%: a coleta de amanhã seria **bloqueada**, e o
+limite do plano (banco em somente-leitura) estava a 14 MB. **P8 e P9 não
+bastaram** — eles deram folga de página para a reescrita ser HOT, mas não
+atacaram a reescrita em si, e sobrou reescrita demais para a folga absorver.
 
-**O veredito do P8/P9 continua pendente.** A pergunta que importa — "uma coleta
-ainda faz o banco crescer dezenas de MB?" — só é respondida depois de uma coleta
-rodar com as migrações no lugar, e isso ainda não aconteceu.
+> **Cuidado com a unidade.** `pg_size_pretty` devolve **MiB**; o limite do plano
+> é 500 **milhões** de bytes decimais, que é como `verificar_capacidade_banco.py`
+> conta. Diferem 4,9% — o bastante para parecer queda onde não houve. Compare
+> **bytes com bytes**.
 
-Como conferir (dois minutos):
+### O que foi feito em 19/08
+
+**1. Emergência — 97,2% → 83,2%.** `VACUUM FULL` em `indices_semanais`,
+`eventos`, `series_semanais`, `produto_termos`, `artigos` e `snapshots`.
+`produtos` ficou de fora de propósito: `VACUUM FULL` constrói uma cópia antes de
+trocar, e o pico passaria de 500 MB.
+
+**2. P10 — estágio do motor devolve as páginas.** As duas tabelas de estágio
+ficam vazias entre execuções e seguravam 16,7 MB de índice, porque o motor
+truncava no começo e limpava com `delete` no fim. Agora truncam nas duas pontas.
+Estão em 48 kB.
+
+**3. P11 — a causa raiz.** `publicar_atributos` reescrevia **os 82.666 produtos
+toda noite** para gravar `segmento`, sem cláusula de mudança. A linha média tem
+~1.079 bytes: ~89 MB de tupla nova por execução. E `segmento` tem dois valores
+(89,2% `feminino_casual_br`, 10,8% nulo) e praticamente nunca muda — 82.920
+linhas eram reescritas à toa. Agora só escreve `where p.segmento is distinct
+from s.segmento`.
+
+### O que observar na próxima coleta
+
+O retorno do motor passou a trazer **`produtos_alterados`**. Em noite normal ele
+deve ficar perto de zero. Se voltar a subir para dezenas de milhares, a causa do
+crescimento é outra e está nesse número.
 
 ```bash
 python3 coletor/verificar_capacidade_banco.py
 ```
 
-Maiores tabelas, com heap e índice separados — a distinção importa, porque duas
-vezes o problema estava no índice e não no dado:
-
 | Tabela | Heap | Índices | Situação |
 |---|---:|---:|---|
-| `produtos` | 134 MB | 5 MB | alvo do P8; 40% de updates HOT |
-| `produto_termos` | 22 MB | **31 MB** | índice maior que o dado; apagada e reinserida a cada motor |
+| `produtos` | 190 MB | 5 MB | **85 MB úteis** — 105 MB de inchaço ainda não recuperado |
 | `snapshots` | 35 MB | 16 MB | delta diário, crescimento esperado |
-| `artigos` | 26 MB | 18 MB | **95,2% de aproveitamento — não está inchada** |
+| `produto_termos` | 22 MB | 32 MB | apagada e reinserida inteira a cada motor |
+| `artigos` | 26 MB | 18 MB | 95,2% de aproveitamento — não está inchada |
 | `series_semanais` | 27 MB | 2 MB | alvo do P9 |
 
-### O que o REINDEX de 19/08 recuperou, e por que volta
-
-`motor_termos_stage` e `motor_produtos_stage` são tabelas de estágio, **vazias**
-entre execuções. Mesmo assim carregavam **16,7 MB de índice** — 4,5% de tudo.
-
-A causa: o motor `truncate` no começo da execução, mas limpa com `delete` no
-fim. `delete` remove as linhas e **deixa as páginas de índice alocadas**. O
-`REINDEX` derrubou os quatro índices de 16,7 MB para 32 KB.
-
-Isso **volta a crescer** a cada execução do motor. A correção permanente é
-trocar o `delete` final por `truncate`, que devolve as páginas — ainda não foi
-feita, e está na lista de abertos.
+`produtos` ainda carrega ~105 MB de inchaço. Recuperá-lo exige `VACUUM FULL`
+numa janela com folga — ou seja, depois de a próxima coleta provar que o P11
+segurou o crescimento.
 
 ## 2. Pipeline e coleta
 

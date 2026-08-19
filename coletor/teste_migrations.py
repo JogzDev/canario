@@ -91,8 +91,20 @@ def main():
         "stage incompleto",
         "produtos_vivos <> p_total",
         "delete from public.produto_termos where origem = 'titulo'",
-        "produtos_publicados <> p_total",
+        # A completude e conferida contra p_total. Ate o P11 isso era medido
+        # pelo numero de linhas ATUALIZADAS, o que so funcionava porque todas
+        # eram atualizadas sempre; agora e medido pela cobertura do stage,
+        # antes de escrever. A garantia e a mesma, na variavel certa.
+        "produtos_cobertos <> p_total",
         "pg_advisory_xact_lock",
+        # P11: escrever so o que mudou. Reescrever os 82 mil produtos toda
+        # noite para gravar o mesmo `segmento` levou o banco de 75% a 97% numa
+        # unica coleta, em 19/08/2026. `is distinct from` e obrigatorio: 10,8%
+        # dos segmentos sao NULL, e `<>` com NULL devolve NULL, o que
+        # descartaria exatamente as linhas que entram ou saem de nulo.
+        "p.segmento is distinct from s.segmento",
+        # P10: truncate devolve as paginas de indice; delete as deixa alocadas.
+        "truncate table public.motor_termos_stage",
     ]
     for trecho in exigencias_publicacao:
         if trecho not in publicar:
