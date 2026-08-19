@@ -1,6 +1,6 @@
 # Sonda do Actions — condicao 2.2
 
-**Executado (UTC):** 2026-08-17T20:01:12.546647+00:00  
+**Executado (UTC):** 2026-08-19T05:30:56.478782+00:00  
 
 **IP de origem:** datacenter do GitHub Actions (não o residencial do JP)
 
@@ -10,8 +10,8 @@
 
 | Marca | Domínio | Plataforma | Tentativas HTTP | JSON ok | Catálogo | Bloqueado |
 |---|---|---|---|---|---|---|
-| Cantao | www.cantao.com.br | vtex | 206 | sim | 180 | não |
-| C&A | www.cea.com.br | vtex | 206 | sim | 12403 | não |
+| Cantao | www.cantao.com.br | vtex | 206 | sim | 175 | não |
+| C&A | www.cea.com.br | vtex | 206 | sim | 12386 | não |
 | Amaro | amaro.com | shopify | 200 | sim | — | não |
 | PatBo | www.patbo.com.br | shopify | 200 | sim | — | não |
 
