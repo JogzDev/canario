@@ -193,10 +193,32 @@ struct RelatorioDaPeca: View {
     /// leitura" responde a uma pergunta que ele não fez.
     private var resumo: some View {
         Cartao {
+            // A revisão de UX apontou que esta tela não deixa claro qual é o
+            // resultado -- ela abre com um parágrafo e a pessoa tem de deduzir.
+            // A ordem NÃO muda (ver o cabeçalho deste arquivo: o número do
+            // conjunto vem por último de propósito, senão vira veredito). O que
+            // muda é dizer, com todas as letras, que isto aqui é o resultado.
+            Text("Result").font(Tokens.Fonte.secao)
             if let r = similares?.resumo {
-                Text(Similares.paragrafo(r, atributos: termos,
-                                         descricao: descricaoAmigavel))
-                    .font(Tokens.Fonte.corpo)
+                // As mesmas frases da §29, uma por linha. Nada foi reescrito:
+                // o parágrafo sempre foi uma lista de frases, juntada no fim.
+                let frases = Similares.frasesDoResumo(
+                    r, atributos: termos, descricao: descricaoAmigavel)
+                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                    ForEach(frases, id: \.self) { f in
+                        HStack(alignment: .firstTextBaseline,
+                               spacing: Tokens.Espaco.s) {
+                            Text("•").foregroundStyle(Tokens.Cor.tintaFraca)
+                            Text(f).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .font(Tokens.Fonte.corpo)
+                // Para o VoiceOver a lista vira uma frase só: marcador lido a
+                // cada linha viraria ruído.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Similares.paragrafo(
+                    r, atributos: termos, descricao: descricaoAmigavel))
                 Divider()
             }
             Text(frase).font(Tokens.Fonte.apoio)

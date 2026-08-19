@@ -308,7 +308,11 @@ def montar_payload(imagem_em_data_url, taxonomia):
         "model": MODELO,
         "store": False,
         "reasoning": {"effort": "medium"},
-        "max_output_tokens": 1200,
+        # 1200 nao bastava. Com `reasoning.effort=medium` os tokens de
+        # raciocinio saem DESTE mesmo orcamento, e uma peca que exige mais
+        # raciocinio parava no meio do JSON -- medido em 19/08, na 16a de 24,
+        # com saidas observadas de ate 672 tokens de texto.
+        "max_output_tokens": 2500,
         "instructions": instrucoes(taxonomia),
         "input": [{
             "role": "user",
@@ -759,20 +763,37 @@ def main():
             resposta = chamar_openai(
                 montar_payload(data_url, taxonomia), chave)
             latencia = time.monotonic() - inicio
+            analise_bruta = None
+            erro_da_resposta = None
             try:
                 analise_bruta = json.loads(extrair_texto(resposta))
-            except json.JSONDecodeError as erro:
-                raise ErroDaOpenAI("output_text nao e JSON valido") from erro
+            except json.JSONDecodeError:
+                erro_da_resposta = "output_text nao e JSON valido"
+            except ErroDaOpenAI as erro:
+                # Tipicamente `Resposta incompleta (max_output_tokens)`: o
+                # modelo gastou o teto entre raciocinio e saida e parou no meio
+                # do JSON. E falha de resposta, nao da rodada.
+                erro_da_resposta = str(erro)
             uso = resposta.get("usage") or {}
             custo += custo_estimado(uso)
             erro_de_validacao = None
-            try:
-                analise = normalizar_analise(analise_bruta, taxonomia)
-            except ErroDaOpenAI as erro:
-                # A chamada ja aconteceu e deve permanecer auditavel. Uma saida
-                # fora do contrato conta como erro no portao, sem nova inferencia.
+            if analise_bruta is None:
+                # Resposta que nao chegou ao fim ja foi paga e conta como erro
+                # no portao, igual a saida fora do contrato. O que NAO pode e
+                # derrubar a rodada: em 19/08 uma imagem estourou
+                # max_output_tokens na 16a de 24 e levou junto as 15 medidas
+                # anteriores, ja pagas.
                 analise = None
-                erro_de_validacao = str(erro)
+                erro_de_validacao = erro_da_resposta
+            else:
+                try:
+                    analise = normalizar_analise(analise_bruta, taxonomia)
+                except ErroDaOpenAI as erro:
+                    # A chamada ja aconteceu e deve permanecer auditavel. Uma
+                    # saida fora do contrato conta como erro no portao, sem
+                    # nova inferencia.
+                    analise = None
+                    erro_de_validacao = str(erro)
             resultado = {
                 "sample_id": "S{:02d}".format(indice),
                 "imagem": imagem.name,

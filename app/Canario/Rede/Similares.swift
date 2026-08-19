@@ -116,14 +116,23 @@ enum Similares {
     /// A §29 dá o exemplo: *"No painel de {n_marcas} marcas, encontrei
     /// {n_similares} similares: {pct_preco_cheio}% a preço cheio e
     /// {pct_grade_quebrada}% com grade quebrando {formato}."*
-    static func paragrafo(_ r: Resumo, atributos: [Termo], descricao: String? = nil) -> String {
+    /// As mesmas frases da §29, mas em lista.
+    ///
+    /// A revisão de UX da 1.0 pediu menos texto corrido e mais bullet points, e
+    /// aqui isso sai de graça: o parágrafo SEMPRE foi um array de frases
+    /// pré-escritas -- é o que a §29 exige -- e só era juntado com espaço no
+    /// último passo. Expor o array deixa a tela escolher entre parágrafo e lista
+    /// **sem trocar uma palavra**, então a regra de "frases pré-escritas com
+    /// slots preenchidos pelo motor" continua intacta.
+    static func frasesDoResumo(_ r: Resumo, atributos: [Termo],
+                               descricao: String? = nil) -> [String] {
         var frases: [String] = []
 
         let nomes = descricao
             ?? atributos.map(Traducao.rotuloExibido).joined(separator: " + ")
         if r.nSimilares == 0 {
-            return "I found no panel item with \(nomes). It may be an uncommon combination, "
-                 + "or the panel may not cover it yet; the data cannot distinguish those cases."
+            return ["I found no panel item with \(nomes). It may be an uncommon combination, "
+                  + "or the panel may not cover it yet; the data cannot distinguish those cases."]
         }
 
         frases.append("Across \(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s"), "
@@ -148,7 +157,16 @@ enum Similares {
         if let mediana = r.precoMediana {
             frases.append("The median price is \(Formato.dinheiro(mediana)).")
         }
-        return frases.joined(separator: " ")
+        return frases
+    }
+
+    /// A versão corrida das mesmas frases. Continua existindo para quem precisa
+    /// de uma string só -- rótulo de acessibilidade, por exemplo, onde uma lista
+    /// viraria pausas estranhas no VoiceOver.
+    static func paragrafo(_ r: Resumo, atributos: [Termo],
+                          descricao: String? = nil) -> String {
+        frasesDoResumo(r, atributos: atributos, descricao: descricao)
+            .joined(separator: " ")
     }
 
     /// §5 autoriza percentil de preço como substituto da previsão proibida:

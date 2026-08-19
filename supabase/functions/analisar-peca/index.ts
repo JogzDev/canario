@@ -260,7 +260,12 @@ export default {
         model: MODEL,
         store: false,
         reasoning: { effort: "medium" },
-        max_output_tokens: 1200,
+        // 1200 nao bastava: com `reasoning.effort` os tokens de raciocinio
+        // saem DESTE orcamento, e uma peca que exige mais raciocinio para no
+        // meio do JSON. Medido em 19/08 no benchmark, que usa o mesmo payload:
+        // falhou na 16a de 24 com `Resposta incompleta (max_output_tokens)`.
+        // Sem isto, o usuario da 1.1 veria a analise falhar do mesmo jeito.
+        max_output_tokens: 2500,
         instructions: INSTRUCTIONS,
         input: [{ role: "user", content: [
           { type: "input_text", text: cleanTargetHint
