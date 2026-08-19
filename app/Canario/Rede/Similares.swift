@@ -78,6 +78,11 @@ enum Similares {
         let precoDe: Double?
         let quedaPct: Double?
         let emComum: Int
+        /// Quais atributos pedidos esta peça tem. Contagem responde "quanto";
+        /// esta lista responde "o quê" — e é o quê que a pessoa enxerga na foto.
+        /// Opcional porque uma versão do app pode falar com um banco anterior
+        /// ao P14; nesse caso a diferença simplesmente não é mostrada.
+        let termosEmComum: [String]?
         let grade: Grade?
 
         enum CodingKeys: String, CodingKey {
@@ -86,6 +91,7 @@ enum Similares {
             case precoDe = "preco_de"
             case quedaPct = "queda_pct"
             case emComum = "em_comum"
+            case termosEmComum = "termos_em_comum"
         }
 
         struct Grade: Decodable, Hashable {
@@ -198,5 +204,44 @@ enum Similares {
     /// continua visível, pois nil significa “não medido”, não “esgotado”.
     static func podeExibir(_ p: Peca) -> Bool {
         p.grade?.esgotada != true
+    }
+
+    /// Diz, por peça, o quanto ela casa **e no quê difere**.
+    ///
+    /// O bloco aceita casamento parcial: com quatro atributos marcados, três
+    /// bastam. Isso é deliberado — exigir todos deixaria a lista quase vazia —
+    /// mas até 19/08/2026 o app não dizia qual atributo tinha ficado de fora.
+    /// Quem mandou uma camiseta listrada e viu uma peça lisa na lista concluiu,
+    /// com razão, que o app tinha errado.
+    ///
+    /// Ele não errou: mostrou a terceira peça mais parecida que existe no
+    /// painel. O defeito era não dizer em que ela difere, e isso é a regra 2
+    /// aplicada aqui — não afirmar mais do que o dado sustenta.
+    ///
+    /// A contagem sozinha não resolve: "3 de 4" não conta se o que faltou foi a
+    /// estampa ou o tecido, e é a estampa que a pessoa enxerga na foto.
+    static func casamento(_ p: Peca, pedidos: [Termo]) -> String? {
+        guard !pedidos.isEmpty else { return nil }
+        let total = pedidos.count
+        // Banco anterior ao P14 devolve a contagem sem a lista. Vale mostrar o
+        // número: é menos do que o ideal, e ainda assim mais honesto que nada.
+        guard let tem = p.termosEmComum else {
+            return p.emComum >= total
+                ? "All \(total) attributes"
+                : "\(p.emComum) of \(total) attributes"
+        }
+        let conjunto = Set(tem)
+        let faltam = pedidos.filter { !conjunto.contains($0.id) }
+        guard !faltam.isEmpty else { return "All \(total) attributes" }
+        let nomes = faltam.map { Traducao.rotuloExibido($0).lowercased() }
+        return "\(total - faltam.count) of \(total) · no \(listar(nomes))"
+    }
+
+    /// "a", "a or b", "a, b or c" — o "or" importa: são atributos que a peça
+    /// NÃO tem, e "and" leria como se ela tivesse os dois.
+    private static func listar(_ itens: [String]) -> String {
+        guard let ultimo = itens.last else { return "" }
+        guard itens.count > 1 else { return ultimo }
+        return itens.dropLast().joined(separator: ", ") + " or " + ultimo
     }
 }

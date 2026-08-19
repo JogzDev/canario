@@ -48,7 +48,7 @@ final class SimilaresTests: XCTestCase {
             id: 1, marca: marca, papelDaMarca: "nucleo", titulo: "Vestido Midi Floral",
             url: "https://exemplo/1", imagem: imagem,
             preco: preco, precoDe: nil, quedaPct: queda,
-            emComum: 3,
+            emComum: 3, termosEmComum: nil,
             grade: .init(degraus: degraus, disponiveis: disponiveis,
                          faltando: faltando,
                          quebrada: disponiveis < degraus,

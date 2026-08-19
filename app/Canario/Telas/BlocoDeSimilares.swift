@@ -33,7 +33,7 @@ struct BlocoDeSimilares: View {
             }
 
             ForEach(pecas.filter(Similares.podeExibir)) { peca in
-                CartaoDeSimilar(peca: peca)
+                CartaoDeSimilar(peca: peca, pedidos: atributos)
             }
 
             if resumo.nSimilares > pecas.count {
@@ -44,10 +44,36 @@ struct BlocoDeSimilares: View {
     }
 }
 
+/// Quanto a peça casa com o que foi marcado, e no que ela difere.
+///
+/// A §32 proíbe comunicar estado só por cor. Aqui a informação inteira está no
+/// texto — "3 of 4 · no stripe" —; ícone e tom são reforço. Quem não distingue
+/// cor lê exatamente a mesma coisa.
+struct EtiquetaDeCasamento: View {
+    let texto: String
+    let completo: Bool
+
+    var body: some View {
+        HStack(spacing: Tokens.Espaco.xs) {
+            Image(systemName: completo
+                  ? "checkmark.circle.fill" : "circle.lefthalf.filled")
+            Text(texto)
+        }
+        .font(Tokens.Fonte.miudo.weight(.medium))
+        .foregroundStyle(completo ? Tokens.Cor.tinta : Tokens.Cor.tintaFraca)
+        .padding(.horizontal, Tokens.Espaco.s)
+        .padding(.vertical, Tokens.Espaco.xs)
+        .background(Tokens.Cor.superficie, in: Capsule())
+    }
+}
+
 /// Um similar: foto da loja por hotlink (A13), com o bloco de cor do A6 atrás
 /// dela para quando não houver foto.
 struct CartaoDeSimilar: View {
     let peca: Similares.Peca
+    /// Os atributos que a pessoa marcou. Sem eles o card não tem como dizer no
+    /// que a peça difere -- só quantos bateram, que é o que enganava.
+    var pedidos: [Termo] = []
 
     var body: some View {
         Cartao {
@@ -62,6 +88,10 @@ struct CartaoDeSimilar: View {
                     Text(peca.titulo ?? "—")
                         .font(Tokens.Fonte.corpo)
                         .fixedSize(horizontal: false, vertical: true)
+                    if let casamento = Similares.casamento(peca, pedidos: pedidos) {
+                        EtiquetaDeCasamento(texto: casamento,
+                                            completo: peca.emComum >= pedidos.count)
+                    }
                     LinhaInsumo(texto: Similares.desfecho(peca))
                     if let u = peca.url, let link = URL(string: u) {
                         Link("View on the brand's website", destination: link)
@@ -71,7 +101,11 @@ struct CartaoDeSimilar: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(peca.marca), \(peca.titulo ?? ""). \(Similares.desfecho(peca))")
+        .accessibilityLabel(
+            [peca.marca, peca.titulo ?? "",
+             Similares.casamento(peca, pedidos: pedidos) ?? "",
+             Similares.desfecho(peca)]
+            .filter { !$0.isEmpty }.joined(separator: ", "))
     }
 
     @ViewBuilder
