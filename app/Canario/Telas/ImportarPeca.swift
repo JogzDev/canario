@@ -24,6 +24,35 @@ struct ImportarPeca: View {
     @State private var mostrandoCamera = false
     @State private var daFototeca: PhotosPickerItem?
     @State private var lendo = false
+    /// O que a espera atual está fazendo. Sem isto a tela era um spinner num
+    /// fundo branco, igual para ler um arquivo e para esperar a análise visual
+    /// -- que leva segundos de rede.
+    @State private var esperaAtual = Espera.lendoArquivo
+
+    enum Espera {
+        case lendoArquivo, separandoPeca, analisandoLocal, analisandoNaNuvem
+
+        var mensagem: String {
+            switch self {
+            case .lendoArquivo:     return "Reading the file…"
+            case .separandoPeca:    return "Separating the garment…"
+            case .analisandoLocal:  return "Reading the garment…"
+            case .analisandoNaNuvem: return "Reading the garment…"
+            }
+        }
+
+        /// Só quando a espera é longa por natureza. Aviso em espera curta vira
+        /// ruído; ausência de aviso em espera longa parece travamento.
+        var expectativa: String? {
+            switch self {
+            case .lendoArquivo, .analisandoLocal: return nil
+            case .separandoPeca:
+                return "This happens on this iPhone."
+            case .analisandoNaNuvem:
+                return "The visual analysis runs on the server and usually takes a few seconds."
+            }
+        }
+    }
     @State private var erro: String?
     @State private var detectados: Set<String> = []
     @State private var confirmou = false
@@ -70,7 +99,8 @@ struct ImportarPeca: View {
         NavigationStack {
             Group {
                 if lendo {
-                    Carregando()
+                    Carregando(mensagem: esperaAtual.mensagem,
+                               expectativa: esperaAtual.expectativa)
                 } else if imagemPendente != nil {
                     confirmacaoDoAlvo
                 } else if confirmou {
@@ -391,6 +421,7 @@ struct ImportarPeca: View {
     /// Fototeca: o item vira imagem em memória e segue o mesmo caminho.
     private func processarDaFototeca(_ item: PhotosPickerItem) async {
         daFototeca = nil
+        esperaAtual = .lendoArquivo
         lendo = true
         erro = nil
         guard let dados = try? await item.loadTransferable(type: Data.self),
@@ -405,6 +436,7 @@ struct ImportarPeca: View {
     /// Câmera e fototeca passam pelo mesmo portão visual. A opção pré-selecionada
     /// ainda exige um toque explícito no botão de confirmação.
     private func prepararConfirmacao(_ imagem: CGImage, nome: String) async {
+        esperaAtual = .separandoPeca
         lendo = true
         erro = nil
         procedencia = []
@@ -489,6 +521,7 @@ struct ImportarPeca: View {
     private func analisarImagemConfirmada(_ imagem: CGImage, nome: String,
                                           dadosParaNuvem: Data?,
                                           descricaoDoAlvo: String?) async {
+        esperaAtual = dadosParaNuvem == nil ? .analisandoLocal : .analisandoNaNuvem
         lendo = true
         erro = nil
         procedencia = []

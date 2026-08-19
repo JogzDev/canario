@@ -56,9 +56,11 @@ struct RelatorioDaPeca: View {
     @ViewBuilder
     private var botaoDeGuardar: some View {
         if pecaSalva != nil {
-            Label("Saved", systemImage: "archivebox.fill")
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(.secondary)
+            // Peça aberta a partir do Closet já está salva, e a etiqueta
+            // "Saved" no canto não informava nada -- a pessoa chegou aqui
+            // clicando nela dentro do próprio armário. Ocupava o único lugar
+            // da barra sem dizer nada que o contexto já não dissesse.
+            EmptyView()
         } else {
             switch guardada {
         case true:

@@ -156,15 +156,38 @@ struct BotaoCircularDoMenu: View {
 
 // MARK: - Estados de carga
 
+/// Espera com nome.
+///
+/// "Loading…" sozinho numa tela em branco não diz o que está acontecendo nem
+/// quanto vai demorar. Na importação isso é pior que em outros lugares: são
+/// três esperas de naturezas diferentes -- ler o arquivo, separar a peça e
+/// mandar para a análise visual --, e a última leva segundos de rede.
+///
+/// `mensagem` diz o que está sendo feito; `expectativa` avisa quando a espera
+/// é longa por natureza, em vez de deixar a pessoa achar que travou.
 struct Carregando: View {
+    var mensagem = "Loading…"
+    var expectativa: String? = nil
+
     var body: some View {
-        HStack(spacing: Tokens.Espaco.s) {
-            ProgressView()
-            Text("Loading…").font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+        VStack(spacing: Tokens.Espaco.s) {
+            HStack(spacing: Tokens.Espaco.s) {
+                ProgressView()
+                Text(mensagem).font(Tokens.Fonte.apoio)
+                    .foregroundStyle(Tokens.Cor.tinta)
+            }
+            if let expectativa {
+                Text(expectativa)
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .multilineTextAlignment(.center)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(Tokens.Espaco.g)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel([mensagem, expectativa ?? ""]
+            .filter { !$0.isEmpty }.joined(separator: ". "))
     }
 }
 
