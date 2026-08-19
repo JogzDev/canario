@@ -649,9 +649,16 @@ struct ImportarPeca: View {
                     procedencia = [
                         "Visual analysis suggested: \(lidos.joined(separator: ", ")).",
                     ]
-                    procedencia.append(contentsOf: analise.decisionEvidence.map {
-                        "Visible evidence: \($0)"
-                    })
+                    // "Visible evidence:" repetido em cada linha virava um
+                    // muro de texto -- quatro vezes o mesmo prefixo numa tela
+                    // que já é longa. Um rótulo, e as evidências como lista.
+                    if !analise.decisionEvidence.isEmpty {
+                        procedencia.append(
+                            "Visible evidence:\n"
+                            + analise.decisionEvidence
+                                .map { "•  \($0)" }
+                                .joined(separator: "\n"))
+                    }
                     if !analise.additionalVisualAttributes.isEmpty {
                         procedencia.append(
                             "Also observed, outside the market taxonomy: "

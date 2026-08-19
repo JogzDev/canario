@@ -214,28 +214,58 @@ struct RelatorioDaPeca: View {
     /// grátis, e é o que a pessoa espera ao consertar um erro.
     private func chipsDeCorrecao(_ selecao: Binding<Set<String>>) -> some View {
         Cartao {
-            HStack {
-                Text("Confirmed attributes").font(Tokens.Fonte.secao)
-                Spacer()
-                Text("tap to change")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
+            Text("Confirmed attributes").font(Tokens.Fonte.secao)
+
+            // A lista do que ESTÁ marcado, uma linha por atributo. A primeira
+            // versão desta caixa mostrava a taxonomia inteira aqui, com os não
+            // marcados junto -- era a tela de atributos de novo, dentro da tela
+            // de resultado. Aqui a pergunta já é outra: "o que foi confirmado?".
+            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                ForEach(confirmados(selecao.wrappedValue), id: \.id) { termo in
+                    HStack(alignment: .firstTextBaseline, spacing: Tokens.Espaco.s) {
+                        if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
+                            Circle()
+                                .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
+                                .overlay(Circle().strokeBorder(
+                                    Tokens.Cor.borda, lineWidth: 0.5))
+                                .frame(width: 10, height: 10)
+                        } else {
+                            Text("•").foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                        Text(Traducao.rotuloExibido(termo))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
-            FluxoDeChips(
-                termos: todosOsTermos.filter { termo in
-                    // Só as dimensões que a categoria escolhida comporta, e só
-                    // os termos daquelas dimensões -- a lista inteira aqui
-                    // seria a tela de atributos de novo, e essa já passou.
-                    FormularioDaPeca.dimensoesPermitidas(
-                        categorias: Set(todosOsTermos.lazy
-                            .filter { $0.dimensao == "categoria"
-                                      && selecao.wrappedValue.contains($0.id) }
-                            .map(\.id))
-                    ).contains(termo.dimensao)
-                },
-                todos: todosOsTermos,
-                marcados: selecao)
+            .font(Tokens.Fonte.corpo)
+
+            // Corrigir continua a um toque, mas recolhido: quem chegou aqui
+            // veio ler o resultado, não refazer o formulário.
+            DisclosureGroup {
+                FluxoDeChips(
+                    termos: todosOsTermos.filter { termo in
+                        FormularioDaPeca.dimensoesPermitidas(
+                            categorias: Set(todosOsTermos.lazy
+                                .filter { $0.dimensao == "categoria"
+                                          && selecao.wrappedValue.contains($0.id) }
+                                .map(\.id))
+                        ).contains(termo.dimensao)
+                    },
+                    todos: todosOsTermos,
+                    marcados: selecao)
+                .padding(.top, Tokens.Espaco.s)
+            } label: {
+                Text("Change something")
+                    .font(Tokens.Fonte.miudo.weight(.medium))
+            }
+            .tint(Tokens.Cor.tintaFraca)
         }
+    }
+
+    /// Os termos marcados, na ordem da taxonomia — que desde o P15 é a ordem
+    /// por frequência real no painel, e não a alfabética do id interno.
+    private func confirmados(_ marcados: Set<String>) -> [Termo] {
+        todosOsTermos.filter { marcados.contains($0.id) }
     }
 
     private var resumo: some View {
