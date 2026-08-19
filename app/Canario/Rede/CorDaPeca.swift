@@ -95,6 +95,34 @@ enum CorDaPeca {
         }
     }
 
+    /// Cor representativa de cada termo, para a interface poder MOSTRAR a cor
+    /// em vez de escrever o nome dela.
+    ///
+    /// Os valores não são gosto pessoal: cada um cai no meio da faixa que
+    /// `termo(paraRGB:)` usa para classificar aquele termo, e o teste de ida e
+    /// volta exige que reclassifiquem em si mesmos. Quer dizer que o quadradinho
+    /// na tela é fiel ao que o app entende por aquele termo — e que mudar a
+    /// classificação sem mudar a amostra quebra o teste, em vez de deixar os
+    /// dois divergirem em silêncio.
+    ///
+    /// `outras_cores` devolve `nil` de propósito. É a categoria residual, não
+    /// uma cor: pintar um quadradinho para ela seria inventar informação, e a
+    /// regra 2 proíbe exatamente isso.
+    static func rgbRepresentativo(de termoId: String) -> (Double, Double, Double)? {
+        switch termoId {
+        case "vermelho_rosa":   return (0.85, 0.22, 0.35)
+        case "amarelo_laranja": return (0.98, 0.78, 0.30)
+        case "terrosos":        return (0.62, 0.44, 0.24)
+        case "verde":           return (0.28, 0.60, 0.35)
+        case "azul":            return (0.22, 0.42, 0.72)
+        case "lilas_roxo":      return (0.55, 0.35, 0.75)
+        case "preto":           return (0.10, 0.10, 0.12)
+        case "branco_cru":      return (0.96, 0.94, 0.89)
+        case "cinza":           return (0.58, 0.58, 0.59)
+        default:                return nil
+        }
+    }
+
     /// Pele humana em RGB. Descartada porque foto de produto vem em modelo, e
     /// braço e rosto puxariam toda peça clara para "terrosos".
     static func ehPele(_ r: Double, _ g: Double, _ b: Double) -> Bool {

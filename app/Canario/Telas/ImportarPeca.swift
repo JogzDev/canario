@@ -789,7 +789,23 @@ struct FluxoDeChips: View {
                     marcados = FormularioDaPeca.alternar(
                         termo, em: marcados, termos: todos)
                 } label: {
-                    Text(Traducao.rotuloExibido(termo))
+                    HStack(spacing: Tokens.Espaco.xs) {
+                        // Ver a cor vale mais que ler o nome dela. A amostra sai
+                        // do centro da faixa que o próprio classificador usa
+                        // (`CorDaPeca`), e um teste exige que ela reclassifique
+                        // no seu termo -- senão o chip ensinaria taxonomia
+                        // errada. Termo que não é cor não ganha bolinha.
+                        if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
+                            Circle()
+                                .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
+                                // O contorno não é enfeite: sem ele o
+                                // branco/cru desaparece no fundo claro.
+                                .overlay(Circle().strokeBorder(
+                                    Tokens.Cor.borda, lineWidth: 0.5))
+                                .frame(width: 12, height: 12)
+                        }
+                        Text(Traducao.rotuloExibido(termo))
+                    }
                         .font(Tokens.Fonte.miudo)
                         .padding(.horizontal, Tokens.Espaco.s)
                         .padding(.vertical, Tokens.Espaco.xs)
