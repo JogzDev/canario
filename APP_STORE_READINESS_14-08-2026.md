@@ -71,7 +71,7 @@ provisioning profile de distribuição de `com.canario.app`.
 Critério de fechamento:
 
 - Team ID único e correto;
-- bundle id `com.canario.app` registrado ou substituído pelo definitivo;
+- bundle id `br.com.canario.ch3.app` registrado — **feito**, é o que está em revisão;
 - versão e build definidos;
 - Account Holder/Admin cria o perfil App Store ou concede acesso a
   Certificates, Identifiers & Profiles;

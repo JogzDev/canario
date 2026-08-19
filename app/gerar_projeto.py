@@ -16,7 +16,20 @@ import os
 
 RAIZ = os.path.dirname(os.path.abspath(__file__))
 NOME = "Canario"
-BUNDLE = "com.canario.app"
+# IDENTIDADE DA LOJA -- mude aqui e em lugar nenhum mais.
+#
+# Este script e o jeito documentado de adicionar uma tela: cria o .swift e
+# roda. Ate 19/08/2026 rodar era uma armadilha, porque ele reescrevia o bundle
+# para `com.canario.app` -- que nao tem perfil de distribuicao -- e nao emitia
+# DEVELOPMENT_TEAM nenhum. Quem adicionasse uma tela trocava a identidade do
+# app sem ver, com a versao em revisao na Apple. Ja tinha acontecido uma vez
+# por outro caminho (commit 8bb8dfd).
+#
+# `br.com.canario.ch3.app` e o bundle que esta em revisao e o que tem perfil de
+# loja. `coletor/teste_identidade_do_app.py` confere que o que sai daqui e o
+# que esta no .xcodeproj versionado, e falha se um dos dois andar sozinho.
+BUNDLE = "br.com.canario.ch3.app"
+TIME_DE_DESENVOLVIMENTO = "67AYPRFZH8"
 IOS_MINIMO = "17.0"
 
 
@@ -269,6 +282,7 @@ def main():
         'ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;',
         'CODE_SIGN_STYLE = Automatic;',
         'CURRENT_PROJECT_VERSION = 1;',
+        'DEVELOPMENT_TEAM = {};'.format(TIME_DE_DESENVOLVIMENTO),
         'ENABLE_PREVIEWS = YES;',
         'GENERATE_INFOPLIST_FILE = NO;',
         'INFOPLIST_FILE = "{}/Info.plist";'.format(NOME),

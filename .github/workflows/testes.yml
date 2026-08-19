@@ -60,6 +60,10 @@ jobs:
         run: "$PY coletor/teste_semana_da_busca.py"
       - name: Workflows do Actions
         run: "$PY coletor/teste_workflows.py"
+      # Bundle, time e versao ja divergiram duas vezes sem ninguem ver, e nas
+      # duas o sintoma so apareceu na hora de assinar para a loja.
+      - name: Identidade do app e uma so
+        run: "$PY coletor/teste_identidade_do_app.py"
       - name: Contrato do avaliador Luna (sem rede)
         run: "$PY coletor/teste_avaliar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)

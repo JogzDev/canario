@@ -2,7 +2,7 @@
 
 **Versão:** 1.0 | **Data:** 23/07/2026 | **Autores:** João Pedro (JP), Davi e Bianca, com consultoria de pesquisa e estruturação via Claude
 **Status:** especificação ativa. Este documento é a fonte da verdade do projeto. O agente (Claude Code) trata tudo aqui como lei; o que não estiver aqui, pergunta antes de assumir.
-**Codinome:** "Canário" é provisório. Usar sempre como token isolado (nome do projeto, do diretório, do target, bundle id `com.canario.app`), nunca embutido em frases de texto de interface, para que a troca pelo nome definitivo seja uma operação única de find-and-replace.
+**Codinome:** "Canário" é provisório. Usar sempre como token isolado (nome do projeto, do diretório, do target, bundle id `br.com.canario.ch3.app`), nunca embutido em frases de texto de interface, para que a troca pelo nome definitivo seja uma operação única de find-and-replace.
 
 ---
 
