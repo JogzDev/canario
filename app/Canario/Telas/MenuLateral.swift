@@ -5,7 +5,6 @@ struct MenuLateral: View {
     let fechar: () -> Void
     let escolher: (String) -> Void
 
-    private let itens = ["Favorites", "Account", "Terms", "Settings", "Privacy", "Q&A"]
 
     var body: some View {
         GeometryReader { geo in
@@ -20,19 +19,39 @@ struct MenuLateral: View {
                     .ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 0) {
+                    // As entradas que levam a uma AÇÃO ficam grandes. Antes as
+                    // seis tinham o mesmo peso, e o texto jurídico disputava a
+                    // tela com a peça salva.
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(itens, id: \.self) { item in
-                            Button(item) { escolher(item) }
+                        ForEach(EntradaDoMenu.acoes, id: \.self) { entrada in
+                            Button(entrada.titulo) { escolher(entrada.titulo) }
                                 .font(.system(size: 29, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .frame(height: 104)
+                                .frame(height: 92)
                         }
                     }
                     // O controle de fechar pertence à raiz e ocupa a mesma
                     // posição do ellipsis. A lista começa abaixo dele.
                     .padding(.top, 100)
+
                     Spacer()
+
+                    // As de LEITURA vão para o rodapé, pequenas e juntas.
+                    // Continuam a um toque -- exigência legal e de loja --, mas
+                    // param de ocupar metade da tela para algo que se abre uma
+                    // vez na vida. Cada uma mantém 44 pt de altura de toque,
+                    // que é o mínimo de acessibilidade da Apple, mesmo com o
+                    // texto pequeno.
+                    HStack(spacing: Tokens.Espaco.m) {
+                        ForEach(EntradaDoMenu.leituras, id: \.self) { entrada in
+                            Button(entrada.titulo) { escolher(entrada.titulo) }
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.72))
+                                .frame(minHeight: 44)
+                        }
+                    }
+                    .padding(.bottom, Tokens.Espaco.g)
                 }
                 .padding(.leading, 20)
                 .padding(.trailing, 26)

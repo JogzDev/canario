@@ -14,6 +14,7 @@
 		17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAE067E291E7143C7B5D2FD /* Cluster.swift */; };
 		9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */; };
 		26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */; };
+		531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */; };
 		D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C677A09E80A10C666280510 /* Explicacao.swift */; };
 		BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
@@ -53,6 +54,7 @@
 		8EAE067E291E7143C7B5D2FD /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cluster.swift"; sourceTree = "<group>"; };
 		CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CorDaPeca.swift"; sourceTree = "<group>"; };
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhos.swift"; sourceTree = "<group>"; };
+		DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntradasDoMenu.swift"; sourceTree = "<group>"; };
 		3C677A09E80A10C666280510 /* Explicacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explicacao.swift"; sourceTree = "<group>"; };
 		F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Importacao.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
@@ -142,6 +144,7 @@
 				8EAE067E291E7143C7B5D2FD /* Cluster.swift */,
 				CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */,
 				94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */,
+				DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */,
 				3C677A09E80A10C666280510 /* Explicacao.swift */,
 				F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
@@ -242,6 +245,7 @@
 				17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */,
 				9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */,
 				26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */,
+				531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */,
 				D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */,
 				BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
