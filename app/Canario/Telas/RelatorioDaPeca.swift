@@ -425,10 +425,42 @@ struct RelatorioDaPeca: View {
                 if let e = Cluster.explicacao(c) { LinhaInsumo(texto: e) }
                 if let k = Cluster.concentracao(c) { LinhaInsumo(texto: k) }
 
-                Divider()
-                Text("Where this number comes from").font(Tokens.Fonte.miudo.weight(.semibold))
-                LinhaInsumo(texto: Cluster.criterioDaRaridade(c))
-                ForEach(Cluster.dentro(c)) { a in
+                // A revisão de UX pediu para separar visualmente esta caixa:
+                // o RESULTADO e a TRILHA DE AUDITORIA estavam no mesmo cartão,
+                // divididos só por uma linha, e a trilha é mais longa que o
+                // resultado.
+                //
+                // Recolher, e não remover. A regra 3 exige que a pessoa possa
+                // auditar de onde o número saiu -- é isso que separa esta tela
+                // de um app que só afirma. O que ela não exige é que a
+                // auditoria esteja sempre aberta ocupando a tela de quem já
+                // confia. Fica a um toque, e o rótulo diz o que tem dentro.
+                DisclosureGroup {
+                    VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                        LinhaInsumo(texto: Cluster.criterioDaRaridade(c))
+                        blocoDeProcedencia(c)
+                    }
+                    .padding(.top, Tokens.Espaco.s)
+                } label: {
+                    Text("Where this number comes from")
+                        .font(Tokens.Fonte.miudo.weight(.semibold))
+                }
+                .tint(Tokens.Cor.tintaFraca)
+            }
+        } else {
+            CoberturaInsuficiente(
+                titulo: "No combined reading for this item yet",
+                explicacao: "None of the selected attributes has a sufficiently covered reading in this panel cut, so there is no valid average.",
+                oQueTem: "The available attribute-by-attribute reading is shown above.")
+        }
+    }
+
+    /// A trilha de auditoria do número do conjunto: cada atributo que entrou,
+    /// com o peso, e cada um que ficou de fora, com o motivo (regra 6).
+    @ViewBuilder
+    private func blocoDeProcedencia(_ c: Cluster.Resposta) -> some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            ForEach(Cluster.dentro(c)) { a in
                     HStack(alignment: .firstTextBaseline) {
                         Text(a.rotulo).font(Tokens.Fonte.miudo)
                         Spacer()
@@ -440,23 +472,17 @@ struct RelatorioDaPeca: View {
                     }
                     if let p = Cluster.porQuePesa(a) { LinhaInsumo(texto: p) }
                 }
-                if let s = Cluster.ressalvaDeSemana(c) { LinhaInsumo(texto: s) }
+            if let s = Cluster.ressalvaDeSemana(c) { LinhaInsumo(texto: s) }
 
-                // Regra 6: o que ficou de fora aparece, e diz por quê.
-                let fora = Cluster.deFora(c)
-                if !fora.isEmpty {
-                    Divider()
-                    Text("Not included").font(Tokens.Fonte.miudo.weight(.semibold))
-                    ForEach(fora) { a in
-                        LinhaInsumo(texto: "\(rotuloDoAtributo(a)): \(Explicacao.motivoDeExclusao(a.foraPor))")
-                    }
+            // Regra 6: o que ficou de fora aparece, e diz por quê.
+            let fora = Cluster.deFora(c)
+            if !fora.isEmpty {
+                Divider()
+                Text("Not included").font(Tokens.Fonte.miudo.weight(.semibold))
+                ForEach(fora) { a in
+                    LinhaInsumo(texto: "\(rotuloDoAtributo(a)): \(Explicacao.motivoDeExclusao(a.foraPor))")
                 }
             }
-        } else {
-            CoberturaInsuficiente(
-                titulo: "No combined reading for this item yet",
-                explicacao: "None of the selected attributes has a sufficiently covered reading in this panel cut, so there is no valid average.",
-                oQueTem: "The available attribute-by-attribute reading is shown above.")
         }
     }
 

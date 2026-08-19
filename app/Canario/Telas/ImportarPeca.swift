@@ -810,11 +810,19 @@ struct FluxoDeChips: View {
                         Text(Traducao.rotuloExibido(termo))
                     }
                         .font(Tokens.Fonte.miudo)
-                        .padding(.horizontal, Tokens.Espaco.s)
-                        .padding(.vertical, Tokens.Espaco.xs)
+                        .padding(.horizontal, Tokens.Espaco.m)
+                        .padding(.vertical, Tokens.Espaco.s)
                         .background(ativo ? Tokens.Cor.tinta : Tokens.Cor.superficie)
                         .foregroundStyle(ativo ? Tokens.Cor.fundo : Tokens.Cor.tinta)
                         .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
+                        // A revisão de UX pediu mais área de clique, e a medida
+                        // mostrou que era pior que desconforto: com `xs` de
+                        // padding vertical o chip tinha ~21 pt de altura, menos
+                        // da METADE dos 44 pt que a Apple define como mínimo de
+                        // acessibilidade. A pílula cresceu e o alvo de toque vai
+                        // além dela, invisível, até fechar os 44.
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
