@@ -142,12 +142,21 @@ jobs:
     # seguintes e fecha sozinho no primeiro verde -- assim "issue aberta"
     # significa "esta quebrado agora", e dia bom nao notifica ninguem.
     #
-    # Roda no runner do GitHub, nao no i7: se o alerta dependesse da mesma
-    # maquina que executa a coleta, a falha que mais precisa ser avisada --
-    # a maquina parada -- seria justamente a que nao avisaria.
+    # LIMITACAO CONHECIDA, escrita aqui porque escondida seria pior.
+    #
+    # O ideal seria rodar o alerta numa maquina diferente da que executa a
+    # coleta: se as duas sao a mesma, a falha que mais precisa de aviso -- a
+    # maquina parada -- e justamente a que nao avisa. Medido em 19/08/2026 com
+    # um job descartavel: `ubuntu-latest` FALHA ANTES DE COMECAR nesta conta,
+    # sem nem gerar log. E o bloqueio de billing, o mesmo que empurrou todo o
+    # projeto para o self-hosted.
+    #
+    # Entao o alerta cobre "o pipeline rodou e deu errado", que foi o caso das
+    # CINCO execucoes vermelhas de 14 a 17/08. NAO cobre "o pipeline nem
+    # comecou". Esse buraco continua aberto e esta registrado no ESTADO.md.
     if: ${{ always() && github.ref_name == 'main' }}
     needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

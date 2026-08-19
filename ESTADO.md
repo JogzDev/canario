@@ -58,8 +58,16 @@ em `produtos`.
 ## 2. Pipeline e coleta
 
 Verde em 18/08. Antes disso falhou **cinco execuções seguidas** (14 a 17/08) e
-ninguém soube — não havia canal de alerta, e ainda não há um que chegue a uma
-pessoa. Esta é a maior lacuna operacional aberta.
+ninguém soube.
+
+Desde 19/08 existe alerta: quando o pipeline falha, abre uma **issue** no
+próprio repositório — o GitHub já notifica por e-mail e push, sem serviço
+externo nem secret novo. Uma issue por incidente, não por noite; as falhas
+seguintes viram comentário nela; e ela **fecha sozinha** na primeira execução
+verde, o que faz "issue aberta" significar "está quebrado agora". Dia bom não
+notifica ninguém.
+
+O que ele ainda não cobre está na lista de abertos abaixo.
 
 O relatório diário fica em [`SAUDE.md`](SAUDE.md), gerado pela própria coleta.
 
@@ -146,8 +154,12 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
 
 ### Técnico, em ordem de valor
 
-1. **Canal de alerta que chegue a alguém** — cinco execuções vermelhas e quatro
-   dias de função quebrada passaram em silêncio
+1. **Alerta de "o pipeline nem começou"** — o alerta de falha existe desde
+   19/08 (abre uma issue, agrupa noites seguidas, fecha sozinha no verde), mas
+   ele roda no mesmo Mac que executa a coleta. Se a máquina estiver parada,
+   ninguém é avisado. O certo seria um runner independente: medido em 19/08,
+   `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
+   billing. Sem gastar, a saída é algo fora do GitHub
 2. **Rodada cega da Luna** nas 24 imagens
 3. **Modo escuro ignorado** nas telas Add e Closet (visto em vídeo, 18/08)
 4. **Artefato rosa** na tela Add (visto em vídeo, 18/08)

@@ -73,6 +73,10 @@ jobs:
       # pergunta ao servidor, que e a unica que separa os dois casos.
       - name: Classificacao da sonda da rota paga (sem rede)
         run: "$PY coletor/teste_sonda_edge_luna.py"
+      # Alarme que dispara todo dia deixa de ser lido: este confere que o
+      # alerta agrupa noites seguidas numa issue so e fecha sozinho no verde.
+      - name: Alerta do pipeline nao vira ruido (sem rede)
+        run: "$PY coletor/teste_alertar.py"
       - name: Pacote cego de revisao Luna (sem rede)
         run: "$PY coletor/teste_preparar_revisao_luna.py"
       - name: Consolidacao humana do Luna (sem rede)
