@@ -17,7 +17,8 @@ let package = Package(
         .target(
             name: "CanarioLogica",
             path: "Canario",
-            sources: ["Rede/Traducao.swift", "Rede/Modelos.swift", "Rede/Supabase.swift",
+            sources: ["Rede/AbasDoApp.swift",
+                      "Rede/Traducao.swift", "Rede/Modelos.swift", "Rede/Supabase.swift",
                       "Rede/CorDaPeca.swift", "Rede/LeitorDeArquivo.swift",
                       "Rede/Importacao.swift", "Rede/Explicacao.swift",
                       "Rede/CurvaDeTamanhos.swift", "Rede/Similares.swift",

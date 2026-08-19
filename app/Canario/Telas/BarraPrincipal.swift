@@ -52,20 +52,24 @@ struct BarraPrincipal: View {
         }
     }
 
+    // Esta barra tinha a própria lista de abas, com os próprios títulos. Foi
+    // assim que a tela de tendências virou "Analytics" aqui e "Trends" no
+    // iOS 26. Agora as duas navegações leem `AbaDoApp`, e um rótulo só pode
+    // mudar nos dois lugares ao mesmo tempo.
     private var grupoDeAbas: some View {
         HStack(spacing: 2) {
-            item(.adicionar, "Add", "hanger")
-            item(.armario, "Closet", "tshirt.fill")
-            item(.dados, "Trends", "chart.line.uptrend.xyaxis")
+            ForEach(Raiz.Aba.principais, id: \.self) { destino in
+                item(destino)
+            }
         }
     }
 
-    private func item(_ destino: Raiz.Aba, _ titulo: String, _ simbolo: String) -> some View {
+    private func item(_ destino: Raiz.Aba) -> some View {
         Button { aba = destino } label: {
             VStack(spacing: 2) {
-                Image(systemName: simbolo)
+                Image(systemName: destino.simbolo)
                     .font(.system(size: 22, weight: .semibold))
-                Text(titulo)
+                Text(destino.titulo)
                     .font(.system(size: 10, weight: .medium))
             }
             .foregroundStyle(aba == destino ? Color.accentColor : Tokens.Cor.noite)

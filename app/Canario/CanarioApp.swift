@@ -11,9 +11,9 @@ struct CanarioApp: App {
 /// com busca separada. Só a aba visível existe na árvore, preservando o ganho
 /// de performance da A14 (as consultas das telas ocultas não disparam juntas).
 struct Raiz: View {
-    enum Aba: String {
-        case adicionar, armario, dados, buscar
-    }
+    /// Os nomes e símbolos das abas vivem em `AbaDoApp`, fora da View, porque
+    /// já divergiram entre as duas navegações uma vez.
+    typealias Aba = AbaDoApp
 
     struct ItemDoMenu: Identifiable {
         let nome: String
@@ -55,16 +55,20 @@ struct Raiz: View {
     @available(iOS 26.0, *)
     private var navegacaoNativa: some View {
         TabView(selection: $aba) {
-            Tab("Add", systemImage: "hanger", value: .adicionar) {
+            Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
+                value: .adicionar) {
                 TelaInicialAdicionar()
             }
-            Tab("Closet", systemImage: "tshirt.fill", value: .armario) {
+            Tab(Aba.armario.titulo, systemImage: Aba.armario.simbolo,
+                value: .armario) {
                 MinhasPecas()
             }
-            Tab("Trends", systemImage: "chart.line.uptrend.xyaxis", value: .dados) {
+            Tab(Aba.dados.titulo, systemImage: Aba.dados.simbolo,
+                value: .dados) {
                 Explorar()
             }
-            Tab("Search", systemImage: "magnifyingglass", value: .buscar, role: .search) {
+            Tab(Aba.buscar.titulo, systemImage: Aba.buscar.simbolo,
+                value: .buscar, role: .search) {
                 Analisar()
             }
         }
