@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Tokens de aparência do Canário.
 ///
@@ -14,10 +15,42 @@ enum Tokens {
     // MARK: - Cor
 
     enum Cor {
-        /// Paleta aprovada em 12/08/2026.
-        static let ceu = Color(red: 187 / 255, green: 229 / 255, blue: 237 / 255)
-        static let noite = Color(red: 14 / 255, green: 17 / 255, blue: 22 / 255)
-        static let azulMarca = Color(red: 55 / 255, green: 74 / 255, blue: 103 / 255)
+        // PALETA DA MARCA -- aprovada em 12/08/2026, e adaptativa desde 19/08.
+        //
+        // As três nasceram como cores FIXAS, e por isso as telas Add e Closet
+        // ignoravam o modo escuro: elas pintam o fundo com `ceu`, que nunca
+        // escurecia. Quem usa o iPhone no escuro abria o app e levava um fundo
+        // azul claro na cara. Os outros tokens daqui já se adaptavam, porque
+        // vêm do sistema (`systemBackground`, `label`); só a marca não.
+        //
+        // A correção NÃO troca a paleta aprovada: os valores do modo claro são
+        // os mesmos de 12/08, byte a byte. O que existe agora é um segundo
+        // valor para o escuro, escolhido no MESMO matiz -- escurecer mantendo
+        // a identidade, em vez de cair no cinza do sistema e a marca sumir.
+        //
+        // Se a Bianca e o Fadul quiserem outros tons de escuro, é aqui e só
+        // aqui que se mexe.
+
+        /// Céu da marca: fundo das telas Add e Closet.
+        static let ceu = adaptativa(claro: (187, 229, 237), escuro: (16, 38, 44))
+        /// Tinta sobre o céu. Precisa inverter junto com ele, ou o texto some.
+        static let noite = adaptativa(claro: (14, 17, 22), escuro: (232, 240, 242))
+        /// Azul de identidade sobre o céu; clareia no escuro para manter
+        /// contraste de leitura sobre o fundo escurecido.
+        static let azulMarca = adaptativa(claro: (55, 74, 103),
+                                          escuro: (150, 180, 215))
+
+        /// Uma cor por tema, resolvida pelo sistema no momento de desenhar --
+        /// e não uma vez na inicialização. Isso é o que faz a tela responder a
+        /// quem troca de tema com o app aberto.
+        private static func adaptativa(claro: (Double, Double, Double),
+                                       escuro: (Double, Double, Double)) -> Color {
+            Color(UIColor { tracos in
+                let (r, g, b) = tracos.userInterfaceStyle == .dark ? escuro : claro
+                return UIColor(red: r / 255, green: g / 255, blue: b / 255,
+                               alpha: 1)
+            })
+        }
         /// Azul de ação com contraste suficiente tanto no fundo claro quanto
         /// no escuro. `azulMarca` é identidade sobre o céu da Home; usá-lo
         /// como link em cards pretos tornava texto e ícone ilegíveis.

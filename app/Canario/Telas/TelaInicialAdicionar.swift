@@ -5,6 +5,7 @@ import UIKit
 /// Fadul. O Dynamic Island é o elemento real do iPhone: o app desenha somente
 /// o feixe abaixo dele, nunca uma pílula preta falsa.
 struct TelaInicialAdicionar: View {
+    @Environment(\.colorScheme) private var tema
     @State private var termos: [Termo] = []
     @State private var buscandoTermos = false
     @State private var erro: String?
@@ -15,6 +16,15 @@ struct TelaInicialAdicionar: View {
         ZStack {
             Tokens.Cor.ceu.ignoresSafeArea()
 
+            // O feixe é um SVG do Fadul com as cores assadas dentro: creme
+            // quente (#FFF6D1) descendo para um oliva (#99937D) transparente.
+            // Sobre o céu claro isso lê como luz. Sobre o céu escuro, o oliva
+            // domina e a tela ganha um cone esverdeado no topo -- desenhado
+            // POR CIMA do fundo, como tinta, quando um holofote deveria somar.
+            //
+            // `plusLighter` faz o feixe somar à cena em vez de cobri-la, que é
+            // o que a luz faz. Sem arte nova, e o modo claro fica byte a byte
+            // como o Fadul entregou.
             Image("Spotlight")
                 .resizable()
                 .scaledToFit()
@@ -22,6 +32,8 @@ struct TelaInicialAdicionar: View {
                 .frame(maxHeight: 545, alignment: .top)
                 .ignoresSafeArea(edges: .top)
                 .frame(maxHeight: .infinity, alignment: .top)
+                .blendMode(tema == .dark ? .plusLighter : .normal)
+                .opacity(tema == .dark ? 0.42 : 1)
                 .accessibilityHidden(true)
 
             miniaturasRecentes

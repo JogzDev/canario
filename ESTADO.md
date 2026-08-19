@@ -161,9 +161,12 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
    `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
    billing. Sem gastar, a saída é algo fora do GitHub
 2. **Rodada cega da Luna** nas 24 imagens
-3. **Modo escuro ignorado** nas telas Add e Closet (visto em vídeo, 18/08)
-4. **Artefato rosa** na tela Add (visto em vídeo, 18/08)
-5. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
+3. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
+   sobre o fundo escuro em 19/08, mas o relato original era de algo **rosa**, e
+   isso eu não consegui reproduzir: só há runtime iOS 26.2 nesta máquina, e o
+   iPhone 15 com 18.7 usa o caminho de compatibilidade. Pode ter sido o mesmo
+   defeito visto noutro renderizador, pode ser outro. Precisa de uma foto
+4. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
    reproduzível no Mac (242 → 241 ms), mas **a causa dos 30 s continua sem
    prova**. Precisa de medição no aparelho, não de mais otimização no escuro
 6. Primeiro teste de interface de verdade
