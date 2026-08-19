@@ -35,12 +35,24 @@ def main():
                   .format(codigo, corpo))
             return 1
 
-    # Chave recusada não é "função quebrada", mas também não pode passar calada:
-    # a sonda não chegou a ver a função, então não sabe nada.
-    estado, gravidade, texto = classificar(401, {"message": "Invalid API key"})
-    if gravidade != "PANE" or "gateway" not in texto:
-        print("FALHOU: chave recusada nao foi distinguida")
-        return 1
+    # Chave recusada NAO e "funcao quebrada", e a distincao custou uma execucao
+    # vermelha de verdade: na primeira noite da sonda, em 19/08, a chave secreta
+    # foi recusada pelo gateway e a mensagem original mandava procurar apagao na
+    # funcao -- que estava de pe o tempo todo. Alarme que aponta para o lugar
+    # errado e como se ensina a ignorar alarme.
+    for codigo in (401, 403):
+        estado, gravidade, texto = classificar(
+            codigo, {"message": "Invalid API key"})
+        if gravidade != "SONDA_SEM_CHAVE":
+            print("FALHOU: chave recusada ({}) foi confundida com pane da "
+                  "funcao".format(codigo))
+            return 1
+        if "NÃO chegou a ver" not in texto:
+            print("FALHOU: mensagem nao deixa claro que a funcao nao foi vista")
+            return 1
+        if "SUPABASE_PUBLISHABLE_KEY" not in texto:
+            print("FALHOU: mensagem nao diz o que fazer para consertar")
+            return 1
 
     # Resposta que não é dicionário não pode derrubar a sonda.
     _, gravidade, _ = classificar(500, None)

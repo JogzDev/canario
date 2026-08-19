@@ -60,10 +60,15 @@ def classificar(codigo, dados):
     if marca in ESTADOS:
         gravidade, explicacao = ESTADOS[marca]
         return marca, gravidade, explicacao
-    if codigo == 401 or codigo == 403:
-        return marca or "sem_autorizacao", "PANE", (
-            "a chave não foi aceita pelo gateway; a sonda não chegou a ver a "
-            "função. Confira SUPABASE_URL e a chave usada.")
+    if codigo in (401, 403):
+        # Distinto de pane da função DE PROPÓSITO. A sonda não chegou a ver a
+        # função, então não sabe nada sobre ela -- e mandar alguém procurar um
+        # apagão que não existe é como se ensina a ignorar alarme.
+        return marca or "sem_autorizacao", "SONDA_SEM_CHAVE", (
+            "a chave não foi aceita pelo gateway, então a sonda NÃO chegou a "
+            "ver a função — isto não diz que ela está fora do ar. Cadastre o "
+            "secret SUPABASE_PUBLISHABLE_KEY no repositório (ela é pública por "
+            "desenho: vai dentro do binário publicado na App Store).")
     return marca or "resposta_desconhecida", "PANE", (
         "resposta fora dos três estados conhecidos (HTTP {}): {}".format(
             codigo, json.dumps(dados, ensure_ascii=False)[:200]))
@@ -73,7 +78,13 @@ def perguntar(url, chave, timeout=45):
     pedido = urllib.request.Request(
         url.rstrip("/") + "/functions/v1/analisar-peca",
         data=b"{}",
-        headers={"apikey": chave, "Content-Type": "application/json"},
+        # Os dois cabecalhos: o gateway das Edge Functions exige `apikey`
+        # (so `Authorization` devolve INVALID_CREDENTIALS, medido em 19/08) e
+        # `Authorization` e o que uma chave de service role espera. Mandar os
+        # dois cobre as duas formas de chave sem custo.
+        headers={"apikey": chave,
+                 "Authorization": "Bearer " + chave,
+                 "Content-Type": "application/json"},
         method="POST")
     try:
         with urllib.request.urlopen(pedido, timeout=timeout) as resposta:
@@ -90,10 +101,12 @@ def perguntar(url, chave, timeout=45):
 
 def main():
     url = os.environ.get("SUPABASE_URL", "").strip()
-    # A publishable é a chave natural aqui, porque é a que o app usa. Quando ela
-    # não está no ambiente a sonda cai na secreta: para a pergunta "a função
-    # sobe?" qualquer chave válida serve, já que BOOT_ERROR acontece antes de a
-    # função olhar quem chamou.
+    # A publishable é a chave desta sonda, porque é a que o app usa e a única
+    # que o gateway das Edge Functions aceita como `apikey` -- a secreta devolve
+    # INVALID_CREDENTIALS, medido na primeira execução real em 19/08/2026, que
+    # falhou por isso. A secreta continua como último recurso: se algum dia ela
+    # passar a ser aceita, a sonda funciona; se não, a mensagem abaixo diz
+    # exatamente o que falta, em vez de acusar a função de estar fora do ar.
     chave = (os.environ.get("SUPABASE_PUBLISHABLE_KEY", "").strip()
              or os.environ.get("SUPABASE_SECRET_KEY", "").strip())
     if not url or not chave:
@@ -107,6 +120,11 @@ def main():
     estado, gravidade, explicacao = classificar(codigo, dados)
     mensagem = "Edge Function analisar-peca: {} — {}".format(estado, explicacao)
 
+    if gravidade == "SONDA_SEM_CHAVE":
+        print("::error title=Sonda sem credencial (a função não foi checada)::"
+              + mensagem)
+        print(mensagem, file=sys.stderr)
+        return 1
     if gravidade == "PANE":
         print("::error title=Rota paga de visão fora do ar::" + mensagem)
         print(mensagem, file=sys.stderr)

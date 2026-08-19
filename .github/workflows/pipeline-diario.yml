@@ -11,6 +11,10 @@ on:
 
 permissions:
   contents: write
+  # Para o alerta abrir e fechar a issue de incidente. Ate 19/08/2026 nao havia
+  # canal nenhum: cinco execucoes vermelhas seguidas passaram em silencio,
+  # porque a falha so aparecia na lista de execucoes do Actions.
+  issues: write
 
 concurrency:
   group: pipeline-diario
@@ -132,3 +136,32 @@ jobs:
     with:
       backfill_editorial: false
     secrets: inherit
+
+  alerta:
+    # Ultimo job, sempre. Abre UMA issue por incidente, comenta nela nas noites
+    # seguintes e fecha sozinho no primeiro verde -- assim "issue aberta"
+    # significa "esta quebrado agora", e dia bom nao notifica ninguem.
+    #
+    # Roda no runner do GitHub, nao no i7: se o alerta dependesse da mesma
+    # maquina que executa a coleta, a falha que mais precisa ser avisada --
+    # a maquina parada -- seria justamente a que nao avisaria.
+    if: ${{ always() && github.ref_name == 'main' }}
+    needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Avisar alguem
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ESTADO_DO_PIPELINE: >-
+            ${{ (needs.saude.result == 'success' &&
+                 needs.motor.result == 'success') && 'verde' || 'vermelho' }}
+          JOBS_QUE_FALHARAM: >-
+            varejo-vtex=${{ needs.varejo-vtex.result }}
+            varejo-shopify=${{ needs.varejo-shopify.result }}
+            editorial=${{ needs.editorial.result }}
+            busca=${{ needs.busca.result }}
+            saude=${{ needs.saude.result }}
+            motor=${{ needs.motor.result }}
+        run: python3 ferramentas/alertar.py
