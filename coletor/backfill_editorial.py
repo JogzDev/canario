@@ -170,7 +170,8 @@ def main():
             vistos.add(a["url"])
             unicos.append(a)
     for i in range(0, len(unicos), 500):
-        supabase_rest.upsert("artigos", unicos[i:i + 500], on_conflict="url")
+        supabase_rest.inserir_ignorando_existentes(
+            "artigos", unicos[i:i + 500], on_conflict="url")
 
     # --- serie em janela movel de 4 semanas (§18), coorte fixa ---
     crua = dict((k, len(v)) for k, v in contagem.items())

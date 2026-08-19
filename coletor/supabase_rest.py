@@ -96,6 +96,43 @@ def upsert(tabela, linhas, on_conflict, retornar=False):
     return dados or []
 
 
+def inserir_ignorando_existentes(tabela, linhas, on_conflict):
+    """Insere so o que ainda nao existe. Linha ja gravada nao e reescrita.
+
+    Diferente de `upsert`, que resolve conflito com `merge-duplicates` e por
+    isso REESCREVE a linha inteira mesmo quando nada mudou. O Postgres nao tem
+    update de graca: toda reescrita descarta a versao antiga e grava uma nova,
+    e a antiga so volta a ser espaco util depois do vacuum.
+
+    Existe por causa de `artigos`. Medido em 19/08/2026: 120.753 linhas,
+    194.052 updates, 3,3% deles HOT, e a tabela sem passar por vacuum desde
+    01/08. A coleta editorial re-upsertava por `url` todo dia os mesmos artigos
+    que os feeds continuam publicando, gravando titulo, veiculo e data_pub
+    identicos aos que ja estavam la.
+
+    E preciso dizer o que isto NAO e: `artigos` nao esta inchada. Medida no mesmo
+    dia, ela aproveita 95,2% do heap -- 25 MB uteis em 26 MB. O autovacuum da
+    conta. Entao nao ha MB para recuperar aqui, e quem vier atras nao deve tentar
+    `fillfactor` como no P8: em `produtos` ele paga porque a coleta reescreve 53
+    mil linhas por dia; aqui deixaria a tabela 1,43x maior de forma permanente
+    para baratear um trabalho que simplesmente nao precisa acontecer.
+
+    O ganho e o que se deixa de gastar: WAL, CPU e tupla morta que o autovacuum
+    tem de limpar depois. Artigo e fato imutavel -- veiculo, url, titulo e data
+    de publicacao nao mudam depois de publicados, e a §18 proibe guardar o texto
+    -- entao a escrita certa e nao escrever.
+
+    Correcao pontual de linha ja gravada continua possivel por SQL. O que deixa
+    de existir e a reescrita automatica e diaria do que nao mudou.
+    """
+    if not linhas:
+        return []
+    _requisicao("POST", tabela, corpo=linhas,
+                prefer="resolution=ignore-duplicates,return=minimal",
+                params="?on_conflict={}".format(on_conflict))
+    return []
+
+
 def atualizar(tabela, filtro, campos):
     """UPDATE de campos parciais numa linha que JA existe.
 

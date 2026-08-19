@@ -334,8 +334,12 @@ def main():
             continue
         vistos.add(a["url"])
         unicos.append(a)
+    # Artigo ja gravado NAO e reescrito: os feeds devolvem os mesmos itens por
+    # varios dias, e reescrever a linha inteira para gravar o titulo identico
+    # que ja estava la custava versao de linha nova a cada coleta.
     for i in range(0, len(unicos), 500):
-        supabase_rest.upsert("artigos", unicos[i:i + 500], on_conflict="url")
+        supabase_rest.inserir_ignorando_existentes(
+            "artigos", unicos[i:i + 500], on_conflict="url")
 
     # --- serie editorial em janela movel de 4 semanas (§18) ---
     # A semana crua tambem vai gravada, porque o `pico` (C4) precisa dela.
