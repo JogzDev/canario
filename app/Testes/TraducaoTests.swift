@@ -368,4 +368,38 @@ final class ImportacaoTests: XCTestCase {
         let ocr = "Recibo de pagamento\nValor total: R$ 1.200,00"
         XCTAssertTrue(Traducao.termos(para: ocr, em: taxonomia).isEmpty)
     }
+
+    /// Regressão de 19/08/2026, achada num vídeo de uso real: a tela mostrava
+    /// "Stripes" e a busca respondia "This term isn't tracked yet", porque o
+    /// vocabulário da taxonomia só conhece "stripe|striped". Eram seis rótulos
+    /// assim -- e a própria tela sugeria dois deles como exemplo de busca.
+    func testBuscaEncontraOsRotulosQueAPropriaTelaMostra() {
+        // Os seis casos reais, com o vocabulário exato da taxonomia aprovada.
+        let casos: [(Termo, String)] = [
+            (Termo(id: "listra", rotulo: "Listra", dimensao: "estampa", exclusiva: false,
+                   sinonimos: nil, semPernaBusca: nil, palavrasPt: "listra|listrado",
+                   palavrasEn: "stripe|striped"), "Stripes"),
+            (Termo(id: "blusa_top", rotulo: "Blusa e top", dimensao: "categoria", exclusiva: true,
+                   sinonimos: nil, semPernaBusca: nil, palavrasPt: "blusa|top",
+                   palavrasEn: "blouse|top|tee|t-shirt|tank"), "Tops & T-shirts"),
+            (Termo(id: "casaco_jaqueta", rotulo: "Casaco e jaqueta", dimensao: "categoria",
+                   exclusiva: true, sinonimos: nil, semPernaBusca: nil, palavrasPt: "casaco|jaqueta",
+                   palavrasEn: "jacket|coat|blazer|cardigan|windbreaker"), "Coats & jackets"),
+            (Termo(id: "curto", rotulo: "Curto", dimensao: "comprimento", exclusiva: true,
+                   sinonimos: nil, semPernaBusca: nil, palavrasPt: "curto",
+                   palavrasEn: "mini|short length"), "Short"),
+            (Termo(id: "terrosos", rotulo: "Terrosos", dimensao: "cor", exclusiva: false,
+                   sinonimos: nil, semPernaBusca: nil, palavrasPt: "marrom|caramelo",
+                   palavrasEn: "brown|caramel|rust|terracotta|chocolate"), "Earth tones"),
+            (Termo(id: "outras_cores", rotulo: "Outras cores", dimensao: "cor", exclusiva: false,
+                   sinonimos: nil, semPernaBusca: nil, palavrasPt: nil,
+                   palavrasEn: nil), "Other colors"),
+        ]
+        for (termo, esperado) in casos {
+            XCTAssertEqual(Traducao.rotuloExibido(termo), esperado,
+                           "o rótulo exibido de \(termo.id) mudou; atualize o caso")
+            XCTAssertTrue(Traducao.casa(esperado, termo),
+                          "a busca precisa achar \(termo.id) digitando o que a tela mostra")
+        }
+    }
 }

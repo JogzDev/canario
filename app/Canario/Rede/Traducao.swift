@@ -123,7 +123,10 @@ enum Traducao {
             .map(String.init))
         guard !palavrasDaConsulta.isEmpty else { return false }
 
-        for candidato in termo.termosDeBusca {
+        // O rótulo exibido entra no vocabulário: a tela mostra "Stripes" e a
+        // taxonomia só conhece "stripe|striped". Sem isto, o app não encontra
+        // seis dos próprios rótulos -- inclusive dois que ele mesmo sugere.
+        for candidato in termo.termosDeBusca + [rotuloExibido(termo)] {
             for palavrasDaParte in partes(candidato) {
                 // Dentro de uma parte, é expressão: todas as palavras contam.
                 if palavrasDaParte.allSatisfy({ palavrasDaConsulta.contains($0) }) {

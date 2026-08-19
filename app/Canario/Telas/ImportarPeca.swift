@@ -234,7 +234,7 @@ struct ImportarPeca: View {
                 importador
                 if let erro {
                     CoberturaInsuficiente(
-                        titulo: "I couldn't read this file",
+                        titulo: "I could not tell which category this is",
                         explicacao: erro,
                         oQueTem: "You can select the attributes below and continue.")
                 }
@@ -534,7 +534,7 @@ struct ImportarPeca: View {
         if let mensagem {
             erro = mensagem
         } else if !reconheceuPeca {
-            erro = "The on-device reader could not identify a garment. Choose its category below before adding any other attribute."
+            erro = "I read what I could from the image, but not the category. Pick it below and the rest stays as read."
         }
     }
 
@@ -565,7 +565,7 @@ struct ImportarPeca: View {
                 procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
             }
             if !reconheceuPeca {
-                erro = "I could not identify a garment with enough confidence. Choose its category below before adding any other attribute."
+                erro = "I read what I could from the image, but the category was not clear enough. Pick it below and the rest stays as read."
             }
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
