@@ -56,7 +56,7 @@ struct BarraPrincipal: View {
         HStack(spacing: 2) {
             item(.adicionar, "Add", "hanger")
             item(.armario, "Closet", "tshirt.fill")
-            item(.dados, "Analytics", "chart.line.uptrend.xyaxis")
+            item(.dados, "Trends", "chart.line.uptrend.xyaxis")
         }
     }
 
