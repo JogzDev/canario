@@ -42,6 +42,30 @@ Abra a Central de Controle, grave, e faça este roteiro:
 
 Sem pressa e sem cortes. Vídeo de 2 a 3 minutos.
 
+### Duas coisas para decidir ANTES de gravar
+
+**O passo 8 pode travar por ~30 segundos no seu iPhone 15.** Foi o que você
+relatou no vídeo de 18/08, e eu não consegui reproduzir no Mac — lá a mesma
+operação leva 241 ms. A causa continua sem prova. Numa gravação de revisão, meio
+minuto de tela parada parece app quebrado, e é exatamente o tipo de coisa que
+gera uma segunda rejeição.
+
+Duas saídas, e a escolha é sua:
+
+* **Gravar no iPhone 16 do Davi**, onde o fluxo respondeu bem. Continua sendo
+  aparelho físico, que é o que a Apple exige. É o que eu faria.
+* **Gravar no seu**, e nesse caso não corte a espera: deixe a tela carregando no
+  vídeo. Espera visível é honesta; corte no meio parece que você escondeu algo.
+
+Se gravar no seu e demorar, me mande o vídeo — o tempo medido em aparelho real é
+justamente a prova que falta para eu achar a causa.
+
+**O passo 3 mudou hoje.** Até 19/08 a tela de tendências se chamava "Trends" no
+iOS 26 e "Analytics" no iOS 17–25. Se você gravar com a build antiga num iPhone
+com iOS 18, o vídeo mostra "Analytics" e este roteiro diz "Trends" — o revisor vê
+divergência entre o que você escreveu e o que ele assiste. **Grave com a build
+mais recente**, onde os dois dizem "Trends" em qualquer iPhone.
+
 ---
 
 ## Itens 2 a 7 — cole em Informações de revisão de apps → Notas
@@ -116,6 +140,20 @@ file at all.
 
 There is no analytics SDK, no advertising SDK, no third-party authentication and
 no payment processor in the app.
+
+NOTE ON THE PRIVACY MANIFEST
+
+PrivacyInfo.xcprivacy in this build declares NSPrivacyCollectedDataTypePhotosorVideos,
+with purpose App Functionality, not linked to identity and not used for tracking.
+That declaration describes the optional cloud analysis path above. In version 1.0
+that path is switched off by the REMOTE_ANALYSIS_ENABLED build flag and no photo
+leaves the device.
+
+We left the declaration in place rather than removing it. The app does request
+photo library and camera access, and we would rather over-declare than ship a
+manifest that understates what the app asks for. If you would prefer the manifest
+to describe only what version 1.0 actually does, we will remove that entry in the
+next build.
 
 For completeness: the market database is built by a separate server-side pipeline
 that reads public product catalogues of Brazilian retailers, public fashion

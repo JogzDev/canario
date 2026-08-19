@@ -165,6 +165,15 @@ já divergiram **três vezes** sem ninguém ver.
 
 **Adicionar uma tela:** crie o `.swift` e rode `python3 app/gerar_projeto.py`.
 
+O manifesto `PrivacyInfo.xcprivacy` declara `NSPrivacyCollectedDataTypePhotosorVideos`,
+mas na 1.0 **nenhuma foto sai do aparelho** — o flag `REMOTE_ANALYSIS_ENABLED`
+está desligado e o código é fail-closed (só liga com `YES`, `TRUE` ou `1`).
+Declarar a mais é conservador e não é violação, mas cria atrito com a frase das
+notas que diz que a 1.0 não chama a OpenAI. As notas passaram a explicar isso.
+Conferido em 19/08 nas três superfícies que mencionam OpenAI — alerta de
+consentimento, texto da tela de importação e tela de Privacidade: as três são
+condicionadas ao flag e, com ele desligado, dizem que a análise é local.
+
 Status na Apple: rejeitada uma vez por **Guideline 2.1 — Information Needed**.
 As respostas aos itens 2 a 7 estão escritas em
 [`RESPOSTA_REVISAO_APPLE.md`](RESPOSTA_REVISAO_APPLE.md). Faltam duas coisas, e
