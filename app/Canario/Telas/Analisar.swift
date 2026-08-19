@@ -30,7 +30,6 @@ struct Analisar: View {
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var carregando = true
     @State private var erro: String?
-    @State private var importando = false
 
     /// A tradução vive em `Traducao`, que é testada. Aqui a tela só consome.
     private var casados: [Termo] {
@@ -57,11 +56,11 @@ struct Analisar: View {
                     lista
                 }
             }
-            .navigationTitle("Search")
-            .searchable(text: $texto, prompt: "Describe an item: polka-dot dress, midi skirt…")
-            .sheet(isPresented: $importando) {
-                ImportarPeca(termos: termos)
-            }
+            // Sem título grande: o campo de busca no rodapé já diz o que esta
+            // tela é, e o cabeçalho só empurrava o resultado para baixo.
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $texto,
+                        prompt: "Search by garment, fabric, cut, pattern…")
             .toolbar {
                 if let aoFechar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -117,34 +116,31 @@ struct Analisar: View {
         }
     }
 
+    /// Busca é um VERBO, e esta tela estava desenhada como um lugar.
+    ///
+    /// No iOS 26 o sistema já faz o que se queria: ao entrar na busca, a barra
+    /// inferior encolhe e a lupa vira um campo de texto no rodapé. O que fazia
+    /// isto parecer "mais uma tela" era o que ficava por cima do campo — um
+    /// título grande, dois parágrafos de explicação e um botão de importar.
+    ///
+    /// O botão saiu porque duplicava a aba Add inteira. O comentário que estava
+    /// aqui dizia, sobre outra duplicata: "o mesmo botão em dois lugares só
+    /// divide a atenção". Este era o terceiro lugar.
+    ///
+    /// Sobrou o que ajuda quem parou na frente de um campo vazio: exemplos do
+    /// que dá para digitar.
     private var abertura: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
-                Text("Search for an attribute or describe an item.")
-                    .font(Tokens.Fonte.corpo)
-                Text("The app tracks \(termos.count) reviewed fashion terms and maps your wording to them.")
-                    .font(Tokens.Fonte.apoio)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
-                Divider()
-                // O único atalho de importação da tela. O que ficava no canto
-                // superior direito saiu: aquele lugar é de configurações, e o
-                // mesmo botão em dois lugares só divide a atenção.
-                Button {
-                    importando = true
-                } label: {
-                    Label("Analyze a photo or file", systemImage: "camera.viewfinder")
-                }
-                .buttonStyle(.bordered)
-                .disabled(termos.isEmpty)
-                Text(Supabase.analiseRemotaHabilitada
-                     ? "The photo stays on your iPhone until you explicitly approve a one-time visual analysis."
-                     : "This build analyzes the file on your iPhone. Nothing is uploaded or stored unless you save the item.")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(Tokens.Espaco.m)
+        VStack(spacing: Tokens.Espaco.s) {
+            Text("Search by garment, fabric, cut, pattern…")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+            Text("Try: " + sugestoes.prefix(3).joined(separator: ", "))
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .multilineTextAlignment(.center)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(Tokens.Espaco.g)
     }
 
     /// Sugestão simples: os primeiros termos de cada dimensão. Não é busca

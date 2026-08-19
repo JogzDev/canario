@@ -21,6 +21,17 @@ struct RelatorioDaPeca: View {
     var miniaturaJPEG: Data?
     /// Quando aberto pelo Closet, evita salvar uma duplicata da mesma peça.
     var pecaSalva: PecaSalva? = nil
+    /// A taxonomia inteira, para os chips de correção no topo. Vazia quando a
+    /// tela é aberta de um lugar onde corrigir não faz sentido -- o Closet, por
+    /// exemplo, onde a peça já foi salva com os atributos confirmados.
+    var todosOsTermos: [Termo] = []
+    /// Ligação para a seleção, quando ela é editável aqui.
+    ///
+    /// Existe porque separar "corrigir" de "ler o resultado" em duas telas
+    /// quebraria o laço curto que é o valor do produto: mudar `saia` para
+    /// `short` e ver os similares mudarem. Com os chips aqui, a separação de
+    /// telas fica e o laço também.
+    var selecao: Binding<Set<String>>? = nil
     /// Linguagem usada na busca. Preserva "vestido de bolinha" sem alterar os
     /// ids `vestido` + `geometrica` que alimentam o cálculo.
     var descricaoAmigavel: String? = nil
@@ -100,6 +111,9 @@ struct RelatorioDaPeca: View {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else {
                     if pecaSalva != nil { fotoDaPeca }
+                    if let selecao, !todosOsTermos.isEmpty {
+                        chipsDeCorrecao(selecao)
+                    }
                     // §29, na ordem que ela manda: o parágrafo vem primeiro, e
                     // ele é feito de similares — não do índice.
                     resumo
@@ -193,6 +207,37 @@ struct RelatorioDaPeca: View {
     /// §29 pede, e faz sentido — "encontrei 230 peças parecidas, 22% a preço
     /// cheio" responde a uma pergunta que o comprador tem; "3 atributos, 2 com
     /// leitura" responde a uma pergunta que ele não fez.
+    /// Os atributos confirmados, corrigíveis sem sair do painel.
+    ///
+    /// Mudar um chip recalcula o painel na hora e **não chama a análise visual
+    /// de novo**: reler a foto é outra ação, e custa. Corrigir o que ela leu é
+    /// grátis, e é o que a pessoa espera ao consertar um erro.
+    private func chipsDeCorrecao(_ selecao: Binding<Set<String>>) -> some View {
+        Cartao {
+            HStack {
+                Text("Confirmed attributes").font(Tokens.Fonte.secao)
+                Spacer()
+                Text("tap to change")
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+            }
+            FluxoDeChips(
+                termos: todosOsTermos.filter { termo in
+                    // Só as dimensões que a categoria escolhida comporta, e só
+                    // os termos daquelas dimensões -- a lista inteira aqui
+                    // seria a tela de atributos de novo, e essa já passou.
+                    FormularioDaPeca.dimensoesPermitidas(
+                        categorias: Set(todosOsTermos.lazy
+                            .filter { $0.dimensao == "categoria"
+                                      && selecao.wrappedValue.contains($0.id) }
+                            .map(\.id))
+                    ).contains(termo.dimensao)
+                },
+                todos: todosOsTermos,
+                marcados: selecao)
+        }
+    }
+
     private var resumo: some View {
         Cartao {
             // A revisão de UX apontou que esta tela não deixa claro qual é o

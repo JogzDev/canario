@@ -55,7 +55,28 @@ struct ImportarPeca: View {
     }
     @State private var erro: String?
     @State private var detectados: Set<String> = []
-    @State private var confirmou = false
+    /// As quatro telas do fluxo, nomeadas.
+    ///
+    /// Antes isto era um encadeado de booleanos -- `lendo`, `imagemPendente`,
+    /// `confirmou` -- e a tela de atributos convivia com a de upload no mesmo
+    /// `formulario`. A revisão de UX pediu para separar: escolher a foto,
+    /// confirmar a peça, corrigir o que foi lido e ler o resultado são quatro
+    /// momentos diferentes, e cada um pede a tela inteira.
+    enum Etapa {
+        /// Foto e preço. Nada de atributos: eles ainda não existem.
+        case entrada
+        /// Qual peça da foto é a que interessa.
+        case confirmarAlvo
+        /// O que o app leu, já marcado, para a pessoa corrigir.
+        case atributos
+        /// O painel de mercado.
+        case painel
+    }
+
+    /// Ver o comentário na tela de confirmação do alvo.
+    static let mostraAlternativasDeAlvo = false
+
+    @State private var etapa = Etapa.entrada
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
     @State private var precoDigitado = ""
@@ -101,22 +122,39 @@ struct ImportarPeca: View {
                 if lendo {
                     Carregando(mensagem: esperaAtual.mensagem,
                                expectativa: esperaAtual.expectativa)
-                } else if imagemPendente != nil {
-                    confirmacaoDoAlvo
-                } else if confirmou {
-                    RelatorioDaPeca(termos: termos.filter { detectados.contains($0.id) },
-                                    precoAlvo: precoAlvo,
-                                    miniaturaJPEG: miniaturaJPEG,
-                                    pecaSalva: nil)
                 } else {
-                    formulario
+                    switch etapa {
+                    case .entrada:       telaDeEntrada
+                    case .confirmarAlvo: confirmacaoDoAlvo
+                    case .atributos:     telaDeAtributos
+                    case .painel:
+                        RelatorioDaPeca(
+                            termos: termos.filter { detectados.contains($0.id) },
+                            precoAlvo: precoAlvo,
+                            miniaturaJPEG: miniaturaJPEG,
+                            pecaSalva: nil,
+                            todosOsTermos: termos,
+                            selecao: $detectados)
+                        // Corrigir um chip aqui recria a view, e o `.task` dela
+                        // recalcula o painel. NÃO chama a Luna de novo: reler a
+                        // foto é outra ação, e custa dinheiro. Corrigir o que
+                        // ela leu é grátis e instantâneo.
+                        .id(detectados)
+                    }
                 }
             }
-            .navigationTitle("Analyze an item")
+            .navigationTitle(tituloDaEtapa)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    // Nas telas do meio, o canto esquerdo volta um passo. Só na
+                    // primeira ele fecha tudo -- fechar de dentro do fluxo
+                    // perderia o trabalho sem avisar.
+                    if etapa == .entrada || lendo {
+                        Button("Close") { dismiss() }
+                    } else {
+                        Button("Back") { voltarUmaEtapa() }
+                    }
                 }
             }
         }
@@ -180,8 +218,12 @@ struct ImportarPeca: View {
                 if let escolhida = opcaoEscolhida {
                     PreviaDoAlvo(dados: escolhida.dados, id: escolhida.id,
                                  altura: 320, selecionada: true)
+                    // A frase antiga mandava "usar a foto completa quando as
+                    // opções isoladas cortarem parte da peça" -- instrução para
+                    // uma fileira de alternativas que não existe mais. Agora
+                    // ela só diz o que aconteceu com a imagem que está à vista.
                     Text(escolhida.tipo == .fotoCompleta
-                         ? "Use the full photo when the isolated options remove part of the garment."
+                         ? "Whole photo: I could not isolate the garment here."
                          : "Background removed on this device.")
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -203,17 +245,24 @@ struct ImportarPeca: View {
                 Button {
                     mostrandoEditorDeRecorte = true
                 } label: {
-                    Label("Crop or zoom the photo", systemImage: "crop")
+                    // "Crop or zoom the photo" para dizer o que o ícone de
+                    // recorte já diz. Uma palavra basta.
+                    Label("Adjust", systemImage: "crop")
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: 44)
                 }
                 .buttonStyle(.bordered)
 
-                if opcoesDeAlvo.count > 1 {
+                // A fileira de alternativas saiu. O recorte isolado é sempre
+                // a versão melhor e menos poluída da foto, e quando ele não
+                // existe o app já cai na foto completa sozinho -- sem pedir
+                // que a pessoa escolha entre coisas que ela não pediu.
+                //
+                // Fica desligada por uma flag em vez de apagada: se o
+                // isolamento voltar a errar, a saída manual existe e é uma
+                // linha, em vez de um commit revertido.
+                if Self.mostraAlternativasDeAlvo, opcoesDeAlvo.count > 1 {
                     VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                        // "Other options" nao dizia de que. O app ja chama
-                        // isto de alvo em "Adjust target"; usar a mesma palavra
-                        // evita um terceiro vocabulario para a mesma coisa.
                         Text("Other targets")
                             .font(Tokens.Fonte.secao)
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -249,9 +298,10 @@ struct ImportarPeca: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(opcaoEscolhida == nil)
 
-                Button("Choose another photo") { cancelarConfirmacao() }
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 44)
+                // "Choose another photo" saiu do corpo: trocar de foto é
+                // voltar, e voltar já tem um lugar -- a barra de navegação.
+                // Botão de desfazer com o mesmo peso do botão de seguir divide
+                // a atenção no momento em que ela deveria ser uma só.
             }
             .padding(Tokens.Espaco.m)
         }
@@ -261,28 +311,14 @@ struct ImportarPeca: View {
         opcoesDeAlvo.first { $0.id == alvoEscolhido }
     }
 
-    private var formulario: some View {
+    /// Tela 1: a foto e o preço. Os atributos saíram daqui -- antes da leitura
+    /// eles seriam uma lista vazia pedindo trabalho manual, e depois dela vêm
+    /// preenchidos, que é outra tela.
+    private var telaDeEntrada: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
                 importador
-                if let erro {
-                    CoberturaInsuficiente(
-                        titulo: "I could not tell which category this is",
-                        explicacao: erro,
-                        oQueTem: "You can select the attributes below and continue.")
-                }
-                if !procedencia.isEmpty { oQueLi }
-                atributos
                 precoOpcional
-                if !detectados.isEmpty {
-                    Button {
-                        confirmou = true
-                    } label: {
-                        Text("Analyze \(detectados.count) attribute\(detectados.count == 1 ? "" : "s")")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
             }
             .padding(Tokens.Espaco.m)
         }
@@ -292,6 +328,36 @@ struct ImportarPeca: View {
                 Spacer()
                 Button("Done") { precoEmFoco = false }
             }
+        }
+    }
+
+    /// Tela 3: o que o app leu, já marcado, para a pessoa corrigir.
+    ///
+    /// A leitura vem antes dos chips de propósito: a pergunta desta tela é
+    /// "está certo?", e para responder é preciso ver primeiro o que foi lido.
+    private var telaDeAtributos: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                if let erro {
+                    CoberturaInsuficiente(
+                        titulo: "I could not tell which category this is",
+                        explicacao: erro,
+                        oQueTem: "You can select the attributes below and continue.")
+                }
+                if !procedencia.isEmpty { oQueLi }
+                atributos
+                if !detectados.isEmpty {
+                    Button {
+                        etapa = .painel
+                    } label: {
+                        Label("See the market panel", systemImage: "chart.bar.doc.horizontal")
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(Tokens.Espaco.m)
         }
     }
 
@@ -427,6 +493,7 @@ struct ImportarPeca: View {
         guard let dados = try? await item.loadTransferable(type: Data.self),
               let imagem = MiniaturaLocal.imagem(de: dados) else {
             erro = "I couldn't open this photo."
+            etapa = .entrada
             lendo = false
             return
         }
@@ -444,6 +511,7 @@ struct ImportarPeca: View {
         let opcoes = await MiniaturaLocal.opcoesDeAlvo(de: imagem)
         guard !opcoes.isEmpty else {
             erro = "I could not prepare this image. Choose another photo or file."
+            etapa = .entrada
             lendo = false
             return
         }
@@ -451,6 +519,7 @@ struct ImportarPeca: View {
         nomePendente = nome
         opcoesDeAlvo = opcoes
         alvoEscolhido = opcoes.first?.id
+        etapa = .confirmarAlvo
         lendo = false
     }
 
@@ -501,7 +570,31 @@ struct ImportarPeca: View {
                                         descricaoDoAlvo: descricao)
     }
 
+    /// O título diz em que passo a pessoa está. "Analyze an item" nas quatro
+    /// telas não dizia nada sobre o progresso.
+    private var tituloDaEtapa: String {
+        switch etapa {
+        case .entrada:       return "Analyze an item"
+        case .confirmarAlvo: return "Which item"
+        case .atributos:     return "Check what I read"
+        case .painel:        return "Market panel"
+        }
+    }
+
+    /// Voltar um passo, preservando o que ainda faz sentido. Da tela de
+    /// atributos NÃO se volta para a confirmação de alvo: aquela leitura já foi
+    /// paga, e refazê-la exige escolher outra foto de propósito.
+    private func voltarUmaEtapa() {
+        switch etapa {
+        case .entrada:       break
+        case .confirmarAlvo: cancelarConfirmacao()
+        case .atributos:     etapa = .entrada
+        case .painel:        etapa = .atributos
+        }
+    }
+
     private func cancelarConfirmacao() {
+        etapa = .entrada
         imagemPendente = nil
         nomePendente = nil
         opcoesDeAlvo = []
@@ -580,6 +673,7 @@ struct ImportarPeca: View {
         if !marcas.isEmpty {
             procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
         }
+        etapa = .atributos
         lendo = false
     }
 
@@ -628,6 +722,9 @@ struct ImportarPeca: View {
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }
+        // Terminou de ler: a pessoa vai para a tela de conferir, com ou sem
+        // erro. Com erro ela corrige à mão, que é o que a mensagem oferece.
+        etapa = .atributos
         lendo = false
     }
 }
