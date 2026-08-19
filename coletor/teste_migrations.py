@@ -90,7 +90,12 @@ def main():
     exigencias_publicacao = [
         "stage incompleto",
         "produtos_vivos <> p_total",
-        "delete from public.produto_termos where origem = 'titulo'",
+        # Ate o P12 esta garantia era o literal
+        # "delete from public.produto_termos where origem = 'titulo'".
+        # O apaga-tudo saiu, mas o que ele protegia continua: o motor so mexe
+        # em ligacao de origem 'titulo'. Isso agora vive nas duas anti-juncoes,
+        # e esta exigido abaixo por "pt.origem = 'titulo'".
+        "delete from public.produto_termos pt",
         # A completude e conferida contra p_total. Ate o P11 isso era medido
         # pelo numero de linhas ATUALIZADAS, o que so funcionava porque todas
         # eram atualizadas sempre; agora e medido pela cobertura do stage,
@@ -105,6 +110,16 @@ def main():
         "p.segmento is distinct from s.segmento",
         # P10: truncate devolve as paginas de indice; delete as deixa alocadas.
         "truncate table public.motor_termos_stage",
+        # P12: ligacoes diferenciais. Apagar e reinserir as 208 mil toda noite
+        # reinchava heap e indice de produto_termos em ~27 MiB por ciclo.
+        "get diagnostics ligacoes_removidas = row_count",
+        "get diagnostics ligacoes_inseridas = row_count",
+        # O escopo por origem e o que impede o motor de apagar ligacao de
+        # visao ou de curadoria manual, que nao sao dele.
+        "pt.origem = 'titulo'",
+        # Sem estatistica no stage o planejador escolhe Nested Loop com Seq
+        # Scan e o motor trava. Medido em 19/08/2026.
+        "analyze public.motor_termos_stage",
     ]
     for trecho in exigencias_publicacao:
         if trecho not in publicar:

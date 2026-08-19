@@ -57,18 +57,36 @@ ficam vazias entre execuções e seguravam 16,7 MB de índice, porque o motor
 truncava no começo e limpava com `delete` no fim. Agora truncam nas duas pontas.
 Estão em 48 kB.
 
-**3. P11 — a causa raiz.** `publicar_atributos` reescrevia **os 82.666 produtos
+**3. P11 e P12 — a causa raiz, nas duas tabelas que o motor reescrevia.** `publicar_atributos` reescrevia **os 82.666 produtos
 toda noite** para gravar `segmento`, sem cláusula de mudança. A linha média tem
 ~1.079 bytes: ~89 MB de tupla nova por execução. E `segmento` tem dois valores
 (89,2% `feminino_casual_br`, 10,8% nulo) e praticamente nunca muda — 82.920
 linhas eram reescritas à toa. Agora só escreve `where p.segmento is distinct
 from s.segmento`.
 
+O mesmo padrão estava em `produto_termos`: `delete` da tabela inteira seguido de
+`insert` das 208.811 ligações, toda noite, para um conjunto que vem do título do
+produto — e título não muda de um dia para o outro. O P12 troca isso por duas
+anti-junções: apaga o que saiu, insere o que entrou, não toca em quem ficou.
+
+O P12 traz um `analyze` explícito no estágio, e ele **não é zelo**. O estágio é
+preenchido segundos antes de publicar, o autovacuum ainda não passou, e sem
+estatística o planejador o trata como tabela vazia. Medido com 208.811 linhas
+dos dois lados: sem estatística vira `Nested Loop` com varredura completa por
+linha; com estatística, `Merge Anti Join` pelos dois índices — 2,05 s no delete
+e 0,61 s no insert.
+
 ### O que observar na próxima coleta
 
-O retorno do motor passou a trazer **`produtos_alterados`**. Em noite normal ele
-deve ficar perto de zero. Se voltar a subir para dezenas de milhares, a causa do
-crescimento é outra e está nesse número.
+O retorno do motor passou a trazer três números novos. Em noite normal os três
+ficam perto de zero; se algum voltar para as dezenas ou centenas de milhares, é
+ele que aponta o que voltou a reescrever tudo:
+
+| Campo | O que significa |
+|---|---|
+| `produtos_alterados` | produtos cujo `segmento` mudou de verdade |
+| `ligacoes_inseridas` | ligações novas |
+| `ligacoes_removidas` | ligações que saíram |
 
 ```bash
 python3 coletor/verificar_capacidade_banco.py
@@ -78,7 +96,7 @@ python3 coletor/verificar_capacidade_banco.py
 |---|---:|---:|---|
 | `produtos` | 190 MB | 5 MB | **85 MB úteis** — 105 MB de inchaço ainda não recuperado |
 | `snapshots` | 35 MB | 16 MB | delta diário, crescimento esperado |
-| `produto_termos` | 22 MB | 32 MB | apagada e reinserida inteira a cada motor |
+| `produto_termos` | 11 MB | 16 MB | 86% de aproveitamento depois do VACUUM FULL; P12 impede reinchar |
 | `artigos` | 26 MB | 18 MB | 95,2% de aproveitamento — não está inchada |
 | `series_semanais` | 27 MB | 2 MB | alvo do P9 |
 
