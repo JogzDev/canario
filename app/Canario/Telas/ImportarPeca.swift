@@ -334,6 +334,7 @@ struct ImportarPeca: View {
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                     FluxoDeChips(
                         termos: termos.filter { $0.dimensao == dimensao },
+                        todos: termos,
                         marcados: $detectados)
                 }
             }
@@ -489,7 +490,14 @@ struct ImportarPeca: View {
                     erro = "The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo."
                 } else {
                     let existentes = Set(termos.map(\.id))
-                    detectados = analise.idsSugeridos(existentes: existentes)
+                    // A leitura devolve um valor por dimensão, então não pode
+                    // sugerir duas categorias. Mas pode sugerir comprimento
+                    // numa calça, e a linha nem apareceria na tela: o atributo
+                    // seguiria para o relatório sem ninguém ver. A mesma poda
+                    // da escolha manual vale para a sugestão da máquina.
+                    detectados = FormularioDaPeca.podar(
+                        analise.idsSugeridos(existentes: existentes),
+                        termos: termos)
                     let porId = Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
                     let lidos = detectados.compactMap { porId[$0] }
                         .sorted { ($0.dimensao, $0.id) < ($1.dimensao, $1.id) }
@@ -765,6 +773,9 @@ private struct PreviaDoAlvo: View {
 /// Chips de seleção, quebrando linha conforme couber.
 struct FluxoDeChips: View {
     let termos: [Termo]
+    /// A taxonomia inteira, não só a desta dimensão: sem ela não dá para
+    /// remover o comprimento que sobrou quando a categoria mudou.
+    let todos: [Termo]
     @Binding var marcados: Set<String>
 
     var body: some View {
@@ -772,7 +783,11 @@ struct FluxoDeChips: View {
             ForEach(termos) { termo in
                 let ativo = marcados.contains(termo.id)
                 Button {
-                    if ativo { marcados.remove(termo.id) } else { marcados.insert(termo.id) }
+                    // A regra vive em `FormularioDaPeca`, fora da View, porque
+                    // um `insert` solto aqui deixava montar peça que não
+                    // existe -- vestido e calça ao mesmo tempo.
+                    marcados = FormularioDaPeca.alternar(
+                        termo, em: marcados, termos: todos)
                 } label: {
                     Text(Traducao.rotuloExibido(termo))
                         .font(Tokens.Fonte.miudo)

@@ -166,4 +166,58 @@ enum FormularioDaPeca {
     static func temCategoria(_ marcados: Set<String>, termos: [Termo]) -> Bool {
         termos.contains { $0.dimensao == "categoria" && marcados.contains($0.id) }
     }
+
+    /// Marca ou desmarca um termo respeitando a taxonomia.
+    ///
+    /// Até 19/08/2026 o formulário só fazia `insert`/`remove` no conjunto, e
+    /// com isso deixava montar peça que não existe: `vestido` **e** `calca`
+    /// como categoria, `floral` **e** `xadrez` como estampa, `midi` **e**
+    /// `longo` como comprimento. A taxonomia sempre soube disso -- o campo
+    /// `exclusiva` vem do banco e chega ao app em `Termo` --, mas nada o lia.
+    ///
+    /// Dimensões exclusivas hoje: categoria, cintura, comprimento, estampa,
+    /// silhueta. Múltiplas: cor, estética, tecido. O app não guarda essa lista:
+    /// lê de cada termo, para não virar uma segunda cópia que diverge.
+    static func alternar(_ termo: Termo, em marcados: Set<String>,
+                         termos: [Termo]) -> Set<String> {
+        var novo = marcados
+        if novo.contains(termo.id) {
+            novo.remove(termo.id)
+        } else {
+            if termo.exclusiva {
+                // Trocar de valor, não acumular: marcar `longo` com `midi`
+                // marcado significa que a pessoa mudou de ideia.
+                novo.subtract(termos.lazy
+                    .filter { $0.dimensao == termo.dimensao }
+                    .map(\.id))
+            }
+            novo.insert(termo.id)
+        }
+        return podar(novo, termos: termos)
+    }
+
+    /// Tira do conjunto o que a categoria atual não comporta.
+    ///
+    /// O outro defeito da mesma tela, e mais silencioso: as dimensões visíveis
+    /// dependem da categoria (comprimento só aparece em vestido e saia; cintura
+    /// em calça, short e saia), mas quem escolhia `vestido`, marcava
+    /// comprimento `midi` e depois trocava para `calca` continuava com `midi`
+    /// no conjunto. A linha sumia da tela e o atributo seguia para o relatório
+    /// -- uma calça com comprimento de vestido, que ninguém escolheu e ninguém
+    /// via.
+    static func podar(_ marcados: Set<String>, termos: [Termo]) -> Set<String> {
+        guard !termos.isEmpty else { return marcados }
+        let categorias = Set(termos.lazy
+            .filter { $0.dimensao == "categoria" && marcados.contains($0.id) }
+            .map(\.id))
+        let permitidas = dimensoesPermitidas(categorias: categorias)
+        let porId = Dictionary(termos.map { ($0.id, $0) },
+                               uniquingKeysWith: { primeiro, _ in primeiro })
+        return marcados.filter { id in
+            // Id fora da taxonomia carregada não é podado: pode ser termo novo
+            // que este app ainda não conhece, e apagar seria perder escolha.
+            guard let termo = porId[id] else { return true }
+            return permitidas.contains(termo.dimensao)
+        }
+    }
 }
