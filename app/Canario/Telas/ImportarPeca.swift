@@ -268,11 +268,6 @@ struct ImportarPeca: View {
     private var importador: some View {
         Cartao {
             Text("Photo or file").font(Tokens.Fonte.secao)
-            Text(Supabase.analiseRemotaHabilitada
-                 ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
-                 : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
-                .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
             // A câmera vem primeiro porque é o gesto mais direto de quem está
             // com a peça na mão -- que é a situação do comprador em showroom.
             // Some no simulador e em aparelho sem câmera, em vez de abrir nada.
@@ -303,6 +298,21 @@ struct ImportarPeca: View {
             if let nomeDoArquivo {
                 LinhaInsumo(texto: "Loaded: \(nomeDoArquivo)")
             }
+
+            // O texto de privacidade ficava ACIMA dos botões, três linhas entre
+            // a pessoa e a ação que ela veio fazer. A revisão de UX pediu duas
+            // coisas que se resolvem no mesmo lugar: "esconder as leituras que
+            // impedem a ação" e "colocar o textinho de proteção no rodapé".
+            //
+            // Ele não sai da tela. Dizer o que acontece com a foto antes de a
+            // pessoa escolher uma é obrigação, não enfeite -- e a tela de
+            // Privacy repete tudo. O que muda é a ordem: primeiro o que fazer,
+            // depois o que acontece.
+            Text(Supabase.analiseRemotaHabilitada
+                 ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
+                 : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
         }
     }
 
