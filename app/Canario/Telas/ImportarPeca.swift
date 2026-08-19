@@ -181,7 +181,10 @@ struct ImportarPeca: View {
 
                 if opcoesDeAlvo.count > 1 {
                     VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                        Text("Other options")
+                        // "Other options" nao dizia de que. O app ja chama
+                        // isto de alvo em "Adjust target"; usar a mesma palavra
+                        // evita um terceiro vocabulario para a mesma coisa.
+                        Text("Other targets")
                             .font(Tokens.Fonte.secao)
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: Tokens.Espaco.s) {

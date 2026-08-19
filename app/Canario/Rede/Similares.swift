@@ -173,10 +173,20 @@ enum Similares {
     /// poder auditar o que "parecida" significou nesta tela.
     static func criterio(_ r: Resumo) -> String {
         if r.minimoEmComum == r.atributosPedidos {
-            return "Items with all \(r.atributosPedidos) attributes you selected."
+            return "All \(r.atributosPedidos) attributes matched."
         }
-        return "Items with at least \(r.minimoEmComum) of the \(r.atributosPedidos) selected attributes; "
-             + "\(r.nComTodos) match\(r.nComTodos == 1 ? "es" : "") all of them."
+        if r.nComTodos > 0 {
+            let n = r.nComTodos
+            return "\(n) piece\(n == 1 ? "" : "s") match\(n == 1 ? "es" : "") "
+                 + "all \(r.atributosPedidos) attributes; the rest, at least "
+                 + "\(r.minimoEmComum)."
+        }
+        // Quando nada bate em tudo, a frase antiga imprimia literalmente
+        // "0 match all of them" -- anunciar a ausencia, que e a forma mais
+        // desanimadora de dizer a mesma coisa. Aqui ela diz o melhor que existe
+        // e aponta para onde a diferenca esta explicada, peca a peca.
+        return "Closest available: \(r.minimoEmComum) of your "
+             + "\(r.atributosPedidos) attributes. Each card shows what differs."
     }
 
     /// Uma linha de desfecho por peça — o "e o desfecho delas" da §5.

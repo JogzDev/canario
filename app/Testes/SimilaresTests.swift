@@ -101,14 +101,31 @@ final class SimilaresTests: XCTestCase {
 
     func testCriterioDizQuandoExigiuTodos() {
         let t = Similares.criterio(resumo(pedidos: 3, minimo: 3))
-        XCTAssertTrue(t.contains("all 3 attributes"))
+        XCTAssertTrue(t.contains("All 3 attributes"))
     }
 
+    /// A regra 3 exige que o critério seja auditável: os DOIS números têm de
+    /// aparecer -- quantas peças batem em tudo, e qual foi o mínimo aceito.
+    /// A revisão de UX de 19/08 pediu menos texto e menos tom negativo, e o
+    /// teste passa a travar a informação em vez da redação, para a próxima
+    /// reescrita de copy não poder apagar a auditabilidade sem quebrar aqui.
     func testCriterioDizQuandoTolerouDiferenca() {
         // 6 atributos marcados exigem 5 (70% arredondado para cima).
         let t = Similares.criterio(resumo(similares: 34, pedidos: 6, minimo: 5, comTodos: 4))
-        XCTAssertTrue(t.contains("at least 5 of the 6"))
-        XCTAssertTrue(t.contains("4 match"), "quantos batem em todos é o número mais forte")
+        XCTAssertTrue(t.contains("4 piece"), "quantas batem em todos")
+        XCTAssertTrue(t.contains("all 6 attributes"), "em quantos atributos")
+        XCTAssertTrue(t.contains("at least 5"), "qual foi o mínimo aceito")
+    }
+
+    /// Quando nada bate em tudo, a frase antiga imprimia literalmente
+    /// "0 match all of them" -- anunciar a ausência, que é a forma mais
+    /// desanimadora de dizer a mesma coisa, e foi o que a mentora apontou.
+    /// O critério continua auditável: diz o melhor que existe.
+    func testCriterioNaoAnunciaAusenciaQuandoNadaBateEmTudo() {
+        let t = Similares.criterio(resumo(similares: 12, pedidos: 4, minimo: 3, comTodos: 0))
+        XCTAssertFalse(t.contains("0 "), "não anuncia zero: \(t)")
+        XCTAssertTrue(t.contains("3 of your 4"), "diz o melhor disponível")
+        XCTAssertTrue(t.contains("differs"), "aponta onde a diferença está explicada")
     }
 
     // MARK: A fronteira da regra 1, no percentil de preço
