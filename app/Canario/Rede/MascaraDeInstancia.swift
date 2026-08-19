@@ -38,8 +38,28 @@ enum MascaraDeInstancia {
         let pontuacao: Double
     }
 
-    /// Normaliza o buffer para `[0,1]`, aceitando os dois formatos publicados.
+    /// Normaliza o buffer para `[0,1]`. Usado pelos testes, que constroem
+    /// máscara sintética; o caminho do app não passa por aqui, porque
+    /// materializar a máscara inteira custa caro num aparelho.
     static func ler(_ buffer: CVPixelBuffer) throws -> Leitura {
+        var valores = [Float]()
+        var largura = 0
+        var altura = 0
+        try percorrer(buffer) { l, a, x, y, v in
+            if valores.isEmpty {
+                largura = l; altura = a
+                valores = [Float](repeating: 0, count: l * a)
+            }
+            valores[y * l + x] = v
+        }
+        return Leitura(valores: valores, largura: largura, altura: altura)
+    }
+
+    /// Lê o buffer pixel a pixel sem alocar cópia. Aceita os dois formatos que
+    /// o Vision publica; formato desconhecido é erro, não máscara vazia.
+    private static func percorrer(
+        _ buffer: CVPixelBuffer,
+        _ visitar: (Int, Int, Int, Int, Float) -> Void) throws {
         CVPixelBufferLockBaseAddress(buffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
         guard let base = CVPixelBufferGetBaseAddress(buffer) else {
@@ -48,16 +68,13 @@ enum MascaraDeInstancia {
         let largura = CVPixelBufferGetWidth(buffer)
         let altura = CVPixelBufferGetHeight(buffer)
         let passo = CVPixelBufferGetBytesPerRow(buffer)
-        let formato = CVPixelBufferGetPixelFormatType(buffer)
-        var valores = [Float](repeating: 0, count: largura * altura)
-
-        switch formato {
+        switch CVPixelBufferGetPixelFormatType(buffer) {
         case kCVPixelFormatType_OneComponent8:
             for y in 0..<altura {
                 let linha = base.advanced(by: y * passo)
                     .assumingMemoryBound(to: UInt8.self)
                 for x in 0..<largura {
-                    valores[y * largura + x] = Float(linha[x]) / 255
+                    visitar(largura, altura, x, y, Float(linha[x]) / 255)
                 }
             }
         case kCVPixelFormatType_OneComponent32Float:
@@ -65,39 +82,68 @@ enum MascaraDeInstancia {
                 let linha = base.advanced(by: y * passo)
                     .assumingMemoryBound(to: Float.self)
                 for x in 0..<largura {
-                    valores[y * largura + x] = linha[x]
+                    visitar(largura, altura, x, y, linha[x])
                 }
             }
-        default:
+        case let formato:
             throw Falha.formatoDesconhecido(formato)
         }
-        return Leitura(valores: valores, largura: largura, altura: altura)
     }
 
-    /// Caixa, cobertura e pontuação da máscara. Área manda; a centralidade só
-    /// desempata instância grande na borda contra peça deliberadamente
-    /// assimétrica. Devolve `nil` quando a máscara é inútil, não quando é
-    /// ilegível: esse caso é erro e sobe como `Falha`.
+    /// Mede direto do buffer, numa passada e sem alocar. É este o caminho do
+    /// app: a versão anterior materializava um `[Float]` de largura x altura --
+    /// cerca de 15 MB por instância, para até 16 instâncias -- e a tela de
+    /// escolha do alvo demorava dezenas de segundos num iPhone.
+    static func medir(_ buffer: CVPixelBuffer) throws -> Medida? {
+        var minX = Int.max, minY = Int.max, maxX = -1, maxY = -1
+        var ativos = 0, largura = 0, altura = 0
+        try percorrer(buffer) { l, a, x, y, v in
+            largura = l; altura = a
+            guard v >= limiar else { return }
+            ativos += 1
+            if x < minX { minX = x }
+            if x > maxX { maxX = x }
+            if y < minY { minY = y }
+            if y > maxY { maxY = y }
+        }
+        return consolidar(minX: minX, minY: minY, maxX: maxX, maxY: maxY,
+                          ativos: ativos, largura: largura, altura: altura)
+    }
+
+    /// Caixa, cobertura e pontuação, a partir da leitura materializada. Existe
+    /// para os testes; o app usa a versão que lê o buffer direto. As duas
+    /// terminam em `consolidar`, então não podem divergir de critério.
     static func medir(_ leitura: Leitura) -> Medida? {
-        var minX = leitura.largura, minY = leitura.altura
-        var maxX = -1, maxY = -1, ativos = 0
+        var minX = Int.max, minY = Int.max, maxX = -1, maxY = -1, ativos = 0
         for y in 0..<leitura.altura {
             for x in 0..<leitura.largura
             where leitura.valores[y * leitura.largura + x] >= limiar {
                 ativos += 1
-                minX = min(minX, x); maxX = max(maxX, x)
-                minY = min(minY, y); maxY = max(maxY, y)
+                if x < minX { minX = x }
+                if x > maxX { maxX = x }
+                if y < minY { minY = y }
+                if y > maxY { maxY = y }
             }
         }
-        let cobertura = Double(ativos) / Double(max(1, leitura.largura * leitura.altura))
+        return consolidar(minX: minX, minY: minY, maxX: maxX, maxY: maxY,
+                          ativos: ativos, largura: leitura.largura, altura: leitura.altura)
+    }
+
+    /// Área manda; a centralidade só desempata instância grande na borda contra
+    /// peça deliberadamente assimétrica. Devolve `nil` quando a máscara é
+    /// inútil — ruído ou cobrindo a foto toda —, nunca quando é ilegível: esse
+    /// caso é erro e sobe como `Falha`.
+    private static func consolidar(minX: Int, minY: Int, maxX: Int, maxY: Int,
+                                   ativos: Int, largura: Int, altura: Int) -> Medida? {
+        let cobertura = Double(ativos) / Double(max(1, largura * altura))
         guard maxX >= minX, maxY >= minY,
               cobertura >= coberturaMinima, cobertura <= coberturaMaxima else {
             return nil
         }
         let limites = CGRect(x: minX, y: minY,
                              width: maxX - minX + 1, height: maxY - minY + 1)
-        let centroX = Double(limites.midX) / Double(max(1, leitura.largura))
-        let centroY = Double(limites.midY) / Double(max(1, leitura.altura))
+        let centroX = Double(limites.midX) / Double(max(1, largura))
+        let centroY = Double(limites.midY) / Double(max(1, altura))
         let distancia = hypot(centroX - 0.5, centroY - 0.5)
         return Medida(limites: limites, cobertura: cobertura,
                       pontuacao: cobertura - 0.04 * distancia)

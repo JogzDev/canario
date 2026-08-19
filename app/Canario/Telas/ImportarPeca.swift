@@ -425,7 +425,7 @@ struct ImportarPeca: View {
         miniaturaJPEG = escolha.dados
         if Supabase.analiseRemotaHabilitada {
             imagemConfirmadaPendente = imagem
-            dadosConfirmadosPendentes = escolha.dadosParaAnalise
+            dadosConfirmadosPendentes = await MiniaturaLocal.opacaParaAnalise(de: escolha.dados)
             nomeConfirmadoPendente = nome
             descricaoConfirmadaPendente = descricaoDoAlvoNormalizada
             pedindoConsentimentoDaNuvem = true

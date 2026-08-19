@@ -402,4 +402,27 @@ final class ImportacaoTests: XCTestCase {
                           "a busca precisa achar \(termo.id) digitando o que a tela mostra")
         }
     }
+
+    /// Regressão de 19/08/2026, vista num vídeo de uso real: a interface em
+    /// inglês exibia "cobertura insuficiente (§8)" e "desvios contra a própria
+    /// história de cada atributo". Nenhuma das duas é string do app -- vêm
+    /// cruas das RPCs, que respondem em português e com referência de seção.
+    func testMotivoDeExclusaoNaoVazaPortuguesNemNumeroDeSecao() {
+        XCTAssertEqual(Explicacao.motivoDeExclusao("cobertura insuficiente (§8)"),
+                       "not enough coverage this week")
+        XCTAssertEqual(Explicacao.motivoDeExclusao("cobertura insuficiente"),
+                       "not enough coverage this week")
+        XCTAssertEqual(Explicacao.motivoDeExclusao("sem leitura"),
+                       "no reading this week")
+        XCTAssertEqual(Explicacao.motivoDeExclusao(nil), "no reason recorded")
+        XCTAssertEqual(Explicacao.motivoDeExclusao("   "), "no reason recorded")
+
+        // Motivo novo do banco passa adiante, mas sem a referência de seção:
+        // esconder o motivo seria pior que mostrar uma frase estranha.
+        XCTAssertEqual(Explicacao.motivoDeExclusao("motivo novo (§99)"), "motivo novo")
+
+        // A unidade do gráfico é do app, em inglês, e não a do banco.
+        XCTAssertFalse(Explicacao.unidadeDoIndice.contains("desvios"))
+        XCTAssertTrue(Explicacao.unidadeDoIndice.contains("usual behavior"))
+    }
 }

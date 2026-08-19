@@ -372,7 +372,7 @@ struct RelatorioDaPeca: View {
                     }
                 }
                 .chartYScale(domain: .automatic(includesZero: true))
-                .chartYAxisLabel(s.unidade ?? "")
+                .chartYAxisLabel(Explicacao.unidadeDoIndice)
                 .frame(height: 160)
                 .accessibilityLabel(
                     "Combined history across \(s.pontos.count) weeks")
@@ -426,7 +426,7 @@ struct RelatorioDaPeca: View {
                     Divider()
                     Text("Not included").font(Tokens.Fonte.miudo.weight(.semibold))
                     ForEach(fora) { a in
-                        LinhaInsumo(texto: "\(a.rotulo): \(a.foraPor ?? "no reason recorded")")
+                        LinhaInsumo(texto: "\(rotuloDoAtributo(a)): \(Explicacao.motivoDeExclusao(a.foraPor))")
                     }
                 }
             }
@@ -525,5 +525,15 @@ struct RelatorioDaPeca: View {
         atualizada.similaresRejeitados = rejeitados ? true : nil
         pecaGuardadaNestaTela = atualizada
         Task { await PecasSalvas.shared.salvar(atualizada) }
+    }
+
+    /// O `rotulo` do cluster vem do banco, em português ("Basico"). A tela é em
+    /// inglês, e a taxonomia já carregada tem o termo correspondente — então o
+    /// rótulo exibido sai do mesmo lugar que o resto da interface usa.
+    private func rotuloDoAtributo(_ a: Cluster.Atributo) -> String {
+        if let termo = termos.first(where: { $0.id == a.termoId }) {
+            return Traducao.rotuloExibido(termo)
+        }
+        return a.rotulo
     }
 }

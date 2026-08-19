@@ -29,10 +29,6 @@ enum MiniaturaLocal {
         let id: Int
         /// PNG com transparência: serve para exibir e guardar no closet.
         let dados: Data
-        /// A mesma peça achatada sobre branco, opaca. É esta que vai para a
-        /// análise: PNG transparente chega achatado sobre **preto** numa API de
-        /// visão, e foi assim que o benchmark de 300 mediu retângulos pretos.
-        let dadosParaAnalise: Data
         let tipo: Tipo
 
         var rotulo: String {
@@ -80,23 +76,33 @@ enum MiniaturaLocal {
                 .prefix(4)
                 .enumerated()
                 .compactMap { indice, recorte -> OpcaoDeAlvo? in
-                    guard let dados = redesenhar(recorte, transparente: true)?.pngData(),
-                          let opaca = redesenhar(recorte, transparente: false)?
-                              .jpegData(compressionQuality: 0.82) else {
+                    guard let dados = redesenhar(recorte, transparente: true)?.pngData() else {
                         return nil
                     }
-                    return OpcaoDeAlvo(id: indice, dados: dados,
-                                       dadosParaAnalise: opaca, tipo: .primeiroPlano)
+                    return OpcaoDeAlvo(id: indice, dados: dados, tipo: .primeiroPlano)
                 }
 
             if let completa = redesenhar(imagem, transparente: false)?
                 .jpegData(compressionQuality: 0.82) {
-                opcoes.append(OpcaoDeAlvo(id: opcoes.count,
-                                          dados: completa,
-                                          dadosParaAnalise: completa,
+                opcoes.append(OpcaoDeAlvo(id: opcoes.count, dados: completa,
                                           tipo: .fotoCompleta))
             }
             return opcoes
+        }.value
+    }
+
+    /// Achata a peça escolhida sobre branco, opaca. PNG transparente chega
+    /// achatado sobre **preto** numa API de visão -- foi assim que o benchmark
+    /// de 300 mediu retângulos pretos. Só a opção confirmada passa por aqui:
+    /// gerar isto para as quatro opções custava quatro codificações JPEG antes
+    /// de a tela de escolha sequer aparecer.
+    static func opacaParaAnalise(de dados: Data) async -> Data? {
+        await Task.detached(priority: .userInitiated) {
+            guard let imagem = imagem(de: dados, ladoMaximo: Int(ladoMaximo)) else {
+                return nil
+            }
+            return redesenhar(imagem, transparente: false)?
+                .jpegData(compressionQuality: 0.82)
         }.value
     }
 
@@ -223,7 +229,6 @@ enum MiniaturaLocal {
     /// A medição vive em `MascaraDeInstancia`, que é testada sem simulador.
     private static func medidaUtil(da mascara: CVPixelBuffer)
         -> MascaraDeInstancia.Medida? {
-        guard let leitura = try? MascaraDeInstancia.ler(mascara) else { return nil }
-        return MascaraDeInstancia.medir(leitura)
+        (try? MascaraDeInstancia.medir(mascara)) ?? nil
     }
 }

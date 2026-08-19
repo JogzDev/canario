@@ -89,14 +89,16 @@ func lerMascara(_ buffer: CVPixelBuffer) -> Mascara? {
 }
 
 func medir(_ mascara: Mascara) -> Medida? {
-    var minX = mascara.largura, minY = mascara.altura, maxX = -1, maxY = -1
+    var minX = Int.max, minY = Int.max, maxX = -1, maxY = -1
     var ativos = 0
     for y in 0..<mascara.altura {
         for x in 0..<mascara.largura
         where mascara.valores[y * mascara.largura + x] >= limiarDaMascara {
             ativos += 1
-            minX = min(minX, x); maxX = max(maxX, x)
-            minY = min(minY, y); maxY = max(maxY, y)
+            if x < minX { minX = x }
+            if x > maxX { maxX = x }
+            if y < minY { minY = y }
+            if y > maxY { maxY = y }
         }
     }
     guard maxX >= minX, maxY >= minY else { return nil }

@@ -75,16 +75,18 @@ struct Raiz: View {
     /// iOS 17–25 preserva a navegação compatível. O espaço inferior pertence
     /// somente a esta barra flutuante; a TabView nativa já calcula sua safe area.
     private var navegacaoCompativel: some View {
-        ZStack(alignment: .bottom) {
-            conteudoDaAba
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 82)
-                }
-
-            BarraPrincipal(aba: $aba) { buscaAberta = true }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
-        }
+        // A barra entra como `safeAreaInset`, e não numa `ZStack` com altura
+        // reservada na unha. Os 82 pt cravados que existiam aqui não batiam com
+        // a altura real -- que muda com Dynamic Type e com o indicador de home
+        // de cada aparelho -- e o fim das telas de tendência e de tamanhos
+        // ficava escondido atrás dela. Agora o SwiftUI mede a barra e reserva
+        // exatamente o que ela ocupa.
+        conteudoDaAba
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                BarraPrincipal(aba: $aba) { buscaAberta = true }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+            }
     }
 
     @ViewBuilder

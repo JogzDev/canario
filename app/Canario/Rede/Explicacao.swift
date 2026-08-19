@@ -169,4 +169,28 @@ enum Explicacao {
             .prefix(limite)
             .map { $0 }
     }
+
+    /// O banco responde em português e com referência de seção -- "cobertura
+    /// insuficiente (§8)". Isso aparecia cru numa interface em inglês, junto
+    /// com um "§8" que não significa nada para quem usa o app. A tradução mora
+    /// aqui, e o texto desconhecido passa adiante em vez de sumir: é melhor o
+    /// usuário ver uma frase estranha do que o app esconder o motivo.
+    static func motivoDeExclusao(_ bruto: String?) -> String {
+        guard let bruto, !bruto.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return "no reason recorded"
+        }
+        let semSecao = bruto.replacingOccurrences(
+            of: "\\s*\\(§\\d+[^)]*\\)", with: "",
+            options: .regularExpression).trimmingCharacters(in: .whitespaces)
+        switch semSecao.lowercased() {
+        case "cobertura insuficiente":
+            return "not enough coverage this week"
+        case "sem leitura", "sem leitura na semana":
+            return "no reading this week"
+        case "fonte unica", "fonte única":
+            return "only one source, so no directional state"
+        default:
+            return semSecao
+        }
+    }
 }
