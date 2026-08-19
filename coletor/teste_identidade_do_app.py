@@ -103,11 +103,18 @@ def main():
     #    A regra, entao, nao e "nunca cite o bundle antigo": e "se citar, avise
     #    no topo que e historico". Documento que cita sem avisar reprova.
     errados = []
-    for doc in sorted(os.listdir(RAIZ)):
+    documentos = [(d, os.path.join(RAIZ, d)) for d in sorted(os.listdir(RAIZ))]
+    # `historico/` tambem entra: documento antigo pode estar certo sobre o
+    # passado e ainda assim fazer alguem "corrigir" o projeto para o bundle
+    # errado hoje. O aviso no topo e o que separa registro de instrucao.
+    historico = os.path.join(RAIZ, "historico")
+    if os.path.isdir(historico):
+        documentos += [(os.path.join("historico", d), os.path.join(historico, d))
+                       for d in sorted(os.listdir(historico))]
+    for doc, caminho in documentos:
         if not doc.endswith(".md"):
             continue
-        texto = open(os.path.join(RAIZ, doc), encoding="utf-8",
-                     errors="ignore").read()
+        texto = open(caminho, encoding="utf-8", errors="ignore").read()
         antigos = {c for c in re.findall(r'\b(?:br\.)?com\.canario[\w.]*', texto)
                    if c != gerador["BUNDLE"]}
         if not antigos:

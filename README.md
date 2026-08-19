@@ -4,6 +4,9 @@ Mede o mercado de moda brasileiro e entrega evidência organizada, rastreável e
 imediata para quem decide coleção, compra e reposição. **Informa a decisão;
 nunca decide, nunca prevê.**
 
+**Como está o projeto hoje:** [`ESTADO.md`](ESTADO.md). É o único documento de
+estado — se outro arquivo discordar dele, o outro está velho.
+
 A especificação completa está em [`CANARIO.md`](CANARIO.md) e é a fonte da
 verdade do projeto. As regras invioláveis da seção 1 vencem qualquer outra
 instrução. Antes de mexer em qualquer coisa aqui, leia pelo menos a Parte 0.
