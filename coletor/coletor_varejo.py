@@ -894,6 +894,93 @@ def alertas_criticos(registros, marcas_ativas, hoje):
     return criticos, avisos
 
 
+# COBERTURA NAO E VOLUME, E ATE 18/08/2026 O RELATORIO SO MEDIA VOLUME
+# ====================================================================
+#
+# Naquele dia a C&A entregou 16.489 produtos: volume normal, nenhuma queda
+# contra os sete dias, portao verde, "sem alerta critico" impresso na mesma
+# pagina em que quatro faixas de preco apareciam truncadas em 2.500. As duas
+# frases estavam certas e juntas davam a impressao errada -- o pipeline rodou,
+# mas o catalogo do dia nao veio inteiro, e quem lia concluia que o dado
+# sustentava o que o app mostra.
+#
+# O estado abaixo NAO bloqueia o pipeline. Bloquear exige responder "quanto de
+# catalogo faltando torna o dia inutil", e esse numero e decisao de metodo do
+# JP. Medir nao e: sem a medida nao ha como decidir, e era por isso que o item
+# estava parado. Quando o numero existir, vira criterio em `alertas_criticos`.
+
+def cobertura_da_marca(alertas):
+    """Diz se o catalogo do dia veio inteiro, separado de ter vindo volume.
+
+    Devolve `(estado, detalhe)`:
+
+    * `completa` -- nada no registro indica corte.
+    * `parcial`  -- houve faixa truncada. Nao e suspeita: a propria paginacao
+      avisou que parou antes do fim, entao sabemos que ficou produto de fora.
+    * `incerta`  -- a contagem falhou (categoria que devolveu erro ou zero).
+      Nao da para afirmar corte nem integridade, e chamar isso de `completa`
+      seria afirmar mais do que se sabe.
+
+    A perda vem como TETO, nunca como valor exato: as faixas sao contadas por
+    categoria e o mesmo produto aparece em mais de uma, entao somar as sobras
+    conta gente repetida. Um teto honesto e util; um numero exato inventado
+    seria pior que nao ter numero.
+    """
+    if not isinstance(alertas, dict):
+        return "completa", None
+    faixas = [f for f in (alertas.get("faixas_truncadas") or [])
+              if isinstance(f, dict)]
+    erro = alertas.get("erro")
+    if faixas:
+        perdas = []
+        for f in faixas:
+            try:
+                existem = int(f.get("existem") or 0)
+                coletados = int(f.get("coletados") or 0)
+            except (TypeError, ValueError):
+                continue
+            perdas.append(max(0, existem - coletados))
+        detalhe = {"faixas": len(faixas),
+                   "teto_de_perda": sum(perdas),
+                   "pior_faixa": max(perdas) if perdas else 0}
+        if erro:
+            detalhe["erro"] = str(erro)
+        return "parcial", detalhe
+    if erro:
+        return "incerta", {"erro": str(erro)}
+    return "completa", None
+
+
+def resumo_de_cobertura(metricas):
+    """Agrega a cobertura do dia para caber na linha de estado do relatorio."""
+    contagem = {"completa": 0, "parcial": 0, "incerta": 0}
+    por_marca = []
+    for m in metricas:
+        estado, detalhe = cobertura_da_marca(m.get("alertas"))
+        contagem[estado] += 1
+        por_marca.append({"nome": m["nome"], "estado": estado,
+                          "detalhe": detalhe})
+    return contagem, por_marca
+
+
+def frase_de_cobertura(contagem):
+    """Uma linha que nao deixa 'verde' significar 'catalogo inteiro'."""
+    total = sum(contagem.values())
+    if not total:
+        return "cobertura não medida"
+    if contagem["parcial"] or contagem["incerta"]:
+        partes = []
+        if contagem["parcial"]:
+            partes.append("{} com catálogo cortado".format(contagem["parcial"]))
+        if contagem["incerta"]:
+            partes.append("{} sem contagem confiável".format(
+                contagem["incerta"]))
+        return "cobertura parcial — {} de {} marcas ({})".format(
+            contagem["parcial"] + contagem["incerta"], total,
+            "; ".join(partes))
+    return "cobertura completa nas {} marcas".format(total)
+
+
 def metricas_varejo_ativas(atuais, nomes, marcas_ativas):
     """Mantem o relatorio do dia coerente com o escopo operacional atual."""
     ids_ativos = {m["id"] for m in marcas_ativas}
@@ -940,6 +1027,7 @@ def renderizar_saude(hoje, fallback_varejo=None):
         metricas = fallback_varejo
 
     criticos, avisos = alertas_criticos(registros, marcas_ativas, hoje)
+    contagem_cobertura, cobertura_por_marca = resumo_de_cobertura(metricas)
     tot_vis = sum(m["visitados"] for m in metricas)
     tot_grav = sum(m["gravados"] for m in metricas)
     presentes = {m["marca_id"] for m in metricas}
@@ -949,8 +1037,9 @@ def renderizar_saude(hoje, fallback_varejo=None):
               "**Gerado (UTC):** {}\n".format(
                   datetime.now(timezone.utc).isoformat()),
               "**Data observada:** {}\n".format(hoje_iso),
-              "**Estado:** {}\n".format(
-                  "ATENÇÃO" if criticos else "sem alerta crítico"),
+              "**Estado:** {} · {}\n".format(
+                  "ATENÇÃO" if criticos else "sem alerta crítico",
+                  frase_de_cobertura(contagem_cobertura)),
               "\n## Portão operacional\n"]
     if avisos:
         linhas.append(
@@ -983,6 +1072,34 @@ def renderizar_saude(hoje, fallback_varejo=None):
             m["declarado"] if m["declarado"] else "—",
             m["pct_campos_ok"] if m["pct_campos_ok"] is not None else "—",
             alerta))
+
+    linhas.extend(["\n## Cobertura do catálogo\n",
+                   "\nVolume e cobertura são perguntas diferentes: a tabela "
+                   "acima diz **quanto veio**, esta diz **se veio inteiro**. "
+                   "Marca com volume normal e faixa truncada passa verde no "
+                   "portão e mesmo assim entregou catálogo cortado.\n",
+                   "\n> A perda é **teto**, não valor exato: as faixas são "
+                   "contadas por categoria e o mesmo produto aparece em mais "
+                   "de uma, então a soma conta repetido.\n"])
+    incompletas = [c for c in cobertura_por_marca if c["estado"] != "completa"]
+    if incompletas:
+        linhas.append(
+            "\n| Marca | Cobertura | Faixas cortadas | Teto de perda | Motivo |")
+        linhas.append("|---|---|---:|---:|---|")
+        for c in sorted(incompletas,
+                        key=lambda x: -((x["detalhe"] or {}).get(
+                            "teto_de_perda") or 0)):
+            d = c["detalhe"] or {}
+            linhas.append("| {} | {} | {} | {} | {} |".format(
+                c["nome"], c["estado"],
+                d.get("faixas") if d.get("faixas") else "—",
+                "{:,}".format(d["teto_de_perda"]).replace(",", ".")
+                if d.get("teto_de_perda") else "—",
+                str(d.get("erro") or "paginação parou antes do fim").replace(
+                    "|", "\\|")))
+    else:
+        linhas.append(
+            "\n- Nenhuma marca acusou corte de paginação ou falha de contagem.\n")
 
     linhas.extend(["\n## Outras fontes\n",
                    "| Fonte | Tentativas | Respostas | Itens/pontos | % ok | Alertas |",

@@ -4,7 +4,9 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 
 from gerar_saude import data_operacional
-from coletor_varejo import alertas_criticos, metricas_varejo_ativas
+from coletor_varejo import (alertas_criticos, cobertura_da_marca,
+                            frase_de_cobertura, metricas_varejo_ativas,
+                            resumo_de_cobertura)
 
 
 HOJE = date(2026, 8, 2)
@@ -150,7 +152,66 @@ def main():
         print("FALHOU: relatorio incluiu observacao de marca fora do escopo ativo")
         return 1
 
-    print("Saude: fuso BRT, ausencia, zero e queda >70% bloqueiam")
+    # COBERTURA -- o caso real da C&A em 18/08/2026. Volume normal, nenhuma
+    # queda, portao verde, e quatro faixas truncadas em 2.500 na mesma pagina.
+    # O relatorio dizia so "sem alerta critico". Este teste existe para que
+    # verde nunca mais signifique "catalogo inteiro" sem alguem ter conferido.
+    cea = {
+        "erro": "http 500 ao contar categoria VTEX 1000003/1004161/1004167",
+        "truncou": "faixa de preco indivisivel acima de 2500",
+        "faixas_truncadas": [
+            {"faixa": "0-1", "existem": 41053, "coletados": 2500},
+            {"faixa": "0-1", "existem": 11280, "coletados": 2500},
+            {"faixa": "0-1", "existem": 7215, "coletados": 2500},
+            {"faixa": "0-1", "existem": 6875, "coletados": 2500},
+        ],
+    }
+    estado, detalhe = cobertura_da_marca(cea)
+    if estado != "parcial" or detalhe["faixas"] != 4:
+        print("FALHOU: faixa truncada nao virou cobertura parcial")
+        return 1
+    # 38553 + 8780 + 4715 + 4375 = 56.423 produtos, no teto
+    if detalhe["teto_de_perda"] != 56423 or detalhe["pior_faixa"] != 38553:
+        print("FALHOU: teto de perda calculado errado ({})".format(detalhe))
+        return 1
+
+    # Erro de contagem sem faixa truncada nao e "completa": e desconhecido.
+    estado, _ = cobertura_da_marca(
+        {"erro": "catalogo VTEX declarou zero na categoria 28"})
+    if estado != "incerta":
+        print("FALHOU: falha de contagem foi tratada como catalogo inteiro")
+        return 1
+
+    for vazio in (None, {}, {"divergencia": {"coletado": 1, "paginavel": 2}}):
+        if cobertura_da_marca(vazio)[0] != "completa":
+            print("FALHOU: marca sem corte foi acusada de cobertura parcial")
+            return 1
+
+    contagem, por_marca = resumo_de_cobertura([
+        {"nome": "C&A", "alertas": cea},
+        {"nome": "Hering", "alertas": None},
+        {"nome": "Dress To", "alertas": {"erro": "categoria 28 zerada"}},
+    ])
+    if contagem != {"completa": 1, "parcial": 1, "incerta": 1}:
+        print("FALHOU: resumo de cobertura contou errado ({})".format(contagem))
+        return 1
+    if len(por_marca) != 3:
+        print("FALHOU: resumo perdeu marca")
+        return 1
+
+    # A frase e o que aparece ao lado de "sem alerta critico". Se ela nao
+    # mudar quando ha corte, o relatorio volta a enganar quem le rapido.
+    frase = frase_de_cobertura(contagem)
+    if "parcial" not in frase or "2 de 3" not in frase:
+        print("FALHOU: linha de estado escondeu o corte de catalogo ({})".format(
+            frase))
+        return 1
+    if "completa" not in frase_de_cobertura(
+            {"completa": 15, "parcial": 0, "incerta": 0}):
+        print("FALHOU: dia integro nao foi reconhecido como completo")
+        return 1
+
+    print("Saude: fuso BRT, ausencia, zero, queda >70% e cobertura do catalogo")
     return 0
 
 
