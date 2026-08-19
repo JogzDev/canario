@@ -443,7 +443,12 @@ def chamar_openai(payload, chave, tentativas=3):
                 continue
             raise ErroDaOpenAI(
                 "OpenAI HTTP {} ({})".format(erro.code, _erro_curto(corpo)))
-        except urllib.error.URLError as erro:
+        except (urllib.error.URLError, TimeoutError, OSError) as erro:
+            # `socket.timeout` NAO e subclasse de URLError: quando a conexao
+            # abre e a resposta demora, ele escapava por fora do retry e
+            # derrubava a rodada. Aconteceu em 19/08, na terceira imagem, logo
+            # depois de o teto de tokens subir para 2500 -- resposta maior,
+            # leitura mais longa, timeout mais provavel.
             if tentativa + 1 < tentativas:
                 time.sleep(min(20, 2 ** tentativa))
                 continue
@@ -760,8 +765,38 @@ def main():
                 )
                 continue
             inicio = time.monotonic()
-            resposta = chamar_openai(
-                montar_payload(data_url, taxonomia), chave)
+            try:
+                resposta = chamar_openai(
+                    montar_payload(data_url, taxonomia), chave)
+            except ErroDaOpenAI as erro:
+                # Mesmo principio da resposta incompleta: uma imagem que nao
+                # obteve resposta conta como erro no portao e fica auditavel,
+                # mas nao pode levar junto as medidas ja pagas. Duas rodadas de
+                # 19/08 morreram assim, uma na 16a e outra na 3a.
+                latencia = time.monotonic() - inicio
+                resultado = {
+                    "sample_id": "S{:02d}".format(indice),
+                    "imagem": imagem.name,
+                    "categoria_catalogo": esperada,
+                    "prompt_version": VERSAO_DO_PROMPT,
+                    "prompt_sha256": prompt_sha256,
+                    "preprocessing_version": (
+                        VERSAO_DO_PREPROCESSAMENTO if args.segmentador
+                        else "none"),
+                    "analysis": None,
+                    "acertou_categoria": False,
+                    "latencia_s": round(latencia, 3),
+                    "usage": {},
+                    "call_error": str(erro),
+                }
+                resultados.append(resultado)
+                anexar_jsonl(args.saida, resultado)
+                print("[{}/{}] catalogo={} Luna=SEM_RESPOSTA DIVERGIU | "
+                      "{:.1f}s | in=0 out=0 | {} ({})".format(
+                          indice, len(amostra), esperada, latencia,
+                          imagem.name, erro),
+                      flush=True)
+                continue
             latencia = time.monotonic() - inicio
             analise_bruta = None
             erro_da_resposta = None

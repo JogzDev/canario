@@ -324,8 +324,15 @@ actor CatalogoDeTermos {
         let tarefa = Task<[Termo], Error> {
             try await Supabase.shared.buscar(
                 "termos",
+                // `order=dimensao,id` ordenava os chips pelo IDENTIFICADOR
+                // INTERNO, em português, numa tela que mostra o rótulo
+                // traduzido: `Dress` é a segunda categoria mais comum do
+                // mercado e caía em último, porque "vestido" é o último
+                // alfabeticamente. Agora a ordem vem calculada do servidor
+                // (§33), por frequência real no painel.
                 "select=id,rotulo,dimensao,exclusiva,sinonimos,sem_perna_busca,"
-                + "palavras_pt,palavras_en&order=dimensao,id")
+                + "palavras_pt,palavras_en"
+                + "&order=dimensao,ordem_de_exibicao.nullsfirst,id")
         }
         buscaEmCurso = tarefa
         let recebidos: [Termo]
