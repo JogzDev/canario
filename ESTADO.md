@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 19/08/2026, 09:45 UTC (06:45 em São Paulo)
+**Última atualização:** 19/08/2026, 15:30 UTC (12:30 em São Paulo)
 
 Este é o **único** documento que descreve o estado atual do projeto. Se outro
 arquivo discordar dele, ele está velho — e provavelmente está em `historico/`.
@@ -21,8 +21,8 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Dados e pipeline | funcionando | 15 de 15 marcas coletando |
 | Banco | **veredito veio e foi ruim** | 83,2% depois de emergência; bateu **97,2%** hoje |
 | Rota paga de visão (Luna) | de pé, com credenciais | responde `invalid_image` |
-| App na loja | **aguardando resposta da Apple** | 1.0 · `br.com.canario.ch3.app` |
-| Testes | 165 Swift · 25 suítes Python | 0 telas com teste de interface |
+| App na loja | **1.0 APROVADA E PUBLICADA** | `br.com.canario.ch3.app` |
+| Testes | 183 Swift · 26 suítes Python | 0 telas com teste de interface |
 
 ---
 
@@ -246,7 +246,11 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
    ninguém é avisado. O certo seria um runner independente: medido em 19/08,
    `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
    billing. Sem gastar, a saída é algo fora do GitHub
-2. **Rodada cega da Luna** nas 24 imagens
+2. ~~Rodada cega da Luna~~ — **feita em 19/08 com o segmentador atual: 20/24
+   (83,3%) em categoria, idêntico à medição de 13/08 sem segmentador.** O
+   relatório está em `anexos/avaliacao_luna/relatorio-19-08-com-segmentador.md`.
+   O portão técnico de 80% segue aberto; a meta de produto de 90% segue sem ser
+   alcançada, e ligar a Luna com 83,3% é decisão do JP
 3. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
    sobre o fundo escuro em 19/08, mas o relato original era de algo **rosa**, e
    isso eu não consegui reproduzir: só há runtime iOS 26.2 nesta máquina, e o
