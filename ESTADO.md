@@ -144,12 +144,40 @@ Responde `invalid_image`, que significa "subo e tenho `OPENAI_API_KEY` e
 dias sem ninguém perceber; agora a workflow `sonda-edge-luna.yml` pergunta isso
 ao servidor uma vez por dia.
 
-O que falta é a **rodada cega das 24 imagens** com a dica de alvo que o app
-manda. O mecanismo está provado; o número honesto de acerto, não. O `1,3%`
-que circulou em documentos antigos foi medido com um segmentador quebrado e
-**não vale** — não use esse número.
+### O portão humano EXISTE e passou — mas mede outro pipeline
 
-Luna entra na versão 1.1, não na que está em revisão.
+Corrigido em 19/08. `anexos/portao_luna_24.json` está no repositório, com o
+gabarito humano das 24 imagens congelado:
+
+| medida | acerto | mínimo técnico |
+|---|---:|---:|
+| categoria | **83,3%** (20/24) | 80% |
+| cor primária | **91,7%** (22/24) | 80% |
+| clareza do alvo | 87,5% (21/24) | — |
+
+O hash do prompt confere: `f376aba9…`, idêntico ao que `hash_do_prompt` produz
+com a taxonomia de hoje. Versão `alvo-estrutura-v5` nos dois lados. Portanto o
+portão é **tecnicamente válido**.
+
+**Mas ele foi medido em 13/08, e o workflow daquela data não passava
+segmentador.** As 24 imagens foram enviadas inteiras, com fundo. O app hoje
+manda a peça recortada sobre branco, mais uma dica de alvo. É outro pipeline, e
+o número não descreve o sistema atual — pode ser melhor ou pior.
+
+Refazer custa **US$ 0,019** e ~2 minutos, contra o mesmo gabarito humano
+congelado. Precisa do Mac do JP ligado: o workflow exige o rótulo `xcode`,
+porque o segmentador usa Vision.
+
+O `1,3%` que circulou em documentos antigos foi de outra coisa — o benchmark de
+300 com o segmentador quebrado — e **não vale**.
+
+### Meta de produto ≠ portão técnico
+
+O portão técnico é 80% e está aberto. Mas o relatório de calibração registra uma
+**meta de produto de 90%** para categoria, e 83,3% não a alcança. Ligar a Luna
+com 83% é decisão de produto, não impedimento técnico.
+
+Luna entra na versão 1.1, não na 1.0 que está publicada.
 
 ## 4. App e loja
 
