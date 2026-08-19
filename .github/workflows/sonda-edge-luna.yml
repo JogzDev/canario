@@ -1,0 +1,56 @@
+name: Sonda da rota paga de visao
+
+# POR QUE ISTO EXISTE, E POR QUE NAO E "COMPILAR A FUNCAO NO CI"
+# =============================================================
+#
+# De 14 a 18/08/2026 a Edge Function `analisar-peca` respondeu BOOT_ERROR por
+# quatro dias e ninguem soube. O app nao a chamava (REMOTE_ANALYSIS_ENABLED
+# estava NO) e o unico teste existente procura texto dentro do index.ts.
+#
+# O detalhe que decide o desenho: o arquivo do disco ESTAVA INTEGRO. 288 linhas,
+# TypeScript valido, compilava. O que tinha quebrado era o artefato publicado,
+# que deixara de ser o arquivo do disco. Compilar a funcao no CI -- que e como o
+# item estava escrito na lista de pendencias -- nao teria pego nada, porque o
+# repositorio estava certo. So perguntando ao servidor da para saber.
+#
+# Custo: zero. Um POST vazio nunca chega ao modelo; a funcao recusa antes, e a
+# forma da recusa e o diagnostico.
+#
+# Roda separado do pipeline de dados de proposito: sao dois sistemas, e misturar
+# faz a coleta ficar vermelha por causa da rota paga, ou o contrario.
+
+on:
+  schedule:
+    # 07:10 UTC = 04:10 em Sao Paulo, logo depois da coleta diaria das 06:00.
+    - cron: '10 7 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'supabase/functions/analisar-peca/index.ts'
+      - 'coletor/sonda_edge_luna.py'
+      - '.github/workflows/sonda-edge-luna.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonda-edge-luna
+  cancel-in-progress: false
+
+jobs:
+  sondar:
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/python-mac
+      - name: Perguntar a funcao em que estado ela esta
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # A publishable e a chave natural: e a que o app usa, e ela e publica
+          # por desenho (vai dentro do binario na App Store). Sem ela no
+          # ambiente, a sonda cai na secreta -- para a pergunta "a funcao sobe?"
+          # qualquer chave valida serve, porque BOOT_ERROR acontece antes de a
+          # funcao olhar quem chamou.
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: "$PY coletor/sonda_edge_luna.py"
