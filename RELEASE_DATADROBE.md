@@ -1,5 +1,12 @@
 # DataDrobe — assinatura, Archive, TestFlight e App Store
 
+> **Correção de 18/08/2026 — leia antes de seguir este guia.**
+> O bundle que está em revisão na App Store é **`br.com.canario.ch3.app`**, não
+> `com.canario.app`. Existem dois registros na App Store Connect; o `ch3` é o que
+> tem perfil de distribuição emitido e o que recebeu o envio. Menções a
+> `com.canario.app` abaixo são históricas — **não "corrija" o projeto para elas**,
+> ou o upload vai para o app errado.
+
 Estado verificado em 14/08/2026:
 
 - nome exibido: `DataDrobe`;
@@ -7,7 +14,7 @@ Estado verificado em 14/08/2026:
 - destino: somente iPhone (`TARGETED_DEVICE_FAMILY = 1`), iOS 17+;
 - criptografia: somente HTTPS isento (`ITSAppUsesNonExemptEncryption = NO`);
 - estilo de assinatura: Automatic;
-- Bundle ID atual: `com.canario.app`;
+- Bundle ID atual: `br.com.canario.ch3.app`;
 - o Archive Release foi criado, mas a exportação para a loja depende da equipe
   Apple Developer dona do App ID e do registro no App Store Connect.
 
@@ -17,7 +24,7 @@ Bundle ID e a assinatura local existem, mas a exportação `app-store-connect`
 continua sendo o teste que confirma certificado/profile de distribuição.
 
 Resultado desse teste: a exportação falhou com `No profiles for
-'com.canario.app' were found`. Ao permitir atualização automática, a Apple
+'br.com.canario.ch3.app' were found`. Ao permitir atualização automática, a Apple
 respondeu que a equipe “João Pedro Souza Carvalho de Oliveira” **não tem
 permissão para criar profiles iOS App Store**. Portanto não é erro de Swift nem
 do Archive: o Account Holder/Admin da equipe precisa criar o profile de
@@ -45,7 +52,7 @@ submetido aos clientes. No Organizer, escolher **TestFlight & App Store**.
 5. Em **Team**, escolha a equipe do Apple Developer Program que possui o app.
    O valor precisa ser o mesmo para Debug e Release; não deixe Release usando
    uma equipe pessoal diferente.
-6. Confirme que `com.canario.app` é exatamente o Bundle ID cadastrado. Se o App
+6. Confirme que `br.com.canario.ch3.app` é exatamente o Bundle ID cadastrado. Se o App
    ID do DataDrobe no portal for outro, mude primeiro no portal/App Store
    Connect e depois no Xcode — não invente um terceiro identificador.
 7. Em App Store Connect > **Apps**, crie ou abra o registro **DataDrobe**, versão

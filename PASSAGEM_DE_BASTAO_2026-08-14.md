@@ -1,5 +1,12 @@
 # Passagem de bastão — 14/08/2026
 
+> **Correção de 18/08/2026 — leia antes de seguir este guia.**
+> O bundle que está em revisão na App Store é **`br.com.canario.ch3.app`**, não
+> `com.canario.app`. Existem dois registros na App Store Connect; o `ch3` é o que
+> tem perfil de distribuição emitido e o que recebeu o envio. Menções a
+> `com.canario.app` abaixo são históricas — **não "corrija" o projeto para elas**,
+> ou o upload vai para o app errado.
+
 Este documento registra o estado do Canário/DataDrobe ao fim da sessão de 14/08.
 Leia também `CANARIO.md` e `PENDENCIAS.md`: este arquivo não os substitui.
 

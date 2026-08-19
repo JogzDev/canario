@@ -1,5 +1,12 @@
 # Subir para o TestFlight
 
+> **Correção de 18/08/2026 — leia antes de seguir este guia.**
+> O bundle que está em revisão na App Store é **`br.com.canario.ch3.app`**, não
+> `com.canario.app`. Existem dois registros na App Store Connect; o `ch3` é o que
+> tem perfil de distribuição emitido e o que recebeu o envio. Menções a
+> `com.canario.app` abaixo são históricas — **não "corrija" o projeto para elas**,
+> ou o upload vai para o app errado.
+
 O que já está pronto no código e o que só você pode fazer. Escrito em 01/08/2026
 para o prazo de segunda, 03/08.
 
@@ -33,7 +40,7 @@ TestFlight ela precisa estar **matriculada e ativa** — conta gratuita não sob
 build. Confira em [developer.apple.com/account](https://developer.apple.com/account).
 
 ### 2. Criar o app no App Store Connect
-Bundle ID exato, sem inventar: **`com.canario.app`**
+Bundle ID exato, sem inventar: **`br.com.canario.ch3.app`**
 
 Se preferir outro, me avise **antes**: ele está no `gerar_projeto.py` e muda em
 um lugar só.

@@ -1,5 +1,12 @@
 # App Store readiness — 14/08/2026
 
+> **Correção de 18/08/2026 — leia antes de seguir este guia.**
+> O bundle que está em revisão na App Store é **`br.com.canario.ch3.app`**, não
+> `com.canario.app`. Existem dois registros na App Store Connect; o `ch3` é o que
+> tem perfil de distribuição emitido e o que recebeu o envio. Menções a
+> `com.canario.app` abaixo são históricas — **não "corrija" o projeto para elas**,
+> ou o upload vai para o app errado.
+
 Este é um portão de submissão, não uma lista de desejos. “Verde” significa que
 o binário ou a configuração já foi verificado; “bloqueador” significa que não
 devemos enviar para revisão enquanto estiver aberto.
