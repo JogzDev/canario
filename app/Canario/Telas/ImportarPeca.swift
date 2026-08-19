@@ -323,6 +323,11 @@ struct ImportarPeca: View {
         Cartao {
             Text("What I read from this file").font(Tokens.Fonte.secao)
             ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
+            // Este aviso fica AQUI, e só aqui. O caminho da análise remota
+            // acrescentava uma segunda versão dele em `procedencia`, com outra
+            // redação, e a tela mostrava as duas seguidas -- descoberto no
+            // primeiro teste ponta a ponta com a Luna ligada, em 19/08.
+            // Deixando um só, ele continua aparecendo nos dois caminhos.
             LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
         }
     }
@@ -526,7 +531,6 @@ struct ImportarPeca: View {
                             "Also observed, outside the market taxonomy: "
                             + analise.additionalVisualAttributes.joined(separator: ", ") + ".")
                     }
-                    procedencia.append("Review every suggestion. Only your confirmed attributes are saved.")
                     if !FormularioDaPeca.temCategoria(detectados, termos: termos) {
                         detectados = []
                         erro = "The analysis returned an invalid category. Choose the attributes manually."
