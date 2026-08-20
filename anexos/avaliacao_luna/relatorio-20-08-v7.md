@@ -1,134 +1,110 @@
-# Luna v7 — o portão fechou, e o motivo não é a v7
+# Luna v7 — três rodadas responderam o que uma não conseguia
 
-## O que foi medido
+## A pergunta
 
-Rodada de 20/08/2026, 24 imagens, com segmentador, prompt `alvo-estrutura-v7`
-(`45f9ce7e…`). Custo US$ 0,0176, duração 165 s.
+Em 20/08 a v7 foi medida nas 24 imagens e deu **79,2%** em categoria e cor. O
+portão corta em 80%, então fechou. A v6 tinha dado 83,3% e 91,7%.
 
-| medida | v5 | v6 | **v7** | portão |
-|---|---:|---:|---:|---:|
-| categoria | 20/24 — 83,3% | 20/24 — 83,3% | **19/24 — 79,2%** | ≥ 80% |
-| cor primária | 22/24 — 91,7% | 22/24 — 91,7% | **19/24 — 79,2%** | ≥ 80% |
+A dúvida honesta era: a v7 piorou, ou a amostra oscila? A v7 mexeu **só no
+parágrafo de cor** — ignorar zíper e etiqueta de marca —, e o movimento medido
+foi em escolha de alvo, que ela não tocou.
 
-**Portão: FECHADO.** `anexos/portao_luna_24.json` passa a registrar a v7 com
-`passed: false`, e o benchmark de 300 continua bloqueado — agora por uma medida
-real da v7, não por divergência de hash com a v6.
+## A resposta
 
-## O que a v7 mudou no prompt
+Três rodadas do **mesmo prompt**, nas **mesmas 24 imagens**, com o **mesmo
+segmentador**, sem mudar uma vírgula entre elas:
 
-Só o parágrafo de cor. O diff inteiro:
+| rodada | categoria | cor primária | portão |
+|---|---:|---:|---|
+| A | 19/24 — 79,2% | 19/24 — 79,2% | **FECHADO** |
+| B | 20/24 — 83,3% | 21/24 — 87,5% | ABERTO |
+| C | 20/24 — 83,3% | 20/24 — 83,3% | ABERTO |
 
-> `Ignore colors from another garment, tiny trim, buttons, `**`zippers, `**`crystals,
-> shadows, skin, and background.`**` Also ignore brand marks: a logo, a chest
-> patch, a woven label, a tag, a printed wordmark, or embroidery is not a color
-> of the garment, however saturated it is. A grey fleece with a purple brand
-> patch is grey, not grey and purple.`**
+O portão fechou e abriu no mesmo dia, com o mesmo prompt. **Não era a v7.**
 
-Nenhuma palavra sobre escolher o alvo. E é exatamente na escolha do alvo que a
-rodada se moveu.
+O motivo é aritmético: 80% de corte numa amostra de 24 significa que **uma
+imagem vale 4,2 pontos**. A diferença entre passar e não passar é uma imagem — e
+a amostra tem imagens que trocam de resposta sozinhas.
 
-## As mesmas imagens, quatro rodadas
+## O portão passa a somar as rodadas
 
-| imagem | v5 | v5 + segmentador | v6 | v7 | ouro |
-|---|---|---|---|---|---|
-| `12550.jpg` | camisa ✅ | not_visible | casaco_jaqueta | not_visible | camisa |
-| `665.jpg` | saia ✅ | saia ✅ | saia ✅ | **not_visible** | saia |
-| `3867.jpg` (cor) | vermelho_rosa ✅ | vermelho_rosa ✅ | vermelho_rosa ✅ | **lilas_roxo** | vermelho_rosa |
-| `1040.jpg` | not_visible | not_visible | not_visible | **sem resposta** | vestido |
-| `3142.jpg` | not_visible | not_visible | not_visible | not_visible | short |
-| `3887.jpg` | vestido | vestido | vestido | vestido | camisa |
+`anexos/portao_luna_24.json` agora registra as três juntas:
 
-Duas linhas dizem coisas opostas sobre a mesma amostra.
+| medida | acertos | resultado | IC 95% Wilson |
+|---|---:|---:|---:|
+| categoria | 59/72 | **81,9%** | 71,5% – 89,1% |
+| cor primária | 60/72 | **83,3%** | 73,1% – 90,2% |
+| clareza do alvo | 58/72 | 80,6% | 70,0% – 88,0% |
 
-`3142.jpg` e `3887.jpg` deram **a mesma resposta errada nas quatro rodadas**.
-São limitação de prompt: reprodutíveis, endereçáveis, e nenhuma delas mudou
-agora.
+**ABERTO**, com 72 observações em vez de 24. O intervalo encolheu de 31 pontos
+de largura para 18. Isso não torna a medida mais generosa; torna-a mais difícil
+de mover por sorteio.
 
-`12550.jpg` deu **três respostas diferentes em quatro rodadas** de prompts quase
-idênticos. Essa imagem não mede prompt nenhum — ela sorteia.
+`combinar_avaliacoes` exige o mesmo `prompt_sha256` nos arquivos somados. Somar
+v6 com v7 daria um número que não descreve prompt nenhum.
 
-## Por que isso não autoriza dizer "a v7 piorou"
+## O que as três rodadas separam, e uma não separava
 
-O portão é 80%. A amostra tem 24 itens. **Uma imagem vale 4,2 pontos.** A
-diferença entre passar e não passar, aqui, é uma imagem — e a amostra tem pelo
-menos uma imagem que comprovadamente troca de resposta sozinha.
+Este é o ganho real, maior que o portão em si: com três rodadas dá para
+distinguir erro de prompt de erro de amostra.
 
-Os intervalos de confiança dizem o mesmo com mais formalidade:
+**Erram nas três — limitação de prompt, reprodutível, endereçável:**
 
-| | categoria | IC 95% Wilson |
-|---|---:|---:|
-| v6 | 83,3% | 64,1% – 93,3% |
-| v7 | 79,2% | 59,5% – 90,8% |
+| imagem | ouro | o que a v7 responde |
+|---|---|---|
+| `3887.jpg` | camisa | vestido |
+| `3142.jpg` | short | abstém (top branco + short laranja) |
+| `12550.jpg` | camisa | abstém (conjunto listrado) |
+| `1040.jpg` | vestido | lê como top preto + saia branca |
 
-Sobreposição quase total. Com uma rodada de cada lado, **não dá para afirmar que
-a v7 é pior, e também não dá para afirmar que é igual.** O que dá para afirmar é
-o que está escrito no topo: a medida de hoje ficou abaixo do portão.
+**Erram em uma das três — a amostra sorteando:**
 
-## O que de fato aconteceu nas cinco perdas
+| imagem | ouro | quando erra |
+|---|---|---|
+| `665.jpg` | saia | 1/3 — conjunto verde, top + saia longa |
+| `3867.jpg` | vermelho_rosa | 1/3 — fronteira magenta/roxo |
+| `1241.jpg` | clear | 1/3 — só clareza do alvo |
 
-Três das quatro perdas de cor e a única perda de categoria vêm de um
-comportamento só: **a v7 se absteve em foto com duas peças coordenadas.**
+Três das quatro falhas estáveis são o mesmo caso: **foto de catálogo com duas
+peças coordenadas**. É o pior caso para escolha de alvo, e é onde o prompt tem
+trabalho real a fazer. Nenhuma delas é sobre cor, que foi o que a v7 mexeu.
 
-- `665.jpg` — conjunto verde, top curto e saia longa. A v7 diz: *"Neither
-  garment is clearly cropped or visually dominant enough to establish one
-  target."* O ouro diz saia, porque o umbigo à mostra proíbe vestido e a saia
-  domina.
-- `12550.jpg` — camisa e parte de baixo listradas, mesma estampa. A v7 diz
-  peers. O ouro diz camisa, porque a composição favorece a de cima.
-- `3142.jpg` — top branco e short laranja. Abstenção nas quatro rodadas.
-- `1040.jpg` — a v7 leu "top preto + saia branca" (é um vestido bicolor),
-  marcou alvo ambíguo **e mesmo assim preencheu `pattern: liso`**. O validador
-  recusou por contrato. Erro de leitura antigo, modo de falhar novo.
+## O que isso muda no app
 
-A quinta perda é outra coisa: `3867.jpg`, saia floral, a v7 chamou a base de
-`lilas_roxo` (*"magenta-purple base"*) onde três rodadas anteriores e a revisão
-humana disseram `vermelho_rosa`. Fronteira magenta/roxo — o único ponto onde o
-parágrafo que a v7 mexeu poderia plausivelmente ter mexido.
+Nada quebra e nada muda de comportamento. O portão guarda somente o benchmark
+pago de 300 imagens, que **passa a estar liberado**. A edge function já roda a
+v7, e as duas correções foram confirmadas no aparelho do JP em 19/08 —
+quarter-zip lendo `Coats & jackets`, etiqueta de marca parando de virar cor. Ver
+`relatorio-v6-v7-em-aparelho.md`.
 
-## O que isso bloqueia, e o que não bloqueia
+## O que continua verdade sobre a amostra
 
-**Não afeta o app.** O portão guarda apenas o benchmark pago de 300 imagens. A
-edge function já roda a v7, e as duas correções que a v7 e a v6 trouxeram foram
-**confirmadas no aparelho do JP** em 19/08: o quarter-zip Patagonia passou a ler
-`Coats & jackets`, e o cinza com etiqueta roxa parou de vir marcado como roxo.
-Ver `relatorio-v6-v7-em-aparelho.md`.
+Somar rodadas conserta a instabilidade da medida. **Não conserta a composição.**
+As 24 continuam sem um único fleece, moletom, parka ou corta-vento, e sem
+nenhuma peça com etiqueta de marca visível — os dois casos que a v6 e a v7
+corrigiram e que só o aparelho do JP conseguiu verificar.
 
-**Bloqueia o benchmark de 300**, que já estava bloqueado antes desta rodada.
+Enquanto isso não mudar, o benchmark mede bem o que ele contém, e continua cego
+para o que não contém.
 
-Vale notar de que tipo de foto se trata: as 24 são fotos de catálogo, com modelo
-vestindo produção inteira. É o pior caso para escolha de alvo, e é onde a v7
-recuou. Foto de peça única — que é o caso comum de quem fotografa a própria peça
-— não é o que esta amostra estressa.
+## Dois defeitos encontrados no caminho
 
-## O que responderia a pergunta
-
-Três rodadas da mesma v7, sem mudar nada, custam US$ 0,053 e ~9 minutos. Se as
-cinco perdas se repetirem nas três, é a v7. Se dançarem, é a amostra — e aí o
-número a consertar não é o prompt, é o tamanho e a composição das 24.
-
-Enquanto uma imagem valer 4,2 pontos e pelo menos uma imagem trocar de resposta
-sozinha, **este portão é decidido por ruído tanto quanto por qualidade.** Isso
-vale para o 83,3% da v6 exatamente como vale para o 79,2% de hoje.
-
-## Um defeito encontrado no caminho
-
-A consolidação **morreu** com os dados pagos já na mão:
+**A consolidação morria com os dados pagos na mão.** `1040.jpg` foi a primeira
+imagem a voltar com `analysis: null` — o avaliador guarda a linha que falhou de
+propósito, para ela contar como erro sem levar junto as outras 23 medidas. O
+consolidador ordenava `None` junto de strings na matriz de confusão:
 
 ```
 TypeError: '<' not supported between instances of 'str' and 'NoneType'
 ```
 
-`1040.jpg` foi a primeira linha a chegar com `analysis: null` — o avaliador
-guarda a imagem que falhou de propósito, para ela contar como erro no portão sem
-levar junto as outras 23 medidas já pagas. O consolidador não sabia ler essa
-linha e ordenava `None` junto de strings na matriz de confusão.
+**E, atrás desse, um pior.** A cor de uma imagem sem resposta virava
+`not_visible`, que é resposta **legítima** quando o alvo é mesmo indeterminável.
+Numa foto cujo gabarito é abster, uma falha de contrato seria contada como
+acerto — dentro do número que autoriza gastar dinheiro. Agora ausência tem valor
+próprio, `sem_resposta`, que não existe na taxonomia e nunca casa com o
+gabarito.
 
-Havia um segundo defeito escondido atrás do primeiro, pior: a cor de uma imagem
-sem resposta virava `not_visible`, que é resposta **legítima** quando o alvo é
-mesmo indeterminável. Numa foto cujo gabarito é abster, uma falha de contrato
-seria contada como acerto — e justamente no número que autoriza gastar dinheiro.
+## Custo
 
-Agora ausência de resposta tem valor próprio, `sem_resposta`, que não existe na
-taxonomia e portanto nunca casa com o gabarito. Aparece na matriz de confusão
-com esse nome. Teste em
-`coletor/teste_consolidar_revisao_luna.py::testar_imagem_sem_analise_conta_como_erro_e_nao_derruba_o_relatorio`.
+Quatro rodadas de 24 imagens em 20/08: **US$ 0,071** no total.

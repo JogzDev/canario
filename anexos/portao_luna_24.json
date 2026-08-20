@@ -2,8 +2,9 @@
   "prompt_version": "alvo-estrutura-v7",
   "prompt_sha256": "45f9ce7e00c66499847aa2dcf1effb1de347826f4ffa4ae76871b55c2b94dc4f",
   "rubric_version": "categoria-cor-v3",
-  "sample_size": 24,
-  "category_accuracy": 0.7916666666666666,
-  "primary_color_accuracy": 0.7916666666666666,
-  "passed": false
+  "runs": 3,
+  "sample_size": 72,
+  "category_accuracy": 0.8194444444444444,
+  "primary_color_accuracy": 0.8333333333333334,
+  "passed": true
 }

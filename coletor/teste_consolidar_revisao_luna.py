@@ -327,6 +327,51 @@ def testar_imagem_sem_analise_conta_como_erro_e_nao_derruba_o_relatorio():
     assert "falhou.jpg" in texto
 
 
+def testar_rodadas_do_mesmo_prompt_somam_em_vez_de_sortear():
+    """Uma rodada de 24 nao decide um portao de 80%.
+
+    A v7 foi medida tres vezes em 20/08, sem mudar nada: 79,2% / 83,3% / 83,3%
+    em categoria. O portao fechou na primeira e abriu nas outras duas. Uma
+    imagem vale 4,2 pontos numa amostra de 24, entao o veredito estava sendo
+    sorteado. Somando as rodadas o denominador triplica e o intervalo encolhe.
+    """
+    a = montar_avaliacao(19, 19)
+    b = montar_avaliacao(20, 21)
+    c = montar_avaliacao(20, 20)
+    assert a["passed"] is False, "a rodada azarada precisa reprovar sozinha"
+
+    junto = MODULO.combinar_avaliacoes([a, b, c])
+    assert junto["runs"] == 3
+    assert junto["sample_size"] == 72
+    assert junto["metrics"]["category"]["correct"] == 59
+    assert junto["metrics"]["category"]["total"] == 72
+    assert junto["passed"] is True
+
+    # O intervalo tem de encolher: e a razao inteira de somar.
+    largura = lambda m: m["wilson_95"][1] - m["wilson_95"][0]
+    assert largura(junto["metrics"]["category"]) < largura(a["metrics"]["category"])
+
+    # E a dispersao nao pode sumir atras da media.
+    assert [r["category"]["correct"] for r in junto["por_rodada"]] == [19, 20, 20]
+
+    texto = MODULO.relatorio_markdown(avaliacao=junto)
+    assert "3 rodadas" in texto
+    assert "Rodada a rodada" in texto
+
+
+def testar_rodadas_de_prompts_diferentes_nao_se_somam():
+    """Somar v6 com v7 daria um numero que nao descreve prompt nenhum."""
+    a = montar_avaliacao(20, 20)
+    b = montar_avaliacao(20, 20)
+    b["prompt_sha256"] = "f" * 64
+    try:
+        MODULO.combinar_avaliacoes([a, b])
+    except ValueError as erro:
+        assert "prompt" in str(erro).lower()
+    else:
+        raise AssertionError("prompts diferentes nao podem virar um portao só")
+
+
 def main():
     testes = [
         testar_comparacao_independente,
@@ -338,6 +383,8 @@ def main():
         testar_ordem_trocada_nao_gera_portao_errado,
         testar_resultado_sem_imagem_e_recusado,
         testar_imagem_sem_analise_conta_como_erro_e_nao_derruba_o_relatorio,
+        testar_rodadas_do_mesmo_prompt_somam_em_vez_de_sortear,
+        testar_rodadas_de_prompts_diferentes_nao_se_somam,
     ]
     for teste in testes:
         teste()

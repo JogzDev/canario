@@ -400,6 +400,81 @@ def avaliar_contra_gabarito(gabarito, resultados):
     }
 
 
+def combinar_avaliacoes(avaliacoes):
+    """Junta rodadas do MESMO prompt numa medida só.
+
+    POR QUE UMA RODADA NAO BASTA
+    ============================
+
+    A v7 foi medida tres vezes em 20/08/2026, sem mudar uma virgula do prompt,
+    das 24 imagens ou do segmentador:
+
+        rodada A   19/24 categoria   19/24 cor   -> FECHADO
+        rodada B   20/24 categoria   21/24 cor   -> ABERTO
+        rodada C   20/24 categoria   20/24 cor   -> ABERTO
+
+    O portao corta em 80% e a amostra tem 24 itens: **uma imagem vale 4,2
+    pontos**. `12550.jpg` sozinha deu tres respostas diferentes em quatro
+    rodadas de prompts quase identicos. Ou seja, o veredito estava sendo
+    decidido por sorteio tanto quanto por qualidade -- e um portao assim
+    autoriza ou barra gasto de dinheiro por ruido.
+
+    Somar as rodadas nao deixa a medida mais generosa, deixa mais estavel: o
+    intervalo de confianca encolhe porque ha mais observacoes, e uma imagem
+    instavel deixa de mover o resultado sozinha.
+
+    Exige o mesmo `prompt_sha256` nos dois lados. Rodadas de prompts diferentes
+    somadas dariam um numero que nao descreve prompt nenhum.
+    """
+    if not avaliacoes:
+        raise ValueError("Nenhuma avaliacao para combinar.")
+    if len(avaliacoes) == 1:
+        return avaliacoes[0]
+
+    hashes = {a["prompt_sha256"] for a in avaliacoes}
+    if len(hashes) != 1:
+        raise ValueError(
+            "Rodadas de prompts diferentes nao se somam: {}".format(
+                sorted(h[:8] for h in hashes)))
+    rubricas = {a["rubric_version"] for a in avaliacoes}
+    if len(rubricas) != 1:
+        raise ValueError("Rodadas medidas contra rubricas diferentes.")
+
+    campos = list(avaliacoes[0]["metrics"])
+    metricas = {}
+    for campo in campos:
+        acertos = sum(a["metrics"][campo]["correct"] for a in avaliacoes)
+        total = sum(a["metrics"][campo]["total"] for a in avaliacoes)
+        metricas[campo] = {
+            "correct": acertos,
+            "total": total,
+            "accuracy": acertos / total,
+            "wilson_95": list(intervalo_wilson(acertos, total)),
+        }
+
+    combinada = dict(avaliacoes[0])
+    combinada["metrics"] = metricas
+    combinada["sample_size"] = sum(a["sample_size"] for a in avaliacoes)
+    combinada["runs"] = len(avaliacoes)
+    combinada["passed"] = (metricas["category"]["accuracy"] >= 0.80
+                           and metricas["primary_color"]["accuracy"] >= 0.80)
+    # As rodadas continuam visiveis uma a uma. Esconder a dispersao atras da
+    # media seria trocar um numero enganoso por outro.
+    combinada["por_rodada"] = [
+        {campo: {"correct": a["metrics"][campo]["correct"],
+                 "total": a["metrics"][campo]["total"]}
+         for campo in campos}
+        for a in avaliacoes
+    ]
+    # Matriz e divergencias vem das rodadas empilhadas, para nenhuma sumir.
+    combinada["rows"] = [linha for a in avaliacoes for linha in a["rows"]]
+    combinada["confusion_matrices"] = {
+        campo: matriz_de_confusao(combinada["rows"], campo)
+        for campo in ("category", "primary_color")
+    }
+    return combinada
+
+
 def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
     linhas = ["# Revisao Luna — consolidacao", ""]
     if comparacao:
@@ -460,8 +535,10 @@ def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
         linhas += [
             "## Prompt contra gabarito adjudicado",
             "",
-            "Prompt: `{}`. Amostra: **{}**. Portao: **{}**.".format(
+            "Prompt: `{}`. Amostra: **{}**{}. Portao: **{}**.".format(
                 avaliacao["prompt_version"], avaliacao["sample_size"],
+                (" em {} rodadas".format(avaliacao["runs"])
+                 if avaliacao.get("runs") else ""),
                 "ABERTO" if avaliacao["passed"] else "FECHADO"),
             "SHA-256 do prompt: `{}`.".format(avaliacao["prompt_sha256"]),
             "",
@@ -473,6 +550,23 @@ def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
             linhas.append("| {} | {}/{} | {:.1%} | {:.1%}–{:.1%} |".format(
                 campo, metrica["correct"], metrica["total"],
                 metrica["accuracy"], inferior, superior))
+        # A dispersao entre rodadas fica a vista. Foi ela que fechou e abriu o
+        # portao no mesmo dia, com o mesmo prompt.
+        if avaliacao.get("por_rodada"):
+            campos = list(avaliacao["metrics"])
+            linhas += [
+                "",
+                "### Rodada a rodada, mesmo prompt",
+                "",
+                "| rodada | " + " | ".join(campos) + " |",
+                "|---" * (len(campos) + 1) + "|",
+            ]
+            for indice, rodada in enumerate(avaliacao["por_rodada"], 1):
+                celulas = ["{}/{} ({:.1%})".format(
+                    rodada[c]["correct"], rodada[c]["total"],
+                    rodada[c]["correct"] / rodada[c]["total"])
+                    for c in campos]
+                linhas.append("| {} | {} |".format(indice, " | ".join(celulas)))
         for campo in ("category", "primary_color"):
             linhas += [
                 "",
@@ -489,8 +583,16 @@ def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
             if not all(linha["correct"].values())
         ]
         linhas += ["", "### Divergencias", ""]
+        rodadas = avaliacao.get("runs") or 1
+        if rodadas > 1:
+            linhas.append(
+                "Em quantas das {} rodadas cada imagem divergiu. Imagem que "
+                "erra em todas e limitacao de prompt; imagem que erra em "
+                "algumas e a amostra sorteando.".format(rodadas))
+            linhas.append("")
         if not divergentes:
             linhas.append("Nenhuma divergencia.")
+        vistos = {}
         for linha in divergentes:
             detalhes = []
             for campo, certo in linha["correct"].items():
@@ -501,8 +603,17 @@ def relatorio_markdown(comparacao=None, avaliacao=None, ouro_adjudicado=None):
                         else linha["gold"][campo])
                 detalhes.append("{}: {} → {}".format(
                     campo, ouro, linha["predicted"][campo]))
-            linhas.append("- **{}**: {}".format(
-                linha["sample_id"], "; ".join(detalhes)))
+            vistos.setdefault(linha["sample_id"], []).append("; ".join(detalhes))
+        for imagem in sorted(vistos):
+            ocorrencias = vistos[imagem]
+            if rodadas > 1:
+                sufixo = " *({}/{} rodadas)*".format(len(ocorrencias), rodadas)
+            else:
+                sufixo = ""
+            # Divergencias identicas nas varias rodadas viram uma linha só.
+            unicas = sorted(set(ocorrencias))
+            linhas.append("- **{}**{}: {}".format(
+                imagem, sufixo, " · ".join(unicas)))
         linhas.append("")
     return "\n".join(linhas)
 
@@ -511,7 +622,8 @@ def argumentos():
     parser = argparse.ArgumentParser()
     parser.add_argument("--revisoes", nargs="*", type=Path, default=[])
     parser.add_argument("--gabarito", type=Path)
-    parser.add_argument("--resultados", type=Path)
+    # Varios JSONL do MESMO prompt entram juntos. Ver `combinar_avaliacoes`.
+    parser.add_argument("--resultados", nargs="*", type=Path, default=[])
     parser.add_argument("--adjudicacao", type=Path)
     parser.add_argument("--gabarito-saida", type=Path)
     parser.add_argument("--relatorio", type=Path, required=True)
@@ -541,10 +653,11 @@ def main():
     if bool(args.gabarito) != bool(args.resultados):
         raise SystemExit("--gabarito e --resultados devem ser usados juntos")
     if args.gabarito:
-        avaliacao = avaliar_contra_gabarito(
-            carregar_revisao(args.gabarito),
-            carregar_resultados(args.resultados),
-        )
+        ouro = carregar_revisao(args.gabarito)
+        avaliacao = combinar_avaliacoes([
+            avaliar_contra_gabarito(ouro, carregar_resultados(caminho))
+            for caminho in args.resultados
+        ])
     if not comparacao and not avaliacao:
         raise SystemExit("Informe revisoes ou gabarito+resultados")
     args.relatorio.write_text(
@@ -557,6 +670,7 @@ def main():
             "prompt_version": avaliacao["prompt_version"],
             "prompt_sha256": avaliacao["prompt_sha256"],
             "rubric_version": avaliacao["rubric_version"],
+            "runs": avaliacao.get("runs", 1),
             "sample_size": avaliacao["sample_size"],
             "category_accuracy": avaliacao["metrics"]["category"]["accuracy"],
             "primary_color_accuracy": avaliacao["metrics"]["primary_color"]["accuracy"],
