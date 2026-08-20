@@ -1,0 +1,25 @@
+-- P16: a coluna que o sistema se recusava a ler ocupava 53 MB.
+--
+-- `motor_atributos` casa atributo por TITULO + CATEGORIA de proposito desde
+-- 30/07/2026, quando medimos que 74% dos casamentos de `reta_wide` vinham da
+-- prosa de marketing -- o caso tipico era uma camiseta com "caimento amplo e
+-- despojado" virando silhueta de perna. Desde entao `descricao` era gravada,
+-- baixada em toda execucao do motor e descartada na linha seguinte.
+--
+-- Conferido antes de apagar: nenhuma funcao, view ou indice do banco a
+-- referencia, e nenhum arquivo Swift, Python ou TypeScript do repositorio a le.
+-- O coletor parou de grava-la no mesmo commit desta migration.
+--
+-- O DROP e so metadado; quem devolve os 53 MB ao disco e o VACUUM FULL logo
+-- depois, que reescreve a tabela sem carregar a coluna morta. Isso importa:
+-- o banco estava em 86% de um teto de 500 MB, e uma reconstrucao com a
+-- descricao dentro exigiria uma copia temporaria grande demais para caber.
+--
+-- Medido depois de aplicar, com VACUUM FULL em `produtos` e `series_semanais`:
+--
+--   banco       464 MB (93,0%)  ->  263 MB (55,1%)
+--   produtos    206 MB          ->   57 MB
+--   linhas      83.937          ->   83.937
+--
+-- `eventos_recentes` e `similares_da_peca` conferidas apos a reconstrucao.
+alter table produtos drop column if exists descricao;
