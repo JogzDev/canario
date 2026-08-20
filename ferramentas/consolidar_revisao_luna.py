@@ -236,19 +236,70 @@ def matriz_de_confusao(linhas, campo):
     ]
 
 
+def _alinhar_por_imagem(respostas, resultados):
+    """Casa gabarito e resultados pela IMAGEM, nao pela posicao.
+
+    O `sample_id` e posicional: ele e atribuido por ordem de enumeracao da
+    amostra, e a ordem muda entre execucoes. Medido em 19/08/2026: `S01` era
+    `134.jpg` na rodada de 13/08 e `3011.jpg` na de hoje, com o MESMO conjunto
+    de 24 imagens.
+
+    A checagem antiga comparava apenas os CONJUNTOS de ids -- S01..S24 dos dois
+    lados -- e passava. Depois comparava par a par por id, ou seja, comparava a
+    resposta humana de uma foto com a leitura da Luna de outra. Gerou um portao
+    dizendo 8,3% de acerto onde o numero real era 83,3%, e `passed: false`.
+
+    Um portao errado e pior que portao nenhum: ele autoriza ou barra gasto de
+    dinheiro com base em ruido. Entao aqui a regra e recusar, nunca adivinhar.
+    """
+    def imagens(colecao):
+        return {chave: valor.get("imagem") for chave, valor in colecao.items()}
+
+    das_respostas = imagens(respostas)
+    dos_resultados = imagens(resultados)
+
+    if any(v is None for v in dos_resultados.values()):
+        raise ValueError(
+            "Resultados sem `imagem`: nao da para garantir alinhamento.")
+    if any(v is None for v in das_respostas.values()):
+        raise ValueError(
+            "Gabarito sem `imagem` por resposta. Sem isso o alinhamento "
+            "dependeria do sample_id, que e posicional e muda entre execucoes.")
+
+    por_imagem_resultado = {}
+    for chave, imagem in dos_resultados.items():
+        if imagem in por_imagem_resultado:
+            raise ValueError("Imagem repetida nos resultados: {}".format(imagem))
+        por_imagem_resultado[imagem] = resultados[chave]
+
+    alinhado_respostas, alinhado_resultados = {}, {}
+    faltam = []
+    for chave, imagem in das_respostas.items():
+        alvo = por_imagem_resultado.pop(imagem, None)
+        if alvo is None:
+            faltam.append(imagem)
+            continue
+        alinhado_respostas[imagem] = respostas[chave]
+        alinhado_resultados[imagem] = alvo
+    if faltam or por_imagem_resultado:
+        raise ValueError(
+            "Gabarito e resultados divergem por imagem: faltam={}, sobram={}"
+            .format(sorted(faltam), sorted(por_imagem_resultado)))
+    return alinhado_respostas, alinhado_resultados
+
+
 def avaliar_contra_gabarito(gabarito, resultados):
     respostas = gabarito["answers"]
-    if set(respostas) != set(resultados):
-        faltam = sorted(set(respostas) - set(resultados))
-        sobram = sorted(set(resultados) - set(respostas))
-        raise ValueError("Gabarito e resultados divergem: faltam={}, sobram={}".format(
-            faltam, sobram))
+    # Coerencia dos resultados PRIMEIRO: e propriedade deles sozinhos, e uma
+    # rodada com dois prompts misturados nao vale nem se estiver bem alinhada.
     versoes = {resultado.get("prompt_version") for resultado in resultados.values()}
     if len(versoes) != 1 or None in versoes:
         raise ValueError("Resultados nao registram uma unica prompt_version.")
     hashes = {resultado.get("prompt_sha256") for resultado in resultados.values()}
     if len(hashes) != 1 or None in hashes:
         raise ValueError("Resultados nao registram um unico prompt_sha256.")
+    # So entao o pareamento, que envolve os dois lados.
+    respostas, resultados = _alinhar_por_imagem(respostas, resultados)
 
     contagens = {
         "category": 0,

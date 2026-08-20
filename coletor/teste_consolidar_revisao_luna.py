@@ -14,9 +14,13 @@ MODULO = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULO)
 
 
-def resposta(sample_id, categoria="camisa", cor="branco_cru"):
+def resposta(sample_id, categoria="camisa", cor="branco_cru", imagem=None):
     return {
         "sample_id": sample_id,
+        # O gabarito carrega a IMAGEM desde 19/08: o sample_id e posicional e
+        # muda entre execucoes, e casar por ele comparava a resposta humana de
+        # uma foto com a leitura da Luna de outra.
+        "imagem": imagem or "{}.jpg".format(sample_id),
         "target_clarity": "clear",
         "category": categoria,
         "structure": "upper_shirt_construction",
@@ -127,6 +131,7 @@ def montar_avaliacao(acertos_categoria=20, acertos_cor=20):
         respostas[sample_id] = resposta(sample_id)
         resultados[sample_id] = {
             "sample_id": sample_id,
+            "imagem": "{}.jpg".format(sample_id),
             "prompt_version": "alvo-estrutura-v2",
             "prompt_sha256": "a" * 64,
             "analysis": {
@@ -167,6 +172,7 @@ def testar_cor_primaria_empatada_aceita_as_duas_sem_esconder_a_matriz():
     resultados = {
         "S01": {
             "sample_id": "S01",
+            "imagem": "S01.jpg",
             "prompt_version": "alvo-estrutura-v4",
             "prompt_sha256": "b" * 64,
             "analysis": {
@@ -208,6 +214,64 @@ def testar_prompt_misto_e_recusado():
         raise AssertionError("Resultado sem versao nao pode abrir portao")
 
 
+def testar_ordem_trocada_nao_gera_portao_errado():
+    """O bug de 19/08: `sample_id` e posicional e trocou de ordem entre rodadas.
+
+    S01 era `134.jpg` em 13/08 e `3011.jpg` em 19/08, com o MESMO conjunto de 24
+    imagens. A checagem antiga so comparava os CONJUNTOS de ids, passava, e
+    depois comparava par a par por id -- resposta humana de uma foto contra
+    leitura da Luna de outra. Gerou um portao dizendo 8,3% onde o real era
+    83,3%, com `passed: false`.
+
+    Portao errado e pior que portao nenhum: ele libera ou barra gasto de
+    dinheiro com base em ruido.
+    """
+    respostas, resultados = {}, {}
+    for numero in range(1, 25):
+        sid = "S{:02d}".format(numero)
+        imagem = "foto{:02d}.jpg".format(numero)
+        respostas[sid] = resposta(sid, imagem=imagem)
+        # A rodada nova enumerou a MESMA amostra em outra ordem: o id S01 caiu
+        # numa imagem diferente. Todo o resto e identico.
+        outro = "S{:02d}".format(25 - numero)
+        resultados[outro] = {
+            "sample_id": outro,
+            "imagem": imagem,
+            "prompt_version": "alvo-estrutura-v6",
+            "prompt_sha256": "c" * 64,
+            "analysis": {
+                "category": "camisa",
+                "colors": ["branco_cru"],
+                "target_clarity": "clear",
+            },
+        }
+    gabarito = {
+        "reviewer": "ADJUDICADO",
+        "rubric_version": "categoria-cor-v3",
+        "answers": respostas,
+    }
+    avaliacao = MODULO.avaliar_contra_gabarito(gabarito, resultados)
+    assert avaliacao["metrics"]["category"]["accuracy"] == 1.0, (
+        "casou por posicao em vez de por imagem: {}".format(
+            avaliacao["metrics"]["category"]["accuracy"]))
+    assert avaliacao["passed"] is True
+
+
+def testar_resultado_sem_imagem_e_recusado():
+    """Sem imagem nos dois lados o alinhamento seria adivinhacao. Recusa."""
+    respostas = {"S01": resposta("S01", imagem="a.jpg")}
+    gabarito = {"reviewer": "ADJUDICADO", "rubric_version": "categoria-cor-v3",
+                "answers": respostas}
+    resultados = {"S01": {"sample_id": "S01", "prompt_version": "v6",
+                          "prompt_sha256": "d" * 64, "analysis": {}}}
+    try:
+        MODULO.avaliar_contra_gabarito(gabarito, resultados)
+    except ValueError as erro:
+        assert "imagem" in str(erro).lower()
+    else:
+        raise AssertionError("resultado sem imagem nao pode gerar portao")
+
+
 def main():
     testes = [
         testar_comparacao_independente,
@@ -216,6 +280,8 @@ def main():
         testar_portao_exige_categoria_e_cor,
         testar_cor_primaria_empatada_aceita_as_duas_sem_esconder_a_matriz,
         testar_prompt_misto_e_recusado,
+        testar_ordem_trocada_nao_gera_portao_errado,
+        testar_resultado_sem_imagem_e_recusado,
     ]
     for teste in testes:
         teste()

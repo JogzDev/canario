@@ -54,7 +54,8 @@
       "secondary_colors": [],
       "notes": "Regata preta de gola redonda, sem colarinho, abertura frontal, carcela ou punhos de camisaria.",
       "reviewed_at": "2026-08-11T20:37:41.630Z",
-      "adjudication_basis": "Regata sem construção de camisaria pertence ao residual upper_other; o uso coloquial de camisa não define a estrutura."
+      "adjudication_basis": "Regata sem construção de camisaria pertence ao residual upper_other; o uso coloquial de camisa não define a estrutura.",
+      "imagem": "134.jpg"
     },
     {
       "sample_id": "S02",
@@ -70,7 +71,8 @@
         "target_clarity": "clear",
         "category": "macacao",
         "structure": "one_piece_with_separate_legs"
-      }
+      },
+      "imagem": "863.jpg"
     },
     {
       "sample_id": "S03",
@@ -81,7 +83,8 @@
       "secondary_colors": [],
       "notes": "Top curto azul de alças finas com bordados, cristais e franjas metálicas; não há construção de camisa.",
       "reviewed_at": "2026-08-11T20:42:07.844Z",
-      "adjudication_basis": "Alças, bojo e barra curta definem top; não existem colarinho, carcela ou punhos."
+      "adjudication_basis": "Alças, bojo e barra curta definem top; não existem colarinho, carcela ou punhos.",
+      "imagem": "5688.jpg"
     },
     {
       "sample_id": "S04",
@@ -91,7 +94,8 @@
       "primary_color": "vermelho_rosa",
       "secondary_colors": [],
       "notes": "Vestido Rosa  tomara que caia com bastante babados e alguns detalhes de flores brancas,",
-      "reviewed_at": "2026-08-11T20:43:40.466Z"
+      "reviewed_at": "2026-08-11T20:43:40.466Z",
+      "imagem": "1305.jpg"
     },
     {
       "sample_id": "S05",
@@ -108,7 +112,8 @@
       "original_selection": {
         "category": "blusa_top",
         "structure": "upper_other"
-      }
+      },
+      "imagem": "4234.jpg"
     },
     {
       "sample_id": "S06",
@@ -118,7 +123,8 @@
       "primary_color": "preto",
       "secondary_colors": [],
       "notes": "é possível ver detalhes em mesh, mas a peça ainda é preta",
-      "reviewed_at": "2026-08-11T20:44:58.828Z"
+      "reviewed_at": "2026-08-11T20:44:58.828Z",
+      "imagem": "6519.jpg"
     },
     {
       "sample_id": "S07",
@@ -134,7 +140,8 @@
         "secondary_colors": [
           "branco_cru"
         ]
-      }
+      },
+      "imagem": "1533.jpg"
     },
     {
       "sample_id": "S08",
@@ -144,7 +151,8 @@
       "primary_color": "preto",
       "secondary_colors": [],
       "notes": "",
-      "reviewed_at": "2026-08-11T20:46:13.353Z"
+      "reviewed_at": "2026-08-11T20:46:13.353Z",
+      "imagem": "2129.jpg"
     },
     {
       "sample_id": "S09",
@@ -154,7 +162,8 @@
       "primary_color": "amarelo_laranja",
       "secondary_colors": [],
       "notes": "",
-      "reviewed_at": "2026-08-11T20:46:35.511Z"
+      "reviewed_at": "2026-08-11T20:46:35.511Z",
+      "imagem": "5170.jpg"
     },
     {
       "sample_id": "S10",
@@ -172,7 +181,8 @@
       "notes": "Foto limpa, com fundo branco, carcteristico de site mostrando uma moca vestindo um vestido bicolor curtinho e tomara que caia onde a parte de cima (colo) tem algo que como se fosse um babado que tenta remeter a flores brancas ou pelas de rosas brancas, o tronco é preto liso e a parte \"saia\"é branca lisa também",
       "reviewed_at": "2026-08-11T20:47:50.118Z",
       "adjudication_basis": "Branco ocupa duas áreas substanciais da peça e preto ocupa o torso; ambos pertencem ao vestido.",
-      "original_selection": {}
+      "original_selection": {},
+      "imagem": "1040.jpg"
     },
     {
       "sample_id": "S11",
@@ -183,7 +193,8 @@
       "secondary_colors": [],
       "notes": "Conjunto verde com top cropped e saia longa; o espaço de pele separa inequivocamente as duas peças e a saia domina a área visível.",
       "reviewed_at": "2026-08-11T20:48:02.792Z",
-      "adjudication_basis": "O midriff visível proíbe vestido. A saia longa, inteira e central domina a composição."
+      "adjudication_basis": "O midriff visível proíbe vestido. A saia longa, inteira e central domina a composição.",
+      "imagem": "665.jpg"
     },
     {
       "sample_id": "S12",
@@ -193,7 +204,8 @@
       "primary_color": "cinza",
       "secondary_colors": [],
       "notes": "",
-      "reviewed_at": "2026-08-11T20:48:20.008Z"
+      "reviewed_at": "2026-08-11T20:48:20.008Z",
+      "imagem": "4702.jpg"
     },
     {
       "sample_id": "S13",
@@ -203,7 +215,8 @@
       "primary_color": "branco_cru",
       "secondary_colors": [],
       "notes": "",
-      "reviewed_at": "2026-08-11T20:48:37.175Z"
+      "reviewed_at": "2026-08-11T20:48:37.175Z",
+      "imagem": "3914.jpg"
     },
     {
       "sample_id": "S14",
@@ -223,7 +236,8 @@
         "secondary_colors": [
           "verde"
         ]
-      }
+      },
+      "imagem": "1.jpg"
     },
     {
       "sample_id": "S15",
@@ -233,7 +247,8 @@
       "primary_color": "preto",
       "secondary_colors": [],
       "notes": "",
-      "reviewed_at": "2026-08-11T20:49:13.315Z"
+      "reviewed_at": "2026-08-11T20:49:13.315Z",
+      "imagem": "4431.jpg"
     },
     {
       "sample_id": "S16",
@@ -245,7 +260,8 @@
       "notes": "Tipo de imagem perfeita, sem fundo, sem pessoa vestindo, somente a peça. É um macacão de paetês num tom meio dourado leve, meio cobre com um leve decote no peito",
       "reviewed_at": "2026-08-11T20:49:34.598Z",
       "adjudication_basis": "Dourado e cobre metálicos pertencem a outras_cores; reflexos não os transformam em amarelo, cinza ou branco.",
-      "original_selection": {}
+      "original_selection": {},
+      "imagem": "3011.jpg"
     },
     {
       "sample_id": "S17",
@@ -255,7 +271,8 @@
       "primary_color": "branco_cru",
       "secondary_colors": [],
       "notes": "FIco em dúvida se a saia é branca ou estampada",
-      "reviewed_at": "2026-08-11T20:50:08.555Z"
+      "reviewed_at": "2026-08-11T20:50:08.555Z",
+      "imagem": "1241.jpg"
     },
     {
       "sample_id": "S18",
@@ -265,7 +282,8 @@
       "primary_color": "vermelho_rosa",
       "secondary_colors": [],
       "notes": "A saia é rosa mas com estampa colorida",
-      "reviewed_at": "2026-08-11T20:50:37.330Z"
+      "reviewed_at": "2026-08-11T20:50:37.330Z",
+      "imagem": "3867.jpg"
     },
     {
       "sample_id": "S19",
@@ -281,7 +299,8 @@
         "secondary_colors": [
           "outras_cores"
         ]
-      }
+      },
+      "imagem": "4700.jpg"
     },
     {
       "sample_id": "S20",
@@ -297,7 +316,8 @@
         "secondary_colors": [
           "outras_cores"
         ]
-      }
+      },
+      "imagem": "3887.jpg"
     },
     {
       "sample_id": "S21",
@@ -313,7 +333,8 @@
         "secondary_colors": [
           "branco_cru"
         ]
-      }
+      },
+      "imagem": "3142.jpg"
     },
     {
       "sample_id": "S22",
@@ -323,7 +344,8 @@
       "primary_color": "verde",
       "secondary_colors": [],
       "notes": "Detalhes em prata, mas não diria que é cor secundária",
-      "reviewed_at": "2026-08-11T20:51:59.036Z"
+      "reviewed_at": "2026-08-11T20:51:59.036Z",
+      "imagem": "5523.jpg"
     },
     {
       "sample_id": "S23",
@@ -343,7 +365,8 @@
       "adjudication_basis": "Há duas peças visíveis, mas a composição favorece claramente a camisa; rosa e branco pertencem às listras da peça-alvo.",
       "original_selection": {
         "target_clarity": "clear"
-      }
+      },
+      "imagem": "12550.jpg"
     },
     {
       "sample_id": "S24",
@@ -353,7 +376,9 @@
       "primary_color": "azul",
       "secondary_colors": [],
       "notes": "",
-      "reviewed_at": "2026-08-11T20:53:42.841Z"
+      "reviewed_at": "2026-08-11T20:53:42.841Z",
+      "imagem": "2606.jpg"
     }
-  ]
+  ],
+  "imagem_origem": "respostas-calibracao-v5.jsonl: o sample_id e posicional e muda entre execucoes, entao o gabarito passa a carregar a imagem que os revisores realmente olharam"
 }

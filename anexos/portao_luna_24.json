@@ -1,6 +1,6 @@
 {
-  "prompt_version": "alvo-estrutura-v5",
-  "prompt_sha256": "f376aba99183b6c0277a856b7aaac3abe954bdb2016d3c20c31076fdfd6444c5",
+  "prompt_version": "alvo-estrutura-v6",
+  "prompt_sha256": "328ea36b48453d3bddd2c26140500a3c6711bca160935cb4d4868f4b49c12719",
   "rubric_version": "categoria-cor-v3",
   "sample_size": 24,
   "category_accuracy": 0.8333333333333334,
