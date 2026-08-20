@@ -272,6 +272,61 @@ def testar_resultado_sem_imagem_e_recusado():
         raise AssertionError("resultado sem imagem nao pode gerar portao")
 
 
+def testar_imagem_sem_analise_conta_como_erro_e_nao_derruba_o_relatorio():
+    """Imagem que voltou sem analise: erro, nunca abstencao premiada.
+
+    A rodada v7 de 20/08 trouxe `1040.jpg` com `analysis: null` -- o modelo
+    marcou alvo ambiguo e mesmo assim preencheu `pattern`, e o validador do
+    avaliador recusou. O avaliador guarda a linha de proposito, para a falha
+    contar no portao sem levar junto as outras 23 medidas ja pagas.
+
+    Aqui isso quebrava de duas formas. A ordenacao da matriz de confusao
+    comparava `str` com `None` e o script morria com os dados pagos na mao. E a
+    cor caia em `not_visible`, que e resposta legitima quando o alvo e mesmo
+    indeterminavel -- entao uma falha de contrato casaria com o gabarito dessas
+    fotos, virando acerto.
+    """
+    respostas = {
+        "S01": resposta("S01", imagem="ok.jpg"),
+        "S02": resposta("S02", categoria="not_visible", cor="not_visible",
+                        imagem="falhou.jpg"),
+    }
+    gabarito = {"reviewer": "ADJUDICADO", "rubric_version": "categoria-cor-v3",
+                "answers": respostas}
+    resultados = {
+        "S01": {
+            "sample_id": "S01", "imagem": "ok.jpg",
+            "prompt_version": "alvo-estrutura-v7", "prompt_sha256": "e" * 64,
+            "analysis": {"category": "camisa", "colors": ["branco_cru"],
+                         "target_clarity": "clear"},
+        },
+        # O gabarito desta foto e abster em tudo. Se a ausencia de resposta
+        # virasse `not_visible`, esta linha marcaria 2/2.
+        "S02": {
+            "sample_id": "S02", "imagem": "falhou.jpg",
+            "prompt_version": "alvo-estrutura-v7", "prompt_sha256": "e" * 64,
+            "analysis": None,
+            "validation_error": "Alvo ambiguo precisa abster nos escalares",
+        },
+    }
+    avaliacao = MODULO.avaliar_contra_gabarito(gabarito, resultados)
+    assert avaliacao["metrics"]["category"]["accuracy"] == 0.5
+    assert avaliacao["metrics"]["primary_color"]["accuracy"] == 0.5, (
+        "falha de contrato foi premiada como abstencao correta")
+    assert avaliacao["metrics"]["target_clarity"]["accuracy"] == 0.5
+
+    for campo in ("category", "primary_color"):
+        previstos = {linha["predicted"]
+                     for linha in avaliacao["confusion_matrices"][campo]}
+        assert MODULO.SEM_RESPOSTA in previstos, (
+            "a matriz de {} esconde a imagem sem resposta".format(campo))
+
+    # E o relatorio inteiro precisa sair: era aqui que o script morria.
+    texto = MODULO.relatorio_markdown(avaliacao=avaliacao)
+    assert MODULO.SEM_RESPOSTA in texto
+    assert "falhou.jpg" in texto
+
+
 def main():
     testes = [
         testar_comparacao_independente,
@@ -282,6 +337,7 @@ def main():
         testar_prompt_misto_e_recusado,
         testar_ordem_trocada_nao_gera_portao_errado,
         testar_resultado_sem_imagem_e_recusado,
+        testar_imagem_sem_analise_conta_como_erro_e_nao_derruba_o_relatorio,
     ]
     for teste in testes:
         teste()

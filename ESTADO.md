@@ -144,38 +144,49 @@ Responde `invalid_image`, que significa "subo e tenho `OPENAI_API_KEY` e
 dias sem ninguém perceber; agora a workflow `sonda-edge-luna.yml` pergunta isso
 ao servidor uma vez por dia.
 
-### O portão humano EXISTE e passou — mas mede outro pipeline
+### O portão humano existe, está alinhado com a v7 — e FECHOU
 
-Corrigido em 19/08. `anexos/portao_luna_24.json` está no repositório, com o
-gabarito humano das 24 imagens congelado:
+`anexos/portao_luna_24.json` está no repositório, com o gabarito humano das 24
+imagens congelado. Medido em 20/08 com a v7 e com o segmentador atual, que é o
+pipeline que o app de fato usa:
 
-| medida | acerto | mínimo técnico |
-|---|---:|---:|
-| categoria | **83,3%** (20/24) | 80% |
-| cor primária | **91,7%** (22/24) | 80% |
-| clareza do alvo | 87,5% (21/24) | — |
+| medida | v5 (13/08) | v6 (19/08) | **v7 (20/08)** | mínimo |
+|---|---:|---:|---:|---:|
+| categoria | 83,3% | 83,3% | **79,2%** (19/24) | 80% |
+| cor primária | 91,7% | 91,7% | **79,2%** (19/24) | 80% |
+| clareza do alvo | 87,5% | 83,3% | 79,2% | — |
 
-O hash do prompt confere: `f376aba9…`, idêntico ao que `hash_do_prompt` produz
-com a taxonomia de hoje. Versão `alvo-estrutura-v5` nos dois lados. Portanto o
-portão é **tecnicamente válido**.
+`passed: false`. O benchmark de 300 está bloqueado, com a mensagem
+`Benchmark de 300 bloqueado: categoria e cor precisam de 80%`.
 
-**Mas ele foi medido em 13/08, e o workflow daquela data não passava
-segmentador.** As 24 imagens foram enviadas inteiras, com fundo. O app hoje
-manda a peça recortada sobre branco, mais uma dica de alvo. É outro pipeline, e
-o número não descreve o sistema atual — pode ser melhor ou pior.
+**Isso não é a v7 piorando o app, e não é evidência de que ela piorou.** A v7
+mexeu só no parágrafo de cor; o movimento medido foi em escolha de alvo. E a
+amostra não sustenta essa distinção: **uma imagem vale 4,2 pontos**, a diferença
+entre passar e não passar é uma imagem, e `12550.jpg` deu **três respostas
+diferentes em quatro rodadas** de prompts quase idênticos. Os IC 95% de v6
+(64,1–93,3%) e v7 (59,5–90,8%) se sobrepõem quase por inteiro.
 
-Refazer custa **US$ 0,019** e ~2 minutos, contra o mesmo gabarito humano
-congelado. Precisa do Mac do JP ligado: o workflow exige o rótulo `xcode`,
-porque o segmentador usa Vision.
+Conta completa, imagem a imagem, em
+`anexos/avaliacao_luna/relatorio-20-08-v7.md`.
 
 O `1,3%` que circulou em documentos antigos foi de outra coisa — o benchmark de
 300 com o segmentador quebrado — e **não vale**.
 
+### O que o portão fechado bloqueia
+
+**Não afeta o app.** O portão guarda apenas o benchmark pago de 300. A edge
+function roda a v7, e as duas correções de prompt foram confirmadas no aparelho
+do JP em 19/08 — quarter-zip lendo `Coats & jackets`, etiqueta de marca parando
+de virar cor. Ver `anexos/avaliacao_luna/relatorio-v6-v7-em-aparelho.md`.
+
+**Bloqueia o benchmark de 300**, que já estava bloqueado antes — antes por
+divergência de hash, agora por medida.
+
 ### Meta de produto ≠ portão técnico
 
-O portão técnico é 80% e está aberto. Mas o relatório de calibração registra uma
-**meta de produto de 90%** para categoria, e 83,3% não a alcança. Ligar a Luna
-com 83% é decisão de produto, não impedimento técnico.
+O portão técnico é 80%. O relatório de calibração registra uma **meta de produto
+de 90%** para categoria, que nenhuma das três versões alcançou. Ligar a Luna
+para o público é decisão de produto do JP.
 
 Luna entra na versão 1.1, não na 1.0 que está publicada.
 
@@ -246,11 +257,13 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
    ninguém é avisado. O certo seria um runner independente: medido em 19/08,
    `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
    billing. Sem gastar, a saída é algo fora do GitHub
-2. ~~Rodada cega da Luna~~ — **feita em 19/08 com o segmentador atual: 20/24
-   (83,3%) em categoria, idêntico à medição de 13/08 sem segmentador.** O
-   relatório está em `anexos/avaliacao_luna/relatorio-19-08-com-segmentador.md`.
-   O portão técnico de 80% segue aberto; a meta de produto de 90% segue sem ser
-   alcançada, e ligar a Luna com 83,3% é decisão do JP
+2. **Portão das 24 é decidido por ruído** — a rodada v7 de 20/08 deu 79,2% em
+   categoria e cor, contra 83,3% e 91,7% da v6, e o portão fechou. Uma imagem
+   vale 4,2 pontos e pelo menos uma delas (`12550.jpg`) troca de resposta
+   sozinha entre rodadas do mesmo prompt. Três rodadas repetidas da v7 custam
+   US$ 0,053 e separam prompt de amostra; enquanto isso não for feito, nem o
+   79,2% nem o 83,3% descrevem qualidade com confiança. Conta em
+   `anexos/avaliacao_luna/relatorio-20-08-v7.md`
 3. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
    sobre o fundo escuro em 19/08, mas o relato original era de algo **rosa**, e
    isso eu não consegui reproduzir: só há runtime iOS 26.2 nesta máquina, e o

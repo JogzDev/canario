@@ -27,6 +27,11 @@ CAMPOS_DO_PORTAO = (
     "primary_color",
 )
 
+# Imagem que voltou sem analise: erro de contrato, timeout, falha do
+# segmentador. Nao e um id da taxonomia de proposito, para nunca casar com o
+# gabarito. Ver `_previsao` para o motivo de nao reaproveitar `not_visible`.
+SEM_RESPOSTA = "sem_resposta"
+
 
 def _cores_secundarias(valor):
     if isinstance(valor, list):
@@ -221,6 +226,38 @@ def intervalo_wilson(acertos, total, z=1.959963984540054):
     return (max(0.0, centro - margem), min(1.0, centro + margem))
 
 
+def _previsao(resultado):
+    """O que a rodada respondeu para uma imagem, incluindo o caso de nao ter.
+
+    O avaliador guarda a imagem que falhou em vez de derrubar a rodada inteira:
+    ela conta como erro no portao e fica auditavel. Duas rodadas pagas de 19/08
+    morreram antes disso existir. Aqui a mesma linha chega com `analysis: null`,
+    e ela precisa de um valor proprio por dois motivos.
+
+    O primeiro e que nao responder nao e abster. Se a ausencia virasse
+    `not_visible`, uma falha de contrato casaria com o gabarito das fotos cujo
+    alvo e mesmo indeterminavel: erro premiado como acerto, e justamente no
+    numero que autoriza gastar dinheiro.
+
+    O segundo e mais simples: `None` puro derrubava a matriz de confusao na
+    ordenacao, comparando `str` com `NoneType`. A rodada v7 de 20/08 foi a
+    primeira a trazer uma linha assim, e o script morreu com os dados ja pagos
+    na mao.
+    """
+    analise = resultado.get("analysis")
+    if not analise:
+        return {campo: SEM_RESPOSTA
+                for campo in ("category", "primary_color", "target_clarity")}
+    cores = analise.get("colors") or []
+    return {
+        "category": analise.get("category") or SEM_RESPOSTA,
+        # Lista vazia com analise presente E abstencao: o modelo respondeu que
+        # nao da para nomear a cor. Isso pode casar com o gabarito.
+        "primary_color": cores[0] if cores else "not_visible",
+        "target_clarity": analise.get("target_clarity") or SEM_RESPOSTA,
+    }
+
+
 def matriz_de_confusao(linhas, campo):
     contagens = {}
     for linha in linhas:
@@ -309,13 +346,7 @@ def avaliar_contra_gabarito(gabarito, resultados):
     linhas = []
     for sample_id in sorted(respostas):
         ouro = respostas[sample_id]
-        analise = resultados[sample_id].get("analysis") or {}
-        cores = analise.get("colors") or []
-        previsto = {
-            "category": analise.get("category"),
-            "primary_color": cores[0] if cores else "not_visible",
-            "target_clarity": analise.get("target_clarity"),
-        }
+        previsto = _previsao(resultados[sample_id])
         cores_aceitas = ouro.get("acceptable_primary_colors") or [
             ouro["primary_color"]]
         if ouro["primary_color"] not in cores_aceitas:
