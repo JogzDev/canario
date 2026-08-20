@@ -89,6 +89,51 @@ struct CoberturaInsuficiente: View {
 
 /// Rodapé de rastreabilidade. A regra inviolável 3 exige que todo número
 /// carregue origem e data de coleta acessíveis ao usuário.
+/// Um "?" discreto que guarda a explicação até alguém pedir.
+///
+/// A revisão pediu isto por dois motivos opostos, e um toque resolve os dois.
+/// De um lado faltava explicação: *"Solid cresceu 1,1, o que é esse número?
+/// 110%? 10%?"* — número sem unidade é pior que número nenhum. Do outro sobrava
+/// texto: *"olhar várias peças por dia e ter que ler tudo é maçante"*. Quem já
+/// sabe não lê; quem não sabe acha.
+struct BotaoDeAjuda: View {
+    let titulo: String
+    let texto: String
+    /// O que o VoiceOver anuncia. O ícone sozinho vira "botão de interrogação".
+    var rotulo: String = "What this means"
+
+    @State private var aberto = false
+
+    var body: some View {
+        Button { aberto = true } label: {
+            Image(systemName: "questionmark.circle")
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+                // 44 pt de alvo com um ícone de 13: o mínimo da Apple sem um
+                // "?" enorme ao lado do número que ele explica.
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(rotulo)
+        .popover(isPresented: $aberto) {
+            VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                Text(titulo).font(Tokens.Fonte.secao)
+                Text(texto)
+                    .font(Tokens.Fonte.apoio)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(Tokens.Espaco.m)
+            .frame(maxWidth: 300)
+            // Sem isto o iPhone abre a explicação como folha de tela inteira,
+            // que é exatamente o peso que ela existe para evitar.
+            .presentationCompactAdaptation(.popover)
+        }
+    }
+}
+
+// MARK: - Linha de insumo
+
 struct LinhaInsumo: View {
     let texto: String
 
@@ -125,15 +170,23 @@ struct BotaoCircularDoMenu: View {
     let acessibilidade: String
     let acao: () -> Void
 
-    /// Media 62, o mesmo da lupa, e mesmo assim tres pessoas relataram que
-    /// parecia maior. Não parecia: o `ellipsis` em 24 pt bold abre três pontos
-    /// por quase toda a largura útil do círculo, enquanto a lupa é um glifo
-    /// único e estreito. Mesma moldura, muito mais tinta dentro.
+    /// Este número é o do RÓTULO, não o do círculo desenhado.
     ///
-    /// Os dois nunca aparecem juntos -- este fica no alto à esquerda, a lupa no
-    /// rodapé à direita --, então o que importa é o peso visual, não o número
-    /// igual. 52 pt continua bem acima dos 44 pt mínimos da Apple.
-    private static let diametro: CGFloat = 52
+    /// A lupa e este botão declaravam 62 os dois, e mesmo assim três pessoas
+    /// relataram que este parecia maior. Medido no simulador, em pontos:
+    ///
+    ///     lupa      62 declarados  ->  62 desenhados
+    ///     menu      52 declarados  ->  67 desenhados
+    ///
+    /// `.buttonStyle(.glass)` acrescenta a própria margem em volta do rótulo,
+    /// e a lupa escapa disso por estar dentro de um `GlassEffectContainer`,
+    /// que dimensiona o grupo. Ou seja: não era impressão, e mexer no 62 não
+    /// resolvia -- o que chega na tela é outro número.
+    ///
+    /// 47 no rótulo dá 62 desenhados, que é o que o JP pediu: o mesmo tamanho
+    /// da lupa. O alvo de toque é o círculo desenhado, então continua acima dos
+    /// 44 pt mínimos da Apple.
+    private static let diametro: CGFloat = 47
 
     var body: some View {
         Group {

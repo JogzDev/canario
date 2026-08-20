@@ -35,6 +35,13 @@ struct RelatorioDaPeca: View {
     /// Linguagem usada na busca. Preserva "vestido de bolinha" sem alterar os
     /// ids `vestido` + `geometrica` que alimentam o cálculo.
     var descricaoAmigavel: String? = nil
+    /// Como sair do fluxo depois de guardar, quando existe um fluxo do qual
+    /// sair. Só o import passa isto; aberta pelo Closet ou pela busca, a tela
+    /// não tem etapas atrás de si e o rótulo "Saved" basta.
+    ///
+    /// Existe porque guardar a peça deixava a pessoa presa no painel: era
+    /// preciso voltar passo a passo até o começo. "Deveria sair direto."
+    var aoConcluir: (() -> Void)? = nil
 
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
@@ -75,10 +82,18 @@ struct RelatorioDaPeca: View {
         } else {
             switch guardada {
         case true:
-            Label("Saved", systemImage: "archivebox.fill")
-                .labelStyle(.titleAndIcon)
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(.secondary)
+            // Guardada. Se veio de um fluxo, o mesmo canto que dizia "Saved"
+            // passa a ser a saída dele -- um toque, não três. Quem quiser
+            // continuar lendo o painel continua: nada some da tela.
+            if let aoConcluir {
+                Button("Done", systemImage: "checkmark", action: aoConcluir)
+                    .labelStyle(.titleAndIcon)
+            } else {
+                Label("Saved", systemImage: "archivebox.fill")
+                    .labelStyle(.titleAndIcon)
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(.secondary)
+            }
         case false:
             // O teto é dito, e não engole a peça em silêncio.
             Text("Closet full (\(PecasSalvas.teto))")
@@ -433,7 +448,14 @@ struct RelatorioDaPeca: View {
             LinhaInsumo(texto: "Insufficient coverage: \(c?.oQueFalta ?? "not measured").")
         } else if let valor = i?.indice {
             Text(Leitura.emPalavras(valor)).font(Tokens.Fonte.apoio)
-            LinhaInsumo(texto: Leitura.explicacao(valor))
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                LinhaInsumo(texto: Leitura.explicacao(valor))
+                // "on the statistical scale" dizia que existe uma escala sem
+                // dizer qual. O "?" diz.
+                BotaoDeAjuda(titulo: Explicacao.tituloDaEscala,
+                             texto: Explicacao.textoDaEscala,
+                             rotulo: "What this number is")
+            }
             LinhaInsumo(texto: Perna.frase(i?.pernasAtivas)
                         + " · week of \(Formato.data(i?.semana ?? ""))")
         } else {

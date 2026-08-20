@@ -79,6 +79,23 @@ enum Explicacao {
     static let unidadeDoIndice =
         "distance from the usual behavior of the previous 12 weeks"
 
+    /// O texto do "?" ao lado do número, para quem quiser saber a escala.
+    ///
+    /// A pergunta veio assim, em teste de uso: *"Solid cresceu 1,1, o que é
+    /// esse número? 110%? 10%?"* — e as duas respostas estavam erradas, o que
+    /// mostra que a tela deixava adivinhar. O primeiro trabalho deste texto é
+    /// negar a leitura de porcentagem, porque é a que a pessoa tenta sozinha.
+    static let tituloDaEscala = "What this number is"
+    static let textoDaEscala = """
+        It is not a percentage. The number counts standard deviations: how far \
+        this week sits from this attribute's own average over the previous 12 \
+        weeks. Around 0 is a typical week; around 1 is an unusual one; above 2 \
+        is rare.
+
+        A percentage would need a baseline that differs for every attribute, so \
+        two attributes could not be compared. This scale can be.
+        """
+
     /// O valor compacto usado em comparação. A unidade/escala vem na linha de
     /// apoio imediatamente abaixo, para não transformar jargão no título.
     static func numeroComUnidade(_ indice: Double?) -> String {

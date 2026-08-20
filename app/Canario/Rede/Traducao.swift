@@ -185,8 +185,18 @@ enum Traducao {
 /// que o sistema entendeu a peça quando não entendeu.
 enum FormularioDaPeca {
     static func dimensoesPermitidas(categorias: Set<String>) -> Set<String> {
-        guard !categorias.isEmpty else { return ["categoria"] }
-
+        // Cor, estampa, tecido e estética não dependem de categoria: uma peça
+        // cinza é cinza antes de alguém dizer se é saia ou casaco. Elas ficavam
+        // escondidas até a categoria ser escolhida, e isso mordia justamente na
+        // hora pior -- quando a leitura automática falha, a pessoa abre o
+        // formulário para preencher à mão e encontra só a lista de categorias.
+        //
+        // Pior ainda em `podar`: marcar a cor antes da categoria apagava a cor.
+        //
+        // Condicional é só o que a categoria de fato governa -- comprimento,
+        // silhueta e cintura --, que é o que a Bianca descreveu: "Todas também
+        // terão Padrão e Material! O que tem que aparecer condicional é estilo
+        // da calça e por aí vai."
         var resultado: Set<String> = ["categoria", "cor", "estampa", "tecido", "estetica"]
         if !categorias.isDisjoint(with: ["vestido", "saia"]) {
             resultado.insert("comprimento")

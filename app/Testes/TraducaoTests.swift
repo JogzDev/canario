@@ -121,7 +121,31 @@ final class TraducaoTests: XCTestCase {
         ]
         XCTAssertFalse(FormularioDaPeca.temCategoria(["verde"], termos: termos))
         XCTAssertTrue(FormularioDaPeca.temCategoria(["vestido", "verde"], termos: termos))
-        XCTAssertEqual(FormularioDaPeca.dimensoesPermitidas(categorias: []), ["categoria"])
+
+        // Sem categoria o formulário mostrava SÓ a lista de categorias, e
+        // `podar` apagava a cor de quem a marcasse primeiro. Quem não tem
+        // categoria ainda pode dizer a cor; o que ele não pode é fingir que
+        // reconheceu a peça, e disso quem cuida é `temCategoria` acima.
+        let semCategoria = FormularioDaPeca.dimensoesPermitidas(categorias: [])
+        XCTAssertEqual(semCategoria,
+                       ["categoria", "cor", "estampa", "tecido", "estetica"])
+        XCTAssertEqual(FormularioDaPeca.podar(["verde"], termos: termos), ["verde"],
+                       "a cor marcada antes da categoria não pode ser apagada")
+    }
+
+    /// Comprimento, silhueta e cintura continuam presos à categoria: são eles
+    /// que descrevem uma peça específica, e é essa a divisão que a revisão
+    /// pediu -- "o que tem que aparecer condicional é estilo da calça".
+    func testDimensaoQueDependeDaCategoriaContinuaCondicional() {
+        for dimensao in ["comprimento", "silhueta", "cintura"] {
+            XCTAssertFalse(
+                FormularioDaPeca.dimensoesPermitidas(categorias: []).contains(dimensao),
+                "\(dimensao) apareceu sem categoria escolhida")
+        }
+        XCTAssertTrue(FormularioDaPeca.dimensoesPermitidas(categorias: ["calca"])
+            .contains("silhueta"))
+        XCTAssertFalse(FormularioDaPeca.dimensoesPermitidas(categorias: ["vestido"])
+            .contains("silhueta"))
     }
 
     func testOCRLocalPodeReconhecerMarcaSemInventarProduto() {

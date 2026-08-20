@@ -85,7 +85,23 @@ struct ImportarPeca: View {
     @State private var precoDigitado = ""
     @State private var miniaturaJPEG: Data?
     @State private var imagemPendente: CGImage?
+    /// A foto como ela entrou, antes de qualquer recorte.
+    ///
+    /// O recorte confirmado SUBSTITUÍA `imagemPendente`, então abrir "Adjust" de
+    /// novo recortava o recorte, e a foto escolhida não voltava mais: "se a
+    /// gente se arrepender e quiser voltar ele não deixa resetar pra imagem
+    /// original". Guardar a original custa uma referência e devolve o caminho
+    /// de volta.
+    @State private var imagemOriginal: CGImage?
     @State private var nomePendente: String?
+    /// Há recorte a desfazer? `CGImage` é tipo de referência, então identidade
+    /// basta: `prepararConfirmacao` guarda a mesma instância nos dois campos
+    /// quando a foto entra inteira.
+    private var fotoFoiRecortada: Bool {
+        guard let atual = imagemPendente, let original = imagemOriginal
+        else { return false }
+        return atual !== original
+    }
     @State private var opcoesDeAlvo: [MiniaturaLocal.OpcaoDeAlvo] = []
     @State private var alvoEscolhido: Int?
     @State private var descricaoDoAlvo = ""
@@ -137,7 +153,8 @@ struct ImportarPeca: View {
                             miniaturaJPEG: miniaturaJPEG,
                             pecaSalva: nil,
                             todosOsTermos: termos,
-                            selecao: $detectados)
+                            selecao: $detectados,
+                            aoConcluir: { encerrarFluxo() })
                         // Corrigir um chip aqui recria a view, e o `.task` dela
                         // recalcula o painel. NÃO chama a Luna de novo: reler a
                         // foto é outra ação, e custa dinheiro. Corrigir o que
@@ -183,7 +200,11 @@ struct ImportarPeca: View {
                 EditorDeRecorte(imagem: imagem) { recortada in
                     mostrandoEditorDeRecorte = false
                     let nome = nomePendente ?? "cropped image"
-                    Task { await prepararConfirmacao(recortada, nome: nome) }
+                    let original = imagemOriginal ?? imagem
+                    Task {
+                        await prepararConfirmacao(recortada, nome: nome,
+                                                  recorteDe: original)
+                    }
                 }
             }
         }
@@ -247,16 +268,36 @@ struct ImportarPeca: View {
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
 
-                Button {
-                    mostrandoEditorDeRecorte = true
-                } label: {
-                    // "Crop or zoom the photo" para dizer o que o ícone de
-                    // recorte já diz. Uma palavra basta.
-                    Label("Adjust", systemImage: "crop")
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: 44)
+                HStack(spacing: Tokens.Espaco.s) {
+                    Button {
+                        mostrandoEditorDeRecorte = true
+                    } label: {
+                        // "Crop or zoom the photo" para dizer o que o ícone de
+                        // recorte já diz. Uma palavra basta.
+                        Label("Adjust", systemImage: "crop")
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.bordered)
+
+                    // Só aparece quando há o que desfazer. Antes o recorte era
+                    // caminho de mão única: ele substituía a foto pendente, e
+                    // um segundo "Adjust" recortava o próprio recorte.
+                    if fotoFoiRecortada {
+                        Button {
+                            guard let original = imagemOriginal else { return }
+                            let nome = nomePendente ?? "photo"
+                            Task {
+                                await prepararConfirmacao(original, nome: nome)
+                            }
+                        } label: {
+                            Label("Undo crop", systemImage: "arrow.uturn.backward")
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
-                .buttonStyle(.bordered)
 
                 // A fileira de alternativas saiu. O recorte isolado é sempre
                 // a versão melhor e menos poluída da foto, e quando ele não
@@ -351,8 +392,15 @@ struct ImportarPeca: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
                 if let erro {
+                    // O título dizia "I could not tell which category this is"
+                    // em TODA falha -- inclusive quando o motivo era o teto
+                    // diário, a rede ou o arquivo. Ou seja: anunciava um
+                    // fracasso de classificação que muitas vezes não tinha
+                    // acontecido, e soava como se o app tivesse feito algo
+                    // errado. Agora o título só constata o estado, e o motivo
+                    // real continua logo abaixo, vindo de `erro`.
                     CoberturaInsuficiente(
-                        titulo: "I could not tell which category this is",
+                        titulo: "No attributes were read",
                         explicacao: erro,
                         oQueTem: "You can select the attributes below and continue.")
                 }
@@ -514,7 +562,11 @@ struct ImportarPeca: View {
 
     /// Câmera e fototeca passam pelo mesmo portão visual. A opção pré-selecionada
     /// ainda exige um toque explícito no botão de confirmação.
-    private func prepararConfirmacao(_ imagem: CGImage, nome: String) async {
+    /// `recorteDe` chega preenchido só quando esta imagem veio do editor. Sem
+    /// isso a foto original era sobrescrita pelo próprio recorte e não havia
+    /// volta -- ver `imagemOriginal`.
+    private func prepararConfirmacao(_ imagem: CGImage, nome: String,
+                                     recorteDe original: CGImage? = nil) async {
         esperaAtual = .separandoPeca
         lendo = true
         erro = nil
@@ -528,6 +580,7 @@ struct ImportarPeca: View {
             return
         }
         imagemPendente = imagem
+        imagemOriginal = original ?? imagem
         nomePendente = nome
         opcoesDeAlvo = opcoes
         alvoEscolhido = opcoes.first?.id
@@ -608,11 +661,23 @@ struct ImportarPeca: View {
     private func cancelarConfirmacao() {
         etapa = .entrada
         imagemPendente = nil
+        imagemOriginal = nil
         nomePendente = nil
         opcoesDeAlvo = []
         alvoEscolhido = nil
         daFototeca = nil
         descricaoDoAlvo = ""
+    }
+
+    /// A peça foi guardada e o fluxo acabou. Volta ao começo pronto para a
+    /// próxima, em vez de deixar a pessoa desandar as etapas uma a uma.
+    private func encerrarFluxo() {
+        cancelarConfirmacao()
+        detectados = []
+        procedencia = []
+        miniaturaJPEG = nil
+        precoDigitado = ""
+        erro = nil
     }
 
     private var descricaoDoAlvoNormalizada: String? {
