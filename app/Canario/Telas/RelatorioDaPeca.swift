@@ -221,20 +221,34 @@ struct RelatorioDaPeca: View {
             // marcados junto -- era a tela de atributos de novo, dentro da tela
             // de resultado. Aqui a pergunta já é outra: "o que foi confirmado?".
             VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                // Todo item começa por marcador, cor inclusive. A amostra da
+                // cor trocava o marcador por ela mesma, e a lista ficava com
+                // duas margens: os atributos alinhavam por "•" e as cores por
+                // uma bolinha de outro tamanho. Agora a amostra vem DEPOIS do
+                // nome, como ilustração do que já foi dito.
                 ForEach(confirmados(selecao.wrappedValue), id: \.id) { termo in
                     HStack(alignment: .firstTextBaseline, spacing: Tokens.Espaco.s) {
+                        Text("•").foregroundStyle(Tokens.Cor.tintaFraca)
+                        Text(Traducao.rotuloExibido(termo))
+                            .fixedSize(horizontal: false, vertical: true)
                         if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
                             Circle()
                                 .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
                                 .overlay(Circle().strokeBorder(
                                     Tokens.Cor.borda, lineWidth: 0.5))
                                 .frame(width: 10, height: 10)
-                        } else {
-                            Text("•").foregroundStyle(Tokens.Cor.tintaFraca)
+                                // Círculo não tem linha de base. Sem isto ele
+                                // encosta a borda inferior na base do texto e
+                                // parece afundado.
+                                .alignmentGuide(.firstTextBaseline) { d in
+                                    d[.bottom] - 1
+                                }
                         }
-                        Text(Traducao.rotuloExibido(termo))
-                            .fixedSize(horizontal: false, vertical: true)
                     }
+                    // Sem isto o VoiceOver lê "marcador" antes de cada
+                    // atributo, e lê a amostra de cor como imagem sem rótulo.
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Traducao.rotuloExibido(termo))
                 }
             }
             .font(Tokens.Fonte.corpo)

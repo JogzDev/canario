@@ -338,8 +338,27 @@ struct EventoVarejo: Codable, Identifiable, Hashable {
             let t = detalhe?.tamanhos?.joined(separator: ", ") ?? "—"
             return "Size \(t) returned and remained available"
         case "remarcacao":
-            if let pct = detalhe?.quedaPct { return String(format: "Price dropped %.1f%%", pct) }
-            return "Price dropped"
+            // "Price dropped 50%" media uma coisa e era lida como outra.
+            //
+            // `computar_eventos` (regra K4) compara o preço de hoje com o
+            // ANTERIOR OBSERVADO: o tamanho do corte que a marca deu nesta
+            // semana. O selo do site desconta do preço de TABELA. Os dois são
+            // certos e quase nunca batem — a peça 5572 da PatBo caiu de
+            // R$ 799 para R$ 400 (50% de corte) sobre uma tabela de R$ 1.998
+            // (80% no site). Só coincidem quando a peça nunca tinha sido
+            // remarcada antes, que é por que "alguns estavam corretos".
+            //
+            // Mostrar os dois preços faz a frase se explicar sozinha: quem
+            // duvidar confere a conta na própria linha.
+            if let pct = detalhe?.quedaPct,
+               let de = detalhe?.precoDe, let para = detalhe?.precoPara {
+                return String(format: "%.0f%% below its previous price: %@ → %@",
+                              pct, Formato.dinheiro(de), Formato.dinheiro(para))
+            }
+            if let pct = detalhe?.quedaPct {
+                return String(format: "%.1f%% below its previous price", pct)
+            }
+            return "Price cut since the last reading"
         case "saida_de_linha":
             return "Removed from the catalog"
         default:

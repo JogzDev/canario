@@ -125,19 +125,31 @@ struct BotaoCircularDoMenu: View {
     let acessibilidade: String
     let acao: () -> Void
 
+    /// Media 62, o mesmo da lupa, e mesmo assim tres pessoas relataram que
+    /// parecia maior. Não parecia: o `ellipsis` em 24 pt bold abre três pontos
+    /// por quase toda a largura útil do círculo, enquanto a lupa é um glifo
+    /// único e estreito. Mesma moldura, muito mais tinta dentro.
+    ///
+    /// Os dois nunca aparecem juntos -- este fica no alto à esquerda, a lupa no
+    /// rodapé à direita --, então o que importa é o peso visual, não o número
+    /// igual. 52 pt continua bem acima dos 44 pt mínimos da Apple.
+    private static let diametro: CGFloat = 52
+
     var body: some View {
         Group {
             if #available(iOS 26.0, *) {
-                Button(action: acao) { icone.frame(width: 62, height: 62) }
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
+                Button(action: acao) {
+                    icone.frame(width: Self.diametro, height: Self.diametro)
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
             } else {
                 Button(action: acao) {
                     ZStack {
                         Vidro(forma: Circle())
                         icone
                     }
-                    .frame(width: 62, height: 62)
+                    .frame(width: Self.diametro, height: Self.diametro)
                 }
                 .buttonStyle(.plain)
             }
@@ -148,8 +160,8 @@ struct BotaoCircularDoMenu: View {
 
     private var icone: some View {
         Image(systemName: simbolo)
-            .font(.system(size: simbolo == "xmark" ? 27 : 24,
-                          weight: simbolo == "xmark" ? .medium : .bold))
+            .font(.system(size: simbolo == "xmark" ? 22 : 19,
+                          weight: simbolo == "xmark" ? .medium : .semibold))
             .foregroundStyle(Tokens.Cor.noite)
     }
 }

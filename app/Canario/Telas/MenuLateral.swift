@@ -9,14 +9,26 @@ struct MenuLateral: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Color.black.opacity(0.08)
+                // O véu só aparece na faixa que o painel não cobre, e a 8% ele
+                // ficava no pior ponto: visível o bastante para se notar, fraco
+                // o bastante para parecer sujeira. Escurecer de verdade faz a
+                // faixa ler como "o resto da tela está atrás", que é o que ela
+                // é. Toque nela fecha o menu.
+                Color.black.opacity(0.28)
+                    .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture(perform: fechar)
                     .accessibilityHidden(true)
 
+                // A sombra pertence à BORDA do painel, e estava no VStack de
+                // conteúdo -- que não tem fundo. O resultado era um borrão de
+                // 22 pt atrás de cada letra, deslocado 10 pt, e nenhuma sombra
+                // na divisa entre painel e faixa. Daí a divisa virar um corte
+                // seco ao lado de um cinza chapado.
                 Tokens.Cor.azulMarca
                     .frame(width: geo.size.width * 0.79)
                     .ignoresSafeArea()
+                    .shadow(color: .black.opacity(0.22), radius: 14, x: 4)
 
                 VStack(alignment: .leading, spacing: 0) {
                     // As entradas que levam a uma AÇÃO ficam grandes. Antes as
@@ -57,7 +69,6 @@ struct MenuLateral: View {
                 .padding(.trailing, 26)
                 .frame(width: geo.size.width * 0.79)
                 .frame(maxHeight: .infinity)
-                .shadow(color: .black.opacity(0.24), radius: 22, x: 10)
             }
         }
     }
