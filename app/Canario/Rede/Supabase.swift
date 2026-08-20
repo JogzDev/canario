@@ -72,11 +72,68 @@ actor Supabase {
                 return "Config.xcconfig is missing or incomplete. Copy Config.xcconfig.example."
             case .rede:
                 return "The server could not be reached."
-            case .resposta(let codigo, _):
-                return "The server returned \(codigo)."
+            case .resposta(let codigo, let corpo):
+                return Falha.mensagem(codigo: codigo, corpo: corpo)
             case .urlInvalida(let caminho, _):
                 return "Malformed request for \(caminho)."
             }
+        }
+
+        /// Traduz a recusa do servidor para o que a pessoa precisa saber.
+        ///
+        /// Até 20/08/2026 quem estourava o teto diário de análise visual via
+        /// **"The server returned 429."** — um código HTTP na cara de quem só
+        /// queria ler uma peça. O corpo da resposta já trazia o motivo exato e
+        /// era descartado.
+        ///
+        /// Sobre "from this network": o teto é contado por **IP**, não por
+        /// aparelho nem por conta. Duas pessoas no mesmo Wi-Fi dividem as 12, e
+        /// quem troca de Wi-Fi para 4G recebe outras 12. Dizer "seu limite"
+        /// seria mentira para os dois casos, e mentira sobre limite é pior que
+        /// silêncio: a pessoa se planeja e é bloqueada antes da conta fechar.
+        ///
+        /// Toda mensagem de recusa termina lembrando que o caminho manual
+        /// continua aberto. Nenhuma dessas falhas impede adicionar a peça.
+        static func mensagem(codigo: Int, corpo: String) -> String {
+            let reset = "It resets at midnight, São Paulo time."
+            let manual = "You can still add the item and choose its attributes yourself."
+            switch Falha.codigoDoCorpo(corpo) {
+            case "daily_origin_limit":
+                return "This network reached today's limit of 12 visual analyses. "
+                     + "\(reset) \(manual)"
+            case "daily_project_limit":
+                return "DataDrobe reached its overall daily limit for visual "
+                     + "analysis. \(reset) \(manual)"
+            case "rate_limited":
+                return "The visual analysis was refused for exceeding a daily "
+                     + "limit. \(reset) \(manual)"
+            case "rate_limit_unavailable":
+                return "The usage check is unavailable, so nothing was sent for "
+                     + "analysis. Try again in a few minutes. \(manual)"
+            case "analysis_not_configured":
+                return "Cloud visual analysis is off in this build. \(manual)"
+            case "invalid_image":
+                return "I could not read this image. Try another photo or file."
+            case "invalid_target_hint":
+                return "The target hint is too long. Keep it under 160 characters."
+            case "analysis_contract_failed":
+                return "The analysis came back in a shape I do not accept, so I "
+                     + "discarded it rather than guess. \(manual)"
+            case "BOOT_ERROR":
+                return "The visual analysis service is not responding. \(manual)"
+            default:
+                // Codigo desconhecido continua aparecendo -- some-lo esconderia
+                // um caso novo de quem pode consertar.
+                return "The analysis could not be completed (HTTP \(codigo)). \(manual)"
+            }
+        }
+
+        /// O `error` ou `code` que a Edge Function devolve no corpo JSON.
+        static func codigoDoCorpo(_ corpo: String) -> String? {
+            guard let dados = corpo.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: dados)
+                    as? [String: Any] else { return nil }
+            return (json["error"] as? String) ?? (json["code"] as? String)
         }
     }
 
