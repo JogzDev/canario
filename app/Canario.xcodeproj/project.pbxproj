@@ -11,6 +11,7 @@
 		E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1ACCCE153B6FA384A39863 /* Formato.swift */; };
 		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
 		B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */; };
+		66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */; };
 		17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAE067E291E7143C7B5D2FD /* Cluster.swift */; };
 		9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */; };
 		26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */; };
@@ -51,6 +52,7 @@
 		CD1ACCCE153B6FA384A39863 /* Formato.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Formato.swift"; sourceTree = "<group>"; };
 		7D66F3CA4E705669DD73EF9B /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tokens.swift"; sourceTree = "<group>"; };
 		8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AbasDoApp.swift"; sourceTree = "<group>"; };
+		98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnalisesDeHoje.swift"; sourceTree = "<group>"; };
 		8EAE067E291E7143C7B5D2FD /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cluster.swift"; sourceTree = "<group>"; };
 		CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CorDaPeca.swift"; sourceTree = "<group>"; };
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhos.swift"; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 			isa = PBXGroup;
 			children = (
 				8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */,
+				98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */,
 				8EAE067E291E7143C7B5D2FD /* Cluster.swift */,
 				CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */,
 				94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */,
@@ -242,6 +245,7 @@
 				E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */,
 				90BBD61C629F5B7911560245 /* Tokens.swift in Sources */,
 				B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */,
+				66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */,
 				17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */,
 				9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */,
 				26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */,

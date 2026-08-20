@@ -28,6 +28,9 @@ struct ImportarPeca: View {
     /// fundo branco, igual para ler um arquivo e para esperar a análise visual
     /// -- que leva segundos de rede.
     @State private var esperaAtual = Espera.lendoArquivo
+    /// Aviso de consumo, quando este aparelho se aproxima do teto da rede.
+    /// `nil` na maior parte do tempo, de propósito -- ver `ContadorDeAnalises`.
+    @State private var avisoDeUso: String?
 
     enum Espera {
         case lendoArquivo, separandoPeca, analisandoLocal, analisandoNaNuvem
@@ -158,6 +161,8 @@ struct ImportarPeca: View {
                 }
             }
         }
+        // Lido na abertura, para quem já estava perto do teto antes de começar.
+        .task { avisoDeUso = await RegistroDeAnalises.shared.aviso() }
         .fileImporter(
             isPresented: $mostrandoSeletor,
             allowedContentTypes: tiposAceitos,
@@ -286,6 +291,13 @@ struct ImportarPeca: View {
                             }
                         }
                     }
+                }
+
+                // O aviso mora aqui, e não na tela de resultado: este é o
+                // botão que gasta a próxima análise, e aviso depois do gasto
+                // não é aviso, é relatório.
+                if let avisoDeUso {
+                    LinhaInsumo(texto: avisoDeUso)
                 }
 
                 Button {
@@ -623,6 +635,12 @@ struct ImportarPeca: View {
         let marcas = Importacao.marcasNoTexto(leitura.texto)
 
         if let dadosParaNuvem {
+            // Conta ANTES de saber o resultado: o servidor reserva a vaga assim
+            // que a chamada chega, e uma análise que falhou no meio já gastou o
+            // slot. Contar só o sucesso subestimaria o consumo justamente nos
+            // dias ruins, que são quando o aviso importa.
+            await RegistroDeAnalises.shared.registrar()
+            avisoDeUso = await RegistroDeAnalises.shared.aviso()
             do {
                 let analise = try await Supabase.shared.analisarPeca(
                     dadosParaNuvem, alvo: descricaoDoAlvo)
