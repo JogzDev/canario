@@ -1,7 +1,7 @@
 import { withSupabase } from "npm:@supabase/server";
 
 const MODEL = "gpt-5.6-luna";
-const PROMPT_VERSION = "alvo-estrutura-v6";
+const PROMPT_VERSION = "alvo-estrutura-v7";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const MAX_IMAGE_BYTES = 3_000_000;
 
@@ -129,7 +129,10 @@ primary color first, followed by at most two secondary colors. A secondary
 color must cover about 10 percent of the target or recur materially in its
 print. Rank colors by visible surface area on the target garment only, never by
 surface area of the whole image or by saturation. Ignore colors from another
-garment, tiny trim, buttons, crystals, shadows, skin, and background. Map a
+garment, tiny trim, buttons, zippers, crystals, shadows, skin, and background.
+Also ignore brand marks: a logo, a chest patch, a woven label, a tag, a printed
+wordmark, or embroidery is not a color of the garment, however saturated it is.
+A grey fleece with a purple brand patch is grey, not grey and purple. Map a
 genuinely metallic gold, silver, bronze, or copper surface to outras_cores; do
 not force it into amarelo_laranja, branco_cru, or cinza merely because of its
 highlights. Metallic means the garment surface itself visibly behaves like

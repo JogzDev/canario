@@ -226,13 +226,36 @@ def ultima_semana_fechada(hoje):
 def corte_de_frescura(hoje):
     """Semana que já é razoável cobrar do Google.
 
-    Segunda a quarta toleram a publicação atrasar uma semana. De quinta em
-    diante, a última semana encerrada no domingo já teve pelo menos três dias
-    para aparecer. O corte anterior tolerava uma semana inteira todos os dias
-    e chamava 27/07 de atual em 13/08.
+    Só a segunda tolera a publicação atrasar uma semana. De terça em diante, a
+    última semana encerrada no domingo já é exigida.
+
+    POR QUE ISSO APERTOU EM 19/08/2026
+    ==================================
+
+    A tolerância ia até quarta, e o efeito apareceu no aparelho do JP: o app
+    mostrava "week of 03/08" num dia 19. A conta:
+
+        última semana fechada   10/08  (fechou domingo 16/08)
+        corte, por ser quarta   03/08
+        série no banco          03/08  -> "em dia", coleta pulada
+
+    O dado ficava 16 dias atrás por regra, não por falha. E não era necessário:
+    uma coleta forçada naquela mesma quarta trouxe a semana de 10/08 do Google
+    sem dificuldade -- ou seja, ela estava publicada e disponível, e a
+    tolerância só adiava o que já dava para pegar.
+
+    A assimetria decide o resto. Dado velho na tela é dano ao usuário; uma
+    consulta que volta sem semana nova custa quase nada, porque o coletor
+    simplesmente não grava. Entre errar para o lado de tentar e errar para o
+    lado de esperar, tentar é mais barato.
+
+    Segunda continua tolerante porque a semana fechou na noite de domingo e não
+    há medição de que o Google já a tenha assentado. Terça e quarta passam a
+    exigir; para quarta existe a medição acima, para terça é um dia de
+    extrapolação, deliberado e registrado aqui.
     """
     fechada = ultima_semana_fechada(hoje)
-    return fechada - timedelta(weeks=1) if hoje.weekday() <= 2 else fechada
+    return fechada - timedelta(weeks=1) if hoje.weekday() == 0 else fechada
 
 
 class Trends(object):

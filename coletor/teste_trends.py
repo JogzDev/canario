@@ -4,7 +4,8 @@ import sys
 from datetime import date, timedelta
 
 from coletor_trends import (alertas_com_motivo_http, combinar_saude_busca,
-                            motivo_http_transitorio, planejar_grupos)
+                            corte_de_frescura, motivo_http_transitorio,
+                            planejar_grupos, ultima_semana_fechada)
 
 
 def main():
@@ -72,7 +73,45 @@ def main():
         print("FALHOU: reconsolidacao alterou o objeto de entrada")
         return 1
 
-    print("Trends: rotacao entre dias/tentativas e saude idempotente")
+    # CORTE DE FRESCURA
+    #
+    # O caso que motivou o aperto, medido no aparelho do JP em 19/08/2026: o
+    # app mostrava "week of 03/08" numa quarta-feira dia 19. A semana de 10/08
+    # tinha fechado no domingo 16 e estava disponivel no Google -- uma coleta
+    # forcada naquele mesmo dia a trouxe --, mas a regra tolerava ate quarta e
+    # mandava pular.
+    quarta = date(2026, 8, 19)
+    if quarta.weekday() != 2:
+        print("FALHOU: a data do caso real nao e mais quarta")
+        return 1
+    if ultima_semana_fechada(quarta) != date(2026, 8, 10):
+        print("FALHOU: ultima semana fechada mudou de definicao")
+        return 1
+    if corte_de_frescura(quarta) != date(2026, 8, 10):
+        print("FALHOU: quarta ainda tolera semana atrasada; o app volta a "
+              "mostrar dado de 16 dias")
+        return 1
+
+    # Terca tambem exige. Segunda continua tolerante: a semana fechou na noite
+    # de domingo e nao ha medicao de que o Google ja a tenha assentado.
+    terca = date(2026, 8, 18)
+    segunda = date(2026, 8, 17)
+    if corte_de_frescura(terca) != ultima_semana_fechada(terca):
+        print("FALHOU: terca deveria exigir a ultima semana fechada")
+        return 1
+    if corte_de_frescura(segunda) != ultima_semana_fechada(segunda) - timedelta(weeks=1):
+        print("FALHOU: segunda deixou de tolerar o atraso de publicacao")
+        return 1
+
+    # De terca a domingo o corte e sempre a ultima semana fechada, sem excecao.
+    for dia in range(18, 24):
+        h = date(2026, 8, dia)
+        if corte_de_frescura(h) != ultima_semana_fechada(h):
+            print("FALHOU: {} ({}) nao exige a ultima semana fechada".format(
+                h, h.strftime("%a")))
+            return 1
+
+    print("Trends: rotacao, saude idempotente e corte de frescura")
     return 0
 
 

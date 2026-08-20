@@ -25,7 +25,7 @@ def main():
     exigir(funcao, [
         'withSupabase({ auth: "publishable" }',
         'const MODEL = "gpt-5.6-luna"',
-        'const PROMPT_VERSION = "alvo-estrutura-v6"',
+        'const PROMPT_VERSION = "alvo-estrutura-v7"',
         'store: false',
         'detail: "high"',
         'strict: true',
