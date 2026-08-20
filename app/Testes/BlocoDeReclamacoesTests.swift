@@ -164,6 +164,34 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         XCTAssertTrue(Leitura.explicacao(-2.18).contains("below this attribute's usual behavior"))
     }
 
+    /// Visto em aparelho em 19/08/2026: o selo dizia "within the usual range" e
+    /// a linha logo abaixo dizia "0,0 on the statistical scale, **above** this
+    /// attribute's usual behavior". Duas frases sobre o mesmo número, uma
+    /// contradizendo a outra.
+    ///
+    /// A causa era a direção sair do valor BRUTO (`z >= 0`) enquanto o número
+    /// mostrado é o arredondado. Um z de 0,04 exibe 0,0 e não sustenta direção
+    /// nenhuma — afirmar "acima" ali é afirmar mais do que o dado permite.
+    func testNumeroQueExibeZeroNaoAfirmaDirecao() {
+        for z in [0.0, 0.04, -0.04, 0.049, -0.049] {
+            let texto = Leitura.explicacao(z)
+            XCTAssertTrue(texto.contains("0,0 on the statistical scale"),
+                          "esperava exibir 0,0 para z=\(z): \(texto)")
+            XCTAssertTrue(texto.contains("level with"),
+                          "z=\(z) exibe 0,0 e não pode afirmar direção: \(texto)")
+            XCTAssertFalse(texto.contains("above"), "z=\(z): \(texto)")
+            XCTAssertFalse(texto.contains("below"), "z=\(z): \(texto)")
+        }
+    }
+
+    /// E o que tem direção continua dizendo a direção, dos dois lados.
+    func testNumeroComDirecaoContinuaDizendoOLado() {
+        XCTAssertTrue(Leitura.explicacao(0.6).contains("above"))
+        XCTAssertTrue(Leitura.explicacao(-0.6).contains("below"))
+        // 0,05 arredonda para 0,1: já sustenta direção.
+        XCTAssertTrue(Leitura.explicacao(0.05).contains("above"))
+    }
+
     func testCadaPernaTemUnidadePropria() {
         XCTAssertTrue(Explicacao.unidade(daFonte: "editorial_br").contains("articles"))
         XCTAssertTrue(Explicacao.unidade(daFonte: "varejo").contains("%"))

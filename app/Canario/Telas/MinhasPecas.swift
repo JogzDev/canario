@@ -88,6 +88,7 @@ struct MinhasPecas: View {
                             termos: termos,
                             rotulos: rotulos,
                             categoria: peca.termoIds.compactMap { categorias[$0] }.first,
+                            idsDeCategoria: Set(categorias.keys),
                             processandoFoto: processandoFotos.contains(peca.id),
                             aoEscolherFoto: { item in
                                 await substituirFoto(de: peca, por: item)
@@ -186,6 +187,8 @@ private struct CartaoDoArmario: View {
     let termos: [Termo]
     let rotulos: [String: String]
     let categoria: String?
+    /// Quais ids são de categoria, para o detalhe não repetir o título.
+    let idsDeCategoria: Set<String>
     let processandoFoto: Bool
     let aoEscolherFoto: (PhotosPickerItem) async -> Data?
     let aoFavoritar: () -> Void
@@ -224,15 +227,26 @@ private struct CartaoDoArmario: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 160)
 
+                        // Título e detalhe param de dizer a mesma coisa: o
+                        // título é a categoria (ou o apelido, se a pessoa deu
+                        // um) e o detalhe é o que sobra. Antes o título era a
+                        // lista inteira truncada e o detalhe repetia a
+                        // categoria, que já era a primeira palavra dela.
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(peca.nome(comRotulos: rotulos))
+                            Text(peca.temApelido
+                                 ? peca.nome(comRotulos: rotulos)
+                                 : (categoria ?? "Clothing"))
                                 .font(Tokens.Fonte.corpo.weight(.semibold))
                                 .foregroundStyle(.primary)
                                 .lineLimit(2)
-                            Text(categoria ?? "Clothing")
-                                .font(Tokens.Fonte.miudo)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                            if let detalhe = peca.detalhe(
+                                comRotulos: rotulos,
+                                semOsTermos: peca.temApelido ? [] : idsDeCategoria) {
+                                Text(detalhe)
+                                    .font(Tokens.Fonte.miudo)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
                         }
                     }
                     .contentShape(Rectangle())

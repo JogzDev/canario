@@ -423,9 +423,19 @@ enum Leitura {
     }
 
     /// O que o número é, dito por extenso. Vai na letra miúda, sempre.
+    ///
+    /// A direção sai do valor EXIBIDO, não do bruto. Com `z >= 0 ? above :
+    /// below` sobre o valor bruto, um z de 0,04 imprimia "0,0 on the
+    /// statistical scale, **above** this attribute's usual behavior" logo
+    /// abaixo de um selo dizendo "within the usual range" -- visto em aparelho
+    /// em 19/08/2026. Duas frases sobre o mesmo número, uma contradizendo a
+    /// outra, e a errada era a que afirmava direção que o número não sustenta.
     static func explicacao(_ z: Double) -> String {
-        let lado = z >= 0 ? "above" : "below"
-        return "\(numero(abs(z), casas: 1)) on the statistical scale, \(lado) this attribute's usual behavior over the previous 12 weeks"
+        let exibido = (abs(z) * 10).rounded() / 10
+        let lado = exibido == 0
+            ? "level with"
+            : (z > 0 ? "above" : "below")
+        return "\(numero(exibido, casas: 1)) on the statistical scale, \(lado) this attribute's usual behavior over the previous 12 weeks"
     }
 
     /// Variação percentual entre o valor mais recente e a média da janela.

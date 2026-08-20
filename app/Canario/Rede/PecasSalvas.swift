@@ -83,6 +83,29 @@ struct PecaSalva: Codable, Equatable, Identifiable {
         let partes = termoIds.compactMap { rotulos[$0] ?? $0 }
         return partes.isEmpty ? "Item without attributes" : partes.joined(separator: " · ")
     }
+
+    /// Os atributos que sobram depois de tirar os que o título já mostra.
+    ///
+    /// O card do armário mostrava a lista INTEIRA truncada em duas linhas e,
+    /// logo abaixo, a categoria de novo -- que já era a primeira coisa da
+    /// lista. Visto em aparelho em 19/08/2026: "Coats & jackets · Gray ·
+    /// Purple & li…" com "Coats & jackets" repetido embaixo. Duas linhas para
+    /// dizer o mesmo, e a que truncava era a única que trazia algo novo.
+    ///
+    /// Devolve `nil` quando não sobra nada, para o card não desenhar uma linha
+    /// vazia.
+    func detalhe(comRotulos rotulos: [String: String],
+                 semOsTermos excluidos: Set<String>) -> String? {
+        let partes = termoIds
+            .filter { !excluidos.contains($0) }
+            .compactMap { rotulos[$0] ?? $0 }
+        return partes.isEmpty ? nil : partes.joined(separator: " · ")
+    }
+
+    /// Se a pessoa deu um nome à peça, ele manda no card.
+    var temApelido: Bool {
+        !apelido.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 }
 
 /// Guarda e devolve as peças. Ator porque a tela toca nela de várias tarefas.
