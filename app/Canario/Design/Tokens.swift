@@ -104,6 +104,14 @@ enum Tokens {
         // SF Pro com o peso semântico de cada nível.
         static let titulo = Font.title2.weight(.semibold)
         static let secao = Font.headline
+        /// Título de um GRUPO de cartões, não de um cartão.
+        ///
+        /// "Result" fica dentro de um cartão e "By attribute" fica fora, porque
+        /// o segundo encabeça vários cartões. Com a mesma fonte nos dois a
+        /// diferença de posição lia como descuido -- foi relatado assim. Um
+        /// rótulo pequeno, versalete e espaçado é o cabeçalho de grupo que o
+        /// iOS usa em lista agrupada: o leitor reconhece o nível na hora.
+        static let grupo = Font.caption.weight(.semibold)
         static let corpo = Font.body
         static let apoio = Font.subheadline
         static let miudo = Font.footnote

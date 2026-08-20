@@ -391,7 +391,11 @@ struct RelatorioDaPeca: View {
     /// Um bloco por atributo, cada um com o próprio portão de cobertura.
     private var porAtributo: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            Text("By attribute").font(Tokens.Fonte.secao)
+            Text("BY ATTRIBUTE")
+                .font(Tokens.Fonte.grupo)
+                .tracking(0.6)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .padding(.leading, Tokens.Espaco.xs)
             ForEach(termos) { termo in
                 Cartao {
                     HStack(alignment: .firstTextBaseline) {

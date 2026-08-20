@@ -426,3 +426,60 @@ final class ImportacaoTests: XCTestCase {
         XCTAssertTrue(Explicacao.unidadeDoIndice.contains("usual behavior"))
     }
 }
+
+/// O JP: "não é muito amigável com o usuário fazer ele descrever o que é uma
+/// peça romântica". A taxonomia já respondia isso e a tela descartava a
+/// resposta: `palavras_en` de `romantico` traz babado, renda e manga bufante.
+final class PistaDoTermoTests: XCTestCase {
+
+    private func termo(_ id: String, _ dimensao: String,
+                       _ rotulo: String, _ palavras: String?) -> Termo {
+        Termo(id: id, rotulo: rotulo, dimensao: dimensao, exclusiva: false,
+              sinonimos: nil, semPernaBusca: nil, palavrasPt: nil,
+              palavrasEn: palavras)
+    }
+
+    /// O caso que motivou tudo.
+    func testEsteticaGanhaEvidenciaVisivel() {
+        let pista = Traducao.pistaDoTermo(termo(
+            "romantico", "estetica", "Romantico",
+            "romantic|ruffle|lace|puff sleeve|broderie"))
+        XCTAssertEqual(pista, "ruffle · lace · puff sleeve")
+    }
+
+    /// O sinônimo que só repete o rótulo não ensina nada.
+    func testNaoRepeteOProprioRotulo() {
+        let pista = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
+            "alfaiataria", "estetica", "Alfaiataria",
+            "tailoring|tailored|suiting")))
+        XCTAssertFalse(pista.lowercased().contains("tailored"),
+                       "o rótulo exibido é \"Tailored\": \(pista)")
+        XCTAssertEqual(pista, "tailoring · suiting")
+    }
+
+    /// Quem responde olhando não precisa de dica, e a dica ocuparia espaço.
+    func testDimensaoObviaNaoGanhaPista() {
+        XCTAssertNil(Traducao.pistaDoTermo(termo(
+            "vestido", "categoria", "Vestido", "dress|gown")))
+        XCTAssertNil(Traducao.pistaDoTermo(termo(
+            "preto", "cor", "Preto", "black")))
+        XCTAssertNil(Traducao.pistaDoTermo(termo(
+            "midi", "comprimento", "Midi", "midi|below the knee")))
+    }
+
+    /// Quatro palavras viram parágrafo dentro de um chip.
+    func testNoMaximoTresPistas() {
+        let pista = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
+            "boho_artesanal", "estetica", "Boho e artesanal",
+            "boho|bohemian|fringe|embroidered|macrame|crochet trim")))
+        XCTAssertEqual(pista.components(separatedBy: " · ").count, 3, pista)
+    }
+
+    /// Termo sem palavras não inventa pista.
+    func testSemPalavrasNaoInventa() {
+        XCTAssertNil(Traducao.pistaDoTermo(termo(
+            "estetica_nova", "estetica", "Nova", nil)))
+        XCTAssertNil(Traducao.pistaDoTermo(termo(
+            "estetica_nova", "estetica", "Nova", "")))
+    }
+}

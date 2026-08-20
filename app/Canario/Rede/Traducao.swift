@@ -44,6 +44,43 @@ enum Traducao {
         rotulosCorrigidos[termo.id] ?? termo.rotulo
     }
 
+    /// Dimensões cujo rótulo pede JULGAMENTO em vez de observação.
+    ///
+    /// "Dress", "Black", "Midi" a pessoa responde olhando. "Romantic" ela
+    /// responde opinando -- e opinião varia entre duas pessoas com a mesma peça
+    /// na mão, o que envenena o dado na origem.
+    private static let dimensoesQuePedemPista: Set<String> = ["estetica"]
+
+    /// O que OLHAR para responder, quando o rótulo sozinho pede gosto.
+    ///
+    /// O JP: "não é muito amigável com o usuário fazer ele descrever o que é
+    /// uma peça romântica". Ele tem razão, e a taxonomia já carrega a resposta:
+    /// `palavras_en` de `romantico` é `romantic|ruffle|lace|puff sleeve|
+    /// broderie`. Babado, renda, manga bufante — evidência que se vê, não
+    /// estilo que se declara.
+    ///
+    /// O app **já baixava** esse campo (`Supabase.swift` pede `palavras_en`
+    /// desde sempre) e o descartava na tela. Aqui ele vira a segunda linha do
+    /// chip. Isso não conserta a taxonomia; conserta a pergunta feita a quem
+    /// não conhece a taxonomia.
+    ///
+    /// Três itens no máximo: a quarta palavra faz o chip virar parágrafo, e
+    /// quem precisa de quatro pistas não vai decidir por causa da quarta.
+    static func pistaDoTermo(_ termo: Termo) -> String? {
+        guard dimensoesQuePedemPista.contains(termo.dimensao) else { return nil }
+        let rotulo = rotuloExibido(termo).lowercased()
+        let palavras = (termo.palavrasEn ?? "")
+            .split(separator: "|")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { palavra in
+                guard !palavra.isEmpty else { return false }
+                // O sinônimo que só repete o próprio rótulo não é pista.
+                return !rotulo.contains(palavra.lowercased())
+            }
+        guard !palavras.isEmpty else { return nil }
+        return palavras.prefix(3).joined(separator: " · ")
+    }
+
     static func rotuloDaDimensao(_ dimensao: String) -> String {
         [
             "categoria": "Category",
