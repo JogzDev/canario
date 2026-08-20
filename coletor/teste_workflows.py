@@ -266,6 +266,60 @@ def checar_a_mao(arquivos):
     return falhas
 
 
+"""Jobs que rodam sozinhos, sem ninguem olhando, nao podem cair no notebook.
+
+Em 20/08/2026 a coleta das 03:00 caiu no Mac pessoal do JP em vez do i7, porque
+`RUNNER_COLETA` valia `self-hosted` -- rotulo que os DOIS runners tem, entao o
+GitHub escolhia o que estivesse livre. As 04:17 a maquina dormiu, o GitHub
+declarou "the self-hosted runner lost communication with the server", e:
+
+  * a coleta VTEX terminou LOCALMENTE as 04:24, com as 13 marcas gravadas;
+  * o GitHub ja a considerava falha, entao Shopify, editorial e busca foram
+    puladas por dependencia;
+  * a saude rodou seis minutos antes das gravacoes e viu zero marca;
+  * o motor foi bloqueado pelo portao, e o app ficou sem dado novo.
+
+Um dia inteiro perdido por uma perna que tinha dado certo. A saida nao e manter
+o notebook acordado -- e nao mandar trabalho de madrugada para ele. O rotulo
+`sempre-ligado` existe so no i7.
+"""
+JOBS_QUE_NAO_PODEM_DEPENDER_DE_NOTEBOOK = {
+    "pipeline-diario.yml", "coleta-shopify.yml", "coleta-trends.yml",
+    "motor.yml", "recuperar-pipeline.yml", "sonda.yml",
+    "sonda-edge-luna.yml", "testes.yml",
+}
+# Estes precisam do Xcode do Mac do JP (Vision, XCTest, xcodebuild) e por isso
+# sao disparados a mao, com alguem olhando.
+ROTULOS_QUE_EXIGEM_O_MAC_DO_JP = {"xcode"}
+
+
+def checar_runner_das_tarefas_automaticas(arquivos):
+    falhas = []
+    for caminho in arquivos:
+        nome = os.path.basename(caminho)
+        if nome not in JOBS_QUE_NAO_PODEM_DEPENDER_DE_NOTEBOOK:
+            continue
+        with open(caminho, encoding="utf-8") as arquivo:
+            for numero, linha in enumerate(arquivo, 1):
+                bruto = linha.strip()
+                if not bruto.startswith("runs-on:"):
+                    continue
+                alvo = bruto[len("runs-on:"):].strip()
+                if "${{" in alvo:
+                    # Vem de `vars.RUNNER_COLETA`, que aponta para o rotulo
+                    # exclusivo do i7. Conferido no proprio GitHub, nao aqui.
+                    continue
+                rotulos = {r.strip() for r in alvo.strip("[]").split(",")}
+                if rotulos & ROTULOS_QUE_EXIGEM_O_MAC_DO_JP:
+                    continue
+                if "sempre-ligado" not in rotulos and "X64" not in rotulos:
+                    falhas.append((caminho, (
+                        "linha {}: `{}` aceita qualquer Mac, inclusive o "
+                        "notebook. Tarefa automatica precisa de "
+                        "`sempre-ligado`.").format(numero, alvo)))
+    return falhas
+
+
 def checar_actions_fixadas(arquivos):
     """Código externo com segredo só pode entrar por commit imutável."""
     falhas = []
@@ -335,6 +389,7 @@ def main():
         modo = "verificacao manual (pyyaml ausente)"
 
     falhas.extend(checar_actions_fixadas(arquivos))
+    falhas.extend(checar_runner_das_tarefas_automaticas(arquivos))
     falhas.extend(checar_suites_no_ci())
 
     for f, erro in falhas:

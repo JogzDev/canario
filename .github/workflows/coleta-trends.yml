@@ -55,7 +55,7 @@ concurrency:
 
 jobs:
   coletar:
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

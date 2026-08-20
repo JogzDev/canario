@@ -51,7 +51,7 @@ jobs:
     needs: [varejo-vtex, varejo-shopify, editorial, busca]
     outputs:
       saudavel: ${{ steps.resultado.outputs.saudavel }}
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -91,7 +91,7 @@ jobs:
   recuperar-busca:
     needs: [saude-inicial, recuperar-shopify]
     if: ${{ always() && needs.saude-inicial.outputs.saudavel != 'true' }}
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, sempre-ligado]
     steps:
       - name: Não repetir automaticamente uma fonte semanal que recusou
         run: >-
@@ -103,7 +103,7 @@ jobs:
     # muda limiar, nao mascara ausencia e nao libera motor com fonte parcial.
     if: ${{ always() }}
     needs: [saude-inicial, recuperar-shopify, recuperar-busca]
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -156,7 +156,7 @@ jobs:
     # comecou". Esse buraco continua aberto e esta registrado no ESTADO.md.
     if: ${{ always() && github.ref_name == 'main' }}
     needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor]
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

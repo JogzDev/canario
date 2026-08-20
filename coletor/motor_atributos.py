@@ -186,7 +186,12 @@ def produtos_em_paginas():
     while True:
         lote = supabase_rest.selecionar(
             "produtos",
-            "?id=gt.{}&select=id,titulo,descricao,categoria_site,segmento,marca_id"
+            # `descricao` saiu do select em 20/08/2026: ela era baixada em toda
+            # execucao e DESCARTADA logo em seguida -- o casamento usa titulo +
+            # categoria de proposito desde 30/07, quando medimos que 74% dos
+            # casamentos de `reta_wide` vinham da prosa de marketing. Eram 53 MB
+            # atravessando a rede a cada motor para nao serem lidos.
+            "?id=gt.{}&select=id,titulo,categoria_site,segmento,marca_id"
             "&order=id.asc&limit={}".format(ultimo, PAGINA))
         if not lote:
             return

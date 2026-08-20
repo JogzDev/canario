@@ -18,7 +18,7 @@ jobs:
     # Vai para o i7: com a conta bloqueada, job em runner do GitHub falha antes
     # de comecar, e teste que nao roda nao protege ninguem. Custa pouco de todo
     # jeito -- 1x o minuto, ~15 s.
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, sempre-ligado]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/python-mac
