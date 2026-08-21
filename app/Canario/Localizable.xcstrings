@@ -1,0 +1,491 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@%%" : {
+
+    },
+    "%@, %lld items. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld items. %3$@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld of %lld · Market readings are recalculated whenever you open an item." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld · Market readings are recalculated whenever you open an item."
+          }
+        }
+      }
+    },
+    "1Y" : {
+
+    },
+    "3M" : {
+
+    },
+    "6M" : {
+
+    },
+    "Accessibility" : {
+
+    },
+    "Add a clothing item" : {
+
+    },
+    "Add photo" : {
+
+    },
+    "Add to Favorites" : {
+
+    },
+    "Add your clothes" : {
+
+    },
+    "Adjust" : {
+
+    },
+    "Adjust target" : {
+
+    },
+    "Analyze this item" : {
+
+    },
+    "Attributes" : {
+
+    },
+    "Availability loss by size" : {
+
+    },
+    "BY ATTRIBUTE" : {
+
+    },
+    "Back" : {
+
+    },
+    "Background removed on this device." : {
+
+    },
+    "Baseline" : {
+
+    },
+    "Before using this" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Change selection" : {
+
+    },
+    "Change something" : {
+
+    },
+    "Choose 2 to %lld attributes that compete for the same space in a collection. The screen aligns panel presence with press movement in the same week." : {
+
+    },
+    "Choose a file or PDF" : {
+
+    },
+    "Choose at least 2 attributes below." : {
+
+    },
+    "Choose from Photos" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Close" : {
+
+    },
+    "Closet" : {
+
+    },
+    "Closet full (%lld)" : {
+
+    },
+    "Closet items" : {
+
+    },
+    "Clothes you save from Add stay here, ready to open again and compare." : {
+
+    },
+    "Clothing name" : {
+
+    },
+    "Combined history across %lld weeks" : {
+
+    },
+    "Combined reading" : {
+
+    },
+    "Comparable history" : {
+
+    },
+    "Compare" : {
+
+    },
+    "Confirmed attributes" : {
+
+    },
+    "Confirmed movements" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Couldn't load data" : {
+
+    },
+    "Current signal, not yet confirmed as a trend. %@" : {
+
+    },
+    "Current, fashion-specific headlines from the monitored publications. They provide context; one article alone does not establish a trend." : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete from Closet" : {
+
+    },
+    "Delete local Closet" : {
+
+    },
+    "Delete the entire Closet?" : {
+
+    },
+    "Done" : {
+
+    },
+    "Edit item" : {
+
+    },
+    "Effective August 13, 2026" : {
+
+    },
+    "Favorite" : {
+
+    },
+    "How these attributes moved" : {
+
+    },
+    "Index" : {
+
+    },
+    "Item attributes" : {
+
+    },
+    "Limits" : {
+
+    },
+    "Local storage" : {
+
+    },
+    "No clothes yet" : {
+
+    },
+    "No favorites yet" : {
+
+    },
+    "No size stood out in this window." : {
+
+    },
+    "None of these looks like my item" : {
+
+    },
+    "Not confirmed" : {
+
+    },
+    "Not confirmed. %@" : {
+
+    },
+    "Not included" : {
+
+    },
+    "Of the sizes available when the window opened, how many became unavailable." : {
+
+    },
+    "Off" : {
+
+    },
+    "On" : {
+
+    },
+    "On-device only" : {
+
+    },
+    "Optional target hint" : {
+
+    },
+    "Optional. If you add it, I show its position among similar pieces in the panel — a price position, not a judgment." : {
+
+    },
+    "Or explore each attribute" : {
+
+    },
+    "Other targets" : {
+
+    },
+    "Period" : {
+
+    },
+    "Photo or file" : {
+
+    },
+    "Pinch to zoom and drag until the target garment fills the frame." : {
+
+    },
+    "Privacy in this build" : {
+
+    },
+    "Product terms" : {
+
+    },
+    "R$ 0,00" : {
+
+    },
+    "Reduce Motion" : {
+
+    },
+    "Related articles" : {
+
+    },
+    "Remove from Favorites" : {
+
+    },
+    "Rename" : {
+
+    },
+    "Replace photo" : {
+
+    },
+    "Reset" : {
+
+    },
+    "Result" : {
+
+    },
+    "Review similar pieces again" : {
+
+    },
+    "Save" : {
+
+    },
+    "Saved" : {
+
+    },
+    "Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from backup." : {
+
+    },
+    "Saved clothing photo" : {
+
+    },
+    "Search" : {
+
+    },
+    "Search by garment, fabric, cut, pattern…" : {
+
+    },
+    "Search interest now" : {
+
+    },
+    "See the market panel" : {
+
+    },
+    "Select %@" : {
+
+    },
+    "Select the garment you meant to add. Category, color and attributes will be read only after you confirm it." : {
+
+    },
+    "Shape of the break" : {
+
+    },
+    "Side by side" : {
+
+    },
+    "Similar pieces in the panel" : {
+
+    },
+    "Size %@, %@ percent, %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Size %1$@, %2$@ percent, %3$lld of %4$lld"
+          }
+        }
+      }
+    },
+    "Size availability" : {
+
+    },
+    "Size-mix context" : {
+
+    },
+    "Sizes · %@" : {
+
+    },
+    "Source" : {
+
+    },
+    "Sources" : {
+
+    },
+    "Status: %@" : {
+
+    },
+    "Take a photo" : {
+
+    },
+    "Tap the heart on a Closet item to keep it here." : {
+
+    },
+    "Tap to add" : {
+
+    },
+    "The app follows the iPhone accessibility setting for motion and text size." : {
+
+    },
+    "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet." : {
+
+    },
+    "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet." : {
+
+    },
+    "The chart could not be loaded: %@" : {
+
+    },
+    "This compares already collected market data. It is not a sales forecast and does not include your costs, timing or history." : {
+
+    },
+    "This removes every saved item and thumbnail from this iPhone. It cannot be undone." : {
+
+    },
+    "This week in fashion" : {
+
+    },
+    "To identify this garment, the app will send only the reduced, metadata-free image you just confirmed to OpenAI through its Supabase service. The app does not store the submitted image. OpenAI may keep abuse-monitoring logs for up to 30 days. You will review every suggested attribute before saving." : {
+
+    },
+    "Try again" : {
+
+    },
+    "Try the chart again" : {
+
+    },
+    "Undo crop" : {
+
+    },
+    "Unfavorite" : {
+
+    },
+    "Use cloud visual analysis?" : {
+
+    },
+    "Use this crop" : {
+
+    },
+    "Use this only when the photo contains more than one item. Visible pixels always take precedence." : {
+
+    },
+    "View on the brand's website" : {
+
+    },
+    "Week" : {
+
+    },
+    "Weekly Trends" : {
+
+    },
+    "Weekly history by source" : {
+
+    },
+    "What I read from this file" : {
+
+    },
+    "What panel sizing is showing" : {
+
+    },
+    "What people in Brazil searched for on Google, compared with each term's previous 12 weeks." : {
+
+    },
+    "What this compares" : {
+
+    },
+    "Where size availability breaks among panel items with %@." : {
+
+    },
+    "Where size availability is breaking across the panel." : {
+
+    },
+    "Where they diverge" : {
+
+    },
+    "Where this number comes from" : {
+
+    },
+    "Where your price falls" : {
+
+    },
+    "Which item should I analyze?" : {
+
+    },
+    "Whole photo: I could not isolate the garment here." : {
+
+    },
+    "Your intended price" : {
+
+    },
+    "Your item" : {
+
+    },
+    "e.g. the black half-zip jacket" : {
+
+    },
+    "updated %@" : {
+
+    },
+    "z" : {
+
+    },
+    "•" : {
+
+    },
+    "−%@%%" : {
+
+    }
+  },
+  "version" : "1.0"
+}

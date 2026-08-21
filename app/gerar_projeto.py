@@ -31,6 +31,8 @@ NOME = "Canario"
 BUNDLE = "br.com.canario.ch3.app"
 TIME_DE_DESENVOLVIMENTO = "67AYPRFZH8"
 IOS_MINIMO = "17.0"
+VERSAO_DO_APP = "1.1"
+BUILD_DO_APP = "2"
 
 
 def ident(*partes):
@@ -53,6 +55,15 @@ def fontes():
     return sorted(achados)
 
 
+def fontes_de_ui_test():
+    base = os.path.join(RAIZ, "CanarioUITests")
+    if not os.path.isdir(base):
+        return []
+    return sorted(
+        os.path.relpath(os.path.join(base, n), RAIZ)
+        for n in os.listdir(base) if n.endswith(".swift"))
+
+
 # Recursos que precisam ser EMPACOTADOS no .app, e nao compilados.
 #
 # Existe porque o gerador so conhecia `.swift`, e sem isto o TestFlight recusa
@@ -61,7 +72,8 @@ def fontes():
 def recursos():
     achados = []
     for nome, tipo in (("Assets.xcassets", "folder.assetcatalog"),
-                       ("PrivacyInfo.xcprivacy", "text.plist.xml")):
+                       ("PrivacyInfo.xcprivacy", "text.plist.xml"),
+                       ("Localizable.xcstrings", "text.json.xcstrings")):
         caminho = os.path.join(RAIZ, NOME, nome)
         if os.path.exists(caminho):
             achados.append((os.path.join(NOME, nome), nome, tipo))
@@ -70,6 +82,7 @@ def recursos():
 
 def main():
     arquivos = fontes()
+    arquivos_ui = fontes_de_ui_test()
     if not arquivos:
         raise SystemExit("Nenhum .swift encontrado em {}/".format(NOME))
     pacote = recursos()
@@ -77,18 +90,29 @@ def main():
     proj = ident("projeto")
     alvo = ident("alvo")
     produto = ident("produto")
+    alvo_ui = ident("alvo", "ui-tests")
+    produto_ui = ident("produto", "ui-tests")
     fase_fontes = ident("fase", "fontes")
     fase_frameworks = ident("fase", "frameworks")
     fase_recursos = ident("fase", "recursos")
+    fase_fontes_ui = ident("fase", "fontes", "ui-tests")
+    fase_frameworks_ui = ident("fase", "frameworks", "ui-tests")
+    fase_recursos_ui = ident("fase", "recursos", "ui-tests")
     lista_proj = ident("lista", "projeto")
     lista_alvo = ident("lista", "alvo")
+    lista_alvo_ui = ident("lista", "alvo", "ui-tests")
     cfg_proj_debug = ident("cfg", "proj", "debug")
     cfg_proj_release = ident("cfg", "proj", "release")
     cfg_alvo_debug = ident("cfg", "alvo", "debug")
     cfg_alvo_release = ident("cfg", "alvo", "release")
+    cfg_ui_debug = ident("cfg", "ui-tests", "debug")
+    cfg_ui_release = ident("cfg", "ui-tests", "release")
     grupo_raiz = ident("grupo", "raiz")
     grupo_app = ident("grupo", "app")
+    grupo_ui = ident("grupo", "ui-tests")
     grupo_produtos = ident("grupo", "produtos")
+    proxy_ui = ident("proxy", "ui-tests", "app")
+    dependencia_ui = ident("dependencia", "ui-tests", "app")
 
     # Um grupo por pasta, para o navegador do Xcode espelhar o disco.
     pastas = sorted({os.path.dirname(a) for a in arquivos if os.path.dirname(a) != NOME})
@@ -108,6 +132,9 @@ def main():
     for a in arquivos:
         A("\t\t{} /* {} in Sources */ = {{isa = PBXBuildFile; fileRef = {} /* {} */; }};".format(
             ident("build", a), os.path.basename(a), ident("ref", a), os.path.basename(a)))
+    for a in arquivos_ui:
+        A("\t\t{} /* {} in Sources */ = {{isa = PBXBuildFile; fileRef = {} /* {} */; }};".format(
+            ident("build", a), os.path.basename(a), ident("ref", a), os.path.basename(a)))
     for caminho, nome, _tipo in pacote:
         A("\t\t{} /* {} in Resources */ = {{isa = PBXBuildFile; fileRef = {} /* {} */; }};".format(
             ident("build", caminho), nome, ident("ref", caminho), nome))
@@ -118,7 +145,14 @@ def main():
     A('\t\t{} /* {}.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; '
       'includeInIndex = 0; path = "{}.app"; sourceTree = BUILT_PRODUCTS_DIR; }};'.format(
           produto, NOME, NOME))
+    A('\t\t{} /* {}UITests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; '
+      'includeInIndex = 0; path = "{}UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; }};'.format(
+          produto_ui, NOME, NOME))
     for a in arquivos:
+        A('\t\t{} /* {} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; '
+          'path = "{}"; sourceTree = "<group>"; }};'.format(
+              ident("ref", a), os.path.basename(a), os.path.basename(a)))
+    for a in arquivos_ui:
         A('\t\t{} /* {} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; '
           'path = "{}"; sourceTree = "<group>"; }};'.format(
               ident("ref", a), os.path.basename(a), os.path.basename(a)))
@@ -141,9 +175,26 @@ def main():
           ident("ref", "Config.xcconfig")))
     A("/* End PBXFileReference section */")
 
+    # --- PBXContainerItemProxy ---
+    A("\n/* Begin PBXContainerItemProxy section */")
+    A("\t\t{} = {{".format(proxy_ui))
+    A("\t\t\tisa = PBXContainerItemProxy;")
+    A("\t\t\tcontainerPortal = {} /* Project object */;".format(proj))
+    A("\t\t\tproxyType = 1;")
+    A("\t\t\tremoteGlobalIDString = {};".format(alvo))
+    A("\t\t\tremoteInfo = {};".format(NOME))
+    A("\t\t};")
+    A("/* End PBXContainerItemProxy section */")
+
     # --- PBXFrameworksBuildPhase ---
     A("\n/* Begin PBXFrameworksBuildPhase section */")
     A("\t\t{} = {{".format(fase_frameworks))
+    A("\t\t\tisa = PBXFrameworksBuildPhase;")
+    A("\t\t\tbuildActionMask = 2147483647;")
+    A("\t\t\tfiles = ();")
+    A("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
+    A("\t\t};")
+    A("\t\t{} = {{".format(fase_frameworks_ui))
     A("\t\t\tisa = PBXFrameworksBuildPhase;")
     A("\t\t\tbuildActionMask = 2147483647;")
     A("\t\t\tfiles = ();")
@@ -157,6 +208,7 @@ def main():
     A("\t\t\tisa = PBXGroup;")
     A("\t\t\tchildren = (")
     A("\t\t\t\t{} /* {} */,".format(grupo_app, NOME))
+    A("\t\t\t\t{} /* {}UITests */,".format(grupo_ui, NOME))
     A("\t\t\t\t{} /* Products */,".format(grupo_produtos))
     A("\t\t\t);")
     A("\t\t\tsourceTree = \"<group>\";")
@@ -164,8 +216,19 @@ def main():
 
     A("\t\t{} /* Products */ = {{".format(grupo_produtos))
     A("\t\t\tisa = PBXGroup;")
-    A("\t\t\tchildren = (\n\t\t\t\t{} /* {}.app */,\n\t\t\t);".format(produto, NOME))
+    A("\t\t\tchildren = (\n\t\t\t\t{} /* {}.app */,\n\t\t\t\t{} /* {}UITests.xctest */,\n\t\t\t);".format(
+        produto, NOME, produto_ui, NOME))
     A("\t\t\tname = Products;")
+    A("\t\t\tsourceTree = \"<group>\";")
+    A("\t\t};")
+
+    A("\t\t{} /* {}UITests */ = {{".format(grupo_ui, NOME))
+    A("\t\t\tisa = PBXGroup;")
+    A("\t\t\tchildren = (")
+    for a in arquivos_ui:
+        A("\t\t\t\t{} /* {} */,".format(ident("ref", a), os.path.basename(a)))
+    A("\t\t\t);")
+    A('\t\t\tpath = "{}UITests";'.format(NOME))
     A("\t\t\tsourceTree = \"<group>\";")
     A("\t\t};")
 
@@ -216,14 +279,31 @@ def main():
     A("\t\t\tproductReference = {} ;".format(produto))
     A('\t\t\tproductType = "com.apple.product-type.application";')
     A("\t\t};")
+    A("\t\t{} /* {}UITests */ = {{".format(alvo_ui, NOME))
+    A("\t\t\tisa = PBXNativeTarget;")
+    A("\t\t\tbuildConfigurationList = {} ;".format(lista_alvo_ui))
+    A("\t\t\tbuildPhases = (")
+    A("\t\t\t\t{} ,".format(fase_fontes_ui))
+    A("\t\t\t\t{} ,".format(fase_frameworks_ui))
+    A("\t\t\t\t{} ,".format(fase_recursos_ui))
+    A("\t\t\t);")
+    A("\t\t\tbuildRules = ();")
+    A("\t\t\tdependencies = (\n\t\t\t\t{} ,\n\t\t\t);".format(dependencia_ui))
+    A('\t\t\tname = "{}UITests";'.format(NOME))
+    A('\t\t\tproductName = "{}UITests";'.format(NOME))
+    A("\t\t\tproductReference = {} ;".format(produto_ui))
+    A('\t\t\tproductType = "com.apple.product-type.bundle.ui-testing";')
+    A("\t\t};")
     A("/* End PBXNativeTarget section */")
 
     # --- PBXProject ---
     A("\n/* Begin PBXProject section */")
     A("\t\t{} /* Project object */ = {{".format(proj))
     A("\t\t\tisa = PBXProject;")
-    A("\t\t\tattributes = { BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; "
-      "LastUpgradeCheck = 1600; };")
+    A("\t\t\tattributes = {{ BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; "
+      "LastUpgradeCheck = 1600; TargetAttributes = {{ "
+      "{} = {{ CreatedOnToolsVersion = 16.0; TestTargetID = {}; }}; }}; }};".format(
+          alvo_ui, alvo))
     A("\t\t\tbuildConfigurationList = {} ;".format(lista_proj))
     A('\t\t\tcompatibilityVersion = "Xcode 14.0";')
     A("\t\t\tdevelopmentRegion = en;")
@@ -233,7 +313,8 @@ def main():
     A("\t\t\tproductRefGroup = {} ;".format(grupo_produtos))
     A('\t\t\tprojectDirPath = "";')
     A('\t\t\tprojectRoot = "";')
-    A("\t\t\ttargets = (\n\t\t\t\t{} ,\n\t\t\t);".format(alvo))
+    A("\t\t\ttargets = (\n\t\t\t\t{} ,\n\t\t\t\t{} ,\n\t\t\t);".format(
+        alvo, alvo_ui))
     A("\t\t};")
     A("/* End PBXProject section */")
 
@@ -251,6 +332,12 @@ def main():
         A("\t\t\tfiles = ();")
     A("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
     A("\t\t};")
+    A("\t\t{} = {{".format(fase_recursos_ui))
+    A("\t\t\tisa = PBXResourcesBuildPhase;")
+    A("\t\t\tbuildActionMask = 2147483647;")
+    A("\t\t\tfiles = ();")
+    A("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
+    A("\t\t};")
     A("/* End PBXResourcesBuildPhase section */")
 
     # --- PBXSourcesBuildPhase ---
@@ -261,6 +348,16 @@ def main():
     A("\t\t\tfiles = (")
     for a in arquivos:
         A("\t\t\t\t{} /* {} in Sources */,".format(ident("build", a), os.path.basename(a)))
+    A("\t\t\t);")
+    A("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
+    A("\t\t};")
+    A("\t\t{} = {{".format(fase_fontes_ui))
+    A("\t\t\tisa = PBXSourcesBuildPhase;")
+    A("\t\t\tbuildActionMask = 2147483647;")
+    A("\t\t\tfiles = (")
+    for a in arquivos_ui:
+        A("\t\t\t\t{} /* {} in Sources */,".format(
+            ident("build", a), os.path.basename(a)))
     A("\t\t\t);")
     A("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
     A("\t\t};")
@@ -281,7 +378,7 @@ def main():
     alvo_comuns = [
         'ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;',
         'CODE_SIGN_STYLE = Automatic;',
-        'CURRENT_PROJECT_VERSION = 1;',
+        'CURRENT_PROJECT_VERSION = {};'.format(BUILD_DO_APP),
         'DEVELOPMENT_TEAM = {};'.format(TIME_DE_DESENVOLVIMENTO),
         'ENABLE_PREVIEWS = YES;',
         'GENERATE_INFOPLIST_FILE = NO;',
@@ -290,11 +387,23 @@ def main():
         'INFOPLIST_KEY_UILaunchScreen_Generation = YES;',
         'INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;',
         'LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );',
-        'MARKETING_VERSION = 1.0;',
+        'MARKETING_VERSION = {};'.format(VERSAO_DO_APP),
         'PRODUCT_BUNDLE_IDENTIFIER = "{}";'.format(BUNDLE),
         'PRODUCT_NAME = "$(TARGET_NAME)";',
         'SWIFT_EMIT_LOC_STRINGS = YES;',
         'TARGETED_DEVICE_FAMILY = 1;',
+    ]
+    ui_comuns = [
+        'CODE_SIGN_STYLE = Automatic;',
+        'CURRENT_PROJECT_VERSION = {};'.format(BUILD_DO_APP),
+        'DEVELOPMENT_TEAM = {};'.format(TIME_DE_DESENVOLVIMENTO),
+        'GENERATE_INFOPLIST_FILE = YES;',
+        'MARKETING_VERSION = {};'.format(VERSAO_DO_APP),
+        'PRODUCT_BUNDLE_IDENTIFIER = "{}.UITests";'.format(BUNDLE),
+        'PRODUCT_NAME = "$(TARGET_NAME)";',
+        'SWIFT_EMIT_LOC_STRINGS = NO;',
+        'TARGETED_DEVICE_FAMILY = 1;',
+        'TEST_TARGET_NAME = {};'.format(NOME),
     ]
 
     A("\n/* Begin XCBuildConfiguration section */")
@@ -330,12 +439,22 @@ def main():
         A("\t\t\t};")
         A('\t\t\tname = "{}";'.format(nome))
         A("\t\t};")
+    for cid, nome in [(cfg_ui_debug, "Debug"), (cfg_ui_release, "Release")]:
+        A("\t\t{} /* {} */ = {{".format(cid, nome))
+        A("\t\t\tisa = XCBuildConfiguration;")
+        A("\t\t\tbuildSettings = {")
+        for s in ui_comuns:
+            A("\t\t\t\t" + s)
+        A("\t\t\t};")
+        A('\t\t\tname = "{}";'.format(nome))
+        A("\t\t};")
     A("/* End XCBuildConfiguration section */")
 
     # --- XCConfigurationList ---
     A("\n/* Begin XCConfigurationList section */")
     for lid, d, r, alvo_de in [(lista_proj, cfg_proj_debug, cfg_proj_release, "PBXProject"),
-                               (lista_alvo, cfg_alvo_debug, cfg_alvo_release, "PBXNativeTarget")]:
+                               (lista_alvo, cfg_alvo_debug, cfg_alvo_release, "PBXNativeTarget"),
+                               (lista_alvo_ui, cfg_ui_debug, cfg_ui_release, "PBXNativeTarget")]:
         A("\t\t{} /* Build configuration list for {} */ = {{".format(lid, alvo_de))
         A("\t\t\tisa = XCConfigurationList;")
         A("\t\t\tbuildConfigurations = (\n\t\t\t\t{} ,\n\t\t\t\t{} ,\n\t\t\t);".format(d, r))
@@ -343,6 +462,12 @@ def main():
         A("\t\t\tdefaultConfigurationName = Release;")
         A("\t\t};")
     A("/* End XCConfigurationList section */")
+
+    # --- PBXTargetDependency ---
+    A("\n/* Begin PBXTargetDependency section */")
+    A("\t\t{} = {{isa = PBXTargetDependency; target = {}; targetProxy = {}; }};".format(
+        dependencia_ui, alvo, proxy_ui))
+    A("/* End PBXTargetDependency section */")
 
     A("\t};")
     A("\trootObject = {} /* Project object */;".format(proj))

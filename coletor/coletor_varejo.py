@@ -58,6 +58,7 @@ BLOCO_ESCRITA = 500     # linhas por upsert em lote
 BLOCO_LEITURA = 120     # id_externos por filtro in.()
 LIMITE_GLOBAL = 1.0     # regra 7 emendada: 1 req/s GLOBAL
 BACKOFF_429 = 60        # um unico retry longo (decisao do JP)
+BACKOFF_5XX = 5         # recusa transitoria do backend, uma unica repeticao
 PRECO_TETO = 200000     # teto de preco para o particionamento (R$)
 NIVEL_MAXIMO = 4        # profundidade maxima da arvore de categorias da VTEX
 FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
@@ -81,11 +82,15 @@ def _ritmo():
 
 
 def buscar_varejo(url, dominio):
-    """buscar() com teto GLOBAL e um unico retry longo diante de 429."""
+    """buscar() com teto GLOBAL e uma unica repeticao de falha transitoria."""
     _ritmo()
     codigo, corpo, final, cab = buscar(url, dominio)
     if codigo == 429:
         time.sleep(BACKOFF_429)
+        _ritmo()
+        codigo, corpo, final, cab = buscar(url, dominio)
+    elif codigo is not None and 500 <= codigo <= 599:
+        time.sleep(BACKOFF_5XX)
         _ritmo()
         codigo, corpo, final, cab = buscar(url, dominio)
     return codigo, corpo, final, cab
@@ -227,6 +232,17 @@ def _fq_preco(pmin, pmax):
     return "&fq=" + urllib.parse.quote("P:[{} TO {}]".format(pmin, pmax))
 
 
+def _fq_disponibilidade(somente_ofertaveis):
+    """Filtro nativo da VTEX para SKUs compraveis no sales channel publico.
+
+    A busca Legacy indexa produto indisponivel com preco zero. Na C&A isso
+    concentra dezenas de milhares de itens antigos em ``P:[0 TO 1]``, embora
+    o payload ainda carregue o ultimo preco comercial. Eles nao sao ofertas e
+    nao podem obrigar o coletor a truncar justamente os itens compraveis.
+    """
+    return "&fq=isAvailablePerSalesChannel_1:1" if somente_ofertaveis else ""
+
+
 def _registrar_erro_vtex(estado, mensagem):
     """Preserva o primeiro diagnóstico que explica uma coleta VTEX vazia.
 
@@ -239,11 +255,14 @@ def _registrar_erro_vtex(estado, mensagem):
         estado["erro"] = mensagem
 
 
-def _contar(dominio, cat_id, pmin=None, pmax=None, estado=None):
+def _contar(dominio, cat_id, pmin=None, pmax=None, estado=None,
+            somente_ofertaveis=False):
     """Conta produtos de uma categoria. `cat_id` pode ser um id ou um CAMINHO
     de ids ("1000003/1004161") -- ver a nota em `_paginar`."""
     url = ("https://{}/api/catalog_system/pub/products/search"
-           "?fq=C:{}{}&_from=0&_to=0".format(dominio, cat_id, _fq_preco(pmin, pmax)))
+           "?fq=C:{}{}{}&_from=0&_to=0".format(
+               dominio, cat_id, _fq_preco(pmin, pmax),
+               _fq_disponibilidade(somente_ofertaveis)))
     codigo, _, _, cab = buscar_varejo(url, dominio)
     if codigo not in (200, 206):
         _registrar_erro_vtex(
@@ -259,7 +278,8 @@ def _contar(dominio, cat_id, pmin=None, pmax=None, estado=None):
     return total
 
 
-def _paginar(dominio, cat_id, limite, pmin=None, pmax=None, estado=None):
+def _paginar(dominio, cat_id, limite, pmin=None, pmax=None, estado=None,
+             somente_ofertaveis=False):
     """Pagina uma categoria.
 
     `cat_id` e id de departamento OU caminho completo de ids para subcategoria.
@@ -281,8 +301,9 @@ def _paginar(dominio, cat_id, limite, pmin=None, pmax=None, estado=None):
         while de < alvo and len(vistos) < alvo:
             ate = min(de + PAGINA - 1, alvo - 1)
             url = ("https://{}/api/catalog_system/pub/products/search"
-                   "?fq=C:{}{}&O={}&_from={}&_to={}".format(
-                       dominio, cat_id, _fq_preco(pmin, pmax), ordem, de, ate))
+                   "?fq=C:{}{}{}&O={}&_from={}&_to={}".format(
+                       dominio, cat_id, _fq_preco(pmin, pmax),
+                       _fq_disponibilidade(somente_ofertaveis), ordem, de, ate))
             codigo, corpo, _, _ = buscar_varejo(url, dominio)
             if codigo not in (200, 206):
                 _registrar_erro_vtex(
@@ -325,6 +346,11 @@ def _paginar(dominio, cat_id, limite, pmin=None, pmax=None, estado=None):
                 break
         if len(vistos) >= alvo * 0.98:
             break
+    if len(vistos) < alvo * 0.98:
+        _registrar_erro_vtex(
+            estado,
+            "paginacao VTEX incompleta na categoria {}: {} de {} ids unicos"
+            .format(cat_id, len(vistos), alvo))
 
 
 def _filhos(dominio, caminho):
@@ -429,20 +455,48 @@ def _por_preco(dominio, cat_id, estado):
             yield from particao(pmin, mid)
             yield from particao(mid, pmax)
         else:
-            # Faixa de 1 real com mais de 2500 produtos: nao ha como dividir
-            # mais. Preco de moda se concentra em ponto exato (R$ 39,90), e a
-            # C&A tem 46 mil blusas sem subcategoria. Aqui a cobertura e
-            # parcial POR CONSTRUCAO, e o que salva a leitura e a ordem
-            # deterministica: o mesmo pedaco todo dia, sem vies de vitrine.
-            estado["truncou"] = True
-            estado["declarado"] += min(t, TETO_OFFSET)
-            estado.setdefault("faixas_truncadas", []).append(
-                {"faixa": "{}-{}".format(pmin, pmax), "existem": t,
-                 "coletados": TETO_OFFSET})
-            yield from _paginar(
-                dominio, cat_id, TETO_OFFSET, pmin, pmax, estado=estado)
+            yield from _faixa_indivisivel(
+                dominio, cat_id, estado, pmin, pmax, t)
 
     yield from particao(0, PRECO_TETO)
+
+
+def _faixa_indivisivel(dominio, cat_id, estado, pmin, pmax, total):
+    """Resolve concentração de preço sem sacrificar ofertas observáveis.
+
+    O índice Legacy põe produto sem estoque na faixa zero. Antes, a C&A tinha
+    66 mil registros nessa faixa e o coletor guardava só os primeiros 2.500,
+    misturando indisponíveis antigos e deixando ofertas compráveis fora por
+    ordem alfabética. O filtro oficial de disponibilidade reduz o universo ao
+    que a P17 chama de oferta. Ausentes envelhecem em sete dias; não precisam
+    de um falso snapshot inventado.
+    """
+    ofertaveis = _contar(
+        dominio, cat_id, pmin, pmax, estado=estado,
+        somente_ofertaveis=True)
+    if ofertaveis is None:
+        return
+    if ofertaveis <= TETO_OFFSET:
+        estado["declarado"] += ofertaveis
+        estado["indisponiveis_fora_do_universo"] = (
+            estado.get("indisponiveis_fora_do_universo", 0)
+            + max(total - ofertaveis, 0))
+        if ofertaveis:
+            yield from _paginar(
+                dominio, cat_id, ofertaveis, pmin, pmax, estado=estado,
+                somente_ofertaveis=True)
+        return
+
+    # Se ate as ofertas reais excederem o teto, a perda volta a ser material e
+    # precisa continuar visivel na saude. Nao existe outro eixo publico seguro.
+    estado["truncou"] = True
+    estado["declarado"] += TETO_OFFSET
+    estado.setdefault("faixas_truncadas", []).append(
+        {"faixa": "{}-{}".format(pmin, pmax), "existem": ofertaveis,
+         "coletados": TETO_OFFSET, "somente_ofertaveis": True})
+    yield from _paginar(
+        dominio, cat_id, TETO_OFFSET, pmin, pmax, estado=estado,
+        somente_ofertaveis=True)
 
 
 DOMINIOS_PUBLICOS_VTEX = {
@@ -782,7 +836,17 @@ def coletar_marca(marca, hoje, cache_deps):
         alertas["erro"] = estado["erro"]
     if estado["truncou"]:
         alertas["truncou"] = "faixa de preco indivisivel acima de 2500; parte do catalogo pode ter sido cortada"
+    # Totais de departamentos nao sao somaveis: na NV, Roupas (415), New In
+    # (563) e Linhas (351) sao vitrines sobrepostas cuja uniao tem 563 ids, nao
+    # 1.329. Se todas as consultas terminaram, `vistos` e o total exato da
+    # uniao; so preservamos a soma como limite diagnostico quando houve falha.
+    if (plataforma == "vtex" and visitados and not estado["truncou"]
+            and not estado["erro"]):
+        estado["declarado"] = visitados
     declarado = estado["declarado"] or None
+    if estado.get("indisponiveis_fora_do_universo"):
+        alertas["indisponiveis_fora_do_universo"] = (
+            estado["indisponiveis_fora_do_universo"])
     if estado.get("faixas_truncadas"):
         alertas["faixas_truncadas"] = estado["faixas_truncadas"][:5]
     if plataforma == "vtex" and declarado and visitados < declarado * 0.98:

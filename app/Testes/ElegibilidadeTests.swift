@@ -11,10 +11,15 @@ final class ElegibilidadeTests: XCTestCase {
 
     private func cobertura(termo: String = "preto", semana: String = "2026-07-27",
                            segmento: String = Recorte.segmento,
-                           suficiente: Bool = true) -> Cobertura {
+                           suficiente: Bool = true,
+                           coberturaDimensao: Double? = 60) -> Cobertura {
         Cobertura(termoId: termo, segmento: segmento, semana: semana,
                   pecasNaCelula: 100, marcasExternas: 12,
-                  minimoPecas: 30, minimoMarcas: 8, suficiente: suficiente)
+                  minimoPecas: 30, minimoMarcas: 8,
+                  pecasNaDimensao: 60,
+                  coberturaDimensaoPct: coberturaDimensao,
+                  minimoCoberturaDimensaoPct: 30,
+                  suficiente: suficiente)
     }
 
     private func varejo(termo: String = "preto", semana: String = "2026-07-27") -> PontoSerie {
@@ -28,6 +33,17 @@ final class ElegibilidadeTests: XCTestCase {
 
     func testCoberturaInsuficienteReprova() {
         XCTAssertFalse(Elegibilidade.indice(indice(), cobertura: cobertura(suficiente: false)))
+    }
+
+    func testExplicaDimensaoPoucoObservavel() {
+        let c = cobertura(suficiente: false, coberturaDimensao: 6.3)
+        XCTAssertTrue(c.oQueFalta.contains("6.3%"))
+        XCTAssertTrue(c.oQueFalta.contains("minimum 30%"))
+    }
+
+    func testAusenciaDeMedicaoDaDimensaoFalhaFechado() {
+        let c = cobertura(suficiente: false, coberturaDimensao: nil)
+        XCTAssertTrue(c.oQueFalta.contains("has not been measured"))
     }
 
     func testSemanaSegmentoETermoPrecisamCoincidir() {

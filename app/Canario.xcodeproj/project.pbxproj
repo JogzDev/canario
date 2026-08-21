@@ -41,12 +41,15 @@
 		60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */; };
 		BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */; };
 		C472FEE2DF1142C1A0F345AC /* TelaInicialAdicionar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21AF6176D054A671A84BB1F7 /* TelaInicialAdicionar.swift */; };
+		AB5430F08EDA67AD0951C519 /* CanarioUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE410F22A95B217806A9737 /* CanarioUITests.swift */; };
 		0D84DC35CA70B3050CF0ECA0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00CF251BD47C47E7D73F68E0 /* Assets.xcassets */; };
 		B5F4296D54E2C90E4074A18A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */; };
+		4E76466AC997891ED20776B2 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CDE29ACC1749F039A6BA5E6B /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		DCA037677632104E4598159D /* Canario.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Canario.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3011FC45C44F537709537A2E /* CanarioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CanarioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CanarioApp.swift"; sourceTree = "<group>"; };
 		D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Componentes.swift"; sourceTree = "<group>"; };
 		CD1ACCCE153B6FA384A39863 /* Formato.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Formato.swift"; sourceTree = "<group>"; };
@@ -82,14 +85,32 @@
 		7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDaPeca.swift"; sourceTree = "<group>"; };
 		13FB71C6A8BAE1E855BA0881 /* RelatorioDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDoTermo.swift"; sourceTree = "<group>"; };
 		21AF6176D054A671A84BB1F7 /* TelaInicialAdicionar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TelaInicialAdicionar.swift"; sourceTree = "<group>"; };
+		AFE410F22A95B217806A9737 /* CanarioUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CanarioUITests.swift"; sourceTree = "<group>"; };
 		461A5A3F9FDD134BC064B0B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00CF251BD47C47E7D73F68E0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
 		810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
+		CDE29ACC1749F039A6BA5E6B /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = "Localizable.xcstrings"; sourceTree = "<group>"; };
 		8AB286CF60DF319C5A6A8541 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Config.xcconfig; path = "../Config.xcconfig"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
+/* Begin PBXContainerItemProxy section */
+		23962201AAB25B2DF4F2D4A2 = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C53FD45B2F336A44D158902C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 60FCB50722E3F1420F940980;
+			remoteInfo = Canario;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		287CA93205B19FFB0C44728B = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6E4B6D6043C593A65066BFD5 = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = ();
@@ -102,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				3BD879AA0097A5271DEF1DA6 /* Canario */,
+				D35399FF0B94C845F8B03936 /* CanarioUITests */,
 				5CAC9C2F49F815B0F5A5D463 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -110,8 +132,17 @@
 			isa = PBXGroup;
 			children = (
 				DCA037677632104E4598159D /* Canario.app */,
+				3011FC45C44F537709537A2E /* CanarioUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		D35399FF0B94C845F8B03936 /* CanarioUITests */ = {
+			isa = PBXGroup;
+			children = (
+				AFE410F22A95B217806A9737 /* CanarioUITests.swift */,
+			);
+			path = "CanarioUITests";
 			sourceTree = "<group>";
 		};
 		3BD879AA0097A5271DEF1DA6 /* Canario */ = {
@@ -123,6 +154,7 @@
 				3292BE3A6EAD8B36569AC07C /* Telas */,
 				00CF251BD47C47E7D73F68E0 /* Assets.xcassets */,
 				810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */,
+				CDE29ACC1749F039A6BA5E6B /* Localizable.xcstrings */,
 				461A5A3F9FDD134BC064B0B7 /* Info.plist */,
 				8AB286CF60DF319C5A6A8541 /* Config.xcconfig */,
 			);
@@ -202,12 +234,29 @@
 			productReference = DCA037677632104E4598159D ;
 			productType = "com.apple.product-type.application";
 		};
+		309A40032FBF2290592E48A9 /* CanarioUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B759B37AAC0EE9BC276325BE ;
+			buildPhases = (
+				FDEA29CBADF7DF588D7FCE18 ,
+				6E4B6D6043C593A65066BFD5 ,
+				924825F81EB81F33E12D6A6C ,
+			);
+			buildRules = ();
+			dependencies = (
+				88C94579B28BC77F9DB777AC ,
+			);
+			name = "CanarioUITests";
+			productName = "CanarioUITests";
+			productReference = 3011FC45C44F537709537A2E ;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		C53FD45B2F336A44D158902C /* Project object */ = {
 			isa = PBXProject;
-			attributes = { BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; };
+			attributes = { BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = { 309A40032FBF2290592E48A9 = { CreatedOnToolsVersion = 16.0; TestTargetID = 60FCB50722E3F1420F940980; }; }; };
 			buildConfigurationList = 9B7C8A846387B5A3E7B50F6B ;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
@@ -219,6 +268,7 @@
 			projectRoot = "";
 			targets = (
 				60FCB50722E3F1420F940980 ,
+				309A40032FBF2290592E48A9 ,
 			);
 		};
 /* End PBXProject section */
@@ -230,7 +280,14 @@
 			files = (
 				0D84DC35CA70B3050CF0ECA0 /* Assets.xcassets in Resources */,
 				B5F4296D54E2C90E4074A18A /* PrivacyInfo.xcprivacy in Resources */,
+				4E76466AC997891ED20776B2 /* Localizable.xcstrings in Resources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		924825F81EB81F33E12D6A6C = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -275,6 +332,14 @@
 				60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */,
 				BA99DDF8F9CE8EA5EB8CE5DF /* RelatorioDoTermo.swift in Sources */,
 				C472FEE2DF1142C1A0F345AC /* TelaInicialAdicionar.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FDEA29CBADF7DF588D7FCE18 = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB5430F08EDA67AD0951C519 /* CanarioUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,7 +391,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -335,7 +400,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -349,7 +414,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -358,11 +423,43 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = "Release";
+		};
+		A5F7D37D729E317CF1AA0627 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 67AYPRFZH8;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app.UITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Canario;
+			};
+			name = "Debug";
+		};
+		8F8D6707579609F0D710DB74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 67AYPRFZH8;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app.UITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Canario;
 			};
 			name = "Release";
 		};
@@ -387,7 +484,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B759B37AAC0EE9BC276325BE /* Build configuration list for PBXNativeTarget */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5F7D37D729E317CF1AA0627 ,
+				8F8D6707579609F0D710DB74 ,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin PBXTargetDependency section */
+		88C94579B28BC77F9DB777AC = {isa = PBXTargetDependency; target = 60FCB50722E3F1420F940980; targetProxy = 23962201AAB25B2DF4F2D4A2; };
+/* End PBXTargetDependency section */
 	};
 	rootObject = C53FD45B2F336A44D158902C /* Project object */;
 }

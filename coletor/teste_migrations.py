@@ -79,10 +79,27 @@ def main():
         "legado_desconhecido_excluido",
         "delete from public.series_semanais",
         "serie de varejo vazia",
+        "cobertura_dimensao_pct",
+        "n_com_atributo_na_dimensao",
+        "t.papel in ('atributo', 'denominador')",
     ]
     for trecho in exigencias_presenca:
         if trecho not in serie_varejo:
             return falhar("serie de varejo final nao garante: {}".format(
+                trecho))
+
+    _, cobertura = ultima_definicao(
+        arquivos, "create or replace view public.cobertura_por_celula")
+    exigencias_cobertura = [
+        "security_invoker = true",
+        "cobertura_dimensao_pct",
+        "minimo_cobertura_dimensao_pct",
+        ">= 30",
+        "coalesce(",
+    ]
+    for trecho in exigencias_cobertura:
+        if trecho not in cobertura:
+            return falhar("portao de cobertura final nao garante: {}".format(
                 trecho))
 
     _, raridade = ultima_definicao(

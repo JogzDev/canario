@@ -233,6 +233,9 @@ struct Cobertura: Decodable, Hashable {
     let marcasExternas: Int?
     let minimoPecas: Int
     let minimoMarcas: Int
+    let pecasNaDimensao: Int?
+    let coberturaDimensaoPct: Double?
+    let minimoCoberturaDimensaoPct: Double?
     let suficiente: Bool
 
     enum CodingKeys: String, CodingKey {
@@ -242,6 +245,9 @@ struct Cobertura: Decodable, Hashable {
         case marcasExternas = "marcas_externas"
         case minimoPecas = "minimo_pecas"
         case minimoMarcas = "minimo_marcas"
+        case pecasNaDimensao = "pecas_na_dimensao"
+        case coberturaDimensaoPct = "cobertura_dimensao_pct"
+        case minimoCoberturaDimensaoPct = "minimo_cobertura_dimensao_pct"
     }
 
     /// Frase honesta sobre o que falta, para a tela não dizer só "não dá".
@@ -252,6 +258,15 @@ struct Cobertura: Decodable, Hashable {
         }
         if let m = marcasExternas, m < minimoMarcas {
             partes.append("\(m) external brands reporting, minimum \(minimoMarcas)")
+        }
+        if let pct = coberturaDimensaoPct,
+           let minimo = minimoCoberturaDimensaoPct,
+           pct < minimo {
+            partes.append(
+                String(format: "this dimension labels %.1f%% of current offers, minimum %.0f%%",
+                       pct, minimo))
+        } else if coberturaDimensaoPct == nil {
+            partes.append("dimension-level coverage has not been measured")
         }
         return partes.isEmpty ? "coverage below the minimum" : partes.joined(separator: "; ")
     }

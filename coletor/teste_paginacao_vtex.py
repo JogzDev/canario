@@ -97,6 +97,95 @@ def main():
         print("FALHOU: paginacao VTEX perdeu o motivo HTTP")
         return 1
 
+    # Na C&A o índice Legacy põe indisponíveis antigos em P:[0 TO 1]. A faixa
+    # tem mais de 40 mil registros, mas o filtro oficial de disponibilidade
+    # deixa cerca de mil ofertas reais. O coletor precisa paginar essas ofertas
+    # por inteiro, não escolher 2.500 indisponíveis por ordem alfabética.
+    contar_original = varejo._contar
+    paginar_original = varejo._paginar
+    chamadas_disponiveis = []
+
+    def contar_faixa(_dominio, _cat, _pmin=None, _pmax=None, estado=None,
+                     somente_ofertaveis=False):
+        return 1016 if somente_ofertaveis else 41013
+
+    def paginar_faixa(_dominio, _cat, limite, _pmin=None, _pmax=None,
+                      estado=None, somente_ofertaveis=False):
+        chamadas_disponiveis.append(somente_ofertaveis)
+        for i in range(limite):
+            yield {"productId": str(i)}
+
+    varejo._contar = contar_faixa
+    varejo._paginar = paginar_faixa
+    try:
+        estado = {"erro": None, "declarado": 0, "truncou": False}
+        recuperados = list(varejo._faixa_indivisivel(
+            "loja.test", "1/2/3", estado, 0, 1, 41013))
+    finally:
+        varejo._contar = contar_original
+        varejo._paginar = paginar_original
+    if len(recuperados) != 1016 or estado["truncou"]:
+        print("FALHOU: faixa zero da C&A ainda truncou ofertas reais")
+        return 1
+    if chamadas_disponiveis != [True]:
+        print("FALHOU: fallback da faixa zero não filtrou disponibilidade")
+        return 1
+    if estado.get("indisponiveis_fora_do_universo") != 39997:
+        print("FALHOU: descarte de indisponíveis não ficou observável")
+        return 1
+
+    # Departamentos de topo podem ser vitrines sobrepostas. A NV declara 415
+    # em Roupas, 563 em New In e 351 em Linhas, mas a união tem 563 IDs. Quando
+    # todas as páginas terminam, o denominador correto é a união observada.
+    departamentos_original = varejo.vtex_departamentos_femininos
+    coletar_original = varejo.vtex_departamento
+    extrair_original = varejo.vtex_extrair
+    gravar_original = varejo.gravar_lote
+    robots_original = varejo.robots_permite
+    conjuntos = {
+        2: range(0, 415),
+        29: range(0, 563),
+        131: range(100, 451),
+    }
+
+    def departamentos_falsos(*_args):
+        return [(2, "Roupas"), (29, "New In"), (131, "Linhas")], ""
+
+    def coletar_falso(_dominio, cat_id, estado):
+        ids = conjuntos[cat_id]
+        estado["declarado"] += len(ids)
+        for i in ids:
+            yield {"productId": str(i)}
+
+    def extrair_falso(p, _dominio):
+        return {"id_externo": p["productId"], "titulo": "Peça",
+                "url": None, "categoria_site": "Roupas",
+                "imagem_url": None, "preco_original": 1,
+                "preco_atual": 1, "composicao": None,
+                "grade_por_tamanho": {"U": True}, "ofertavel": True}
+
+    varejo.vtex_departamentos_femininos = departamentos_falsos
+    varejo.vtex_departamento = coletar_falso
+    varejo.vtex_extrair = extrair_falso
+    varejo.gravar_lote = lambda _m, lote, _h: (0, len(lote))
+    varejo.robots_permite = lambda *_args: (True, "")
+    try:
+        metrica = varejo.coletar_marca(
+            {"id": 1, "nome": "NV", "dominio": "loja.test",
+             "plataforma": "vtex"}, varejo.date(2026, 8, 21), {})
+    finally:
+        varejo.vtex_departamentos_femininos = departamentos_original
+        varejo.vtex_departamento = coletar_original
+        varejo.vtex_extrair = extrair_original
+        varejo.gravar_lote = gravar_original
+        varejo.robots_permite = robots_original
+    if metrica["visitados"] != 563 or metrica["declarado"] != 563:
+        print("FALHOU: vitrines sobrepostas inflaram o declarado da NV")
+        return 1
+    if metrica["alertas"]:
+        print("FALHOU: sobreposição completa virou alerta de perda")
+        return 1
+
     # O host administrativo da Maria Filó aceita a rota, mas redireciona o
     # usuário para /admin/login. O coletor precisa persistir a mesma rota no
     # domínio público, mantendo todos os links antigos e novos clicáveis.
