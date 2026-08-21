@@ -6,15 +6,28 @@ struct MenuLateral: View {
     let escolher: (String) -> Void
 
 
+    /// A aresta esquerda do botão de busca, contada a partir da borda direita.
+    ///
+    /// Ele mora no rodapé à direita: 62 pt de diâmetro a 20 pt da borda. O
+    /// painel e a sombra dele têm de parar antes disso -- com o painel a 79% da
+    /// largura sobravam 2 pt de folga, e a sombra atravessava esse vão e
+    /// escurecia o canto do botão. Relatado assim: *"fica cortando um
+    /// pouquinho do ícone da lupa"*.
+    ///
+    /// 82 é o botão; os 26 restantes são o respiro que mantém a sombra inteira
+    /// deste lado da divisa.
+    private static let folgaAteABusca: CGFloat = 82 + 26
+
     var body: some View {
         GeometryReader { geo in
+            let largura = min(geo.size.width * 0.79,
+                              geo.size.width - Self.folgaAteABusca)
             ZStack(alignment: .leading) {
-                // O véu só aparece na faixa que o painel não cobre, e a 8% ele
-                // ficava no pior ponto: visível o bastante para se notar, fraco
-                // o bastante para parecer sujeira. Escurecer de verdade faz a
-                // faixa ler como "o resto da tela está atrás", que é o que ela
-                // é. Toque nela fecha o menu.
-                Color.black.opacity(0.28)
+                // Sem véu: o JP quis ver a faixa limpa, mostrando a tela de
+                // trás como ela é. O toque nela continua fechando o menu, e
+                // para isso a área precisa existir mesmo transparente --
+                // `Color.clear` sozinho não recebe toque.
+                Color.clear
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture(perform: fechar)
@@ -23,12 +36,13 @@ struct MenuLateral: View {
                 // A sombra pertence à BORDA do painel, e estava no VStack de
                 // conteúdo -- que não tem fundo. O resultado era um borrão de
                 // 22 pt atrás de cada letra, deslocado 10 pt, e nenhuma sombra
-                // na divisa entre painel e faixa. Daí a divisa virar um corte
-                // seco ao lado de um cinza chapado.
+                // na divisa entre painel e faixa. Sem o véu ela é a única coisa
+                // que separa o painel do que está atrás, então fica -- só mais
+                // curta, para caber na folga acima.
                 Tokens.Cor.azulMarca
-                    .frame(width: geo.size.width * 0.79)
+                    .frame(width: largura)
                     .ignoresSafeArea()
-                    .shadow(color: .black.opacity(0.22), radius: 14, x: 4)
+                    .shadow(color: .black.opacity(0.20), radius: 10, x: 3)
 
                 VStack(alignment: .leading, spacing: 0) {
                     // As entradas que levam a uma AÇÃO ficam grandes. Antes as
@@ -67,7 +81,7 @@ struct MenuLateral: View {
                 }
                 .padding(.leading, 20)
                 .padding(.trailing, 26)
-                .frame(width: geo.size.width * 0.79)
+                .frame(width: largura)
                 .frame(maxHeight: .infinity)
             }
         }
