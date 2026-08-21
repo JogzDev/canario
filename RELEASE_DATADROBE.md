@@ -24,7 +24,11 @@ Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 
 **Candidato atual:** build 3, com o PDF reintegrado à Luna, toque protegido
 contra scroll, categoria obrigatória nos similares, Luna v8 e aparência clara
-consistente. Ele substitui o build 2 para o próximo aceite físico.
+consistente. O bloco redundante “Size-mix context” também foi removido. Archive
+Release validado e upload aceito pelo App Store Connect às 15:46; o pacote está
+em processamento no TestFlight e não foi submetido à App Review. O Archive
+correto é `DataDrobe 1.1 (3) 15.46.xcarchive` e substitui o build 2 para o
+próximo aceite físico.
 
 ## Portões antes do Archive
 
