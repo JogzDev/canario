@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 21/08/2026, 09:11 em São Paulo
+**Última atualização:** 21/08/2026, 09:48 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -21,10 +21,10 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | verde; 14 contagens exatas e 1 incerteza explícita | 15 de 15 marcas; 45.683 produtos visitados na execução completa |
-| Banco | estabilizado, ainda no plano gratuito | 405.687.443 bytes — **81,1%** do limite decimal |
+| Dados e pipeline | verde; 15 de 15 marcas com cobertura completa | 45.677 produtos visitados; nenhum corte ou falha de contagem |
+| Banco | estabilizado, ainda no plano gratuito | 406.072.467 bytes — **81,2%** do limite decimal |
 | Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
-| App na loja | **1.0 publicada; 1.1 (build 2) pronta no repositório** | `br.com.canario.ch3.app` |
+| App na loja | **1.0 publicada; upload 1.1 (build 2) aceito no TestFlight** | processamento iniciado; não enviado à revisão |
 | Testes | 226 Swift · 27 suítes Python · 4 UI | lógica, rede e fluxos críticos no simulador |
 
 ---
@@ -205,6 +205,14 @@ Os shares permaneceram estáveis: a maior variação entre as 40 células foi
 `calca`, de 17,9134% para 17,9080% (**−0,0054 ponto percentual**). A mudança é
 compatível com duas ofertas a mais no denominador, não com uma quebra de série.
 
+Depois da recuperação pontual de 21/08, o denominador foi de 25.162 para
+**25.176**. `calca` ficou em **17,9099%**, movimento de +0,0019 ponto contra a
+publicação anterior. As 40 células continuam materializadas; 23 passam o portão
+de observabilidade e 17 são corretamente silenciadas. `liso`, o caso que
+originou a auditoria, tem 39 peças e 11 marcas, mas apenas 6,4029% de cobertura
+da dimensão estampa: `suficiente=false`, portanto não volta a aparecer como
+tendência confiante.
+
 A P19 também apertou os similares: agora exigem `ofertavel = true` e
 avistamento nos últimos sete dias. O antigo corte por snapshot de 14 dias saiu;
 produto sem confirmação recente não é mais oferecido como link vivo.
@@ -256,9 +264,17 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
 * Loja: **1.0 publicada**
-* Repositório: **1.1 (build 2)**, pronta para o próximo corte
+* Repositório: **1.1 (build 2)** no `main`
+* TestFlight: upload aceito pela Apple às 09:18 de 21/08; pacote em processamento
+* App Review: **não enviado**
 * Time: `67AYPRFZH8`
 * Alvo mínimo: iOS 17
+
+O Archive Release foi criado, validado, exportado e preservado no Organizer em
+`~/Library/Developer/Xcode/Archives/2026-08-21/DataDrobe 1.1 (2) 09.15.xcarchive`.
+O binário empacotado foi conferido: DataDrobe, bundle e versão corretos, Luna
+`YES`, configuração do Supabase presente, `PrivacyInfo.xcprivacy` incluído e
+assinatura válida. O App Store Connect aceitou o upload sem warning de pacote.
 
 A identidade é conferida no CI a cada push por
 `coletor/teste_identidade_do_app.py`, que exige que gerador, `project.pbxproj`,

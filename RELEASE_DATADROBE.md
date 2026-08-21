@@ -17,6 +17,11 @@ da 1.0 permanece apenas como registro histórico.
 A versão 1.0 já está publicada. O upload da 1.1 deve ir para o mesmo registro;
 `com.canario.app` é um identificador histórico sem relação com este envio.
 
+**Corte executado em 21/08:** Archive Release validado, exportação App Store
+concluída e upload 1.1 (2) aceito às 09:18. O pacote entrou em processamento no
+TestFlight e não foi submetido à App Review. O Archive está preservado no
+Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
+
 ## Portões antes do Archive
 
 Todos precisam estar verdes no mesmo commit:
