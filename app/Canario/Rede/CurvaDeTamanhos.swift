@@ -180,33 +180,6 @@ enum CurvaDeTamanhos {
         return "Both ends of the size range moved at a similar pace in this window; no directional shape is declared."
     }
 
-    /// **Composição de grade, soma zero.** É o único tipo de recomendação que a
-    /// §24 autoriza, e a soma zero é o que a mantém do lado permitido: fala de
-    /// proporção entre tamanhos, nunca de quantas peças comprar.
-    ///
-    /// A frase é condicional de propósito. O painel não conhece a modelagem nem
-    /// a clientela de quem lê.
-    static func composicao(porRotulo linhas: [Faixa]) -> String? {
-        let ordenado = linhas
-            .filter { $0.rotulo != nil && $0.taxaQuebra != nil }
-            .sorted { ($0.taxaQuebra ?? 0) > ($1.taxaQuebra ?? 0) }
-        guard ordenado.count >= 3, let pico = ordenado.first, let vale = ordenado.last,
-              let rVale = vale.rotulo
-        else { return nil }
-        // Sem diferença que se sustente, não há composição a sugerir. Mandar
-        // deslocar grade sobre ruído seria pior que não dizer nada.
-        guard !empatados(pico, vale) else {
-            return "Sizes in this selection moved at a similar pace within the margin of error. "
-                 + "The data does not support reallocating the size mix."
-        }
-        let noTopo = ordenado.filter { $0.id == pico.id || empatados(pico, $0) }
-            .compactMap(\.rotulo)
-        let destino = noTopo.count == 1 ? noTopo[0] : noTopo.joined(separator: " and ")
-        return "If your size mix is currently even and your audience resembles the panel's, "
-             + "this data supports shifting share from \(rVale) to \(destino) — changing proportions, "
-             + "not the total number of items. Purchase volume depends on your costs, timing and history, which are not included."
-    }
-
     /// §24, ressalva obrigatória. Não é rodapé: é a condição de uso do número.
     static let ressalvas = [
         "Your brand's audience is not the panel's average audience. Fit and customer mix are yours; this is market context, not a prescription.",

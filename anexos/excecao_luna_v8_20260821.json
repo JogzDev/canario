@@ -1,0 +1,17 @@
+{
+  "prompt_version": "alvo-estrutura-v8",
+  "prompt_sha256": "90955dad87921171d234e6eda8bc5d42d98290613e51bde33798f17db7042a65",
+  "rubric_version": "categoria-cor-v3",
+  "sample_size": 24,
+  "category_correct": 19,
+  "category_accuracy": 0.7916666666666666,
+  "primary_color_correct": 20,
+  "primary_color_accuracy": 0.8333333333333334,
+  "release_exception_authorized": true,
+  "release_scope": "DataDrobe 1.1 build 3",
+  "authorized_on": "2026-08-21",
+  "does_not_change_default_gate": true,
+  "default_gate_accuracy": 0.8,
+  "benchmark_300_remains_blocked": true,
+  "reason": "Excecao unica autorizada por JP: o desvio de categoria e de 0,8 ponto percentual e nao justifica novas rodadas para este release."
+}

@@ -5,9 +5,8 @@ import SwiftUI
 /// É o achado que a cliente relatou em entrevista, devolvido quantificado: onde
 /// a grade quebra ao longo da escada de tamanhos.
 ///
-/// A tela mostra a taxa por tamanho, o formato da quebra, a composição sugerida
-/// (soma zero, que é o único tipo de recomendação que a §24 autoriza) e as
-/// ressalvas — que aqui não são rodapé, são condição de uso do número.
+/// A tela mostra a taxa por tamanho, o formato da quebra e as ressalvas — que
+/// aqui não são rodapé, são condição de uso do número.
 struct CurvaDeTamanhosView: View {
     /// Nulo = o painel inteiro. Preenchido = a curva daquele atributo.
     var termo: Termo?
@@ -55,7 +54,6 @@ struct CurvaDeTamanhosView: View {
                 manchete
                 barras
                 formatoDaQuebra
-                composicao
                 ressalvas
             }
             .padding(Tokens.Espaco.m)
@@ -101,18 +99,6 @@ struct CurvaDeTamanhosView: View {
                     if let m = menores, let g = maiores {
                         LinhaInsumo(texto: "Smaller sizes: \(m.nQuebrou) of \(m.nEmRisco). Larger sizes: \(g.nQuebrou) of \(g.nEmRisco).")
                     }
-                }
-            }
-        }
-    }
-
-    /// §24: composição de grade é permitida (soma zero); volume, nunca.
-    private var composicao: some View {
-        Group {
-            if let frase = CurvaDeTamanhos.composicao(porRotulo: tamanhos) {
-                Cartao {
-                    Text("Size-mix context").font(Tokens.Fonte.secao)
-                    Text(frase).font(Tokens.Fonte.corpo)
                 }
             }
         }

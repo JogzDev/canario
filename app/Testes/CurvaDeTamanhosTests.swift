@@ -94,16 +94,6 @@ final class CurvaDeTamanhosTests: XCTestCase {
                        "5,4% contra 3,7% é diferença de verdade, e some se a margem for frouxa")
     }
 
-    func testComposicaoSeCalaQuandoNaoHaDiferenca() {
-        // Mandar deslocar grade sobre ruído é pior que não dizer nada.
-        let chapado = [faixa("P", "menores", emRisco: 10000, quebrou: 400, taxa: 4.00),
-                       faixa("M", "meio",    emRisco: 10000, quebrou: 402, taxa: 4.02),
-                       faixa("G", "maiores", emRisco: 10000, quebrou: 398, taxa: 3.98)]
-        let frase = CurvaDeTamanhos.composicao(porRotulo: chapado) ?? ""
-        XCTAssertTrue(frase.contains("margin of error"))
-        XCTAssertFalse(frase.contains("shifting share"))
-    }
-
     // MARK: A manchete nomeia o tamanho, e isso não é estilo
 
     func testMancheteNomeiaOTamanhoDePico() {
@@ -172,28 +162,6 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores) ?? ""
         XCTAssertTrue(frase.contains("larger sizes"))
         XCTAssertTrue(frase.contains("2,00"))
-    }
-
-    // MARK: A fronteira da regra 1
-
-    func testComposicaoFalaDeProporcaoENuncaDeVolume() {
-        let frase = CurvaDeTamanhos.composicao(porRotulo: painel) ?? ""
-        XCTAssertFalse(frase.isEmpty)
-        // §24 autoriza composição de grade (soma zero) e proíbe volume.
-        XCTAssertTrue(frase.contains("not the total number of items"),
-                      "a soma zero é o que mantém a frase do lado permitido")
-        XCTAssertTrue(frase.contains("shifting share"))
-        for proibido in ["buy more", "produce more", "increase quantity", "extra items"] {
-            XCTAssertFalse(frase.lowercased().contains(proibido),
-                           "recomendação de volume é proibida pela regra 1: \(proibido)")
-        }
-    }
-
-    func testComposicaoEhCondicional() {
-        let frase = CurvaDeTamanhos.composicao(porRotulo: painel) ?? ""
-        XCTAssertTrue(frase.hasPrefix("If your size mix"),
-                      "§24 exige linguagem condicional: o público do usuário não é o do painel")
-        XCTAssertTrue(frase.contains("your costs"))
     }
 
     func testRessalvasCarregamOConfundidorDeProfundidade() {

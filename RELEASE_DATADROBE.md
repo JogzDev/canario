@@ -37,8 +37,11 @@ Todos precisam estar verdes no mesmo commit:
    CODE_SIGNING_ALLOWED=NO` — fluxos de interface.
 4. `python3 ferramentas/testar_edge_luna.py --so-contrato` — Edge Function
    disponível sem gastar uma análise.
-5. `anexos/portao_luna_24.json` com `passed: true`, prompt
-   `alvo-estrutura-v8` e rodada de regressão consolidada.
+5. Luna v8 conferida contra o gabarito humano: categoria 19/24 (79,2%) e cor
+   principal 20/24 (83,3%). Para o build 3, a diferença de 0,8 p.p. em categoria
+   foi aceita como exceção explícita e única; o piso padrão de 80% continua
+   obrigatório e o benchmark de 300 permanece bloqueado abaixo dele. Registro:
+   `anexos/excecao_luna_v8_20260821.json`.
 6. `app/Config.xcconfig` preenchido e `REMOTE_ANALYSIS_ENABLED = YES`. O arquivo
    é ignorado pelo Git; nunca copiar suas chaves para documentação ou log.
 7. Pipeline e saúde do dado verdes, sem publicação parcial silenciosa.
