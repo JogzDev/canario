@@ -2,6 +2,9 @@
 
 **Última atualização:** 21/08/2026, 04:20 UTC (01:20 em São Paulo)
 
+**Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
+neste documento é histórico, não uma instrução de configuração.
+
 Este é o **único** documento que descreve o estado atual do projeto. Se outro
 arquivo discordar dele, ele está velho — e provavelmente está em `historico/`.
 
