@@ -10,9 +10,9 @@ Checklist ativo em 21/08/2026.
 - Destino: iPhone, iOS 17+.
 - Análise visual: Luna v8 ligada; cópia reduzida e sem metadados só é enviada
   após consentimento explícito.
-- Upload anterior: **build 3 aceito pelo App Store Connect às 15:46 de
-  21/08/2026**, sem submissão à App Review. O build 4 é o candidato atual.
-- Archive preservado no Organizer: `DataDrobe 1.1 (3) 15.46.xcarchive`.
+- Upload atual: **build 4 aceito pelo App Store Connect às 19:49 de
+  21/08/2026**, sem submissão à App Review.
+- Archive preservado no Organizer: `DataDrobe 1.1 (4) 19.49.xcarchive`.
 
 ## Envio
 

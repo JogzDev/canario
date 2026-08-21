@@ -27,9 +27,9 @@ contra scroll, categoria obrigatória nos similares, Luna v8 e aparência clara
 consistente. Os blocos redundantes “Size-mix context” e “Limits” foram
 removidos; leituras não publicáveis deixaram de virar cartões de fracasso, o
 teclado da dica de alvo ganhou saída e a ajuda do painel se adapta ao iPhone.
-O build 3 foi aceito pelo App Store Connect às 15:46; o build 4 o substitui
-como candidato e ainda precisa de Archive e upload. Nenhum foi submetido à App
-Review.
+O build 4 foi arquivado, aceito pelo App Store Connect às 19:49 e está em
+processamento no TestFlight. O Archive correto é
+`DataDrobe 1.1 (4) 19.49.xcarchive`. Nenhum build foi submetido à App Review.
 
 ## Portões antes do Archive
 
