@@ -61,7 +61,8 @@ def main():
         "limit 12",
         "p.segmento = 'feminino_casual_br'",
         "least(greatest(coalesce($2, 12), 1), 24)",
-        "p.ultimo_snapshot_em >= current_date - 14",
+        "p.ofertavel is true",
+        "p.ultimo_avistamento_em >= current_date - 7",
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
     ]
