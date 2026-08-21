@@ -1,6 +1,6 @@
 # Pente fino do datacenter — 4 casos-limite
 
-**Executado (UTC):** 2026-08-17T20:03:46.982143+00:00
+**Executado (UTC):** 2026-08-21T02:15:06.274715+00:00
 
 
 | Marca | Plataforma | Tentativas HTTP | JSON | Veredito |
