@@ -1,4 +1,4 @@
-name: Coleta Shopify (runner residencial)
+name: Coleta residencial (Shopify ou recuperação VTEX)
 
 # Existe por uma diferenca medida em 29/07: Amaro e PatBo devolvem 429 do
 # datacenter do GitHub e 200 do IP residencial. As duas sao Shopify; as 12 VTEX
@@ -10,12 +10,36 @@ name: Coleta Shopify (runner residencial)
 # justifica o Mac existir no projeto.
 on:
   workflow_call:
+    inputs:
+      plataforma:
+        description: 'Plataforma a coletar no IP residencial'
+        required: false
+        type: string
+        default: 'shopify'
+      marca:
+        description: 'Coletar só uma marca (vazio = todas da plataforma)'
+        required: false
+        type: string
+        default: ''
     secrets:
       SUPABASE_URL:
         required: true
       SUPABASE_SECRET_KEY:
         required: true
   workflow_dispatch:
+    inputs:
+      plataforma:
+        description: 'Plataforma a coletar no IP residencial'
+        required: true
+        type: choice
+        options:
+          - shopify
+          - vtex
+        default: shopify
+      marca:
+        description: 'Coletar só uma marca (vazio = todas da plataforma)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -39,9 +63,10 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: "$PY coletor/verificar_capacidade_banco.py"
 
-      - name: Coletar so as marcas Shopify
+      - name: Coletar plataforma pelo IP residencial
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          COLETA_PLATAFORMA: shopify
+          COLETA_PLATAFORMA: ${{ inputs.plataforma }}
+          COLETA_MARCA: ${{ inputs.marca }}
         run: "$PY coletor/coletor_varejo.py"

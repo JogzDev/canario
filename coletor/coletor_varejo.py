@@ -259,7 +259,7 @@ def _contar(dominio, cat_id, pmin=None, pmax=None, estado=None):
     return total
 
 
-def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
+def _paginar(dominio, cat_id, limite, pmin=None, pmax=None, estado=None):
     """Pagina uma categoria.
 
     `cat_id` e id de departamento OU caminho completo de ids para subcategoria.
@@ -284,13 +284,33 @@ def _paginar(dominio, cat_id, limite, pmin=None, pmax=None):
                    "?fq=C:{}{}&O={}&_from={}&_to={}".format(
                        dominio, cat_id, _fq_preco(pmin, pmax), ordem, de, ate))
             codigo, corpo, _, _ = buscar_varejo(url, dominio)
-            if codigo not in (200, 206) or not corpo:
+            if codigo not in (200, 206):
+                _registrar_erro_vtex(
+                    estado,
+                    "http {} ao paginar categoria VTEX {} ({}-{}, {})".format(
+                        codigo, cat_id, de, ate, ordem))
+                break
+            if not corpo:
+                _registrar_erro_vtex(
+                    estado,
+                    "resposta vazia ao paginar categoria VTEX {} "
+                    "({}-{}, {})".format(cat_id, de, ate, ordem))
                 break
             try:
                 produtos = json.loads(corpo)
             except ValueError:
+                _registrar_erro_vtex(
+                    estado,
+                    "resposta nao-json ao paginar categoria VTEX {} "
+                    "({}-{}, {})".format(cat_id, de, ate, ordem))
                 break
             if not produtos:
+                if de < alvo:
+                    _registrar_erro_vtex(
+                        estado,
+                        "pagina vazia antes do total declarado na categoria "
+                        "VTEX {} ({}-{}, {})".format(
+                            cat_id, de, ate, ordem))
                 break
             for p in produtos:
                 produto_id = str(p.get("productId") or "")
@@ -374,7 +394,7 @@ def _por_categoria(dominio, caminho, estado, total=None, nivel=1):
         # com Calcados, Moda Intima e Moda Praia, e o alerta de divergencia
         # acusava perda onde havia exclusao correta.
         estado["declarado"] += total
-        yield from _paginar(dominio, caminho, total)
+        yield from _paginar(dominio, caminho, total, estado=estado)
         return
 
     if nivel < NIVEL_MAXIMO:
@@ -402,7 +422,8 @@ def _por_preco(dominio, cat_id, estado):
             return
         if t <= TETO_OFFSET:
             estado["declarado"] += t
-            yield from _paginar(dominio, cat_id, t, pmin, pmax)
+            yield from _paginar(
+                dominio, cat_id, t, pmin, pmax, estado=estado)
         elif pmax - pmin > 1:
             mid = (pmin + pmax) // 2
             yield from particao(pmin, mid)
@@ -418,7 +439,8 @@ def _por_preco(dominio, cat_id, estado):
             estado.setdefault("faixas_truncadas", []).append(
                 {"faixa": "{}-{}".format(pmin, pmax), "existem": t,
                  "coletados": TETO_OFFSET})
-            yield from _paginar(dominio, cat_id, TETO_OFFSET, pmin, pmax)
+            yield from _paginar(
+                dominio, cat_id, TETO_OFFSET, pmin, pmax, estado=estado)
 
     yield from particao(0, PRECO_TETO)
 

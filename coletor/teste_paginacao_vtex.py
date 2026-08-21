@@ -74,6 +74,29 @@ def main():
         print("FALHOU: contagem VTEX sem total foi tratada como catálogo vazio")
         return 1
 
+    # A contagem pode funcionar e uma pagina posterior sofrer rate-limit. Era
+    # exatamente o caso da Farm: 2.946 declarados, 200 visitados e workflow
+    # verde porque `_paginar` engolia o 429. A saude precisa preservar a causa.
+    def buscar_pagina_429(url, _dominio):
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+        inicio = int(query["_from"][0])
+        if inicio >= 50:
+            return 429, "", url, {}
+        produtos = [{"productId": str(i)} for i in range(50)]
+        return 206, json.dumps(produtos), url, {"resources": "0-49/150"}
+
+    varejo.buscar_varejo = buscar_pagina_429
+    try:
+        estado = {"erro": None}
+        produtos = list(varejo._paginar(
+            "loja.test", "3", 150, estado=estado))
+    finally:
+        varejo.buscar_varejo = original
+    if len(produtos) != 50 or "http 429 ao paginar" not in (
+            estado.get("erro") or ""):
+        print("FALHOU: paginacao VTEX perdeu o motivo HTTP")
+        return 1
+
     # O host administrativo da Maria Filó aceita a rota, mas redireciona o
     # usuário para /admin/login. O coletor precisa persistir a mesma rota no
     # domínio público, mantendo todos os links antigos e novos clicáveis.
