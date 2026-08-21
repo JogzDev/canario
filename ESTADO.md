@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 21/08/2026, 04:20 UTC (01:20 em São Paulo)
+**Última atualização:** 21/08/2026, 05:50 UTC (02:50 em São Paulo)
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -21,11 +21,11 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | verde, com dívida de cobertura conhecida | 15 de 15 marcas; C&A trunca e NV trouxe 563 de 1.329 pagináveis |
+| Dados e pipeline | verde; 14 contagens exatas e 1 incerteza explícita | 15 de 15 marcas; 45.683 produtos visitados na execução completa |
 | Banco | estabilizado, ainda no plano gratuito | 405.687.443 bytes — **81,1%** do limite decimal |
 | Rota paga de visão (Luna) | de pé, com credenciais | responde `invalid_image` |
-| App na loja | **1.0 APROVADA E PUBLICADA** | `br.com.canario.ch3.app` |
-| Testes | 213 Swift · 27 suítes Python | 0 telas com teste de interface |
+| App na loja | **1.0 publicada; 1.1 (build 2) pronta no repositório** | `br.com.canario.ch3.app` |
+| Testes | 215 Swift · 27 suítes Python · 3 UI | lógica, contrato e fluxos críticos no simulador |
 
 ---
 
@@ -133,10 +133,12 @@ Desde 19/08 ele responde **duas** perguntas, que antes eram uma só:
 * **cobertura** — o catálogo veio inteiro?
 
 A segunda existe porque em 18/08 a C&A entregou volume normal, portão verde, e
-**quatro faixas de preço truncadas em 2.500** na mesma página. Teto de perda:
-56.423 produtos. Hoje a cobertura é medida e reportada, mas **não bloqueia** — o
-número que define "catálogo faltando demais" é decisão de método do JP, e
-enquanto ele não existir bloquear seria chutar.
+**quatro faixas de preço truncadas em 2.500**. A investigação de 21/08 mostrou
+que os 66.353 resultados nessas faixas são produtos indisponíveis ainda
+indexados pela busca Legacy da VTEX. O coletor agora consulta a disponibilidade
+quando preço não consegue mais particionar, exclui esse universo do catálogo
+ofertável e registra a exclusão na saúde. A coleta completa terminou com 7.876
+visitados e 7.876 declarados, sem truncamento.
 
 ### P17 em produção — presença, oferta e snapshot são sinais diferentes
 
@@ -159,25 +161,53 @@ A publicação terminou `success`: 84.297 produtos, 212.409 ligações, 200 cél
 de varejo recalculadas e materializações antigas removidas por anti-junção.
 
 Isso corrige o significado do denominador, mas não inventa atributos que o
-título não contém. Entre as 25.270 ofertas recentes, a cobertura ainda é 97,8%
-em categoria, 44,5% em cor, 37,1% em tecido, 27,5% em comprimento, 15,5% em
-estética, 7,0% em silhueta, 6,3% em estampa e 3,6% em cintura. `liso` tem só 39
-produtos observados e não pode sustentar uma frase confiante de tendência.
+título não contém. A P18 materializa a cobertura de cada dimensão em toda célula
+de varejo e exige pelo menos 30% antes de permitir linguagem confiante. Na
+publicação final, 23 das 40 células passaram: todas as de categoria, cor e
+tecido. As 17 de comprimento, estética, estampa, silhueta e cintura falharam
+fechado. `liso` continua com 39 produtos e 0,155% do denominador, mas não pode
+mais ser apresentado como tendência sustentada.
 
-### Dívidas de cobertura comprovadas em 21/08
+### Cobertura fechada e medida em 21/08
 
-* **C&A:** 17.884 visitados, mas quatro partições de R$ 0–1 seguem truncadas em
-  2.500 e houve um HTTP 500 numa página. É a maior perda potencial.
-* **NV:** 563 visitados contra 1.329 pagináveis. A mesma cobertura apareceu no
-  datacenter e no runner residencial; não é bloqueio por IP, e sim estrutura da
-  navegação/categoria da loja.
-* **Dress To e Maria Filó:** coleta volumosa, mas com erro explícito de categoria
-  zero/HTTP 500. São avisos observáveis, não falhas silenciosas.
+* **C&A:** 7.876 visitados = 7.876 declarados. Outros 66.353 resultados
+  indisponíveis foram excluídos do universo ofertável e aparecem como sinal de
+  saúde, não como catálogo perdido.
+* **NV:** as categorias 2, 29 e 131 se sobrepõem; a união única é 563, e não a
+  soma 1.329. A categoria antiga 138 foi removida. A coleta terminou 563 = 563,
+  sem alerta.
+* **Dress To:** segue com aviso explícito de categoria zero. É a única das 15
+  marcas cuja contagem permanece incerta; a saúde continua observando-a.
 
 O paginador agora registra 429, 500, resposta vazia e JSON inválido em vez de
 encerrar silenciosamente. A workflow residencial aceita recuperação VTEX por
 marca; na Farm ela recuperou 2.936 de 2.946 produtos, mas na NV confirmou que o
 problema não era a origem da conexão.
+
+### Publicação final da madrugada
+
+O pipeline `32448665712` terminou verde em 52 minutos: VTEX, Shopify,
+editorial, Trends, dois portões de saúde, motor e alerta. Nenhuma recuperação
+foi necessária. A execução atômica
+`19b92240-eb02-45a2-99ef-3b512258bc1e` publicou 84.298 produtos, 212.409
+ligações e 193 células de varejo.
+
+| Medida | Antes | Depois |
+|---|---:|---:|
+| produtos | 84.297 | **84.298** |
+| avistados em até 7 dias | 56.200 | **56.201** |
+| ofertas recentes | 25.270 | **25.240** |
+| indisponíveis recentes | 30.930 | **30.961** |
+| estado desconhecido recente | 0 | **0** |
+| denominador semanal | 25.160 | **25.162** |
+
+Os shares permaneceram estáveis: a maior variação entre as 40 células foi
+`calca`, de 17,9134% para 17,9080% (**−0,0054 ponto percentual**). A mudança é
+compatível com duas ofertas a mais no denominador, não com uma quebra de série.
+
+A P19 também apertou os similares: agora exigem `ofertavel = true` e
+avistamento nos últimos sete dias. O antigo corte por snapshot de 14 dias saiu;
+produto sem confirmação recente não é mais oferecido como link vivo.
 
 ## 3. Rota paga de visão (Luna)
 
@@ -240,8 +270,9 @@ Luna entra na versão 1.1, não na 1.0 que está publicada.
 
 ## 4. App e loja
 
-* Bundle em revisão: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
-* Versão: **1.0**, vinda de `MARKETING_VERSION` no `project.pbxproj`
+* Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
+* Loja: **1.0 publicada**
+* Repositório: **1.1 (build 2)**, pronta para o próximo corte
 * Time: `67AYPRFZH8`
 * Alvo mínimo: iOS 17
 
@@ -261,23 +292,20 @@ Conferido em 19/08 nas três superfícies que mencionam OpenAI — alerta de
 consentimento, texto da tela de importação e tela de Privacidade: as três são
 condicionadas ao flag e, com ele desligado, dizem que a análise é local.
 
-Status na Apple: rejeitada uma vez por **Guideline 2.1 — Information Needed**.
-As respostas aos itens 2 a 7 estão escritas em
-[`RESPOSTA_REVISAO_APPLE.md`](RESPOSTA_REVISAO_APPLE.md). Faltam duas coisas, e
-as duas são do JP: o vídeo gravado em aparelho físico e a posição jurídica sobre
-fotos, títulos e preços de terceiros (item 7).
+O String Catalog inicial contém 150 chaves extraídas do app. Ainda não há
+tradução PT-BR — a A16 mantém a interface pública em inglês —, mas telas novas
+entram agora por uma infraestrutura única em vez de espalhar mais strings sem
+catálogo.
 
 ## 5. Testes
 
-* **213** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **215** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
 * **27** suítes Python — rodam a cada push
-* **0** telas com teste de interface, de 13 telas
+* **3** testes de interface no alvo `CanarioUITests`: Add/menu, Closet e Privacy
 
-O zero de interface é conhecido e tem um motivo prático: um alvo de UI test
-exige mexer no `project.pbxproj`, que é justamente o arquivo mais frágil do
-projeto. A estratégia enquanto isso é tirar a decisão de dentro da `View` e
-testá-la no pacote de lógica — foi assim que a divergência "Analytics/Trends" e
-os defeitos do formulário passaram a ser detectáveis.
+O gerador é dono do alvo de UI test e o CI o executa num iPhone 17 simulado.
+Isso protege os três caminhos estruturais enquanto as telas novas chegam sem
+transformar o `project.pbxproj` em edição manual recorrente.
 
 ---
 
@@ -285,11 +313,9 @@ os defeitos do formulário passaram a ser detectáveis.
 
 ### Só o JP pode fazer
 
-1. Gravar o vídeo de demonstração em iPhone físico e responder à Apple
-2. Fechar a posição jurídica sobre conteúdo de terceiros (item 7 da revisão)
-3. Aceite manual em aparelho: instalação limpa, câmera, fototeca, offline,
+1. Aceite manual em aparelho: instalação limpa, câmera, fototeca, offline,
    links, modo escuro, Dynamic Type, VoiceOver
-4. Decidir o número que separa "cobertura aceitável" de "dia inútil"
+2. Decidir o número que separa "cobertura aceitável" de "dia inútil"
 
 ### Decisões de produto, sem prazo
 
@@ -299,39 +325,28 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
 
 ### Técnico, em ordem de valor
 
-1. **Fechar a perda da C&A** — investigar por que dezenas de milhares de itens
-   aparecem nas faixas VTEX de R$ 0–1 e, se forem produtos reais/ofertáveis,
-   introduzir um segundo eixo de partição quando o preço se esgota
-2. **Explicar a cobertura da NV** — 563 de 1.329 tanto no datacenter quanto no
-   runner residencial; mapear a árvore VTEX e corrigir a deduplicação/navegação
-3. **Não afirmar o que o motor não observa** — `liso` tem 39 leituras e cinco
-   dimensões ficam abaixo de 30% de cobertura; criar política de apresentação e
-   um caminho de enriquecimento antes de lhes dar o mesmo peso de categoria
-4. **Alerta de "o pipeline nem começou"** — o alerta de falha existe desde
+1. **Alerta de "o pipeline nem começou"** — o alerta de falha existe desde
    19/08 (abre uma issue, agrupa noites seguidas, fecha sozinha no verde), mas
    ele roda no mesmo Mac que executa a coleta. Se a máquina estiver parada,
    ninguém é avisado. O certo seria um runner independente: medido em 19/08,
    `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
    billing. Sem gastar, a saída é algo fora do GitHub
-5. **Portão das 24 é decidido por ruído** — a rodada v7 de 20/08 deu 79,2% em
+2. **Portão das 24 é decidido por ruído** — a rodada v7 de 20/08 deu 79,2% em
    categoria e cor, contra 83,3% e 91,7% da v6, e o portão fechou. Uma imagem
    vale 4,2 pontos e pelo menos uma delas (`12550.jpg`) troca de resposta
    sozinha entre rodadas do mesmo prompt. Três rodadas repetidas da v7 custam
    US$ 0,053 e separam prompt de amostra; enquanto isso não for feito, nem o
    79,2% nem o 83,3% descrevem qualidade com confiança. Conta em
    `anexos/avaliacao_luna/relatorio-20-08-v7.md`
-6. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
+3. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
    sobre o fundo escuro em 19/08, mas o relato original era de algo **rosa**, e
    isso eu não consegui reproduzir: só há runtime iOS 26.2 nesta máquina, e o
    iPhone 15 com 18.7 usa o caminho de compatibilidade. Pode ter sido o mesmo
    defeito visto noutro renderizador, pode ser outro. Precisa de uma foto
-7. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
+4. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
    reproduzível no Mac (242 → 241 ms), mas **a causa dos 30 s continua sem
    prova**. Precisa de medição no aparelho, não de mais otimização no escuro
-8. Primeiro teste de interface de verdade
-9. `String Catalog` antes de abrir PT-BR
-10. Subir `MARKETING_VERSION` e `CURRENT_PROJECT_VERSION` para a próxima versão
-11. Apagar as branches remotas já mescladas
+5. Apagar as branches remotas já mescladas
 
 ---
 
