@@ -216,6 +216,15 @@ def checar_orquestracao(workflows):
     if backfill and atributos and backfill[0] > atributos[0]:
         falhar("motor.yml", "backfill deve acontecer antes da publicacao")
 
+    testes = workflows.get("testes.yml", {}).get("jobs", {}).get("app", {})
+    comandos_app = [str(p.get("run", ""))
+                    for p in testes.get("steps", [])]
+    ui = [c for c in comandos_app
+          if "xcodebuild test" in c and "CanarioUITests" in c]
+    if len(ui) != 1:
+        falhar("testes.yml",
+               "alvo CanarioUITests existe, mas nao roda uma vez no CI")
+
     sonda = workflows.get("sonda.yml", {}).get("jobs", {}).get("sondar", {})
     passos_sonda = sonda.get("steps", [])
     publicadores = [p for p in passos_sonda

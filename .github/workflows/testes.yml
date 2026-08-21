@@ -125,3 +125,10 @@ jobs:
           xcodebuild -project Canario.xcodeproj -target Canario \
             -sdk iphonesimulator -configuration Debug build \
             CODE_SIGNING_ALLOWED=NO | tail -5
+
+      - name: Fluxos criticos de interface no simulador
+        working-directory: app
+        run: |
+          xcodebuild test -project Canario.xcodeproj -scheme Canario \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -only-testing:CanarioUITests CODE_SIGNING_ALLOWED=NO | tail -20
