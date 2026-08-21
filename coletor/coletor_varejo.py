@@ -449,6 +449,8 @@ def vtex_extrair(p, dominio=None):
     itens = p.get("items") or []
     grade = {}
     preco_atual = preco_orig = None
+    preco_fallback = preco_orig_fallback = None
+    ofertavel = False
     for it in itens:
         tamanho = None
         for v in (it.get("variations") or []):
@@ -457,10 +459,20 @@ def vtex_extrair(p, dominio=None):
                 tamanho = vals[0] if vals else None
         sellers = it.get("sellers") or []
         disponivel = False
-        if sellers:
-            oferta = sellers[0].get("commertialOffer") or {}
-            disponivel = bool(oferta.get("IsAvailable")) and (oferta.get("AvailableQuantity", 0) or 0) > 0
-            if preco_atual is None and oferta.get("Price"):
+        for seller in sellers:
+            oferta = seller.get("commertialOffer") or {}
+            esta_disponivel = (bool(oferta.get("IsAvailable"))
+                               and (oferta.get("AvailableQuantity", 0) or 0) > 0)
+            disponivel = disponivel or esta_disponivel
+            ofertavel = ofertavel or esta_disponivel
+            # O preco de seller indisponivel continua util como contexto de
+            # historico e saude, mas NUNCA decide `ofertavel`. Havendo seller
+            # compravel, seu preco prevalece sobre o fallback cadastrado.
+            if preco_fallback is None and oferta.get("Price"):
+                preco_fallback = oferta.get("Price")
+                preco_orig_fallback = (oferta.get("ListPrice")
+                                       or oferta.get("Price"))
+            if esta_disponivel and preco_atual is None and oferta.get("Price"):
                 preco_atual = oferta.get("Price")
                 preco_orig = oferta.get("ListPrice") or oferta.get("Price")
         if tamanho:
@@ -475,6 +487,8 @@ def vtex_extrair(p, dominio=None):
     imagem = None
     if itens and (itens[0].get("images") or []):
         imagem = itens[0]["images"][0].get("imageUrl")
+    if preco_atual is None:
+        preco_atual, preco_orig = preco_fallback, preco_orig_fallback
     return {
         "id_externo": str(p.get("productId") or ""),
         "url": _url_publica_vtex(p, dominio) if dominio else (p.get("link") or None),
@@ -485,6 +499,7 @@ def vtex_extrair(p, dominio=None):
         "preco_atual": preco_atual,
         "composicao": composicao,
         "grade_por_tamanho": grade or None,
+        "ofertavel": ofertavel,
     }
 
 
@@ -547,18 +562,31 @@ def _posicao_do_tamanho(produto):
 def shopify_extrair(p):
     grade = {}
     preco_atual = preco_orig = None
+    preco_fallback = preco_orig_fallback = None
+    ofertavel = False
     posicao = _posicao_do_tamanho(p)
     for v in (p.get("variants") or []):
+        disponivel = bool(v.get("available"))
+        ofertavel = ofertavel or disponivel
         tamanho = v.get("option{}".format(posicao)) if posicao else None
         if tamanho:
             chave = str(tamanho)
-            grade[chave] = grade.get(chave, False) or bool(v.get("available"))
-        if preco_atual is None and v.get("price"):
+            grade[chave] = grade.get(chave, False) or disponivel
+        if preco_fallback is None and v.get("price"):
+            try:
+                preco_fallback = float(v.get("price"))
+                preco_orig_fallback = float(
+                    v.get("compare_at_price") or v.get("price"))
+            except (TypeError, ValueError):
+                pass
+        if disponivel and preco_atual is None and v.get("price"):
             try:
                 preco_atual = float(v.get("price"))
                 preco_orig = float(v.get("compare_at_price") or v.get("price"))
             except (TypeError, ValueError):
                 pass
+    if preco_atual is None:
+        preco_atual, preco_orig = preco_fallback, preco_orig_fallback
     imagem = p["images"][0].get("src") if p.get("images") else None
     handle = p.get("handle")
     return {
@@ -571,6 +599,7 @@ def shopify_extrair(p):
         "preco_atual": preco_atual,
         "composicao": None,
         "grade_por_tamanho": grade or None,
+        "ofertavel": ofertavel,
     }
 
 
@@ -589,6 +618,10 @@ def _mudou(d, ex):
     if float(d.get("preco_original") or 0) != float(ex.get("ultimo_preco_original") or 0):
         return True
     if (d.get("grade_por_tamanho") or {}) != (ex.get("ultima_grade") or {}):
+        return True
+    # NULL legado significa desconhecido, nao indisponivel. A primeira coleta
+    # depois da P17 precisa abrir um snapshot mesmo quando concluir false.
+    if d.get("ofertavel") != ex.get("ofertavel"):
         return True
     return False
 
@@ -618,7 +651,8 @@ def gravar_lote(marca_id, coletados, hoje):
         lista = ",".join('"{}"'.format(i) for i in sub)
         params = ("?marca_id=eq.{}&id_externo=in.({})"
                   "&select=id,id_externo,ultimo_preco_atual,ultimo_preco_original,"
-                  "ultima_grade,ultimo_snapshot_em,primeiro_avistamento".format(marca_id, lista))
+                  "ultima_grade,ultimo_snapshot_em,primeiro_avistamento,"
+                  "ultimo_avistamento_em,ofertavel".format(marca_id, lista))
         for r in supabase_rest.selecionar("produtos", params):
             existentes[r["id_externo"]] = r
 
@@ -636,6 +670,11 @@ def gravar_lote(marca_id, coletados, hoje):
             "categoria_site": d["categoria_site"],
             "imagem_url": d["imagem_url"],
             "primeiro_avistamento": (ex.get("primeiro_avistamento") if ex else hoje.isoformat()) or hoje.isoformat(),
+            # Visita e snapshot sao sinais diferentes. Este campo anda TODO
+            # dia em que o produto foi realmente devolvido pela loja; o
+            # snapshot continua esparso (mudanca ou batimento semanal).
+            "ultimo_avistamento_em": hoje.isoformat(),
+            "ofertavel": bool(d.get("ofertavel")),
             "ultimo_preco_atual": d["preco_atual"],
             "ultimo_preco_original": d["preco_original"],
             "ultima_grade": d["grade_por_tamanho"],
@@ -660,6 +699,7 @@ def gravar_lote(marca_id, coletados, hoje):
             "produto_id": pid, "data": hoje.isoformat(),
             "preco_original": d["preco_original"], "preco_atual": d["preco_atual"],
             "composicao": d["composicao"], "grade_por_tamanho": d["grade_por_tamanho"],
+            "ofertavel": bool(d.get("ofertavel")),
         })
     for bloco in _pedacos(snap_rows, BLOCO_ESCRITA):
         supabase_rest.upsert("snapshots", bloco, on_conflict="produto_id,data")

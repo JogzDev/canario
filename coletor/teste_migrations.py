@@ -69,6 +69,36 @@ def main():
         if trecho not in similares:
             return falhar("similares final nao garante: {}".format(trecho))
 
+    _, serie_varejo = ultima_definicao(
+        arquivos, "create or replace function public.computar_serie_varejo")
+    exigencias_presenca = [
+        "p.ultimo_avistamento_em",
+        "e.ofertavel is true",
+        "s.data + 6",
+        "lead(s.data) over",
+        "legado_desconhecido_excluido",
+        "delete from public.series_semanais",
+        "serie de varejo vazia",
+    ]
+    for trecho in exigencias_presenca:
+        if trecho not in serie_varejo:
+            return falhar("serie de varejo final nao garante: {}".format(
+                trecho))
+
+    _, raridade = ultima_definicao(
+        arquivos, "create or replace function public.computar_raridade")
+    exigencias_raridade_atual = [
+        "ativos as materialized",
+        "p.ofertavel is true",
+        "p.ultimo_avistamento_em >=",
+        "at time zone 'America/Sao_Paulo'",
+    ]
+    for trecho in exigencias_raridade_atual:
+        if trecho not in raridade:
+            return falhar(
+                "raridade final ainda usa catalogo historico: {}".format(
+                    trecho))
+
     _, eventos_recentes = ultima_definicao(
         arquivos, "create or replace function public.eventos_recentes")
     if "public.url_publica_produto(p.url, m.nome)" not in eventos_recentes:
