@@ -136,7 +136,6 @@ struct RelatorioDaPeca: View {
                     porAtributo
                     blocoDoCluster
                     blocoDoHistorico
-                    limites
                 }
             }
             .padding(Tokens.Espaco.m)
@@ -404,14 +403,21 @@ struct RelatorioDaPeca: View {
     }
 
     /// Um bloco por atributo, cada um com o próprio portão de cobertura.
+    @ViewBuilder
     private var porAtributo: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+        let publicaveis = termos.filter {
+            let indice = indices[$0.id]
+            return indice?.indice != nil
+                && Elegibilidade.indice(indice, cobertura: coberturas[$0.id])
+        }
+        if !publicaveis.isEmpty {
+          VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             Text("BY ATTRIBUTE")
                 .font(Tokens.Fonte.grupo)
                 .tracking(0.6)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
                 .padding(.leading, Tokens.Espaco.xs)
-            ForEach(termos) { termo in
+            ForEach(publicaveis) { termo in
                 Cartao {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
@@ -422,31 +428,19 @@ struct RelatorioDaPeca: View {
                         }
                         Spacer()
                         let indice = indices[termo.id]
-                        let podeMostrar = Elegibilidade.indice(
-                            indice, cobertura: coberturas[termo.id])
-                        SeloEstado(estado: podeMostrar ? indice?.estado : nil,
-                                   motivo: podeMostrar
-                                       ? "A direction is stated only when two sources agree."
-                                       : "Not enough same-week coverage.",
-                                   leitura: podeMostrar ? indice?.indice : nil)
+                        SeloEstado(estado: indice?.estado, leitura: indice?.indice)
                     }
                     conteudo(de: termo)
                 }
             }
+          }
         }
     }
 
     @ViewBuilder
     private func conteudo(de termo: Termo) -> some View {
         let i = indices[termo.id]
-        let c = coberturas[termo.id]
-        if c == nil {
-            LinhaInsumo(texto: "There is no coverage measurement for this attribute this week.")
-        } else if !Elegibilidade.indice(i, cobertura: c) {
-            // §8: sem cobertura, nem índice nem estado. O mesmo portão da
-            // outra tela, aplicado atributo a atributo.
-            LinhaInsumo(texto: "Insufficient coverage: \(c?.oQueFalta ?? "not measured").")
-        } else if let valor = i?.indice {
+        if let valor = i?.indice {
             Text(Leitura.emPalavras(valor)).font(Tokens.Fonte.apoio)
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 LinhaInsumo(texto: Leitura.explicacao(valor))
@@ -458,8 +452,6 @@ struct RelatorioDaPeca: View {
             }
             LinhaInsumo(texto: Perna.frase(i?.pernasAtivas)
                         + " · week of \(Formato.data(i?.semana ?? ""))")
-        } else {
-            LinhaInsumo(texto: "No reading for this attribute in this panel cut.")
         }
     }
 
@@ -564,11 +556,6 @@ struct RelatorioDaPeca: View {
                 }
                 .tint(Tokens.Cor.tintaFraca)
             }
-        } else {
-            CoberturaInsuficiente(
-                titulo: "No combined reading for this item yet",
-                explicacao: "None of the selected attributes has a sufficiently covered reading in this panel cut, so there is no valid average.",
-                oQueTem: "The available attribute-by-attribute reading is shown above.")
         }
     }
 
@@ -588,28 +575,8 @@ struct RelatorioDaPeca: View {
                         }
                     }
                     if let p = Cluster.porQuePesa(a) { LinhaInsumo(texto: p) }
-                }
-            if let s = Cluster.ressalvaDeSemana(c) { LinhaInsumo(texto: s) }
-
-            // Regra 6: o que ficou de fora aparece, e diz por quê.
-            let fora = Cluster.deFora(c)
-            if !fora.isEmpty {
-                Divider()
-                Text("Not included").font(Tokens.Fonte.miudo.weight(.semibold))
-                ForEach(fora) { a in
-                    LinhaInsumo(texto: "\(rotuloDoAtributo(a)): \(Explicacao.motivoDeExclusao(a.foraPor))")
-                }
             }
-        }
-    }
-
-    /// §29.6 — limites declarados, sempre.
-    private var limites: some View {
-        Cartao {
-            Text("Limits").font(Tokens.Fonte.secao)
-            LinhaInsumo(texto: "Not included: your sales history, costs or production capacity.")
-            LinhaInsumo(texto: "Editorial signals can carry commercial and advertising bias.")
-            LinhaInsumo(texto: "The original image was read and discarded. If you save the item, only a metadata-free local thumbnail remains and is deleted with it.")
+            if let s = Cluster.ressalvaDeSemana(c) { LinhaInsumo(texto: s) }
         }
     }
 

@@ -88,7 +88,7 @@ struct Comparar: View {
             }
 
             Section(escolhidos.count >= 2 ? "Change selection" : "Attributes") {
-                ForEach(termos) { termo in
+                ForEach(termosComparaveis) { termo in
                     Button {
                         alternar(termo.id)
                     } label: {
@@ -111,11 +111,22 @@ struct Comparar: View {
         .listStyle(.insetGrouped)
     }
 
+    /// A seleção oferece somente atributos para os quais os dois eixos podem
+    /// ser mostrados. O portão continua rigoroso sem transformar ausências em
+    /// linhas de erro dentro de uma ferramenta de comparação.
+    private var termosComparaveis: [Termo] {
+        termos.filter {
+            Elegibilidade.comparacao(
+                indice: indices[$0.id], varejo: varejo[$0.id],
+                cobertura: coberturas[$0.id])
+        }
+    }
+
     /// Ordena pela presença no varejo, que é o eixo com dado para todos. O
     /// índice editorial falta em parte dos termos, e ordenar por um campo vazio
     /// jogaria termos para o fim como se fossem os piores.
     private var comparados: [Termo] {
-        termos.filter { escolhidos.contains($0.id) }
+        termosComparaveis.filter { escolhidos.contains($0.id) }
             .sorted { (varejo[$0.id]?.valorBruto ?? -1) > (varejo[$1.id]?.valorBruto ?? -1) }
     }
 
@@ -131,9 +142,7 @@ struct Comparar: View {
                   let indice = indiceSemanal?.indice else { return nil }
             return (t, share, indice)
         }
-        guard comOsDois.count >= 2 else {
-            return "The gap cannot be read yet because not every selected attribute has both sources this week."
-        }
+        guard comOsDois.count >= 2 else { return nil }
         guard let maisEditorial = comOsDois.max(by: { $0.2 < $1.2 }),
               let maisVarejo = comOsDois.max(by: { $0.1 < $1.1 }) else { return nil }
 
@@ -203,37 +212,24 @@ struct LinhaComparada: View {
     let cobertura: Cobertura?
 
     var body: some View {
-        let podeMostrar = Elegibilidade.comparacao(
-            indice: indice, varejo: varejo, cobertura: cobertura)
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack {
                 Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                 Spacer()
-                SeloEstado(estado: podeMostrar ? indice?.estado : nil,
-                           motivo: podeMostrar
-                               ? "Fewer than two sources this week."
-                               : "Not enough same-week coverage.",
-                           leitura: podeMostrar ? indice?.indice : nil)
+                SeloEstado(estado: indice?.estado, leitura: indice?.indice)
             }
 
-            if cobertura == nil {
-                LinhaInsumo(texto: "There is no coverage measurement for this attribute this week.")
-            } else if !podeMostrar {
-                // §8: sem cobertura, nem índice nem share.
-                LinhaInsumo(texto: "Insufficient or mismatched coverage: \(cobertura?.oQueFalta ?? "not measured").")
-            } else {
-                HStack(alignment: .top, spacing: Tokens.Espaco.g) {
-                    eixo(titulo: "In the panel",
-                         valor: varejo?.valorBruto.map {
-                             Leitura.numero($0, casas: 1) + "%"
-                         } ?? "—",
-                         detalhe: varejo?.nAmostra.map { "\($0) items" } ?? "no data")
-                    eixo(titulo: "In editorial",
-                         valor: Explicacao.numeroComUnidade(indice?.indice),
-                         detalhe: indice?.indice.map { Leitura.emPalavras($0) } ?? "no index")
-                }
-                LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")). Editorial: \(Explicacao.unidadeDoIndice).")
+            HStack(alignment: .top, spacing: Tokens.Espaco.g) {
+                eixo(titulo: "In the panel",
+                     valor: varejo?.valorBruto.map {
+                         Leitura.numero($0, casas: 1) + "%"
+                     } ?? "—",
+                     detalhe: varejo?.nAmostra.map { "\($0) items" } ?? "—")
+                eixo(titulo: "In editorial",
+                     valor: Explicacao.numeroComUnidade(indice?.indice),
+                     detalhe: indice?.indice.map { Leitura.emPalavras($0) } ?? "—")
             }
+            LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")). Editorial: \(Explicacao.unidadeDoIndice).")
             if let semana = varejo?.semana ?? indice?.semana {
                 LinhaInsumo(texto: "Week of \(Formato.data(semana)).")
             }

@@ -345,7 +345,6 @@ private struct PerguntasDoMenu: View {
     private let perguntas: [(String, String)] = [
         ("What is a confirmed movement?", "A direction supported by at least two independent evidence legs, such as search interest and relevant fashion coverage. A spike in one source is shown separately instead of being promoted to a trend."),
         ("Why can two dates be different?", "Google search interest and editorial sources close their weeks on different schedules. The app shows the date attached to each signal and does not silently pretend they are the same observation."),
-        ("What does Not confirmed mean?", "There may be a current reading, but there is not enough independent coverage to claim a direction. It is missing evidence, not a negative verdict about the garment."),
         ("Are Similar Pieces recommendations?", "No. They are observed products sharing the selected attributes. Price, discount and availability describe the store at collection time; they are not purchase advice."),
         ("Does the app follow my garment over time?", "No. Opening a saved Closet item recalculates today's market reading for its attributes. The app does not claim that your personal garment rose or fell in the market."),
         ("How fresh is Weekly Trends?", "Search interest uses the latest closed Google Trends week available under the collection cadence. Fashion coverage uses publication dates. Each section shows its own evidence date so freshness can be audited.")

@@ -112,6 +112,7 @@ struct ImportarPeca: View {
     @State private var nomeConfirmadoPendente: String?
     @State private var descricaoConfirmadaPendente: String?
     @FocusState private var precoEmFoco: Bool
+    @FocusState private var dicaDoAlvoEmFoco: Bool
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
     /// funciona igual, e com ele entra o percentil de preço que a §5 autoriza
@@ -263,6 +264,9 @@ struct ImportarPeca: View {
                               axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(1...3)
+                        .focused($dicaDoAlvoEmFoco)
+                        .submitLabel(.done)
+                        .onSubmit { dicaDoAlvoEmFoco = false }
                     Text("Use this only when the photo contains more than one item. Visible pixels always take precedence.")
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -357,6 +361,13 @@ struct ImportarPeca: View {
                 // a atenção no momento em que ela deveria ser uma só.
             }
             .padding(Tokens.Espaco.m)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { dicaDoAlvoEmFoco = false }
+            }
         }
     }
 

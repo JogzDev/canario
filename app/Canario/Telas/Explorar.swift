@@ -696,7 +696,7 @@ struct CartaoDeMudanca: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(rotulo).font(Tokens.Fonte.corpo)
                 Spacer()
-                SeloEstado(estado: indice.estado, motivo: nil)
+                SeloEstado(estado: indice.estado)
             }
 
             // O número com a unidade colada. Antes saía "+1.15" sozinho.

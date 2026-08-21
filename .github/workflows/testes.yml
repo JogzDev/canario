@@ -66,6 +66,8 @@ jobs:
       # duas o sintoma so apareceu na hora de assinar para a loja.
       - name: Identidade do app e uma so
         run: "$PY coletor/teste_identidade_do_app.py"
+      - name: Regressões da experiência em aparelho
+        run: "$PY coletor/teste_experiencia_app.py"
       - name: Contrato do avaliador Luna (sem rede)
         run: "$PY coletor/teste_avaliar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)

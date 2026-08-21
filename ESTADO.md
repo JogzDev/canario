@@ -25,7 +25,7 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Banco | estabilizado, ainda no plano gratuito | 406.072.467 bytes — **81,2%** do limite decimal |
 | Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
 | App na loja | **1.0 publicada; upload 1.1 (build 2) aceito no TestFlight** | processamento iniciado; não enviado à revisão |
-| Testes | 226 Swift · 27 suítes Python · 4 UI | lógica, rede e fluxos críticos no simulador |
+| Testes | 224 Swift · 28 suítes Python · 4 UI | lógica, rede e fluxos críticos no simulador |
 
 ---
 

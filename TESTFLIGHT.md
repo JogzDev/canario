@@ -1,18 +1,18 @@
-# TestFlight — DataDrobe 1.1 (build 3)
+# TestFlight — DataDrobe 1.1 (build 4)
 
 Checklist ativo em 21/08/2026.
 
 - App publicado: **DataDrobe 1.0**.
-- Próximo beta: **1.1 (build 3)**.
+- Próximo beta: **1.1 (build 4)**.
 - Bundle: `br.com.canario.ch3.app`.
 - Team: `67AYPRFZH8`.
 - Idioma-fonte do app: inglês.
 - Destino: iPhone, iOS 17+.
 - Análise visual: Luna v8 ligada; cópia reduzida e sem metadados só é enviada
   após consentimento explícito.
-- Upload anterior: **build 2 aceito pelo App Store Connect às 09:18 de
-  21/08/2026**, sem submissão à App Review. O build 3 é o candidato atual.
-- Archive preservado no Organizer: `DataDrobe 1.1 (2) 09.15.xcarchive`.
+- Upload anterior: **build 3 aceito pelo App Store Connect às 15:46 de
+  21/08/2026**, sem submissão à App Review. O build 4 é o candidato atual.
+- Archive preservado no Organizer: `DataDrobe 1.1 (3) 15.46.xcarchive`.
 
 ## Envio
 

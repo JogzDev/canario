@@ -4,8 +4,7 @@ import Charts
 /// Relatório de um termo (§29, adaptado ao que existe hoje).
 ///
 /// A ordem dos blocos segue a §29: resumo por template determinístico, índice
-/// com pernas declaradas, minigráfico, insumos com fonte e data, e limites
-/// declarados no fim.
+/// com pernas declaradas, minigráfico e insumos com fonte e data.
 ///
 /// **Sem LLM** (§29 proíbe na v1): o parágrafo-resumo é template fixo com slots
 /// preenchidos exclusivamente por valores que o motor computou.
@@ -18,6 +17,7 @@ struct RelatorioDoTermo: View {
     @State private var carregando = true
     @State private var erro: String?
     @State private var janelaEmMeses = 6
+    @State private var curvaDisponivel = false
 
     private var maisRecente: IndiceSemanal? { indices.first }
     private var atual: IndiceSemanal? { SelecaoDeEstado.preferida(em: indices) }
@@ -39,10 +39,6 @@ struct RelatorioDoTermo: View {
         return c.suficiente
     }
 
-    private var coberturaDaSemana: Cobertura? {
-        atual.flatMap { i in coberturas.first(where: { $0.semana == i.semana }) }
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
@@ -51,21 +47,18 @@ struct RelatorioDoTermo: View {
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else if !temCobertura {
-                    CoberturaInsuficiente(
-                        titulo: "Not enough items yet",
-                        explicacao: "A reading requires at least \(coberturaDaSemana?.minimoPecas ?? 30) items from \(coberturaDaSemana?.minimoMarcas ?? 8) different brands this week. \(coberturaDaSemana?.oQueFalta ?? "This week has not been measured yet").",
-                        oQueTem: "No reading is shown until the sample supports it.")
+                    // O portão continua fechado no modelo; a interface apenas
+                    // omite a afirmação que não pode sustentar, sem abrir o
+                    // relatório com um cartão de fracasso.
                     grafico
                     curva
                     insumos
-                    limites
                 } else {
                     resumo
                     indiceEEstado
                     grafico
                     curva
                     insumos
-                    limites
                 }
             }
             .padding(Tokens.Espaco.m)
@@ -82,25 +75,28 @@ struct RelatorioDoTermo: View {
     /// Fica **abaixo do gráfico e acima dos insumos** de propósito: é camada
     /// descritiva de varejo (B1.3), não entra no índice, e misturar as duas
     /// coisas faria parecer que a curva de tamanhos move o z-score. Não move.
+    @ViewBuilder
     private var curva: some View {
-        NavigationLink {
-            CurvaDeTamanhosView(termo: termo)
-        } label: {
-            Cartao {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Size availability").font(Tokens.Fonte.secao)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(Tokens.Fonte.miudo)
+        if curvaDisponivel {
+            NavigationLink {
+                CurvaDeTamanhosView(termo: termo)
+            } label: {
+                Cartao {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Size availability").font(Tokens.Fonte.secao)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(Tokens.Fonte.miudo)
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                    }
+                    Text("Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()).")
+                        .font(Tokens.Fonte.apoio)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
+                    LinhaInsumo(texto: "Retail context only; it does not affect the index or state.")
                 }
-                Text("Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()).")
-                    .font(Tokens.Fonte.apoio)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
-                LinhaInsumo(texto: "Retail context only; it does not affect the index or state.")
             }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     /// §29.1 — template determinístico. Cada frase só existe se o número que a
@@ -132,7 +128,7 @@ struct RelatorioDoTermo: View {
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                     // K6: a leitura vem primeiro; o número técnico fica ao lado,
                     // menor, e nunca é apresentado como se fosse porcentagem.
-                    Text(atual?.indice.map { Leitura.emPalavras($0) } ?? "no reading")
+                    Text(atual?.indice.map { Leitura.emPalavras($0) } ?? "—")
                         .font(Tokens.Fonte.secao)
                     Text(atual?.indice.map(fmt) ?? "—")
                         .font(Tokens.Fonte.miudo)
@@ -140,16 +136,12 @@ struct RelatorioDoTermo: View {
                 }
                 Spacer()
                 SeloEstado(estado: atual?.estado,
-                           motivo: "A direction is stated only when two sources agree.",
                            leitura: temCobertura ? atual?.indice : nil)
             }
             if let z = atual?.indice {
                 LinhaInsumo(texto: Leitura.explicacao(z))
             }
             LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
-            if atual?.estado == nil {
-                LinhaInsumo(texto: "The number is available, but there is not enough multi-source history to call it up or down yet.")
-            }
         }
     }
 
@@ -157,12 +149,7 @@ struct RelatorioDoTermo: View {
     @ViewBuilder
     private var grafico: some View {
         let comZ = serieComparavel
-        if comZ.isEmpty {
-            CoberturaInsuficiente(
-                titulo: "Building comparable history",
-                explicacao: "Several consecutive weeks from the same source are needed before change can be measured. No source has enough yet.",
-                oQueTem: serie.isEmpty ? nil : "\(serie.count) measurements are already stored and will remain available as history grows.")
-        } else {
+        if !comZ.isEmpty {
             Cartao {
                 HStack {
                     Text("Comparable history").font(Tokens.Fonte.secao)
@@ -240,18 +227,6 @@ struct RelatorioDoTermo: View {
             .sorted { $0.0 < $1.0 }
     }
 
-    /// §29.6 — limites declarados. Fica no relatório sempre, não só quando dá ruim.
-    private var limites: some View {
-        Cartao {
-            Text("Limits").font(Tokens.Fonte.secao)
-            LinhaInsumo(texto: "Not included: your sales history, costs or production capacity.")
-            LinhaInsumo(texto: "Editorial signals can carry commercial and advertising bias.")
-            if termo.semPernaBusca == "sim" {
-                LinhaInsumo(texto: "Search interest is not tracked for this attribute because Google volume is too low to be reliable.")
-            }
-        }
-    }
-
     // MARK: Dados
 
     /// Média das 12 semanas anteriores à mais recente — a mesma janela do
@@ -277,9 +252,15 @@ struct RelatorioDoTermo: View {
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
+            async let t: [CurvaDeTamanhos.Faixa] = Supabase.shared.buscar(
+                "curva_tamanhos",
+                "select=*&termo_id=eq.\(termo.id)&sistema=eq.letra&rotulo=not.is.null&order=semana.desc&limit=60")
             serie = try await s
             indices = try await i.filter { $0.termoId == termo.id }
             coberturas = try await c
+            let tamanhos = (try? await t) ?? []
+            curvaDisponivel = CurvaDeTamanhos.consolidar(tamanhos)
+                .reduce(0) { $0 + $1.nEmRisco } >= CurvaDeTamanhos.minimoEmRisco
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

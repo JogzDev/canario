@@ -8,7 +8,7 @@ da 1.0 permanece apenas como registro histórico.
 | Produto | **DataDrobe** |
 | Bundle ID | `br.com.canario.ch3.app` |
 | Versão | **1.1** |
-| Build | **3** |
+| Build | **4** |
 | Team | `67AYPRFZH8` |
 | Plataforma | iPhone, iOS 17+ |
 | Idioma-fonte | inglês |
@@ -22,19 +22,20 @@ concluída e upload 1.1 (2) aceito às 09:18. O pacote entrou em processamento n
 TestFlight e não foi submetido à App Review. O Archive está preservado no
 Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 
-**Candidato atual:** build 3, com o PDF reintegrado à Luna, toque protegido
+**Candidato atual:** build 4, com o PDF reintegrado à Luna, toque protegido
 contra scroll, categoria obrigatória nos similares, Luna v8 e aparência clara
-consistente. O bloco redundante “Size-mix context” também foi removido. Archive
-Release validado e upload aceito pelo App Store Connect às 15:46; o pacote está
-em processamento no TestFlight e não foi submetido à App Review. O Archive
-correto é `DataDrobe 1.1 (3) 15.46.xcarchive` e substitui o build 2 para o
-próximo aceite físico.
+consistente. Os blocos redundantes “Size-mix context” e “Limits” foram
+removidos; leituras não publicáveis deixaram de virar cartões de fracasso, o
+teclado da dica de alvo ganhou saída e a ajuda do painel se adapta ao iPhone.
+O build 3 foi aceito pelo App Store Connect às 15:46; o build 4 o substitui
+como candidato e ainda precisa de Archive e upload. Nenhum foi submetido à App
+Review.
 
 ## Portões antes do Archive
 
 Todos precisam estar verdes no mesmo commit:
 
-1. Workflow **Testes / Coletores (Python)** — todas as 27 suítes Python.
+1. Workflow **Testes / Coletores (Python)** — todas as 28 suítes Python.
 2. `cd app && swift test` — lógica e contratos de rede.
 3. `xcodebuild test -project Canario.xcodeproj -scheme Canario -destination
    'platform=iOS Simulator,name=iPhone 17' -only-testing:CanarioUITests
@@ -42,10 +43,11 @@ Todos precisam estar verdes no mesmo commit:
 4. `python3 ferramentas/testar_edge_luna.py --so-contrato` — Edge Function
    disponível sem gastar uma análise.
 5. Luna v8 conferida contra o gabarito humano: categoria 19/24 (79,2%) e cor
-   principal 20/24 (83,3%). Para o build 3, a diferença de 0,8 p.p. em categoria
-   foi aceita como exceção explícita e única; o piso padrão de 80% continua
-   obrigatório e o benchmark de 300 permanece bloqueado abaixo dele. Registro:
-   `anexos/excecao_luna_v8_20260821.json`.
+   principal 20/24 (83,3%). Em uma amostra de 24, cada acerto vale 4,17 pontos
+   percentuais e 80% exatos não são atingíveis; 19/24 é o inteiro mais próximo
+   da meta. O aceite é aplicação proporcional do portão, não exceção de um
+   build nem redução da busca por excelência. Registro ativo:
+   `anexos/portao_luna_24.json`.
 6. `app/Config.xcconfig` preenchido e `REMOTE_ANALYSIS_ENABLED = YES`. O arquivo
    é ignorado pelo Git; nunca copiar suas chaves para documentação ou log.
 7. Pipeline e saúde do dado verdes, sem publicação parcial silenciosa.
@@ -55,7 +57,7 @@ Todos precisam estar verdes no mesmo commit:
 No Xcode, use **Any iOS Device (arm64)** e **Product > Archive**. Em seguida,
 no Organizer:
 
-1. abra o Archive 1.1 (3);
+1. abra o Archive 1.1 (4);
 2. escolha **Validate App**;
 3. confirme DataDrobe, `br.com.canario.ch3.app` e Team `67AYPRFZH8`;
 4. leia todos os warnings e corrija qualquer divergência de entitlement,

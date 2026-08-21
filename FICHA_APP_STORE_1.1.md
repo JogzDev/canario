@@ -1,4 +1,4 @@
-# Ficha da App Store — DataDrobe 1.1 (build 3)
+# Ficha da App Store — DataDrobe 1.1 (build 4)
 
 Metadados do candidato de 21/08/2026. A ficha da 1.0 é histórica e não deve ser
 copiada para este binário, porque dizia corretamente que nenhuma foto saía do
@@ -24,7 +24,7 @@ Add a garment and compare its confirmed attributes with current prices, markdown
 • A clearer four-step flow for photos, files and PDFs.
 • Optional visual suggestions after a separate cloud-consent step; every attribute remains editable.
 • Local Closet thumbnails and favorites.
-• Clearer coverage, source and date explanations throughout market reports.
+• Cleaner market reports that show only supported readings, with source and date details where relevant.
 • Similar Pieces now require a current offer seen within the last seven days.
 • Similar Pieces now always match the garment category.
 • More reliable PDF analysis and attribute selection while scrolling.
@@ -36,7 +36,7 @@ Add a garment and compare its confirmed attributes with current prices, markdown
 ```text
 DataDrobe organizes observed evidence from the Brazilian women's fashion market around the garment you are evaluating.
 
-Add a garment, confirm its attributes and compare it with the monitored panel: current prices and markdowns, missing sizes, similar pieces with store links, and weekly readings for its attributes. Each result shows its coverage, sources and dates. Your Closet stays on this iPhone and requires no account.
+Add a garment, confirm its attributes and compare it with the monitored panel: current prices and markdowns, missing sizes, similar pieces with store links, and weekly readings for its attributes. Published readings include their sources and dates. Your Closet stays on this iPhone and requires no account.
 
 When you choose a photo, DataDrobe reads color and visible text on the device. After you confirm the target garment, you may separately allow a reduced, metadata-free copy to be sent through Supabase to OpenAI for visual attribute suggestions. The submitted image is not stored by DataDrobe, and you review or replace every suggestion before saving. Manual entry remains available if you decline or the service is unavailable.
 
@@ -59,7 +59,7 @@ fashion,apparel,retail,pricing,markdown,brands,buying,merchandising,sizing,marke
 • Um fluxo mais claro em quatro etapas para fotos, arquivos e PDFs.
 • Sugestões visuais opcionais após consentimento separado para a nuvem; todo atributo continua editável.
 • Miniaturas locais e favoritos no Closet.
-• Explicações mais claras de cobertura, fonte e data nos relatórios.
+• Relatórios mais limpos, exibindo somente leituras sustentadas, com fonte e data quando relevantes.
 • Peças similares agora exigem oferta atual vista nos últimos sete dias.
 • Melhorias de confiabilidade, acessibilidade e uso offline.
 ```

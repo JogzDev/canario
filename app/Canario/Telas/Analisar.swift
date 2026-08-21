@@ -184,9 +184,7 @@ struct LinhaTermo: View {
             HStack {
                 Text(rotulo ?? Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                 Spacer()
-                SeloEstado(estado: indice?.estado,
-                           motivo: "Fewer than two independent sources agree.",
-                           leitura: indice?.indice)
+                SeloEstado(estado: indice?.estado, leitura: indice?.indice)
             }
             Text(Traducao.rotuloDaDimensao(termo.dimensao))
                 .font(Tokens.Fonte.miudo)

@@ -24,11 +24,9 @@ struct CurvaDeTamanhosView: View {
                 FalhaDeRede(mensagem: erro) { Task { await carregar() } }
             } else if !temCobertura {
                 ScrollView {
-                    CoberturaInsuficiente(
-                        titulo: "Not enough coverage for this curve",
-                        explicacao: "This selection has \(emRisco) sizes at risk; the minimum is \(CurvaDeTamanhos.minimoEmRisco). Below that, the rate varies too much to interpret.",
-                        oQueTem: "The sample grows with each nightly collection.")
-                    .padding(Tokens.Espaco.m)
+                    // A ausência continua fechando o cálculo, mas não vira um
+                    // cartão de incapacidade para quem abriu a tela.
+                    Color.clear.frame(height: 1)
                 }
             } else {
                 conteudo

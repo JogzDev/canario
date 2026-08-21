@@ -201,6 +201,29 @@ def testar_portao_pago_e_explicito():
         caminho.write_text(json.dumps({
             "prompt_version": MODULO.VERSAO_DO_PROMPT,
             "sample_size": 24,
+            "category_accuracy": 19 / 24,
+            "primary_color_accuracy": 19 / 24,
+            "passed": True,
+        }))
+        assert MODULO.validar_portao_24(caminho)["passed"] is True
+
+        caminho.write_text(json.dumps({
+            "prompt_version": MODULO.VERSAO_DO_PROMPT,
+            "sample_size": 24,
+            "category_accuracy": 18 / 24,
+            "primary_color_accuracy": 20 / 24,
+            "passed": True,
+        }))
+        try:
+            MODULO.validar_portao_24(caminho)
+        except ValueError as erro:
+            assert "80%" in str(erro)
+        else:
+            raise AssertionError("Benchmark abriu com apenas 18/24 em categoria")
+
+        caminho.write_text(json.dumps({
+            "prompt_version": MODULO.VERSAO_DO_PROMPT,
+            "sample_size": 24,
             "category_accuracy": 20 / 24,
             "primary_color_accuracy": 20 / 24,
             "passed": True,

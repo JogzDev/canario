@@ -5,13 +5,13 @@ import SwiftUI
 
 // MARK: - Selo de estado
 
-/// Mostra o estado de um termo. Quando `estado` é nulo, **não inventa**: diz
-/// que não há cobertura para afirmar (regra 2 e regra 6).
+/// Mostra o estado de um termo. Quando não existe leitura publicável, não
+/// inventa e também não transforma a ausência em um selo de fracasso: a tela
+/// simplesmente não mostra estado.
 ///
 /// §32: nunca comunica por cor sozinha — ícone e texto vão sempre juntos.
 struct SeloEstado: View {
     let estado: String?
-    let motivo: String?
     var leitura: Double? = nil
 
     var body: some View {
@@ -32,16 +32,7 @@ struct SeloEstado: View {
                 .background(Tokens.Cor.acao.opacity(0.14))
                 .foregroundStyle(Tokens.Cor.acao)
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
-                .accessibilityLabel("Current signal, not yet confirmed as a trend. \(motivo ?? "")")
-        } else {
-            Label("Not confirmed", systemImage: "minus.circle")
-                .font(Tokens.Fonte.miudo)
-                .padding(.horizontal, Tokens.Espaco.s)
-                .padding(.vertical, Tokens.Espaco.xs)
-                .background(Tokens.Cor.semDado.opacity(0.12))
-                .foregroundStyle(Tokens.Cor.semDado)
-                .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
-                .accessibilityLabel("Not confirmed. \(motivo ?? "Coverage is insufficient.")")
+                .accessibilityLabel("Current signal: \(Leitura.emPalavras(leitura)).")
         }
     }
 
@@ -117,17 +108,23 @@ struct BotaoDeAjuda: View {
         .buttonStyle(.plain)
         .accessibilityLabel(rotulo)
         .popover(isPresented: $aberto) {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                Text(titulo).font(Tokens.Fonte.secao)
-                Text(texto)
-                    .font(Tokens.Fonte.apoio)
-                    .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                    Text(titulo).font(Tokens.Fonte.secao)
+                    Text(texto)
+                        .font(Tokens.Fonte.apoio)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Tokens.Espaco.m)
             }
-            .padding(Tokens.Espaco.m)
-            .frame(maxWidth: 300)
-            // Sem isto o iPhone abre a explicação como folha de tela inteira,
-            // que é exatamente o peso que ela existe para evitar.
-            .presentationCompactAdaptation(.popover)
+            .frame(idealWidth: 360, minHeight: 180)
+            // Popover ancorado no "?" corta conteúdo comprido nas bordas do
+            // iPhone. Em largura compacta, a folha oferece largura, rolagem e
+            // um gesto de fechar previsíveis; no iPad continua sendo popover.
+            .presentationCompactAdaptation(.sheet)
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 }
