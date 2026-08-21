@@ -130,6 +130,14 @@ enum MiniaturaLocal {
     }
 
     static func dados(doArquivo url: URL) async -> Data? {
+        guard let imagem = imagem(doArquivo: url) else { return nil }
+        return await self.dados(de: imagem)
+    }
+
+    /// Abre também PDF como imagem para que Arquivos, Fotos e Câmera entrem no
+    /// mesmo portão de confirmação e, com consentimento, na mesma Luna. Antes o
+    /// PDF era desviado direto ao OCR/cor local e nunca chegava à análise visual.
+    static func imagem(doArquivo url: URL) -> CGImage? {
         let precisaLiberar = url.startAccessingSecurityScopedResource()
         defer { if precisaLiberar { url.stopAccessingSecurityScopedResource() } }
         guard let dados = try? Data(contentsOf: url) else { return nil }
@@ -141,11 +149,9 @@ enum MiniaturaLocal {
             let imagem = pagina.thumbnail(
                 of: CGSize(width: caixa.width * escala, height: caixa.height * escala),
                 for: .mediaBox)
-            guard let cgImage = imagem.cgImage else { return nil }
-            return await self.dados(de: cgImage)
+            return imagem.cgImage
         }
-        guard let imagem = imagem(de: dados) else { return nil }
-        return await self.dados(de: imagem)
+        return imagem(de: dados)
     }
 
     /// Recorte manual em coordenadas normalizadas (origem no canto superior

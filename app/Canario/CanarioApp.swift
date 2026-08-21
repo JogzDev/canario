@@ -3,7 +3,11 @@ import SwiftUI
 @main
 struct CanarioApp: App {
     var body: some Scene {
-        WindowGroup { Raiz() }
+        // A paleta escura experimental de 19/08 nunca passou por revisão de
+        // design e, no teste em aparelho, fez o mesmo build parecer outro app.
+        // A 1.1 preserva a aparência clara aprovada em todos os iPhones. Quando
+        // houver telas escuras desenhadas e validadas, este bloqueio sai daqui.
+        WindowGroup { Raiz().preferredColorScheme(.light) }
     }
 }
 

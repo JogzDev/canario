@@ -1,4 +1,4 @@
-# Ficha da App Store — DataDrobe 1.1 (build 2)
+# Ficha da App Store — DataDrobe 1.1 (build 3)
 
 Metadados do candidato de 21/08/2026. A ficha da 1.0 é histórica e não deve ser
 copiada para este binário, porque dizia corretamente que nenhuma foto saía do
@@ -26,6 +26,8 @@ Add a garment and compare its confirmed attributes with current prices, markdown
 • Local Closet thumbnails and favorites.
 • Clearer coverage, source and date explanations throughout market reports.
 • Similar Pieces now require a current offer seen within the last seven days.
+• Similar Pieces now always match the garment category.
+• More reliable PDF analysis and attribute selection while scrolling.
 • Reliability and accessibility improvements, including offline fallbacks and faster failure recovery.
 ```
 

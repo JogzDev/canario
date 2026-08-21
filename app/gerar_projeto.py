@@ -32,7 +32,7 @@ BUNDLE = "br.com.canario.ch3.app"
 TIME_DE_DESENVOLVIMENTO = "67AYPRFZH8"
 IOS_MINIMO = "17.0"
 VERSAO_DO_APP = "1.1"
-BUILD_DO_APP = "2"
+BUILD_DO_APP = "3"
 
 
 def ident(*partes):

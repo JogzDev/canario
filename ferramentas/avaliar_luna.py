@@ -27,7 +27,7 @@ import urllib.request
 
 
 MODELO = "gpt-5.6-luna"
-VERSAO_DO_PROMPT = "alvo-estrutura-v7"
+VERSAO_DO_PROMPT = "alvo-estrutura-v8"
 VERSAO_DO_PREPROCESSAMENTO = "vision-instance-mask-v2"
 URL_RESPOSTAS = "https://api.openai.com/v1/responses"
 SEMENTE_PADRAO = 20260810
@@ -239,18 +239,19 @@ sale item, or hidden construction. Accuracy is more important than coverage.
   round-neck sleeveless top without a shirt placket is upper_other, even if a
   person informally calls every upper garment a shirt. A collar or buttons do
   not make a continuous one-piece dress a shirt.
-- upper_outer_layer: jacket, coat, blazer, cardigan, fleece, anorak, parka,
+- upper_outer_layer: jacket, coat, blazer, cardigan, anorak, parka,
   puffer, gilet, or another garment visibly constructed as an outer layer.
   Two independent families of evidence, and either one is sufficient:
   (a) tailored - blazer lapels, tailored shoulders, structured fronts, welt or
   flap pockets, double-breasted construction;
-  (b) casual or technical - a zip running down the chest whether full, half or
-  quarter length; a hood; ribbed storm cuffs or hem; a fleece, quilted, padded
-  or weatherproof shell surface; drawcords at hem or hood.
-  Pullover construction does NOT rule out an outer layer: a quarter-zip fleece
-  is outerwear even though it goes over the head, and so is a hooded pullover
-  windbreaker. A cropped length or deep neckline does not turn a blazer into a
-  blouse or top.
+  (b) casual or technical - a full-front opening; a quilted, padded or clearly
+  weatherproof shell; lining; substantial outer pockets; storm hood, cuffs or
+  drawcords combined with protective construction.
+  A pullover, sweatshirt, hoodie or quarter-zip fleece is upper_other unless
+  unmistakable padded or weatherproof shell construction proves outerwear.
+  A partial neck zip, soft fleece or jersey surface, ribbed cuffs, hem, collar
+  or hood are not enough, alone or combined, to turn a pullover into a jacket.
+  A cropped length or deep neckline does not turn a blazer into a blouse or top.
 - upper_other: residual upper garment only after ruling out shirt construction
   and outerwear; includes blouse, top, tee, tank, cropped top, and bodysuit.
 - A long shirt is not a dress unless pixels establish that the same garment

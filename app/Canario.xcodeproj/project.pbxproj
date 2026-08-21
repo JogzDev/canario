@@ -18,6 +18,7 @@
 		531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */; };
 		D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C677A09E80A10C666280510 /* Explicacao.swift */; };
 		BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */; };
+		D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
 		BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */; };
 		EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */; };
@@ -62,6 +63,7 @@
 		DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntradasDoMenu.swift"; sourceTree = "<group>"; };
 		3C677A09E80A10C666280510 /* Explicacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explicacao.swift"; sourceTree = "<group>"; };
 		F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Importacao.swift"; sourceTree = "<group>"; };
+		14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IntencaoDoToque.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
 		A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MascaraDeInstancia.swift"; sourceTree = "<group>"; };
 		8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MiniaturaLocal.swift"; sourceTree = "<group>"; };
@@ -182,6 +184,7 @@
 				DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */,
 				3C677A09E80A10C666280510 /* Explicacao.swift */,
 				F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */,
+				14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
 				A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */,
 				8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */,
@@ -309,6 +312,7 @@
 				531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */,
 				D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */,
 				BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */,
+				D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
 				BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */,
 				EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */,
@@ -391,7 +395,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -414,7 +418,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -435,7 +439,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.1;
@@ -451,7 +455,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.1;

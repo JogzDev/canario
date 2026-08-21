@@ -782,40 +782,16 @@ struct ImportarPeca: View {
 
     private func processar(_ resultado: Result<[URL], Error>) async {
         guard case .success(let urls) = resultado, let url = urls.first else { return }
-        if url.pathExtension.lowercased() != "pdf" {
-            let liberou = url.startAccessingSecurityScopedResource()
-            defer { if liberou { url.stopAccessingSecurityScopedResource() } }
-            if let dados = try? Data(contentsOf: url),
-               let imagem = MiniaturaLocal.imagem(de: dados) {
-                await prepararConfirmacao(imagem, nome: url.lastPathComponent)
-                return
-            }
-        }
+        esperaAtual = .lendoArquivo
         lendo = true
         erro = nil
-        procedencia = []
-        nomeDoArquivo = url.lastPathComponent
-        miniaturaJPEG = await MiniaturaLocal.dados(doArquivo: url)
-        do {
-            let leitura = try await LeitorDeArquivo.ler(url)
-            let achado = Importacao.atributos(de: leitura, em: termos)
-            let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
-            detectados = reconheceuPeca ? achado.marcados : []
-            procedencia = achado.procedencia
-            let marcas = Importacao.marcasNoTexto(leitura.texto)
-            if !marcas.isEmpty {
-                procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
-            }
-            if !reconheceuPeca {
-                erro = "I read what I could from the image, but the category was not clear enough. Pick it below and the rest stays as read."
-            }
-        } catch {
-            erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+        guard let imagem = MiniaturaLocal.imagem(doArquivo: url) else {
+            erro = "I couldn't open this file. Choose a JPG, PNG, HEIC or PDF."
+            etapa = .entrada
+            lendo = false
+            return
         }
-        // Terminou de ler: a pessoa vai para a tela de conferir, com ou sem
-        // erro. Com erro ela corrige à mão, que é o que a mensagem oferece.
-        etapa = .atributos
-        lendo = false
+        await prepararConfirmacao(imagem, nome: url.lastPathComponent)
     }
 }
 
@@ -1019,59 +995,67 @@ struct FluxoDeChips: View {
         FlowLayout(espaco: Tokens.Espaco.s) {
             ForEach(termos) { termo in
                 let ativo = marcados.contains(termo.id)
-                Button {
+                ChipDeAtributo(termo: termo, ativo: ativo) {
                     // A regra vive em `FormularioDaPeca`, fora da View, porque
                     // um `insert` solto aqui deixava montar peça que não
                     // existe -- vestido e calça ao mesmo tempo.
                     marcados = FormularioDaPeca.alternar(
                         termo, em: marcados, termos: todos)
-                } label: {
-                    VStack(alignment: .leading, spacing: 1) {
-                        HStack(spacing: Tokens.Espaco.xs) {
-                            // Ver a cor vale mais que ler o nome dela. A amostra
-                            // sai do centro da faixa que o próprio
-                            // classificador usa (`CorDaPeca`), e um teste exige
-                            // que ela reclassifique no seu termo -- senão o chip
-                            // ensinaria taxonomia errada. Termo que não é cor
-                            // não ganha bolinha.
-                            if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
-                                Circle()
-                                    .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
-                                    // O contorno não é enfeite: sem ele o
-                                    // branco/cru desaparece no fundo claro.
-                                    .overlay(Circle().strokeBorder(
-                                        Tokens.Cor.borda, lineWidth: 0.5))
-                                    .frame(width: 12, height: 12)
-                            }
-                            Text(Traducao.rotuloExibido(termo))
-                        }
-                        // "Romantic" pede gosto; "ruffle · lace · puff sleeve"
-                        // pede olhar. A taxonomia já trazia esta linha e a tela
-                        // a jogava fora. Ver `Traducao.pistaDoTermo`.
-                        if let pista = Traducao.pistaDoTermo(termo) {
-                            Text(pista)
-                                .font(.caption2)
-                                .opacity(0.72)
-                        }
-                    }
-                        .font(Tokens.Fonte.miudo)
-                        .padding(.horizontal, Tokens.Espaco.m)
-                        .padding(.vertical, Tokens.Espaco.s)
-                        .background(ativo ? Tokens.Cor.tinta : Tokens.Cor.superficie)
-                        .foregroundStyle(ativo ? Tokens.Cor.fundo : Tokens.Cor.tinta)
-                        .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
-                        // A revisão de UX pediu mais área de clique, e a medida
-                        // mostrou que era pior que desconforto: com `xs` de
-                        // padding vertical o chip tinha ~21 pt de altura, menos
-                        // da METADE dos 44 pt que a Apple define como mínimo de
-                        // acessibilidade. A pílula cresceu e o alvo de toque vai
-                        // além dela, invisível, até fechar os 44.
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
             }
         }
+    }
+}
+
+/// Um chip só confirma no levantar do dedo e apenas se o deslocamento inteiro
+/// ficou abaixo de 6 pt. O botão padrão aceitava a pequena translação usada
+/// para iniciar um scroll; no aparelho isso marcou atributos sem intenção.
+private struct ChipDeAtributo: View {
+    let termo: Termo
+    let ativo: Bool
+    let acao: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: Tokens.Espaco.xs) {
+                // Ver a cor vale mais que ler o nome dela. A amostra sai do
+                // centro da faixa do classificador (`CorDaPeca`).
+                if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
+                    Circle()
+                        .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
+                        // Sem contorno, branco/cru desaparece no fundo claro.
+                        .overlay(Circle().strokeBorder(Tokens.Cor.borda, lineWidth: 0.5))
+                        .frame(width: 12, height: 12)
+                }
+                Text(Traducao.rotuloExibido(termo))
+            }
+            // "Romantic" pede gosto; "ruffle · lace · puff sleeve" pede olhar.
+            if let pista = Traducao.pistaDoTermo(termo) {
+                Text(pista).font(.caption2).opacity(0.72)
+            }
+        }
+        .font(Tokens.Fonte.miudo)
+        .padding(.horizontal, Tokens.Espaco.m)
+        .padding(.vertical, Tokens.Espaco.s)
+        .background(ativo ? Tokens.Cor.tinta : Tokens.Cor.superficie)
+        .foregroundStyle(ativo ? Tokens.Cor.fundo : Tokens.Cor.tinta)
+        .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
+        // Mantém o alvo mínimo de acessibilidade; o filtro de gesto abaixo é
+        // que impede essa área maior de transformar scroll em seleção.
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(ativo ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { acao() }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                .onEnded { valor in
+                    if IntencaoDoToque.confirma(
+                        deslocamentoX: Double(valor.translation.width),
+                        deslocamentoY: Double(valor.translation.height)) {
+                        acao()
+                    }
+                })
     }
 }
 

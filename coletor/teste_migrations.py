@@ -65,6 +65,8 @@ def main():
         "p.ultimo_avistamento_em >= current_date - 7",
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
+        "cardinality(par.categorias) = 0",
+        "bool_or(pt.termo_id = any(par.categorias))",
     ]
     for trecho in exigencias_similares:
         if trecho not in similares:

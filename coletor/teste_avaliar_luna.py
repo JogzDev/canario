@@ -42,6 +42,8 @@ def testar_taxonomia_e_schema():
     assert "visible gap, separate waistband, overlapping hem" in prompt
     assert "sleeveless collared, button-front, or tie-front dress" in prompt
     assert "cropped length or deep neckline does not turn a blazer" in prompt
+    assert "quarter-zip fleece is upper_other" in prompt
+    assert "not enough, alone or combined, to turn a pullover" in prompt
     assert "tank, camisole, bustier, strap top, tee" in prompt
     assert "two independent leg openings/tubes" in prompt
     assert "sharp color or texture change by itself" in prompt

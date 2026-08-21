@@ -1,17 +1,17 @@
-# TestFlight — DataDrobe 1.1 (build 2)
+# TestFlight — DataDrobe 1.1 (build 3)
 
 Checklist ativo em 21/08/2026.
 
 - App publicado: **DataDrobe 1.0**.
-- Próximo beta: **1.1 (build 2)**.
+- Próximo beta: **1.1 (build 3)**.
 - Bundle: `br.com.canario.ch3.app`.
 - Team: `67AYPRFZH8`.
 - Idioma-fonte do app: inglês.
 - Destino: iPhone, iOS 17+.
-- Análise visual: Luna v7 ligada; cópia reduzida e sem metadados só é enviada
+- Análise visual: Luna v8 ligada; cópia reduzida e sem metadados só é enviada
   após consentimento explícito.
-- Upload: **aceito pelo App Store Connect às 09:18 de 21/08/2026**; processamento
-  iniciado, sem submissão à App Review.
+- Upload anterior: **build 2 aceito pelo App Store Connect às 09:18 de
+  21/08/2026**, sem submissão à App Review. O build 3 é o candidato atual.
 - Archive preservado no Organizer: `DataDrobe 1.1 (2) 09.15.xcarchive`.
 
 ## Envio
@@ -35,7 +35,8 @@ favorites, clearer market reports, and fresher Similar Pieces links.
 Please test camera, Photos and PDF/file import; target selection and crop;
 the cloud-consent disclosure; manual fallback while offline or after a refused
 analysis; saving, editing and deleting Closet items; favorites; Similar Pieces
-and store links; dark mode, larger text and VoiceOver.
+and store links; scrolling over attribute chips; consistent light appearance,
+larger text and VoiceOver.
 
 Report any number whose source or date is unclear, any stale store link, any
 photo sent without the separate confirmation, and any import wait that feels

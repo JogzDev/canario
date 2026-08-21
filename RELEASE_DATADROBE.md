@@ -8,11 +8,11 @@ da 1.0 permanece apenas como registro histórico.
 | Produto | **DataDrobe** |
 | Bundle ID | `br.com.canario.ch3.app` |
 | Versão | **1.1** |
-| Build | **2** |
+| Build | **3** |
 | Team | `67AYPRFZH8` |
 | Plataforma | iPhone, iOS 17+ |
 | Idioma-fonte | inglês |
-| Análise visual | Luna v7 habilitada, sempre com consentimento explícito |
+| Análise visual | Luna v8 habilitada, sempre com consentimento explícito |
 
 A versão 1.0 já está publicada. O upload da 1.1 deve ir para o mesmo registro;
 `com.canario.app` é um identificador histórico sem relação com este envio.
@@ -21,6 +21,10 @@ A versão 1.0 já está publicada. O upload da 1.1 deve ir para o mesmo registro
 concluída e upload 1.1 (2) aceito às 09:18. O pacote entrou em processamento no
 TestFlight e não foi submetido à App Review. O Archive está preservado no
 Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
+
+**Candidato atual:** build 3, com o PDF reintegrado à Luna, toque protegido
+contra scroll, categoria obrigatória nos similares, Luna v8 e aparência clara
+consistente. Ele substitui o build 2 para o próximo aceite físico.
 
 ## Portões antes do Archive
 
@@ -34,7 +38,7 @@ Todos precisam estar verdes no mesmo commit:
 4. `python3 ferramentas/testar_edge_luna.py --so-contrato` — Edge Function
    disponível sem gastar uma análise.
 5. `anexos/portao_luna_24.json` com `passed: true`, prompt
-   `alvo-estrutura-v7` e três rodadas consolidadas.
+   `alvo-estrutura-v8` e rodada de regressão consolidada.
 6. `app/Config.xcconfig` preenchido e `REMOTE_ANALYSIS_ENABLED = YES`. O arquivo
    é ignorado pelo Git; nunca copiar suas chaves para documentação ou log.
 7. Pipeline e saúde do dado verdes, sem publicação parcial silenciosa.
@@ -44,7 +48,7 @@ Todos precisam estar verdes no mesmo commit:
 No Xcode, use **Any iOS Device (arm64)** e **Product > Archive**. Em seguida,
 no Organizer:
 
-1. abra o Archive 1.1 (2);
+1. abra o Archive 1.1 (3);
 2. escolha **Validate App**;
 3. confirme DataDrobe, `br.com.canario.ch3.app` e Team `67AYPRFZH8`;
 4. leia todos os warnings e corrija qualquer divergência de entitlement,
@@ -65,7 +69,7 @@ Em uma instalação limpa e também atualizando a 1.0:
 - sugestões da Luna, correção humana e salvamento no Closet;
 - miniatura, favorito, edição e exclusão local;
 - Similar Pieces e links externos em pelo menos duas marcas;
-- modo claro/escuro, Dynamic Type e VoiceOver;
+- aparência clara inclusive com o iPhone em modo escuro, Dynamic Type e VoiceOver;
 - espera de importação medida num iPhone físico, sem tela travada;
 - navegação completa em iOS 17/18 e numa versão atual.
 

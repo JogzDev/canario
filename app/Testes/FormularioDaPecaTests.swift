@@ -19,6 +19,15 @@ import XCTest
 /// múltiplas são cor, estética e tecido.
 final class FormularioDaPecaTests: XCTestCase {
 
+    func testScrollNaoViraSelecaoDeChip() {
+        XCTAssertTrue(IntencaoDoToque.confirma(deslocamentoX: 3,
+                                               deslocamentoY: 4))
+        XCTAssertFalse(IntencaoDoToque.confirma(deslocamentoX: 0,
+                                                deslocamentoY: 6.1))
+        XCTAssertFalse(IntencaoDoToque.confirma(deslocamentoX: 5,
+                                                deslocamentoY: 5))
+    }
+
     private func termo(_ id: String, _ dimensao: String,
                        exclusiva: Bool) -> Termo {
         Termo(id: id, rotulo: id, dimensao: dimensao, exclusiva: exclusiva,
