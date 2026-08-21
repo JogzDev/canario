@@ -186,6 +186,66 @@ def main():
         print("FALHOU: sobreposição completa virou alerta de perda")
         return 1
 
+    # Uma árvore antiga pode continuar cadastrada mesmo vazia ao lado da
+    # vitrine atual. Dress To ainda declara Lovedress (28, zero) e dress to
+    # (58, vivo). O ramo aposentado não pode contaminar uma coleta completa;
+    # se TODOS os ramos vierem zerados, porém, o alerta continua obrigatório.
+    def departamentos_com_ramo_vazio(*_args):
+        return [(28, "Lovedress"), (58, "dress to")], ""
+
+    def coletar_com_ramo_vazio(_dominio, cat_id, estado):
+        if cat_id == 28:
+            estado.setdefault("categorias_vazias", []).append(str(cat_id))
+            return
+        estado["declarado"] += 2
+        yield {"productId": "vivo-1"}
+        yield {"productId": "vivo-2"}
+
+    varejo.vtex_departamentos_femininos = departamentos_com_ramo_vazio
+    varejo.vtex_departamento = coletar_com_ramo_vazio
+    varejo.vtex_extrair = extrair_falso
+    varejo.gravar_lote = lambda _m, lote, _h: (0, len(lote))
+    varejo.robots_permite = lambda *_args: (True, "")
+    try:
+        metrica = varejo.coletar_marca(
+            {"id": 2, "nome": "Dress To", "dominio": "loja.test",
+             "plataforma": "vtex"}, varejo.date(2026, 8, 21), {})
+    finally:
+        varejo.vtex_departamentos_femininos = departamentos_original
+        varejo.vtex_departamento = coletar_original
+        varejo.vtex_extrair = extrair_original
+        varejo.gravar_lote = gravar_original
+        varejo.robots_permite = robots_original
+    if metrica["visitados"] != 2 or metrica["alertas"]:
+        print("FALHOU: ramo VTEX aposentado contaminou catálogo vivo")
+        return 1
+
+    def departamentos_todos_vazios(*_args):
+        return [(28, "Lovedress"), (99, "Legado")], ""
+
+    def coletar_tudo_vazio(_dominio, cat_id, estado):
+        estado.setdefault("categorias_vazias", []).append(str(cat_id))
+        return
+        yield  # pragma: no cover -- preserva a interface de gerador
+
+    varejo.vtex_departamentos_femininos = departamentos_todos_vazios
+    varejo.vtex_departamento = coletar_tudo_vazio
+    varejo.gravar_lote = lambda _m, lote, _h: (0, len(lote))
+    varejo.robots_permite = lambda *_args: (True, "")
+    try:
+        metrica = varejo.coletar_marca(
+            {"id": 3, "nome": "Loja vazia", "dominio": "loja.test",
+             "plataforma": "vtex"}, varejo.date(2026, 8, 21), {})
+    finally:
+        varejo.vtex_departamentos_femininos = departamentos_original
+        varejo.vtex_departamento = coletar_original
+        varejo.gravar_lote = gravar_original
+        varejo.robots_permite = robots_original
+    if "zero em todas as categorias 28, 99" not in (
+            (metrica.get("alertas") or {}).get("erro") or ""):
+        print("FALHOU: catálogo inteiro zerado deixou de ser crítico")
+        return 1
+
     # O host administrativo da Maria Filó aceita a rota, mas redireciona o
     # usuário para /admin/login. O coletor precisa persistir a mesma rota no
     # domínio público, mantendo todos os links antigos e novos clicáveis.

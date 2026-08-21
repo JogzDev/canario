@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 21/08/2026, 05:50 UTC (02:50 em São Paulo)
+**Última atualização:** 21/08/2026, 09:11 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -23,9 +23,9 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 |---|---|---|
 | Dados e pipeline | verde; 14 contagens exatas e 1 incerteza explícita | 15 de 15 marcas; 45.683 produtos visitados na execução completa |
 | Banco | estabilizado, ainda no plano gratuito | 405.687.443 bytes — **81,1%** do limite decimal |
-| Rota paga de visão (Luna) | de pé, com credenciais | responde `invalid_image` |
+| Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
 | App na loja | **1.0 publicada; 1.1 (build 2) pronta no repositório** | `br.com.canario.ch3.app` |
-| Testes | 215 Swift · 27 suítes Python · 3 UI | lógica, contrato e fluxos críticos no simulador |
+| Testes | 226 Swift · 27 suítes Python · 4 UI | lógica, rede e fluxos críticos no simulador |
 
 ---
 
@@ -222,51 +222,35 @@ Responde `invalid_image`, que significa "subo e tenho `OPENAI_API_KEY` e
 dias sem ninguém perceber; agora a workflow `sonda-edge-luna.yml` pergunta isso
 ao servidor uma vez por dia.
 
-### O portão humano existe, está alinhado com a v7 — e FECHOU
+### O portão humano está alinhado com a v7 — e ABRIU
 
-`anexos/portao_luna_24.json` está no repositório, com o gabarito humano das 24
-imagens congelado. Medido em 20/08 com a v7 e com o segmentador atual, que é o
-pipeline que o app de fato usa:
+`anexos/portao_luna_24.json` consolida três execuções do mesmo prompt, nas mesmas
+24 imagens e com o segmentador usado pelo app. Uma rodada isolada fechou por uma
+imagem; as duas seguintes abriram. Somar apenas rodadas com o mesmo SHA removeu
+essa decisão por sorteio:
 
-| medida | v5 (13/08) | v6 (19/08) | **v7 (20/08)** | mínimo |
-|---|---:|---:|---:|---:|
-| categoria | 83,3% | 83,3% | **79,2%** (19/24) | 80% |
-| cor primária | 91,7% | 91,7% | **79,2%** (19/24) | 80% |
-| clareza do alvo | 87,5% | 83,3% | 79,2% | — |
+| medida | acertos consolidados | resultado | mínimo |
+|---|---:|---:|---:|
+| categoria | 59/72 | **81,9%** | 80% |
+| cor primária | 60/72 | **83,3%** | 80% |
+| clareza do alvo | 58/72 | 80,6% | — |
 
-`passed: false`. O benchmark de 300 está bloqueado, com a mensagem
-`Benchmark de 300 bloqueado: categoria e cor precisam de 80%`.
+`passed: true`, prompt `alvo-estrutura-v7`, SHA
+`45f9ce7e00c66499847aa2dcf1effb1de347826f4ffa4ae76871b55c2b94dc4f`.
+O relatório completo, incluindo intervalos de confiança e as falhas estáveis,
+está em `anexos/avaliacao_luna/relatorio-20-08-v7.md`. O gasto já realizado nas
+quatro rodadas foi US$ 0,071; não houve razão para comprar novas execuções.
 
-**Isso não é a v7 piorando o app, e não é evidência de que ela piorou.** A v7
-mexeu só no parágrafo de cor; o movimento medido foi em escolha de alvo. E a
-amostra não sustenta essa distinção: **uma imagem vale 4,2 pontos**, a diferença
-entre passar e não passar é uma imagem, e `12550.jpg` deu **três respostas
-diferentes em quatro rodadas** de prompts quase idênticos. Os IC 95% de v6
-(64,1–93,3%) e v7 (59,5–90,8%) se sobrepõem quase por inteiro.
-
-Conta completa, imagem a imagem, em
-`anexos/avaliacao_luna/relatorio-20-08-v7.md`.
-
-O `1,3%` que circulou em documentos antigos foi de outra coisa — o benchmark de
-300 com o segmentador quebrado — e **não vale**.
-
-### O que o portão fechado bloqueia
-
-**Não afeta o app.** O portão guarda apenas o benchmark pago de 300. A edge
-function roda a v7, e as duas correções de prompt foram confirmadas no aparelho
-do JP em 19/08 — quarter-zip lendo `Coats & jackets`, etiqueta de marca parando
-de virar cor. Ver `anexos/avaliacao_luna/relatorio-v6-v7-em-aparelho.md`.
-
-**Bloqueia o benchmark de 300**, que já estava bloqueado antes — antes por
-divergência de hash, agora por medida.
+A Edge Function e o avaliador usam essa mesma v7. Os testes de contrato,
+consolidação e hash passaram em 21/08, e a sonda diária confirma que credenciais
+e rota continuam disponíveis. A análise remota permanece habilitada na 1.1,
+sempre depois do consentimento separado e com correção humana obrigatória.
 
 ### Meta de produto ≠ portão técnico
 
-O portão técnico é 80%. O relatório de calibração registra uma **meta de produto
-de 90%** para categoria, que nenhuma das três versões alcançou. Ligar a Luna
-para o público é decisão de produto do JP.
-
-Luna entra na versão 1.1, não na 1.0 que está publicada.
+O portão técnico é 80%. A meta aspiracional de produto continua em 90%; abrir o
+portão não apaga essa distância nem transforma sugestões em verdade automática.
+Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 ## 4. App e loja
 
@@ -283,14 +267,13 @@ já divergiram **três vezes** sem ninguém ver.
 
 **Adicionar uma tela:** crie o `.swift` e rode `python3 app/gerar_projeto.py`.
 
-O manifesto `PrivacyInfo.xcprivacy` declara `NSPrivacyCollectedDataTypePhotosorVideos`,
-mas na 1.0 **nenhuma foto sai do aparelho** — o flag `REMOTE_ANALYSIS_ENABLED`
-está desligado e o código é fail-closed (só liga com `YES`, `TRUE` ou `1`).
-Declarar a mais é conservador e não é violação, mas cria atrito com a frase das
-notas que diz que a 1.0 não chama a OpenAI. As notas passaram a explicar isso.
-Conferido em 19/08 nas três superfícies que mencionam OpenAI — alerta de
-consentimento, texto da tela de importação e tela de Privacidade: as três são
-condicionadas ao flag e, com ele desligado, dizem que a análise é local.
+O manifesto `PrivacyInfo.xcprivacy` declara `NSPrivacyCollectedDataTypePhotosorVideos`.
+Na 1.0 nenhuma foto saía do aparelho; no candidato 1.1 o `Config.xcconfig` local
+liga `REMOTE_ANALYSIS_ENABLED = YES`. Depois de a pessoa confirmar a peça, um
+alerta separado explica que somente a cópia reduzida e sem metadados segue via
+Supabase para OpenAI, que o app não a armazena e que logs de abuso podem durar
+até 30 dias. Recusar mantém o caminho manual. Tela Privacy, alerta, manifesto e
+`FICHA_APP_STORE_1.1.md` dizem a mesma coisa.
 
 O String Catalog inicial contém 150 chaves extraídas do app. Ainda não há
 tradução PT-BR — a A16 mantém a interface pública em inglês —, mas telas novas
@@ -299,12 +282,12 @@ catálogo.
 
 ## 5. Testes
 
-* **215** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **226** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
 * **27** suítes Python — rodam a cada push
-* **3** testes de interface no alvo `CanarioUITests`: Add/menu, Closet e Privacy
+* **4** testes de interface no alvo `CanarioUITests`: Add/menu, importação, Closet e Privacy
 
 O gerador é dono do alvo de UI test e o CI o executa num iPhone 17 simulado.
-Isso protege os três caminhos estruturais enquanto as telas novas chegam sem
+Isso protege quatro caminhos estruturais enquanto as telas novas chegam sem
 transformar o `project.pbxproj` em edição manual recorrente.
 
 ---
@@ -331,22 +314,15 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
    ninguém é avisado. O certo seria um runner independente: medido em 19/08,
    `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
    billing. Sem gastar, a saída é algo fora do GitHub
-2. **Portão das 24 é decidido por ruído** — a rodada v7 de 20/08 deu 79,2% em
-   categoria e cor, contra 83,3% e 91,7% da v6, e o portão fechou. Uma imagem
-   vale 4,2 pontos e pelo menos uma delas (`12550.jpg`) troca de resposta
-   sozinha entre rodadas do mesmo prompt. Três rodadas repetidas da v7 custam
-   US$ 0,053 e separam prompt de amostra; enquanto isso não for feito, nem o
-   79,2% nem o 83,3% descrevem qualidade com confiança. Conta em
-   `anexos/avaliacao_luna/relatorio-20-08-v7.md`
-3. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
+2. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
    sobre o fundo escuro em 19/08, mas o relato original era de algo **rosa**, e
    isso eu não consegui reproduzir: só há runtime iOS 26.2 nesta máquina, e o
    iPhone 15 com 18.7 usa o caminho de compatibilidade. Pode ter sido o mesmo
    defeito visto noutro renderizador, pode ser outro. Precisa de uma foto
-4. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
+3. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
    reproduzível no Mac (242 → 241 ms), mas **a causa dos 30 s continua sem
    prova**. Precisa de medição no aparelho, não de mais otimização no escuro
-5. Apagar as branches remotas já mescladas
+4. Apagar as branches remotas já mescladas
 
 ---
 
@@ -363,6 +339,7 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
 | [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md) | publicar a Edge Function |
 | [`RUNNER.md`](RUNNER.md) | os runners self-hosted |
 | [`FICHA_APP_STORE_1.0.md`](FICHA_APP_STORE_1.0.md) | textos publicados na loja |
+| [`FICHA_APP_STORE_1.1.md`](FICHA_APP_STORE_1.1.md) | metadados do próximo beta |
 | [`RESPOSTA_REVISAO_APPLE.md`](RESPOSTA_REVISAO_APPLE.md) | a revisão em aberto |
 
 **Gerados por código — não edite à mão**

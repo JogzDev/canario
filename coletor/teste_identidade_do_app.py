@@ -118,7 +118,41 @@ def main():
         print("FALHOU: String Catalog existe, mas nao entra no app")
         return 1
 
-    # 5. Os guias que uma pessoa segue tem que citar o mesmo bundle -- guia com
+    # 5. Os documentos ATIVOS de distribuição precisam acompanhar a versão.
+    # O guia anterior ficou em 0.1/1.0 enquanto o projeto já estava em 1.1 e
+    # chegou a afirmar que o app era pt-BR e não enviava foto. Bundle correto
+    # sozinho não torna uma ficha de privacidade correta.
+    documentos_de_release = {
+        "RELEASE_DATADROBE.md": [
+            "DataDrobe", gerador["BUNDLE"], "Versão | **{}**".format(
+                gerador["VERSAO_DO_APP"]),
+            "Build | **{}**".format(gerador["BUILD_DO_APP"]),
+            "Idioma-fonte | inglês", "OpenAI", "consentimento"],
+        "TESTFLIGHT.md": [
+            "DataDrobe {} (build {})".format(
+                gerador["VERSAO_DO_APP"], gerador["BUILD_DO_APP"]),
+            gerador["BUNDLE"], "Idioma-fonte do app: inglês",
+            "cloud-consent"],
+        "FICHA_APP_STORE_{}.md".format(gerador["VERSAO_DO_APP"]): [
+            "DataDrobe {} (build {})".format(
+                gerador["VERSAO_DO_APP"], gerador["BUILD_DO_APP"]),
+            "Photos or Videos collected", "OpenAI", "até 30 dias"],
+    }
+    for doc, trechos in documentos_de_release.items():
+        caminho = os.path.join(RAIZ, doc)
+        try:
+            texto = open(caminho, encoding="utf-8").read()
+        except OSError as exc:
+            print("FALHOU: guia ativo de release ausente: {} ({})".format(
+                doc, exc))
+            return 1
+        ausentes = [trecho for trecho in trechos if trecho not in texto]
+        if ausentes:
+            print("FALHOU: {} nao descreve o candidato atual; faltam: {}".format(
+                doc, ", ".join(repr(x) for x in ausentes)))
+            return 1
+
+    # 6. Os guias que uma pessoa segue tem que citar o mesmo bundle -- guia com
     #    bundle errado ja custou uma submissao. Mas apagar as mencoes antigas
     #    tambem e ruim: elas contam o que aconteceu, e sem esse registro alguem
     #    "corrige" o projeto de volta para o bundle sem perfil de distribuicao.
@@ -157,8 +191,8 @@ def main():
         return 1
 
     print("Identidade do app: bundle {}, time {}, versao {} ({}), "
-          "String Catalog com {} chaves -- gerador, projeto, Info.plist e "
-          "guias de acordo".format(
+          "String Catalog com {} chaves -- gerador, projeto, Info.plist, "
+          "ficha e guias de release de acordo".format(
               gerador["BUNDLE"], gerador["TIME_DE_DESENVOLVIMENTO"],
               versoes[0], builds[0], len(dados_catalogo["strings"])))
     return 0

@@ -38,4 +38,16 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Privacy in this build"].exists)
         XCTAssertTrue(app.buttons["Close"].exists)
     }
+
+    func testImportacaoAbreSemRedeComAsEntradasPrincipais() {
+        let app = aplicativo(argumentos: ["-CanarioUITestImportacao"])
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Analyze an item"]
+            .waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Choose from Photos"].exists)
+        XCTAssertTrue(app.buttons["Choose a file or PDF"].exists)
+        XCTAssertTrue(app.staticTexts["Your intended price"].exists)
+        XCTAssertTrue(app.buttons["Close"].exists)
+    }
 }

@@ -83,6 +83,25 @@ struct TelaInicialAdicionar: View {
         // permanece físico, mas relógio/sinal não competem com menu e feixe.
         .task {
             carregarMiniaturas()
+            // Rota determinística de interface: abre o formulário com uma
+            // taxonomia mínima e sem rede. Não entra em builds normais; existe
+            // para o teste proteger a principal jornada da 1.1 mesmo quando o
+            // Supabase ou o simulador estiverem offline.
+            if ProcessInfo.processInfo.arguments.contains(
+                "-CanarioUITestImportacao") {
+                termos = [
+                    Termo(id: "vestido", rotulo: "Dress",
+                          dimensao: "categoria", exclusiva: true,
+                          sinonimos: nil, semPernaBusca: nil,
+                          palavrasPt: nil, palavrasEn: nil),
+                    Termo(id: "preto", rotulo: "Black",
+                          dimensao: "cor", exclusiva: false,
+                          sinonimos: nil, semPernaBusca: nil,
+                          palavrasPt: nil, palavrasEn: nil),
+                ]
+                importando = true
+                return
+            }
             // Prepara o formulário depois que o primeiro frame já apareceu.
             // Não há spinner nem dependência de rede para abrir a Home.
             try? await Task.sleep(for: .seconds(1))

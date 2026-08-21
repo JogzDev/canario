@@ -1,93 +1,94 @@
-# DataDrobe — assinatura, Archive, TestFlight e App Store
+# DataDrobe 1.1 — corte, assinatura e distribuição
 
-> **Correção de 18/08/2026 — leia antes de seguir este guia.**
-> O bundle que está em revisão na App Store é **`br.com.canario.ch3.app`**, não
-> `com.canario.app`. Existem dois registros na App Store Connect; o `ch3` é o que
-> tem perfil de distribuição emitido e o que recebeu o envio. Menções a
-> `com.canario.app` abaixo são históricas — **não "corrija" o projeto para elas**,
-> ou o upload vai para o app errado.
+Estado conferido em 21/08/2026. Este é o guia ativo do próximo envio; a ficha
+da 1.0 permanece apenas como registro histórico.
 
-Estado verificado em 14/08/2026:
+| Campo | Valor do candidato |
+|---|---|
+| Produto | **DataDrobe** |
+| Bundle ID | `br.com.canario.ch3.app` |
+| Versão | **1.1** |
+| Build | **2** |
+| Team | `67AYPRFZH8` |
+| Plataforma | iPhone, iOS 17+ |
+| Idioma-fonte | inglês |
+| Análise visual | Luna v7 habilitada, sempre com consentimento explícito |
 
-- nome exibido: `DataDrobe`;
-- versão do bundle: `1.0` (`build 1`);
-- destino: somente iPhone (`TARGETED_DEVICE_FAMILY = 1`), iOS 17+;
-- criptografia: somente HTTPS isento (`ITSAppUsesNonExemptEncryption = NO`);
-- estilo de assinatura: Automatic;
-- Bundle ID atual: `br.com.canario.ch3.app`;
-- o Archive Release foi criado, mas a exportação para a loja depende da equipe
-  Apple Developer dona do App ID e do registro no App Store Connect.
+A versão 1.0 já está publicada. O upload da 1.1 deve ir para o mesmo registro;
+`com.canario.app` é um identificador histórico sem relação com este envio.
 
-Um Archive Release local foi gerado com sucesso em `/tmp/DataDrobe.xcarchive`.
-Ele usou o profile de desenvolvimento da equipe `8B25GA8AC6`; isso prova que o
-Bundle ID e a assinatura local existem, mas a exportação `app-store-connect`
-continua sendo o teste que confirma certificado/profile de distribuição.
+## Portões antes do Archive
 
-Resultado desse teste: a exportação falhou com `No profiles for
-'br.com.canario.ch3.app' were found`. Ao permitir atualização automática, a Apple
-respondeu que a equipe “João Pedro Souza Carvalho de Oliveira” **não tem
-permissão para criar profiles iOS App Store**. Portanto não é erro de Swift nem
-do Archive: o Account Holder/Admin da equipe precisa criar o profile de
-distribuição ou conceder ao usuário atual acesso a Certificates, Identifiers &
-Profiles. Depois disso, repetir a exportação/Organizer.
+Todos precisam estar verdes no mesmo commit:
 
-## Por que passar pelo TestFlight
+1. Workflow **Testes / Coletores (Python)** — todas as 27 suítes Python.
+2. `cd app && swift test` — lógica e contratos de rede.
+3. `xcodebuild test -project Canario.xcodeproj -scheme Canario -destination
+   'platform=iOS Simulator,name=iPhone 17' -only-testing:CanarioUITests
+   CODE_SIGNING_ALLOWED=NO` — fluxos de interface.
+4. `python3 ferramentas/testar_edge_luna.py --so-contrato` — Edge Function
+   disponível sem gastar uma análise.
+5. `anexos/portao_luna_24.json` com `passed: true`, prompt
+   `alvo-estrutura-v7` e três rodadas consolidadas.
+6. `app/Config.xcconfig` preenchido e `REMOTE_ANALYSIS_ENABLED = YES`. O arquivo
+   é ignorado pelo Git; nunca copiar suas chaves para documentação ou log.
+7. Pipeline e saúde do dado verdes, sem publicação parcial silenciosa.
 
-Não é outro binário nem retrabalho. O mesmo Archive enviado ao App Store
-Connect aparece primeiro como build processado e pode ser distribuído no
-TestFlight; depois esse mesmo build é selecionado na versão 1.0 e enviado à
-revisão. Para este app, o teste interno é o portão final para câmera, recorte,
-permissão explícita de nuvem, links externos, dark mode e desempenho em device.
+## Archive e validação
 
-Não escolher **TestFlight Internal Only**: esse tipo de build não pode ser
-submetido aos clientes. No Organizer, escolher **TestFlight & App Store**.
+No Xcode, use **Any iOS Device (arm64)** e **Product > Archive**. Em seguida,
+no Organizer:
 
-## Passo a passo exato no Xcode
+1. abra o Archive 1.1 (2);
+2. escolha **Validate App**;
+3. confirme DataDrobe, `br.com.canario.ch3.app` e Team `67AYPRFZH8`;
+4. leia todos os warnings e corrija qualquer divergência de entitlement,
+   assinatura, versão ou privacidade;
+5. escolha **Distribute App > TestFlight & App Store > Upload**.
 
-1. Abra `app/Canario.xcodeproj`.
-2. Clique no projeto azul **Canario** > target **Canario** > **Signing &
-   Capabilities**.
-3. Selecione **All** ou, separadamente, **Release**.
-4. Ative **Automatically manage signing**.
-5. Em **Team**, escolha a equipe do Apple Developer Program que possui o app.
-   O valor precisa ser o mesmo para Debug e Release; não deixe Release usando
-   uma equipe pessoal diferente.
-6. Confirme que `br.com.canario.ch3.app` é exatamente o Bundle ID cadastrado. Se o App
-   ID do DataDrobe no portal for outro, mude primeiro no portal/App Store
-   Connect e depois no Xcode — não invente um terceiro identificador.
-7. Em App Store Connect > **Apps**, crie ou abra o registro **DataDrobe**, versão
-   1.0, associado a esse Bundle ID.
-8. No seletor de destino do Xcode, escolha **Any iOS Device (arm64)**, nunca um
-   simulador.
-9. Use **Product > Archive**. O Organizer abrirá ao terminar.
-10. No Organizer, selecione o Archive > **Validate App**. Resolva todos os erros
-    antes de continuar; warning também deve ser lido, não descartado por padrão.
-11. Clique **Distribute App** > **TestFlight & App Store** > **Upload**.
-    Mantenha upload de símbolos e assinatura automática.
-12. Aguarde o processamento do build no App Store Connect. O primeiro upload
-    cria também a versão beta.
-13. Em **TestFlight**, crie o grupo interno do time, adicione o build e preencha
-    “What to Test” com: captura/fototeca, seleção do alvo, crop/zoom, isolamento
-    do fundo, sugestões do Luna, correção manual dos atributos, salvar no Closet,
-    Similar Pieces e links das lojas.
-14. Teste no mínimo em dois iPhones físicos e faça uma instalação limpa. Só
-    então, na página da versão 1.0, selecione esse mesmo build e envie para App
-    Review após completar URLs, App Privacy, screenshots, age rating e notes.
+Não marque **TestFlight Internal Only**, porque isso impediria usar o mesmo
+build numa futura revisão. Upload ao TestFlight não autoriza nem realiza envio
+à App Review.
 
-## Se o Archive falhar na assinatura
+## Teste físico obrigatório antes de App Review
 
-- `No profiles for ... were found`: a equipe não possui um App ID explícito
-  para o Bundle ID atual, ou o Xcode não tem permissão para criar o profile.
-  Confirme Team/Bundle ID e faça login em **Xcode > Settings > Accounts**.
-- `requires a provisioning profile`: mantenha assinatura automática e clique
-  **Download Manual Profiles** na conta; depois tente novamente.
-- certificado sem chave privada: no Mac que criou o certificado, exporte o
-  certificado **Apple Distribution** com a chave privada pelo Keychain, ou
-  deixe o Xcode criar um novo certificado pela conta autorizada.
-- `bundle identifier is not available`: o Bundle ID pertence a outra equipe.
-  Selecione a equipe correta; não acrescente sufixo só para fazer o build passar,
-  porque ele deixará de corresponder ao registro do App Store Connect.
+Em uma instalação limpa e também atualizando a 1.0:
 
-Referências oficiais: Apple, “Preparing your app for distribution”,
-“Distributing your app for beta testing and releases”, “Upload builds” e
-“Add internal testers”.
+- câmera, fototeca e arquivo/PDF;
+- seleção e ajuste do alvo, zoom/crop e volta à imagem original;
+- disclosure da nuvem antes do envio e caminho manual quando recusado/offline;
+- sugestões da Luna, correção humana e salvamento no Closet;
+- miniatura, favorito, edição e exclusão local;
+- Similar Pieces e links externos em pelo menos duas marcas;
+- modo claro/escuro, Dynamic Type e VoiceOver;
+- espera de importação medida num iPhone físico, sem tela travada;
+- navegação completa em iOS 17/18 e numa versão atual.
+
+O aceite em aparelho é um portão humano: simulador não reproduz câmera real,
+permissões, desempenho térmico nem o renderizador do iOS 18.
+
+## Privacidade que precisa acompanhar este binário
+
+A 1.1 pode enviar somente a cópia reduzida e sem metadados confirmada pela
+pessoa, via Supabase para OpenAI, depois de um consentimento separado. O app
+não guarda a imagem enviada; a OpenAI pode manter logs de monitoramento de
+abuso por até 30 dias. Não há conta, tracking, publicidade nem ligação da foto
+a uma identidade. O App Privacy deve declarar **Photos or Videos**, não ligado
+à pessoa, não usado para tracking, finalidade **App Functionality**.
+
+Essas frases precisam estar de acordo em quatro lugares: tela Privacy,
+disclosure antes do envio, `PrivacyInfo.xcprivacy` e ficha da App Store 1.1.
+
+## Se a assinatura falhar
+
+- `No profiles for ...`: confirme que a equipe `67AYPRFZH8` possui o App ID
+  explícito e acesso a Certificates, Identifiers & Profiles.
+- certificado sem chave privada: baixe/recrie um Apple Distribution na conta
+  correta; não troque o Bundle ID para contornar o erro.
+- versão/build já usados: incremente apenas o build no projeto e no gerador,
+  depois rode novamente o teste de identidade.
+- falha de autenticação no upload: renove a sessão da conta no Xcode; preserve
+  o Archive validado para repetir o upload sem recompilar.
+
+Metadados para copiar estão em `FICHA_APP_STORE_1.1.md`; instruções operacionais
+curtas do beta estão em `TESTFLIGHT.md`.

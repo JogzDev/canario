@@ -395,9 +395,15 @@ def vtex_departamento(dominio, cat_id, estado):
     if total is None:
         return
     if total == 0:
-        _registrar_erro_vtex(
-            estado, "catalogo VTEX declarou zero na categoria {}".format(
-                cat_id))
+        # Arvores VTEX antigas continuam publicadas no cadastro mesmo depois
+        # de a vitrine migrar para outro departamento. Dress To, por exemplo,
+        # ainda declara ``Lovedress`` (28), hoje vazio, ao lado de ``dress to``
+        # (58), com todo o catalogo vivo. Um ramo vazio isolado nao e perda.
+        # A decisao so pode ser tomada depois de visitar TODOS os ramos: se
+        # nenhum devolver produto, `coletar_marca` transforma o conjunto em
+        # erro critico e a saude continua bloqueando um catalogo realmente
+        # zerado.
+        estado.setdefault("categorias_vazias", []).append(str(cat_id))
         return
     yield from _por_categoria(dominio, str(cat_id), estado, total)
 
@@ -817,6 +823,11 @@ def coletar_marca(marca, hoje, cache_deps):
                 buffer.append(d)
                 if len(buffer) >= BLOCO_ESCRITA:
                     descarregar()
+        if not visitados and estado.get("categorias_vazias") and not estado["erro"]:
+            _registrar_erro_vtex(
+                estado,
+                "catalogo VTEX declarou zero em todas as categorias {}".format(
+                    ", ".join(estado["categorias_vazias"])))
     elif plataforma == "shopify":
         for p in shopify_todos(dominio, estado):
             d = shopify_extrair(p)

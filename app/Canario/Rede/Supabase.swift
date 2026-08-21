@@ -58,6 +58,7 @@ actor Supabase {
     private let url: URL
     private let chave: String
     private let sessao: URLSession
+    private let esperaEntreTentativas: UInt64
 
     /// Erros que a interface precisa saber diferenciar para ser honesta.
     enum Falha: LocalizedError {
@@ -160,6 +161,19 @@ actor Supabase {
         // vez de devolver erro e deixar a tela dizer que está offline (§27).
         cfg.waitsForConnectivity = false
         self.sessao = URLSession(configuration: cfg)
+        self.esperaEntreTentativas = 400_000_000
+    }
+
+    /// Inicializador injetável para verificar o contrato HTTP sem tocar na
+    /// rede real. Ele também torna explícitas as três dependências do cliente:
+    /// endpoint, chave publicável e sessão. A espera configurável mantém o
+    /// teste da segunda tentativa instantâneo.
+    init(url: URL, chave: String, sessao: URLSession,
+         esperaEntreTentativas: UInt64 = 400_000_000) {
+        self.url = url
+        self.chave = chave
+        self.sessao = sessao
+        self.esperaEntreTentativas = esperaEntreTentativas
     }
 
     var configurado: Bool {
@@ -255,7 +269,7 @@ actor Supabase {
             } catch {
                 guard tentativa == 0 else { throw Falha.rede(error) }
             }
-            try? await Task.sleep(nanoseconds: 400_000_000)
+            try? await Task.sleep(nanoseconds: esperaEntreTentativas)
         }
         throw Falha.rede(URLError(.cannotLoadFromNetwork))
     }
