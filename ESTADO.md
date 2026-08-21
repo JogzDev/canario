@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 19/08/2026, 15:30 UTC (12:30 em São Paulo)
+**Última atualização:** 21/08/2026, 04:20 UTC (01:20 em São Paulo)
 
 Este é o **único** documento que descreve o estado atual do projeto. Se outro
 arquivo discordar dele, ele está velho — e provavelmente está em `historico/`.
@@ -18,11 +18,11 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | funcionando | 15 de 15 marcas coletando |
-| Banco | **veredito veio e foi ruim** | 83,2% depois de emergência; bateu **97,2%** hoje |
+| Dados e pipeline | verde, com dívida de cobertura conhecida | 15 de 15 marcas; C&A trunca e NV trouxe 563 de 1.329 pagináveis |
+| Banco | estabilizado, ainda no plano gratuito | 405.687.443 bytes — **81,1%** do limite decimal |
 | Rota paga de visão (Luna) | de pé, com credenciais | responde `invalid_image` |
 | App na loja | **1.0 APROVADA E PUBLICADA** | `br.com.canario.ch3.app` |
-| Testes | 183 Swift · 26 suítes Python | 0 telas com teste de interface |
+| Testes | 213 Swift · 27 suítes Python | 0 telas com teste de interface |
 
 ---
 
@@ -76,11 +76,14 @@ dos dois lados: sem estatística vira `Nested Loop` com varredura completa por
 linha; com estatística, `Merge Anti Join` pelos dois índices — 2,05 s no delete
 e 0,61 s no insert.
 
-### O que observar na próxima coleta
+### O que a coleta seguinte provou
 
-O retorno do motor passou a trazer três números novos. Em noite normal os três
-ficam perto de zero; se algum voltar para as dezenas ou centenas de milhares, é
-ele que aponta o que voltou a reescrever tudo:
+Na publicação de 21/08, com 84.297 produtos, o motor alterou 327 segmentos,
+inseriu 887 ligações e removeu 6. A reescrita total não voltou. O banco terminou
+em 405.687.443 bytes (81,1% do limite decimal de 500 MB), abaixo dos 83,2%
+medidos depois da emergência de 19/08 mesmo após duas novas coletas completas.
+
+O retorno do motor traz três números que tornam uma regressão observável:
 
 | Campo | O que significa |
 |---|---|
@@ -106,8 +109,9 @@ segurou o crescimento.
 
 ## 2. Pipeline e coleta
 
-Verde em 18/08. Antes disso falhou **cinco execuções seguidas** (14 a 17/08) e
-ninguém soube.
+O pipeline completo de 21/08 terminou verde em 1h02: VTEX, Shopify, editorial,
+Trends, saúde, motor e alerta. Antes do alerta existir, o pipeline falhou
+**cinco execuções seguidas** (14 a 17/08) e ninguém soube.
 
 Desde 19/08 existe alerta: quando o pipeline falha, abre uma **issue** no
 próprio repositório — o GitHub já notifica por e-mail e push, sem serviço
@@ -130,6 +134,47 @@ A segunda existe porque em 18/08 a C&A entregou volume normal, portão verde, e
 56.423 produtos. Hoje a cobertura é medida e reportada, mas **não bloqueia** — o
 número que define "catálogo faltando demais" é decisão de método do JP, e
 enquanto ele não existir bloquear seria chutar.
+
+### P17 em produção — presença, oferta e snapshot são sinais diferentes
+
+Desde 21/08 o painel não chama mais o catálogo histórico acumulado de
+"sortimento atual". `ultimo_avistamento_em` anda em toda visita real,
+`ofertavel` exige variante/seller comprável e `ultimo_snapshot_em` continua
+sendo só delta ou batimento. A série de varejo aceita cada confirmação por no
+máximo sete dias; a raridade usa apenas ofertas recentes.
+
+Medição da publicação atômica `a3480682-5e5f-4995-be20-b23336261144`:
+
+| Medida | Antes | Depois da coleta completa e P17 |
+|---|---:|---:|
+| denominador chamado de sortimento | 74.937 históricos | **25.160 ofertas confirmadas** |
+| produtos segmentados avistados em até 7 dias | 51.772 | **56.200** |
+| produtos ofertáveis e recentes | não existia como sinal | **25.270** |
+| estado atual sem sinal explícito de oferta | campo inexistente | **0** depois de reobservação |
+
+A publicação terminou `success`: 84.297 produtos, 212.409 ligações, 200 células
+de varejo recalculadas e materializações antigas removidas por anti-junção.
+
+Isso corrige o significado do denominador, mas não inventa atributos que o
+título não contém. Entre as 25.270 ofertas recentes, a cobertura ainda é 97,8%
+em categoria, 44,5% em cor, 37,1% em tecido, 27,5% em comprimento, 15,5% em
+estética, 7,0% em silhueta, 6,3% em estampa e 3,6% em cintura. `liso` tem só 39
+produtos observados e não pode sustentar uma frase confiante de tendência.
+
+### Dívidas de cobertura comprovadas em 21/08
+
+* **C&A:** 17.884 visitados, mas quatro partições de R$ 0–1 seguem truncadas em
+  2.500 e houve um HTTP 500 numa página. É a maior perda potencial.
+* **NV:** 563 visitados contra 1.329 pagináveis. A mesma cobertura apareceu no
+  datacenter e no runner residencial; não é bloqueio por IP, e sim estrutura da
+  navegação/categoria da loja.
+* **Dress To e Maria Filó:** coleta volumosa, mas com erro explícito de categoria
+  zero/HTTP 500. São avisos observáveis, não falhas silenciosas.
+
+O paginador agora registra 429, 500, resposta vazia e JSON inválido em vez de
+encerrar silenciosamente. A workflow residencial aceita recuperação VTEX por
+marca; na Farm ela recuperou 2.936 de 2.946 produtos, mas na NV confirmou que o
+problema não era a origem da conexão.
 
 ## 3. Rota paga de visão (Luna)
 
@@ -221,8 +266,8 @@ fotos, títulos e preços de terceiros (item 7).
 
 ## 5. Testes
 
-* **165** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
-* **25** suítes Python — rodam a cada push
+* **213** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **27** suítes Python — rodam a cada push
 * **0** telas com teste de interface, de 13 telas
 
 O zero de interface é conhecido e tem um motivo prático: um alvo de UI test
@@ -251,33 +296,39 @@ técnica; são escopos não decididos, e só entram na fila quando forem decidid
 
 ### Técnico, em ordem de valor
 
-1. **Alerta de "o pipeline nem começou"** — o alerta de falha existe desde
+1. **Fechar a perda da C&A** — investigar por que dezenas de milhares de itens
+   aparecem nas faixas VTEX de R$ 0–1 e, se forem produtos reais/ofertáveis,
+   introduzir um segundo eixo de partição quando o preço se esgota
+2. **Explicar a cobertura da NV** — 563 de 1.329 tanto no datacenter quanto no
+   runner residencial; mapear a árvore VTEX e corrigir a deduplicação/navegação
+3. **Não afirmar o que o motor não observa** — `liso` tem 39 leituras e cinco
+   dimensões ficam abaixo de 30% de cobertura; criar política de apresentação e
+   um caminho de enriquecimento antes de lhes dar o mesmo peso de categoria
+4. **Alerta de "o pipeline nem começou"** — o alerta de falha existe desde
    19/08 (abre uma issue, agrupa noites seguidas, fecha sozinha no verde), mas
    ele roda no mesmo Mac que executa a coleta. Se a máquina estiver parada,
    ninguém é avisado. O certo seria um runner independente: medido em 19/08,
    `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
    billing. Sem gastar, a saída é algo fora do GitHub
-2. **Portão das 24 é decidido por ruído** — a rodada v7 de 20/08 deu 79,2% em
+5. **Portão das 24 é decidido por ruído** — a rodada v7 de 20/08 deu 79,2% em
    categoria e cor, contra 83,3% e 91,7% da v6, e o portão fechou. Uma imagem
    vale 4,2 pontos e pelo menos uma delas (`12550.jpg`) troca de resposta
    sozinha entre rodadas do mesmo prompt. Três rodadas repetidas da v7 custam
    US$ 0,053 e separam prompt de amostra; enquanto isso não for feito, nem o
    79,2% nem o 83,3% descrevem qualidade com confiança. Conta em
    `anexos/avaliacao_luna/relatorio-20-08-v7.md`
-3. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
+6. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
    sobre o fundo escuro em 19/08, mas o relato original era de algo **rosa**, e
    isso eu não consegui reproduzir: só há runtime iOS 26.2 nesta máquina, e o
    iPhone 15 com 18.7 usa o caminho de compatibilidade. Pode ter sido o mesmo
    defeito visto noutro renderizador, pode ser outro. Precisa de uma foto
-4. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
+7. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
    reproduzível no Mac (242 → 241 ms), mas **a causa dos 30 s continua sem
    prova**. Precisa de medição no aparelho, não de mais otimização no escuro
-6. **Motor limpa o estágio com `delete`, não `truncate`** — deixa ~16 MB de
-   página de índice alocada entre execuções. Recuperado à mão em 19/08; volta a
-   crescer até a limpeza virar `truncate`
-7. Primeiro teste de interface de verdade
-8. `String Catalog` antes de abrir PT-BR
-9. Apagar as branches remotas já mescladas
+8. Primeiro teste de interface de verdade
+9. `String Catalog` antes de abrir PT-BR
+10. Subir `MARKETING_VERSION` e `CURRENT_PROJECT_VERSION` para a próxima versão
+11. Apagar as branches remotas já mescladas
 
 ---
 
