@@ -1,10 +1,10 @@
 # SAÚDE — coletores do Canário
 
-**Gerado (UTC):** 2026-08-21T07:05:59.874932+00:00
+**Gerado (UTC):** 2026-08-21T12:37:48.581784+00:00
 
 **Data observada:** 2026-08-21
 
-**Estado:** sem alerta crítico · cobertura parcial — 5 de 15 marcas (5 sem contagem confiável)
+**Estado:** sem alerta crítico · cobertura completa nas 15 marcas
 
 
 ## Portão operacional
@@ -15,8 +15,6 @@
 
 - busca não consultada hoje: séries já estavam em dia
 
-- varejo/PatBo retornou zero hoje (http 429 (persistiu apos backoff longo)); 1º dia
-
 
 
 - Todas as fontes obrigatórias registraram volume sem queda superior a 70%.
@@ -24,30 +22,30 @@
 
 ## Varejo
 
-- Produtos **visitados**: 38202
+- Produtos **visitados**: 45677
 
-- Snapshots **gravados** (delta, B3): 194
+- Snapshots **gravados** (delta, B3): 501
 
 - Marcas coletando: 15 de 15
 
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
-| C&A | vtex | 7880 | 1 | 7881 | 1.0 | {"erro": "http 500 ao paginar categoria VTEX 1000003/1004161/1004162 (1700-1746, OrderByNameASC)", "indisponiveis_fora_do_universo": 66354} |
+| C&A | vtex | 7880 | 203 | 7880 | 1.0 | {"indisponiveis_fora_do_universo": 66355} |
 | Hering | vtex | 7815 | 47 | 7815 | 0.99 | — |
-| Dress To | vtex | 6628 | 8 | 6628 | 1.0 | {"erro": "catalogo VTEX declarou zero na categoria 28"} |
+| PatBo | shopify | 7461 | 6 | — | 1.0 | — |
+| Dress To | vtex | 6628 | 29 | 6628 | 1.0 | — |
 | Farm | vtex | 2941 | 63 | 2941 | 0.981 | — |
 | Zinzane | vtex | 2376 | 0 | 2376 | 1.0 | — |
 | Lanca Perfume | vtex | 2122 | 12 | 2122 | 1.0 | — |
 | Le Lis Blanc | vtex | 1750 | 0 | 1750 | 1.0 | — |
-| Maria Filo | vtex | 1629 | 3 | 1629 | 1.0 | {"erro": "http 500 ao paginar categoria VTEX 35 (1200-1247, OrderByNameASC)"} |
+| Maria Filo | vtex | 1617 | 81 | 1617 | 1.0 | — |
 | Animale | vtex | 1507 | 55 | 1507 | 1.0 | — |
 | Morena Rosa | vtex | 1177 | 0 | 1177 | 1.0 | — |
 | Cantao | vtex | 810 | 3 | 810 | 1.0 | — |
 | Bo.Bo | vtex | 754 | 0 | 754 | 1.0 | — |
 | NV | vtex | 563 | 2 | 563 | 1.0 | — |
-| Amaro | shopify | 250 | 0 | — | 1.0 | {"erro": "http 429 (persistiu apos backoff longo)"} |
-| PatBo | shopify | 0 | 0 | — | — | {"erro": "http 429 (persistiu apos backoff longo)"} |
+| Amaro | shopify | 276 | 0 | — | 1.0 | — |
 
 ## Cobertura do catálogo
 
@@ -58,13 +56,8 @@ Volume e cobertura são perguntas diferentes: a tabela acima diz **quanto veio**
 > A perda é **teto**, não valor exato: as faixas são contadas por categoria e o mesmo produto aparece em mais de uma, então a soma conta repetido.
 
 
-| Marca | Cobertura | Faixas cortadas | Teto de perda | Motivo |
-|---|---|---:|---:|---|
-| C&A | incerta | — | — | http 500 ao paginar categoria VTEX 1000003/1004161/1004162 (1700-1746, OrderByNameASC) |
-| Dress To | incerta | — | — | catalogo VTEX declarou zero na categoria 28 |
-| Maria Filo | incerta | — | — | http 500 ao paginar categoria VTEX 35 (1200-1247, OrderByNameASC) |
-| Amaro | incerta | — | — | http 429 (persistiu apos backoff longo) |
-| PatBo | incerta | — | — | http 429 (persistiu apos backoff longo) |
+- Nenhuma marca acusou corte de paginação ou falha de contagem.
+
 
 ## Outras fontes
 
