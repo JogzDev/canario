@@ -1,4 +1,4 @@
-# Ficha da App Store — DataDrobe 1.1 (build 4)
+# Ficha da App Store — DataDrobe 1.1 (build 5)
 
 Metadados do candidato de 21/08/2026. A ficha da 1.0 é histórica e não deve ser
 copiada para este binário, porque dizia corretamente que nenhuma foto saía do

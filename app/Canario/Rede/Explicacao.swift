@@ -93,7 +93,8 @@ enum Explicacao {
         is rare.
 
         A percentage would need a baseline that differs for every attribute, so \
-        two attributes could not be compared. This scale can be.
+        two attributes could not be compared directly. This standardized scale \
+        allows attributes to be compared with one another.
         """
 
     /// O valor compacto usado em comparação. A unidade/escala vem na linha de

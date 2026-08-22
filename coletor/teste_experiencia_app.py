@@ -20,6 +20,8 @@ def main():
     assert 'Label("Not confirmed"' not in componentes
     assert '.presentationCompactAdaptation(.popover)' not in componentes
     assert '.presentationCompactAdaptation(.sheet)' in componentes
+    assert '.presentationDetents([.height(360)])' in componentes
+    assert '.presentationDetents([.medium])' not in componentes
     assert 'ScrollView {' in componentes
 
     for relatorio in (termo, peca):
@@ -27,6 +29,7 @@ def main():
         assert "Insufficient coverage:" not in relatorio
     assert 'titulo: "Not enough items yet"' not in termo
     assert 'titulo: "No combined reading for this item yet"' not in peca
+    assert 'Text(Leitura.emPalavras(valor))' not in peca
 
     assert '.focused($dicaDoAlvoEmFoco)' in importar
     assert 'Button("Done") { dicaDoAlvoEmFoco = false }' in importar

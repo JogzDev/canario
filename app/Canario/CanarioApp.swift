@@ -7,7 +7,23 @@ struct CanarioApp: App {
         // design e, no teste em aparelho, fez o mesmo build parecer outro app.
         // A 1.1 preserva a aparência clara aprovada em todos os iPhones. Quando
         // houver telas escuras desenhadas e validadas, este bloqueio sai daqui.
-        WindowGroup { Raiz().preferredColorScheme(.light) }
+        WindowGroup {
+            Group {
+                if ProcessInfo.processInfo.arguments.contains("-CanarioUITestCompare") {
+                    NavigationStack { Comparar() }
+                } else if ProcessInfo.processInfo.arguments.contains("-CanarioUITestSizesStripes") {
+                    NavigationStack {
+                        CurvaDeTamanhosView(termo: Termo(
+                            id: "listra", rotulo: "Listra", dimensao: "estampa",
+                            exclusiva: false, sinonimos: nil, semPernaBusca: nil,
+                            palavrasPt: nil, palavrasEn: nil))
+                    }
+                } else {
+                    Raiz()
+                }
+            }
+            .preferredColorScheme(.light)
+        }
     }
 }
 

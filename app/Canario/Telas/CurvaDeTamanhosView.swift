@@ -24,9 +24,11 @@ struct CurvaDeTamanhosView: View {
                 FalhaDeRede(mensagem: erro) { Task { await carregar() } }
             } else if !temCobertura {
                 ScrollView {
-                    // A ausência continua fechando o cálculo, mas não vira um
-                    // cartão de incapacidade para quem abriu a tela.
-                    Color.clear.frame(height: 1)
+                    ContentUnavailableView(
+                        "Size mapping unavailable",
+                        systemImage: "ruler",
+                        description: Text("No current size curve was returned for this selection."))
+                        .padding(.top, Tokens.Espaco.g)
                 }
             } else {
                 conteudo

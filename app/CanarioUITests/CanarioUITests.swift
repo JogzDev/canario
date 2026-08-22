@@ -50,4 +50,26 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Your intended price"].exists)
         XCTAssertTrue(app.buttons["Close"].exists)
     }
+
+    func testCompareNaoFicaReduzidoAUmAtributo() {
+        let app = aplicativo(argumentos: ["-CanarioUITestCompare"])
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Compare"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["Dress"].waitForExistence(timeout: 15))
+        XCTAssertGreaterThan(app.buttons.count, 1,
+                             "a semana parcial não pode esconder os demais atributos")
+    }
+
+    func testStripesMostraCurvaDeTamanhosReal() {
+        let app = aplicativo(argumentos: ["-CanarioUITestSizesStripes"])
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Sizes · Stripes"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["What panel sizing is showing"]
+            .waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["Availability loss by size"].exists)
+        XCTAssertTrue(app.staticTexts["PP"].exists)
+        XCTAssertTrue(app.staticTexts["GG"].exists)
+    }
 }

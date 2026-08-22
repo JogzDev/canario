@@ -286,19 +286,39 @@ enum Elegibilidade {
     static func comparacao(indice: IndiceSemanal?, varejo: PontoSerie?,
                            cobertura: Cobertura?) -> Bool {
         guard let indice, let varejo, let cobertura else { return false }
-        return self.indice(indice, cobertura: cobertura)
+        return indice.indice != nil
+            && varejo.valorBruto != nil
+            && self.indice(indice, cobertura: cobertura)
             && indice.termoId == varejo.termoId
             && indice.semana == varejo.semana
     }
 
     /// A aba Comparar precisa de um recorte comum; "o mais recente de cada"
-    /// pode juntar semanas diferentes numa frase só.
+    /// pode juntar semanas diferentes numa frase só. A semana também precisa
+    /// sustentar uma comparação de verdade: uma atualização parcial com um
+    /// único termo não pode esvaziar a tela inteira.
     static func semanaComum(indices: [IndiceSemanal], varejo: [PontoSerie],
                             coberturas: [Cobertura]) -> String? {
         let semanasI = Set(indices.filter { $0.segmento == Recorte.segmento }.map(\.semana))
         let semanasV = Set(varejo.map(\.semana))
         let semanasC = Set(coberturas.filter { $0.segmento == Recorte.segmento }.map(\.semana))
-        return semanasI.intersection(semanasV).intersection(semanasC).max()
+        let candidatas = semanasI.intersection(semanasV).intersection(semanasC).sorted(by: >)
+
+        for semana in candidatas {
+            let mapaI = Dictionary(uniqueKeysWithValues: indices
+                .filter { $0.segmento == Recorte.segmento && $0.semana == semana }
+                .map { ($0.termoId, $0) })
+            let mapaV = Dictionary(uniqueKeysWithValues: varejo
+                .filter { $0.semana == semana }
+                .map { ($0.termoId, $0) })
+            let mapaC = Dictionary(uniqueKeysWithValues: coberturas
+                .filter { $0.segmento == Recorte.segmento && $0.semana == semana }
+                .map { ($0.termoId, $0) })
+            let comparaveis = Set(mapaI.keys).intersection(mapaV.keys).intersection(mapaC.keys)
+                .filter { comparacao(indice: mapaI[$0], varejo: mapaV[$0], cobertura: mapaC[$0]) }
+            if comparaveis.count >= 2 { return semana }
+        }
+        return nil
     }
 }
 
@@ -454,6 +474,13 @@ enum Leitura {
         case -2.0 ..< -1.0: return "below the usual range"
         default:            return "far below the usual range"
         }
+    }
+
+    /// A mesma leitura quando ela ocupa o lugar de título ou selo. Capitaliza
+    /// somente a primeira letra; `capitalized` alteraria todas as palavras.
+    static func comoTitulo(_ z: Double) -> String {
+        let frase = emPalavras(z)
+        return frase.prefix(1).uppercased() + frase.dropFirst()
     }
 
     /// O que o número é, dito por extenso. Vai na letra miúda, sempre.

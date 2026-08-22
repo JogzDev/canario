@@ -60,10 +60,30 @@ final class ElegibilidadeTests: XCTestCase {
     }
 
     func testEscolheUltimaSemanaComumAsTresSuperficies() {
-        let indices = [indice(semana: "2026-07-27"), indice(semana: "2026-07-20")]
-        let varejo = [varejo(semana: "2026-07-20"), varejo(semana: "2026-07-13")]
-        let coberturas = [cobertura(semana: "2026-07-27"), cobertura(semana: "2026-07-20")]
+        let indices = [indice(semana: "2026-07-27"),
+                       indice(termo: "preto", semana: "2026-07-20"),
+                       indice(termo: "branco", semana: "2026-07-20")]
+        let varejo = [varejo(termo: "preto", semana: "2026-07-20"),
+                      varejo(termo: "branco", semana: "2026-07-20"),
+                      varejo(semana: "2026-07-13")]
+        let coberturas = [cobertura(semana: "2026-07-27"),
+                          cobertura(termo: "preto", semana: "2026-07-20"),
+                          cobertura(termo: "branco", semana: "2026-07-20")]
         XCTAssertEqual(Elegibilidade.semanaComum(
             indices: indices, varejo: varejo, coberturas: coberturas), "2026-07-20")
+    }
+
+    func testCompararIgnoraSemanaParcialComUmTermo() {
+        let indices = [indice(termo: "vestido", semana: "2026-08-17"),
+                       indice(termo: "preto", semana: "2026-08-10"),
+                       indice(termo: "branco", semana: "2026-08-10")]
+        let varejo = [varejo(termo: "vestido", semana: "2026-08-17"),
+                      varejo(termo: "preto", semana: "2026-08-10"),
+                      varejo(termo: "branco", semana: "2026-08-10")]
+        let coberturas = [cobertura(termo: "vestido", semana: "2026-08-17"),
+                          cobertura(termo: "preto", semana: "2026-08-10"),
+                          cobertura(termo: "branco", semana: "2026-08-10")]
+        XCTAssertEqual(Elegibilidade.semanaComum(
+            indices: indices, varejo: varejo, coberturas: coberturas), "2026-08-10")
     }
 }

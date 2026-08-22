@@ -25,14 +25,14 @@ struct SeloEstado: View {
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
                 .accessibilityLabel("Status: \(e.rotulo)")
         } else if let leitura {
-            Label(Leitura.emPalavras(leitura), systemImage: "waveform.path.ecg")
-                .font(Tokens.Fonte.miudo.weight(.semibold))
+            Label(Leitura.comoTitulo(leitura), systemImage: "waveform.path.ecg")
+                .font(Tokens.Fonte.corpo.weight(.semibold))
                 .padding(.horizontal, Tokens.Espaco.s)
                 .padding(.vertical, Tokens.Espaco.xs)
                 .background(Tokens.Cor.acao.opacity(0.14))
                 .foregroundStyle(Tokens.Cor.acao)
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
-                .accessibilityLabel("Current signal: \(Leitura.emPalavras(leitura)).")
+                .accessibilityLabel("Current signal: \(Leitura.comoTitulo(leitura)).")
         }
     }
 
@@ -123,7 +123,7 @@ struct BotaoDeAjuda: View {
             // iPhone. Em largura compacta, a folha oferece largura, rolagem e
             // um gesto de fechar previsíveis; no iPad continua sendo popover.
             .presentationCompactAdaptation(.sheet)
-            .presentationDetents([.medium])
+            .presentationDetents([.height(360)])
             .presentationDragIndicator(.visible)
         }
     }

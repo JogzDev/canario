@@ -63,6 +63,15 @@ final class CurvaDeTamanhosTests: XCTestCase {
         XCTAssertEqual(junto.compactMap(\.rotulo), ["PP"])
     }
 
+    func testCurvaDeAtributoNaoSomeComAmostrasDeDuzentos() {
+        let listras = [faixa("PP", "menores", emRisco: 245, quebrou: 18, taxa: 7.35),
+                       faixa("P", "menores", emRisco: 286, quebrou: 19, taxa: 6.64),
+                       faixa("M", "meio", emRisco: 289, quebrou: 25, taxa: 8.65),
+                       faixa("G", "maiores", emRisco: 295, quebrou: 17, taxa: 5.76),
+                       faixa("GG", "maiores", emRisco: 264, quebrou: 13, taxa: 4.92)]
+        XCTAssertEqual(CurvaDeTamanhos.consolidar(listras).count, 5)
+    }
+
     // MARK: A margem de erro, que a tela me obrigou a respeitar
 
     /// O painel depois da limpeza dos atributos (01/08, à tarde): M e P estão

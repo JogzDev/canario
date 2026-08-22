@@ -8,7 +8,7 @@ da 1.0 permanece apenas como registro histórico.
 | Produto | **DataDrobe** |
 | Bundle ID | `br.com.canario.ch3.app` |
 | Versão | **1.1** |
-| Build | **4** |
+| Build | **5** |
 | Team | `67AYPRFZH8` |
 | Plataforma | iPhone, iOS 17+ |
 | Idioma-fonte | inglês |
@@ -22,14 +22,11 @@ concluída e upload 1.1 (2) aceito às 09:18. O pacote entrou em processamento n
 TestFlight e não foi submetido à App Review. O Archive está preservado no
 Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 
-**Candidato atual:** build 4, com o PDF reintegrado à Luna, toque protegido
-contra scroll, categoria obrigatória nos similares, Luna v8 e aparência clara
-consistente. Os blocos redundantes “Size-mix context” e “Limits” foram
-removidos; leituras não publicáveis deixaram de virar cartões de fracasso, o
-teclado da dica de alvo ganhou saída e a ajuda do painel se adapta ao iPhone.
-O build 4 foi arquivado, aceito pelo App Store Connect às 19:49 e está em
-processamento no TestFlight. O Archive correto é
-`DataDrobe 1.1 (4) 19.49.xcarchive`. Nenhum build foi submetido à App Review.
+**Candidato atual:** build 5. Ele preserva as correções do build 4 e corrige a
+semana parcial que reduzia o Compare a Dress, a regra que apagava a curva de
+tamanhos de Stripes, o excesso de altura na ajuda e a repetição visual dos
+sinais. O build 4 foi aceito pelo App Store Connect às 19:49; o build 5 ainda
+será arquivado e enviado ao TestFlight. Nenhum build foi submetido à App Review.
 
 ## Portões antes do Archive
 
@@ -57,7 +54,7 @@ Todos precisam estar verdes no mesmo commit:
 No Xcode, use **Any iOS Device (arm64)** e **Product > Archive**. Em seguida,
 no Organizer:
 
-1. abra o Archive 1.1 (4);
+1. abra o Archive 1.1 (5);
 2. escolha **Validate App**;
 3. confirme DataDrobe, `br.com.canario.ch3.app` e Team `67AYPRFZH8`;
 4. leia todos os warnings e corrija qualquer divergência de entitlement,

@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 21/08/2026, 09:48 em São Paulo
+**Última atualização:** 21/08/2026, 23:48 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -24,8 +24,8 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Dados e pipeline | verde; 15 de 15 marcas com cobertura completa | 45.677 produtos visitados; nenhum corte ou falha de contagem |
 | Banco | estabilizado, ainda no plano gratuito | 406.072.467 bytes — **81,2%** do limite decimal |
 | Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
-| App na loja | **1.0 publicada; upload 1.1 (build 2) aceito no TestFlight** | processamento iniciado; não enviado à revisão |
-| Testes | 224 Swift · 28 suítes Python · 4 UI | lógica, rede e fluxos críticos no simulador |
+| App na loja | **1.0 publicada; 1.1 build 5 em preparação** | build 4 aceito no TestFlight; não enviado à revisão |
+| Testes | 227 Swift · 28 suítes Python · 6 UI | lógica, rede, Compare, curva de Stripes e fluxos críticos no simulador |
 
 ---
 
@@ -264,7 +264,7 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
 * Loja: **1.0 publicada**
-* Repositório: **1.1 (build 2)** no `main`
+* Repositório: **1.1 (build 5)** em preparação no `main`
 * TestFlight: upload aceito pela Apple às 09:18 de 21/08; pacote em processamento
 * App Review: **não enviado**
 * Time: `67AYPRFZH8`

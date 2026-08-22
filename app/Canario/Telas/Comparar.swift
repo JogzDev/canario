@@ -58,7 +58,7 @@ struct Comparar: View {
         List {
             Section {
                 Text("What this compares").font(Tokens.Fonte.secao)
-                Text("Choose 2 to \(maximo) attributes that compete for the same space in a collection. The screen aligns panel presence with press movement in the same week.")
+                Text("Choose 2 to \(maximo) attributes that compete for the same space in a collection. The screen aligns panel presence with external interest signals in the same week.")
                     .font(Tokens.Fonte.apoio)
                 Text("This compares already collected market data. It is not a sales forecast and does not include your costs, timing or history.")
                     .font(Tokens.Fonte.miudo)
@@ -150,9 +150,9 @@ struct Comparar: View {
         let pctV = Leitura.numero(maisVarejo.1, casas: 1)
 
         if maisEditorial.0.id == maisVarejo.0.id {
-            return "\(Traducao.rotuloExibido(maisEditorial.0)) leads both axes: it is the most cited by the press and the most present in the panel (\(pctE)% of the assortment). When both move together, it reads as an established attribute rather than a new movement."
+            return "\(Traducao.rotuloExibido(maisEditorial.0)) leads both axes: it moved most across external signals and is the most present in the panel (\(pctE)% of the assortment). When both move together, it reads as an established attribute rather than a new movement."
         }
-        return "\(Traducao.rotuloExibido(maisEditorial.0)) moved most in press coverage this week and occupies \(pctE)% of the panel assortment. \(Traducao.rotuloExibido(maisVarejo.0)) is most present in stores at \(pctV)%. The screen shows this gap between press attention and what brands already carry; what to do with it depends on your costs and timing."
+        return "\(Traducao.rotuloExibido(maisEditorial.0)) moved most across external signals this week and occupies \(pctE)% of the panel assortment. \(Traducao.rotuloExibido(maisVarejo.0)) is most present in stores at \(pctV)%. The screen shows this gap between external attention and what brands already carry; what to do with it depends on your costs and timing."
     }
 
     private func alternar(_ id: String) {
@@ -225,11 +225,11 @@ struct LinhaComparada: View {
                          Leitura.numero($0, casas: 1) + "%"
                      } ?? "—",
                      detalhe: varejo?.nAmostra.map { "\($0) items" } ?? "—")
-                eixo(titulo: "In editorial",
+                eixo(titulo: "External signal",
                      valor: Explicacao.numeroComUnidade(indice?.indice),
-                     detalhe: indice?.indice.map { Leitura.emPalavras($0) } ?? "—")
+                     detalhe: indice?.indice == nil ? "—" : "statistical scale")
             }
-            LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")). Editorial: \(Explicacao.unidadeDoIndice).")
+            LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")). Signal: \(Perna.frase(indice?.pernasAtivas)).")
             if let semana = varejo?.semana ?? indice?.semana {
                 LinhaInsumo(texto: "Week of \(Formato.data(semana)).")
             }

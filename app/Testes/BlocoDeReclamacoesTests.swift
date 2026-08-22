@@ -7,6 +7,10 @@ import XCTest
 /// proposital: quando um destes quebrar daqui a um mês, o próximo a ler precisa
 /// saber que comportamento estava sendo protegido, e não só qual asserção caiu.
 final class BlocoDeReclamacoesTests: XCTestCase {
+    func testLeituraUsadaComoTituloComecaComMaiuscula() {
+        XCTAssertEqual(Leitura.comoTitulo(1.78), "Above the usual range")
+        XCTAssertEqual(Leitura.comoTitulo(-2.1), "Far below the usual range")
+    }
 
     private func termo(_ id: String, _ rotulo: String, _ dimensao: String,
                        _ sinonimos: String? = nil, _ palavrasPt: String? = nil) -> Termo {

@@ -427,9 +427,9 @@ struct RelatorioDaPeca: View {
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                         }
                         Spacer()
-                        let indice = indices[termo.id]
-                        SeloEstado(estado: indice?.estado, leitura: indice?.indice)
                     }
+                    let indice = indices[termo.id]
+                    SeloEstado(estado: indice?.estado, leitura: indice?.indice)
                     conteudo(de: termo)
                 }
             }
@@ -441,7 +441,6 @@ struct RelatorioDaPeca: View {
     private func conteudo(de termo: Termo) -> some View {
         let i = indices[termo.id]
         if let valor = i?.indice {
-            Text(Leitura.emPalavras(valor)).font(Tokens.Fonte.apoio)
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 LinhaInsumo(texto: Leitura.explicacao(valor))
                 // "on the statistical scale" dizia que existe uma escala sem

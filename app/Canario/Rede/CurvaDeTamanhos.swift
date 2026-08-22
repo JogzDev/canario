@@ -65,11 +65,13 @@ enum CurvaDeTamanhos {
     /// Mínimo por tamanho para ele entrar na curva.
     ///
     /// Existe porque a primeira versão desta tela elegeu como destaque um `M`
-    /// com 727 em risco e 4,3%, na frente do `P` com 11.135 e 3,6% — e escolheu
     /// como piso um `P` com **4** em risco e 0,0%, o que zerou a manchete
-    /// inteira. Amostra pequena produz taxa extrema, e taxa extrema ganha
-    /// qualquer comparação por máximo.
-    static let minimoPorTamanho = 500
+    /// inteira. O piso de 500 usado depois disso também era excessivo para um
+    /// atributo: descartava cinco tamanhos com 245–295 observações cada e
+    /// transformava 1.379 observações de Stripes numa tela vazia. Cem elimina
+    /// amostras anedóticas sem apagar curvas sustentadas; a comparação ainda
+    /// respeita a margem estatística em `empatados`.
+    static let minimoPorTamanho = 100
 
     // MARK: Consolidação
 

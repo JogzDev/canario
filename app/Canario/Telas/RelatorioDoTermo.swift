@@ -124,20 +124,13 @@ struct RelatorioDoTermo: View {
     /// §29.3 — índice, estado e as pernas ativas declaradas.
     private var indiceEEstado: some View {
         Cartao {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                    // K6: a leitura vem primeiro; o número técnico fica ao lado,
-                    // menor, e nunca é apresentado como se fosse porcentagem.
-                    Text(atual?.indice.map { Leitura.emPalavras($0) } ?? "—")
-                        .font(Tokens.Fonte.secao)
-                    Text(atual?.indice.map(fmt) ?? "—")
-                        .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                }
-                Spacer()
-                SeloEstado(estado: atual?.estado,
-                           leitura: temCobertura ? atual?.indice : nil)
-            }
+            // O selo é o título da leitura. Repeti-lo em preto ao lado fazia a
+            // mesma frase competir consigo mesma e ainda a espremia em duas linhas.
+            SeloEstado(estado: atual?.estado,
+                       leitura: temCobertura ? atual?.indice : nil)
+            Text(atual?.indice.map(fmt) ?? "—")
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
             if let z = atual?.indice {
                 LinhaInsumo(texto: Leitura.explicacao(z))
             }
@@ -259,7 +252,9 @@ struct RelatorioDoTermo: View {
             indices = try await i.filter { $0.termoId == termo.id }
             coberturas = try await c
             let tamanhos = (try? await t) ?? []
-            curvaDisponivel = CurvaDeTamanhos.consolidar(tamanhos)
+            let semanaDosTamanhos = tamanhos.map(\.semana).max()
+            curvaDisponivel = CurvaDeTamanhos.consolidar(
+                tamanhos.filter { $0.semana == semanaDosTamanhos })
                 .reduce(0) { $0 + $1.nEmRisco } >= CurvaDeTamanhos.minimoEmRisco
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
