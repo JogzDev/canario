@@ -21,6 +21,7 @@ Ele nao decide qual e o valor certo -- decide que so existe um.
 
 import json
 import os
+import plistlib
 import re
 import sys
 
@@ -78,6 +79,21 @@ def main():
     #    e o sintoma aparece so na hora de exportar para a loja.
     if "DEVELOPMENT_TEAM" not in fonte_gerador.split("BUNDLE =")[-1]:
         print("FALHOU: gerar_projeto.py nao emite DEVELOPMENT_TEAM")
+        return 1
+
+    # A exportacao pode trocar de equipe mesmo com o Archive correto. Este
+    # arquivo ainda apontava para uma equipe historica e so falharia no ultimo
+    # passo do upload, porque o Organizer escolhe a conta por fora do projeto.
+    export_options = os.path.join(APP, "ExportOptions-AppStore.plist")
+    try:
+        with open(export_options, "rb") as arquivo:
+            opcoes = plistlib.load(arquivo)
+    except (OSError, ValueError) as exc:
+        print("FALHOU: ExportOptions-AppStore.plist invalido: {}".format(exc))
+        return 1
+    if opcoes.get("teamID") != gerador["TIME_DE_DESENVOLVIMENTO"]:
+        print("FALHOU: ExportOptions usa teamID {!r}, projeto usa {!r}".format(
+            opcoes.get("teamID"), gerador["TIME_DE_DESENVOLVIMENTO"]))
         return 1
 
     # 3. A versao tambem e unica, e vem do pbxproj -- o Info.plist a referencia
