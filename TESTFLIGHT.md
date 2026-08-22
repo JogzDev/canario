@@ -10,10 +10,9 @@ Checklist ativo em 21/08/2026.
 - Destino: iPhone, iOS 17+.
 - Análise visual: Luna v8 ligada; cópia reduzida e sem metadados só é enviada
   após consentimento explícito.
-- Upload anterior: **build 4 aceito pelo App Store Connect às 19:49 de
-  21/08/2026**, sem submissão à App Review.
-- Build 5: correções do Compare, curva de tamanhos por atributo, ajuda e
-  hierarquia visual dos sinais; aguardando archive e upload.
+- Upload atual: **build 5 recebido pelo App Store Connect às 23:56 de
+  21/08/2026 e em processamento**, sem submissão à App Review.
+- Archive preservado no Organizer: `DataDrobe 1.1 (5) 23.52.xcarchive`.
 
 ## Envio
 

@@ -25,8 +25,9 @@ Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 **Candidato atual:** build 5. Ele preserva as correções do build 4 e corrige a
 semana parcial que reduzia o Compare a Dress, a regra que apagava a curva de
 tamanhos de Stripes, o excesso de altura na ajuda e a repetição visual dos
-sinais. O build 4 foi aceito pelo App Store Connect às 19:49; o build 5 ainda
-será arquivado e enviado ao TestFlight. Nenhum build foi submetido à App Review.
+sinais. O build 5 foi arquivado e recebido pelo App Store Connect às 23:56;
+está em processamento no TestFlight. O Archive correto é
+`DataDrobe 1.1 (5) 23.52.xcarchive`. Nenhum build foi submetido à App Review.
 
 ## Portões antes do Archive
 
