@@ -51,7 +51,9 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Close"].exists)
     }
 
-    func testCompareNaoFicaReduzidoAUmAtributo() {
+    func testCompareNaoFicaReduzidoAUmAtributo() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] == "true",
+                      "este teste valida o recorte real e o CI usa Config de exemplo sem rede")
         let app = aplicativo(argumentos: ["-CanarioUITestCompare"])
         app.launch()
 
@@ -61,7 +63,9 @@ final class CanarioUITests: XCTestCase {
                              "a semana parcial não pode esconder os demais atributos")
     }
 
-    func testStripesMostraCurvaDeTamanhosReal() {
+    func testStripesMostraCurvaDeTamanhosReal() throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] == "true",
+                      "este teste valida o recorte real e o CI usa Config de exemplo sem rede")
         let app = aplicativo(argumentos: ["-CanarioUITestSizesStripes"])
         app.launch()
 
