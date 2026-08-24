@@ -1,10 +1,10 @@
 # SAÚDE — coletores do Canário
 
-**Gerado (UTC):** 2026-08-23T07:02:14.185442+00:00
+**Gerado (UTC):** 2026-08-24T07:21:23.211870+00:00
 
-**Data observada:** 2026-08-23
+**Data observada:** 2026-08-24
 
-**Estado:** sem alerta crítico · cobertura parcial — 2 de 15 marcas (2 sem contagem confiável)
+**Estado:** sem alerta crítico · cobertura parcial — 3 de 15 marcas (3 sem contagem confiável)
 
 
 ## Portão operacional
@@ -22,30 +22,30 @@
 
 ## Varejo
 
-- Produtos **visitados**: 42331
+- Produtos **visitados**: 40846
 
-- Snapshots **gravados** (delta, B3): 3502
+- Snapshots **gravados** (delta, B3): 4876
 
 - Marcas coletando: 15 de 15
 
 
 | Marca | Plat. | Visitados | Gravados | Declarado (VTEX) | % campos ok | Alertas |
 |---|---|---|---|---|---|---|
-| PatBo | shopify | 7464 | 84 | — | 1.0 | — |
-| C&A | vtex | 7373 | 855 | 9058 | 1.0 | {"erro": "http 500 ao paginar categoria VTEX 1000003/1004161/1004162 (1100-1149, OrderByNameASC)", "divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 7373, "paginavel": 9058}, "indisponiveis_fora_do_universo": 66283} |
-| Dress To | vtex | 6325 | 650 | 6325 | 1.0 | — |
-| Hering | vtex | 5291 | 562 | 5933 | 0.992 | {"erro": "http 500 ao contar categoria VTEX 26", "divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 5291, "paginavel": 5933}} |
-| Farm | vtex | 2923 | 357 | 2923 | 0.981 | — |
-| Lanca Perfume | vtex | 2412 | 171 | 2412 | 1.0 | — |
-| Zinzane | vtex | 2254 | 148 | 2254 | 1.0 | — |
-| Le Lis Blanc | vtex | 1699 | 112 | 1699 | 1.0 | — |
-| Maria Filo | vtex | 1596 | 158 | 1596 | 1.0 | — |
-| Animale | vtex | 1504 | 168 | 1504 | 1.0 | — |
-| Morena Rosa | vtex | 1123 | 23 | 1123 | 1.0 | — |
-| Cantao | vtex | 780 | 106 | 780 | 1.0 | — |
-| Bo.Bo | vtex | 779 | 56 | 779 | 1.0 | — |
-| NV | vtex | 540 | 40 | 540 | 1.0 | — |
-| Amaro | shopify | 268 | 12 | — | 1.0 | — |
+| PatBo | shopify | 7464 | 206 | — | 1.0 | — |
+| Hering | vtex | 7035 | 573 | 7827 | 0.992 | {"erro": "http 500 ao paginar categoria VTEX 29 (1200-1249, OrderByNameASC)", "divergencia": {"obs": "coletado < paginavel; o normal e dedup (produto em duas categorias). Perda real aparece em faixas_truncadas.", "coletado": 7035, "paginavel": 7827}} |
+| Dress To | vtex | 6253 | 237 | 6253 | 1.0 | {"erro": "http 500 ao contar categoria VTEX 58/3/20"} |
+| C&A | vtex | 4434 | 2478 | 4434 | 1.0 | {"erro": "http 500 ao contar categoria VTEX 1000003/1004161/1004162", "indisponiveis_fora_do_universo": 18142} |
+| Farm | vtex | 2869 | 249 | 2869 | 0.98 | — |
+| Lanca Perfume | vtex | 2362 | 270 | 2362 | 1.0 | — |
+| Zinzane | vtex | 2236 | 102 | 2236 | 1.0 | — |
+| Le Lis Blanc | vtex | 1647 | 205 | 1647 | 1.0 | — |
+| Maria Filo | vtex | 1572 | 117 | 1572 | 1.0 | — |
+| Animale | vtex | 1492 | 113 | 1492 | 1.0 | — |
+| Morena Rosa | vtex | 1123 | 103 | 1123 | 1.0 | — |
+| Bo.Bo | vtex | 794 | 65 | 794 | 1.0 | — |
+| Cantao | vtex | 765 | 61 | 765 | 1.0 | — |
+| NV | vtex | 540 | 30 | 540 | 1.0 | — |
+| Amaro | shopify | 260 | 67 | — | 1.0 | — |
 
 ## Cobertura do catálogo
 
@@ -58,14 +58,15 @@ Volume e cobertura são perguntas diferentes: a tabela acima diz **quanto veio**
 
 | Marca | Cobertura | Faixas cortadas | Teto de perda | Motivo |
 |---|---|---:|---:|---|
-| C&A | incerta | — | — | http 500 ao paginar categoria VTEX 1000003/1004161/1004162 (1100-1149, OrderByNameASC) |
-| Hering | incerta | — | — | http 500 ao contar categoria VTEX 26 |
+| C&A | incerta | — | — | http 500 ao contar categoria VTEX 1000003/1004161/1004162 |
+| Dress To | incerta | — | — | http 500 ao contar categoria VTEX 58/3/20 |
+| Hering | incerta | — | — | http 500 ao paginar categoria VTEX 29 (1200-1249, OrderByNameASC) |
 
 ## Outras fontes
 
 | Fonte | Tentativas | Respostas | Itens/pontos | % ok | Alertas |
 |---|---:|---:|---:|---:|---|
-| editorial | 16 | 49 | 576 | 0.875 | {"por_veiculo": {"FFW": 3, "WWD": 10, "Dazed": 0, "Vogue": 29, "Hypebeast": 20, "Refinery29": 10, "Elle Brasil": 10, "Highsnobiety": 0, "Vogue Brasil": 100, "Who What Wear": 50, "Glamour Brasil": 100, "Steal the Look": 10, "Fashion Bubbles": 24, "Business of Fashion": 100, "Marie Claire Brasil": 100, "Harpers Bazaar Brasil": 10}, "veiculos_com_erro": {"Dazed": "feed http None", "Highsnobiety": "feed http None"}, "veiculos_sem_itens": null} |
+| editorial | 16 | 47 | 577 | 0.875 | {"por_veiculo": {"FFW": 3, "WWD": 10, "Dazed": 0, "Vogue": 30, "Hypebeast": 20, "Refinery29": 10, "Elle Brasil": 10, "Highsnobiety": 0, "Vogue Brasil": 100, "Who What Wear": 50, "Glamour Brasil": 100, "Steal the Look": 10, "Fashion Bubbles": 24, "Business of Fashion": 100, "Marie Claire Brasil": 100, "Harpers Bazaar Brasil": 10}, "veiculos_com_erro": {"Dazed": "feed http None", "Highsnobiety": "feed http None"}, "veiculos_sem_itens": null} |
 | busca | 0 | 0 | 0 | — | {"motivo": "todas as series de busca estao em dia", "termos_em_dia": 40, "termos_aprovados": 40, "corte_de_frescura": "2026-08-10", "adiado_por_cadencia": true} |
 
 ---
