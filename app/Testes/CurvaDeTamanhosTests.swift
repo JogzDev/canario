@@ -117,7 +117,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         XCTAssertNotNil(frase)
         XCTAssertTrue(frase!.contains("P and M") || frase!.contains("M and P"),
                       "P e M empatam dentro da margem; nomear só um exagera o achado")
-        XCTAssertTrue(frase!.contains("2,2%"), "o vale entra junto, senão a taxa não tem contra o quê")
+        XCTAssertTrue(frase!.contains("2.2%"), "o vale entra junto, senão a taxa não tem contra o quê")
     }
 
     func testAsPontasDaGradeSaemMenos() {
@@ -154,7 +154,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores)
         XCTAssertNotNil(frase)
         XCTAssertTrue(frase!.contains("smaller sizes"))
-        XCTAssertTrue(frase!.contains("1,18"))
+        XCTAssertTrue(frase!.contains("1.18"))
     }
 
     func testFormatoDeclaraEmpateEmVezDeInventarDirecao() {
@@ -170,7 +170,7 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let maiores = faixa(nil, "maiores", emRisco: 1000, quebrou: 40, taxa: 4.0)
         let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores) ?? ""
         XCTAssertTrue(frase.contains("larger sizes"))
-        XCTAssertTrue(frase.contains("2,00"))
+        XCTAssertTrue(frase.contains("2.00"))
     }
 
     func testRessalvasCarregamOConfundidorDeProfundidade() {

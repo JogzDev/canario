@@ -15,7 +15,7 @@ import XCTest
 final class ClusterTests: XCTestCase {
 
     /// Caso real, e o mais importante: os três atributos DISCORDAM.
-    /// vestido -3,10 · floral +0,29 · midi -0,47. Média -0,77, dispersão 1,28.
+    /// vestido -3,10 · floral +0,29 · midi -0,47. Média -0.77, dispersão 1.28.
     private let jsonDiscordante = """
     {
       "indice": -0.7679,
@@ -68,7 +68,7 @@ final class ClusterTests: XCTestCase {
     func testAExplicacaoDizPorQueSeCalou() throws {
         let r = try decodificar(jsonDiscordante)
         let e = try XCTUnwrap(Cluster.explicacao(r))
-        XCTAssertTrue(e.contains("1,28"), "faltou a dispersão medida: \(e)")
+        XCTAssertTrue(e.contains("1.28"), "faltou a dispersão medida: \(e)")
         XCTAssertTrue(e.contains("no direction is stated"))
     }
 
@@ -77,7 +77,7 @@ final class ClusterTests: XCTestCase {
     func testONumeroContinuaVisivelComUnidade() throws {
         let r = try decodificar(jsonDiscordante)
         let e = try XCTUnwrap(Cluster.explicacao(r))
-        XCTAssertTrue(e.contains("-0,77"), "faltou o índice: \(e)")
+        XCTAssertTrue(e.contains("-0.77"), "faltou o índice: \(e)")
         XCTAssertTrue(e.contains("standard deviations"),
                       "K6: número sem unidade é o \"1,15 o quê?\" de 31/07")
     }
@@ -135,7 +135,7 @@ final class ClusterTests: XCTestCase {
         let vestido = try XCTUnwrap(r.atributos.first { $0.termoId == "vestido" })
         let linha = try XCTUnwrap(Cluster.porQuePesa(vestido))
         XCTAssertTrue(linha.contains("22% of the weight"), linha)
-        XCTAssertTrue(linha.contains("11.579"),
+        XCTAssertTrue(linha.contains("11,579"),
                       "o N do painel tem de sair com separador de milhar: \(linha)")
     }
 
@@ -178,7 +178,7 @@ final class ClusterTests: XCTestCase {
         """
         let r = try decodificar(json)
         let c = try XCTUnwrap(Cluster.concentracao(r))
-        XCTAssertTrue(c.contains("1,2"), c)
+        XCTAssertTrue(c.contains("1.2"), c)
     }
 
     func testNaoAvisaQuandoOsPesosSaoParelhos() throws {
@@ -283,7 +283,7 @@ final class ClusterTests: XCTestCase {
     func testOCriterioDaRaridadeDizOndeAConteFoiFeita() throws {
         let r = try decodificar(jsonDiscordante)
         let c = Cluster.criterioDaRaridade(r)
-        XCTAssertTrue(c.contains("panel's vestido items"), c)
+        XCTAssertTrue(c.contains("panel's dress items"), c)
         XCTAssertTrue(c.contains("within its own dimension"), c)
     }
 

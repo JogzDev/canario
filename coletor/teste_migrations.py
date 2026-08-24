@@ -66,7 +66,7 @@ def main():
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
         "cardinality(par.categorias) = 0",
-        "bool_or(pt.termo_id = any(par.categorias))",
+        "bool_or(e.dimensao = 'categoria') as tem_categoria",
     ]
     for trecho in exigencias_similares:
         if trecho not in similares:

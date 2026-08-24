@@ -31,7 +31,8 @@ final class SimilaresTests: XCTestCase {
                         percentil: Double? = nil) -> Similares.Resumo {
         Similares.Resumo(
             nSimilares: similares, nMarcas: marcas, atributosPedidos: pedidos,
-            minimoEmComum: minimo, nComTodos: comTodos, comPreco: comPreco,
+            dimensoesPedidas: nil, minimoEmComum: minimo, minimoDimensoes: nil,
+            nComTodos: comTodos, comPreco: comPreco,
             pctPrecoCheio: cheio, pctGradeQuebrada: quebrada, pctEsgotada: esgotada,
             precoMin: 29.99, precoMax: 12998, precoMediana: mediana,
             percentilDoAlvo: percentil, exibidos: 8)

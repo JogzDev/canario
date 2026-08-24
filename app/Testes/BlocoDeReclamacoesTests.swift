@@ -152,8 +152,8 @@ final class BlocoDeReclamacoesTests: XCTestCase {
     // MARK: O número continua rastreável sem protagonizar o jargão
 
     func testNumeroTemEscalaDeclaradaNaLinhaDeApoio() {
-        XCTAssertEqual(Explicacao.numeroComUnidade(1.15), "+1,15")
-        XCTAssertEqual(Explicacao.numeroComUnidade(-3.73), "-3,73")
+        XCTAssertEqual(Explicacao.numeroComUnidade(1.15), "+1.15")
+        XCTAssertEqual(Explicacao.numeroComUnidade(-3.73), "-3.73")
         XCTAssertEqual(Explicacao.numeroComUnidade(nil), "no index")
         XCTAssertTrue(Explicacao.unidadeDoIndice.contains("12 weeks"),
                       "a linha de apoio tem de dizer contra o que a escala é medida")
@@ -162,14 +162,14 @@ final class BlocoDeReclamacoesTests: XCTestCase {
     func testNumeroUsaVirgulaDecimal() {
         // Mesma família da regra de data em dd/mm/aaaa: a tela mostrava
         // "-2.18" e "2.2 desvios", que é notação de código, não de português.
-        XCTAssertEqual(Leitura.numero(-2.18, casas: 2), "-2,18")
-        XCTAssertEqual(Leitura.numero(1.15, casas: 2, sinal: true), "+1,15")
-        XCTAssertEqual(Leitura.numero(11.9485, casas: 1), "11,9")
+        XCTAssertEqual(Leitura.numero(-2.18, casas: 2), "-2.18")
+        XCTAssertEqual(Leitura.numero(1.15, casas: 2, sinal: true), "+1.15")
+        XCTAssertEqual(Leitura.numero(11.9485, casas: 1), "11.9")
         XCTAssertTrue(Leitura.explicacao(-2.18).contains("below this attribute's usual behavior"))
     }
 
     /// Visto em aparelho em 19/08/2026: o selo dizia "within the usual range" e
-    /// a linha logo abaixo dizia "0,0 on the statistical scale, **above** this
+    /// a linha logo abaixo dizia "0.0 on the statistical scale, **above** this
     /// attribute's usual behavior". Duas frases sobre o mesmo número, uma
     /// contradizendo a outra.
     ///
@@ -179,7 +179,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
     func testNumeroQueExibeZeroNaoAfirmaDirecao() {
         for z in [0.0, 0.04, -0.04, 0.049, -0.049] {
             let texto = Leitura.explicacao(z)
-            XCTAssertTrue(texto.contains("0,0 on the statistical scale"),
+            XCTAssertTrue(texto.contains("0.0 on the statistical scale"),
                           "esperava exibir 0,0 para z=\(z): \(texto)")
             XCTAssertTrue(texto.contains("level with"),
                           "z=\(z) exibe 0,0 e não pode afirmar direção: \(texto)")
@@ -224,7 +224,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
     func testPicoExplicaQueNenhumaOutraFonteAcompanhou() {
         let texto = Explicacao.porQue(estado: "pico", indice: indice("pico"),
                                       series: [serieEditorial(z: 3.98)])
-        XCTAssertTrue(texto.contains("3,9") || texto.contains("4,0"),
+        XCTAssertTrue(texto.contains("3.9") || texto.contains("4.0"),
                       "o desvio do editorial tem de aparecer no texto")
         XCTAssertTrue(texto.lowercased().contains("no other source"),
                       "é a condição que separa pico de alta, e o usuário precisa dela para decidir se segue")
@@ -272,7 +272,7 @@ final class BlocoDeReclamacoesTests: XCTestCase {
                                             metrica: "share do atributo no sortimento do painel (%)",
                                             nTotalSortimento: 60401))
         let linhas = Explicacao.origens([varejo])
-        XCTAssertTrue(linhas[0].contains("11,9%"))
+        XCTAssertTrue(linhas[0].contains("11.9%"))
         XCTAssertTrue(linhas[0].contains("7217 panel items"))
     }
 
