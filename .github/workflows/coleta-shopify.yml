@@ -80,3 +80,11 @@ jobs:
           COLETA_MARCA: ${{ inputs.marca }}
           COLETA_SEGMENTO: ${{ inputs.segmento }}
         run: "$PY coletor/coletor_varejo.py"
+
+      - name: Provar isolamento do painel adicional
+        if: ${{ inputs.segmento != 'feminino_casual_br' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SEGMENTO_VERIFICADO: ${{ inputs.segmento }}
+        run: "$PY coletor/verificar_isolamento_segmento.py"
