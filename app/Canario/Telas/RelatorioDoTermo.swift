@@ -200,15 +200,22 @@ struct RelatorioDoTermo: View {
         Cartao {
             Text("Sources").font(Tokens.Fonte.secao)
             ForEach(porFonte, id: \.0) { fonte, pontos in
-                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                    Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.apoio)
-                    if let v = Leitura.variacao(
-                        recente: pontos.first?.valorBruto,
-                        media: mediaDaJanela(pontos)) {
-                        Text(v).font(Tokens.Fonte.apoio)
+                NavigationLink {
+                    DetalheDaFonteEditorial(termo: termo, fonte: fonte, pontos: pontos)
+                } label: {
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                            Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.apoio)
+                            Text(resumoDaFonte(fonte, pontos: pontos)).font(Tokens.Fonte.apoio)
+                            LinhaInsumo(texto: "\(pontos.count) weeks · latest on \(Formato.data(pontos.first?.semana ?? "—"))")
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(Tokens.Fonte.miudo)
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
                     }
-                    LinhaInsumo(texto: "\(pontos.count) weeks · latest on \(Formato.data(pontos.first?.semana ?? "—"))")
                 }
+                .buttonStyle(.plain)
                 .padding(.vertical, Tokens.Espaco.xs)
             }
         }
@@ -228,6 +235,21 @@ struct RelatorioDoTermo: View {
         let janela = pontos.dropFirst().prefix(12).compactMap(\.valorBruto)
         guard !janela.isEmpty else { return nil }
         return janela.reduce(0, +) / Double(janela.count)
+    }
+
+    private func resumoDaFonte(_ fonte: String, pontos: [PontoSerie]) -> String {
+        if fonte.hasPrefix("editorial"), pontos.first?.nAmostra == 0 {
+            let anteriores = pontos.dropFirst().prefix(12).compactMap(\.nAmostra)
+            let media = anteriores.isEmpty ? nil
+                : Double(anteriores.reduce(0, +)) / Double(anteriores.count)
+            if let media {
+                return "0 articles in the latest 4-week window · previous-window average \(Leitura.numero(media, casas: 1))"
+            }
+            return "0 articles in the latest 4-week window"
+        }
+        return Leitura.variacao(recente: pontos.first?.valorBruto,
+                                media: mediaDaJanela(pontos))
+            ?? "No comparable window yet"
     }
 
     private func fmt(_ v: Double) -> String {
@@ -260,5 +282,73 @@ struct RelatorioDoTermo: View {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }
         carregando = false
+    }
+}
+
+private struct DetalheDaFonteEditorial: View {
+    let termo: Termo
+    let fonte: String
+    let pontos: [PontoSerie]
+
+    private var ordenados: [PontoSerie] { pontos.sorted { $0.semana < $1.semana } }
+    private var recente: PontoSerie? { pontos.max { $0.semana < $1.semana } }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                Cartao {
+                    Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.secao)
+                    if fonte.hasPrefix("editorial") {
+                        Text("\(recente?.nAmostra ?? 0) articles in the latest 4-week window")
+                            .font(Tokens.Fonte.corpo)
+                    } else if let bruto = recente?.valorBruto {
+                        Text(Leitura.numero(bruto, casas: 2)).font(Tokens.Fonte.corpo)
+                    }
+                    LinhaInsumo(texto: "Latest measurement: \(Formato.data(recente?.semana ?? "—"))")
+                    if let unidade = recente?.meta?.unidade { LinhaInsumo(texto: unidade) }
+                }
+
+                if !ordenados.compactMap(\.valorBruto).isEmpty {
+                    Cartao {
+                        Text("Measured history").font(Tokens.Fonte.secao)
+                        Chart(ordenados) { ponto in
+                            if let valor = ponto.valorBruto,
+                               let data = Formato.dataISO(ponto.semana) {
+                                LineMark(x: .value("Week", data), y: .value("Measured value", valor))
+                                PointMark(x: .value("Week", data), y: .value("Measured value", valor))
+                            }
+                        }
+                        .frame(height: 210)
+                        LinhaInsumo(texto: "This is the source's measured value, not a forecast. Tap examples below to inspect the editorial evidence.")
+                    }
+                }
+
+                if let meta = recente?.meta {
+                    Cartao {
+                        Text("What contributed").font(Tokens.Fonte.secao)
+                        if let veiculos = meta.veiculosEmTexto {
+                            LinhaInsumo(texto: veiculos)
+                        }
+                        ForEach(Array((meta.exemplos ?? []).enumerated()), id: \.offset) { _, exemplo in
+                            if let texto = exemplo.url, let url = URL(string: texto) {
+                                Link(destination: url) {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(exemplo.titulo).font(Tokens.Fonte.apoio)
+                                        Text(exemplo.veiculo).font(Tokens.Fonte.miudo)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                        if (meta.exemplos ?? []).isEmpty {
+                            LinhaInsumo(texto: "No article matched this attribute in the latest measured window.")
+                        }
+                    }
+                }
+            }
+            .padding(Tokens.Espaco.m)
+        }
+        .navigationTitle(Traducao.rotuloExibido(termo))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

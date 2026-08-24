@@ -507,13 +507,11 @@ enum Leitura {
         return "\(numero(pct, casas: 0, sinal: true))% vs. the window average"
     }
 
-    /// Número em português: **vírgula decimal**.
-    ///
-    /// O app já tinha regra de data em dd/mm/aaaa e de horário de Brasília, e
-    /// esta é da mesma família — estava faltando. A tela mostrava "-2.18" e
-    /// "2.2 desvios", que é notação de código, não de quem lê em português.
+    /// Número no idioma-fonte da interface (inglês), com ponto decimal.
     static func numero(_ v: Double, casas: Int, sinal: Bool = false) -> String {
         let formato = sinal ? "%+.\(casas)f" : "%.\(casas)f"
-        return String(format: formato, v).replacingOccurrences(of: ".", with: ",")
+        return String(format: formato,
+                      locale: Locale(identifier: "en_US_POSIX"),
+                      arguments: [v])
     }
 }

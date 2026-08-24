@@ -91,18 +91,18 @@ enum Formato {
         return bruto.replacingOccurrences(of: "\u{00A0}", with: " ")
     }
 
-    /// Contagem com separador de milhar em português.
+    /// Contagem com separador de milhar no idioma-fonte da interface.
     ///
     /// Existe porque a tela do cluster mostrava "3542 no painel". Número de
     /// quatro dígitos sem ponto é notação de código, da mesma família do
     /// "-2.18" que virou "-2,18" em 31/07.
     static func contagem(_ n: Int) -> String {
         let f = NumberFormatter()
-        f.locale = Locale(identifier: "pt_BR")
+        f.locale = Locale(identifier: "en_US")
         f.numberStyle = .decimal
         f.maximumFractionDigits = 0
         let bruto = f.string(from: NSNumber(value: n)) ?? "\(n)"
-        return bruto.replacingOccurrences(of: "\u{00A0}", with: ".")
+        return bruto.replacingOccurrences(of: "\u{00A0}", with: ",")
     }
 
     /// Duração em linguagem de quem compra coleção: "menos de 2 meses" diz mais

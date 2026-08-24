@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from descoberta_feeds import parse_data  # noqa: E402
 from teste_30s import buscar, robots_permite  # noqa: E402
 from matcher import compilar_lista, termos_que_casam  # noqa: E402
+from filtro_genero_editorial import classificar_genero  # noqa: E402
 import supabase_rest  # noqa: E402
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -295,7 +296,18 @@ def main():
 
         fonte = "editorial_br" if (v.get("pais") or "").upper() == "BR" else "editorial_intl"
         casados = 0
+        descartados_masculinos = 0
         for titulo, link, quando, resumo in itens:
+            genero = classificar_genero(titulo, v.get("foco_genero"))
+            artigos_novos.append({"veiculo": v["veiculo"], "url": link,
+                                  "titulo": titulo[:500],
+                                  "data_pub": quando.isoformat(),
+                                  "publico_editorial": genero["publico"],
+                                  "pontos_femininos": genero["pontos_femininos"],
+                                  "pontos_masculinos": genero["pontos_masculinos"]})
+            if genero["publico"] == "masculino":
+                descartados_masculinos += 1
+                continue
             semana = semana_de(quando)
             semanas_observadas[fonte].add(semana)
             # K8: titulo + resumo, nunca o texto integral (§18).
@@ -304,9 +316,6 @@ def main():
                 titulo, resumo,
                 termos_que_casam(titulo + " " + limpar(resumo), termos), categorias,
                 achados_no_titulo=achados_titulo)
-            artigos_novos.append({"veiculo": v["veiculo"], "url": link,
-                                  "titulo": titulo[:500],
-                                  "data_pub": quando.isoformat()})
             if not achados:
                 continue
             casados += 1
@@ -322,9 +331,11 @@ def main():
                                                  "url": link})
                 contagem[celula].add(link)
         por_veiculo[v["veiculo"]] = {"itens": len(itens), "casados": casados,
+                                     "masculinos": descartados_masculinos,
                                      "erro": None, "fonte": fonte}
-        print("  {:24} {:4} itens, {:4} com termo  ({})".format(
-            v["veiculo"][:24], len(itens), casados, fonte), file=sys.stderr)
+        print("  {:24} {:4} itens, {:3} masc. fora, {:4} com termo  ({})".format(
+            v["veiculo"][:24], len(itens), descartados_masculinos, casados, fonte),
+            file=sys.stderr)
 
     # --- artigos (so metadados; §18 proibe o texto) ---
     vistos = set()

@@ -125,7 +125,7 @@ enum Cluster {
     static func criterioDaRaridade(_ r: Resposta) -> String {
         let base: String
         if let c = r.categoriaUsada, c != "(todas)" {
-            base = "among the panel's \(c) items"
+            base = "among the panel's \(Traducao.rotuloExibido(id: c).lowercased()) items"
         } else {
             base = "across the whole panel because no single category was selected"
         }

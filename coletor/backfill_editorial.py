@@ -37,6 +37,7 @@ from coletor_editorial import (limpar, semana_de, carregar_termos_compilados,
                                filtrar_contexto_editorial, JANELA_SEMANAS, SEGMENTO)
 from descoberta_feeds import parse_data
 from matcher import termos_que_casam
+from filtro_genero_editorial import classificar_genero
 from teste_30s import buscar
 import supabase_rest
 
@@ -136,8 +137,15 @@ def main():
 
         n = 0
         for titulo, link, quando, resumo in paginar_wpjson(base, dominio, desde):
+            genero = classificar_genero(titulo, v.get("foco_genero"))
             artigos.append({"veiculo": v["veiculo"], "url": link,
-                            "titulo": titulo[:500], "data_pub": quando.isoformat()})
+                            "titulo": titulo[:500], "data_pub": quando.isoformat(),
+                            "publico_editorial": genero["publico"],
+                            "pontos_femininos": genero["pontos_femininos"],
+                            "pontos_masculinos": genero["pontos_masculinos"]})
+            if genero["publico"] == "masculino":
+                n += 1
+                continue
             achados = filtrar_contexto_editorial(
                 titulo, resumo,
                 termos_que_casam(titulo + " " + resumo, termos), categorias)

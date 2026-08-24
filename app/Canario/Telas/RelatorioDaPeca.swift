@@ -565,7 +565,7 @@ struct RelatorioDaPeca: View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             ForEach(Cluster.dentro(c)) { a in
                     HStack(alignment: .firstTextBaseline) {
-                        Text(a.rotulo).font(Tokens.Fonte.miudo)
+                        Text(rotuloDoAtributo(a)).font(Tokens.Fonte.miudo)
                         Spacer()
                         if let i = a.indice {
                             Text(Leitura.numero(i, casas: 2, sinal: true))

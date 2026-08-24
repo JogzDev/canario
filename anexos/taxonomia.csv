@@ -2,7 +2,7 @@ id,rotulo,dimensao,exclusiva,sinonimos,termo_busca,palavras_pt,palavras_en,exemp
 vestido,Vestido,categoria,sim,vestidinho,vestido feminino,vestido|vestidinho,dress,Peca unica de corpo inteiro,aprovado,pendente,"Ancora da dimensao: sufixo feminino/a em todos, para as categorias serem comparaveis entre si e o recorte do segmento nao vazar para masculino"
 saia,Saia,categoria,sim,,saia feminina,saia,skirt,Peca inferior sem pernas separadas,aprovado,pendente,
 blusa_top,Blusa e top,categoria,sim,cropped|regata|camiseta,blusa feminina,blusa|top|cropped|regata|camiseta|t-shirt,blouse|top|tee|t-shirt|tank,Parte de cima leve,aprovado,pendente,
-camisa,Camisa,categoria,sim,chemise,camisa feminina,camisa|chemise,shirt|button-down,Parte de cima com botoes e colarinho,aprovado,pendente,
+camisa,Camisa,categoria,sim,chemise|polo,camisa feminina,camisa|chemise|polo,shirt|button-down|polo,Parte de cima com botoes e colarinho,aprovado,pendente,
 calca,Calca,categoria,sim,pantalona,calca feminina,calca|pantalona,pants|trousers,Peca inferior com pernas,aprovado,pendente,
 short,Short e bermuda,categoria,sim,bermuda|shorts,short feminino,short|shorts|bermuda,shorts,Peca inferior curta,aprovado,pendente,
 casaco_jaqueta,Casaco e jaqueta,categoria,sim,blazer|cardigan|corta-vento,casaco feminino,casaco|jaqueta|blazer|cardigan|corta-vento,jacket|coat|blazer|cardigan|windbreaker,Terceira peca,aprovado,pendente,

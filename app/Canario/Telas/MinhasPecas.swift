@@ -15,6 +15,7 @@ struct MinhasPecas: View {
     @State private var erro: String?
     @State private var processandoFotos: Set<UUID> = []
     @State private var editando: PecaSalva?
+    @State private var compartilhando = false
 
     private let colunas = [
         GridItem(.flexible(), spacing: 18),
@@ -51,6 +52,14 @@ struct MinhasPecas: View {
                         Label("Compare", systemImage: "arrow.left.arrow.right")
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        compartilhando = true
+                    } label: {
+                        Label("Share or export", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(pecas.isEmpty)
+                }
             }
         }
         .task { await carregar() }
@@ -59,6 +68,11 @@ struct MinhasPecas: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .closetFoiSincronizado)) { _ in
             Task { await carregar() }
+        }
+        .sheet(isPresented: $compartilhando) {
+            CompartilharCloset(pecas: pecas, termos: termos)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -185,6 +199,110 @@ struct MinhasPecas: View {
     }
 }
 
+private struct PacoteDeAtividade: Identifiable {
+    let id = UUID()
+    let itens: [Any]
+}
+
+/// Um único ponto de saída para link, redes sociais e planilha. A seleção fica
+/// dentro da folha para o Closet não adquirir um segundo modo permanente.
+private struct CompartilharCloset: View {
+    let pecas: [PecaSalva]
+    let termos: [Termo]
+    @Environment(\.dismiss) private var dismiss
+    @State private var selecionadas: Set<UUID>
+    @State private var atividade: PacoteDeAtividade?
+    @State private var preparando = false
+    @State private var erro: String?
+
+    init(pecas: [PecaSalva], termos: [Termo]) {
+        self.pecas = pecas
+        self.termos = termos
+        _selecionadas = State(initialValue: Set(pecas.map(\.id)))
+    }
+
+    private var escolhidas: [PecaSalva] { pecas.filter { selecionadas.contains($0.id) } }
+    private var rotulos: [String: String] {
+        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Choose items") {
+                    ForEach(pecas) { peca in
+                        Button {
+                            if selecionadas.contains(peca.id) { selecionadas.remove(peca.id) }
+                            else { selecionadas.insert(peca.id) }
+                        } label: {
+                            HStack {
+                                Text(peca.nome(comRotulos: rotulos)).foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: selecionadas.contains(peca.id)
+                                      ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(Tokens.Cor.acao)
+                            }
+                        }
+                    }
+                }
+                Section("Share") {
+                    Button { compartilharLinks() } label: {
+                        Label("Links and social networks", systemImage: "link")
+                    }
+                    Button { exportar(mercado: false) } label: {
+                        Label("Spreadsheet · attributes only", systemImage: "tablecells")
+                    }
+                    Button { exportar(mercado: true) } label: {
+                        Label("Spreadsheet · include market readings", systemImage: "chart.line.uptrend.xyaxis")
+                    }
+                }
+                if preparando { ProgressView("Preparing export…") }
+                if let erro { Text(erro).font(Tokens.Fonte.miudo).foregroundStyle(.secondary) }
+            }
+            .navigationTitle("Share or export")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(selecionadas.count == pecas.count ? "Clear" : "All") {
+                        selecionadas = selecionadas.count == pecas.count ? [] : Set(pecas.map(\.id))
+                    }
+                }
+            }
+        }
+        .sheet(item: $atividade) { pacote in
+            FolhaDeAtividades(itens: pacote.itens)
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    private func compartilharLinks() {
+        guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
+        var itens: [Any] = escolhidas.compactMap { peca in
+            PecaCompartilhada(nome: peca.nome(comRotulos: rotulos), termoIds: peca.termoIds).url
+        }
+        if escolhidas.count == 1, let peca = escolhidas.first {
+            let atributos = peca.termoIds.compactMap { rotulos[$0] }
+            itens.insert(CartaoCompartilhavel.imagem(
+                nome: peca.nome(comRotulos: rotulos), atributos: atributos), at: 0)
+        }
+        atividade = PacoteDeAtividade(itens: itens)
+        erro = nil
+    }
+
+    private func exportar(mercado: Bool) {
+        guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
+        preparando = true
+        Task {
+            let url = await ExportadorDoCloset.csv(
+                pecas: escolhidas, termos: termos, incluirMercado: mercado)
+            preparando = false
+            if let url { atividade = PacoteDeAtividade(itens: [url]); erro = nil }
+            else { erro = "The spreadsheet could not be created. Try again." }
+        }
+    }
+}
+
 /// Card do Figma: a peça é protagonista, inteira e sem um recorte quadrado que
 /// coma mangas ou barra. O card só oferece foto a itens antigos que ainda não
 /// têm uma; substituição mora no detalhe da peça.
@@ -259,15 +377,26 @@ private struct CartaoDoArmario: View {
                 }
                 .buttonStyle(.plain)
 
-                Button(action: aoFavoritar) {
-                    Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
-                        .font(.system(size: 23, weight: .semibold))
-                        .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                HStack(spacing: 0) {
+                    Button(action: aoRenomear) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Tokens.Cor.noite)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Edit clothing name")
+
+                    Button(action: aoFavoritar) {
+                        Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
+                            .font(.system(size: 23, weight: .semibold))
+                            .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
             }
 
             if !temFoto {

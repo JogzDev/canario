@@ -33,7 +33,11 @@ enum Similares {
         let nSimilares: Int
         let nMarcas: Int
         let atributosPedidos: Int
+        /// A28: termos da mesma dimensão são alternativas (por exemplo,
+        /// branco OU verde), sem contar duas vezes o mesmo tipo de evidência.
+        let dimensoesPedidas: Int?
         let minimoEmComum: Int
+        let minimoDimensoes: Int?
         let nComTodos: Int
         let comPreco: Int
         let pctPrecoCheio: Double?
@@ -49,7 +53,9 @@ enum Similares {
             case nSimilares = "n_similares"
             case nMarcas = "n_marcas"
             case atributosPedidos = "atributos_pedidos"
+            case dimensoesPedidas = "dimensoes_pedidas"
             case minimoEmComum = "minimo_em_comum"
+            case minimoDimensoes = "minimo_dimensoes"
             case nComTodos = "n_com_todos"
             case comPreco = "com_preco"
             case pctPrecoCheio = "pct_preco_cheio"
@@ -190,6 +196,20 @@ enum Similares {
     /// Como o limiar de semelhança foi aplicado. Regra 3: o usuário precisa
     /// poder auditar o que "parecida" significou nesta tela.
     static func criterio(_ r: Resumo) -> String {
+        if let dimensoes = r.dimensoesPedidas,
+           let minimoDimensoes = r.minimoDimensoes {
+            let base = max(1, Int(ceil(0.7 * Double(dimensoes))))
+            let alternativas = r.atributosPedidos > dimensoes
+                ? " Selections within the same dimension are alternatives."
+                : ""
+            if minimoDimensoes < base {
+                return "No item reached the usual \(base)-of-\(dimensoes)-dimension match. "
+                     + "Showing the closest available matches at \(minimoDimensoes) of \(dimensoes); category still matches."
+                     + alternativas
+            }
+            return "Matches cover at least \(minimoDimensoes) of \(dimensoes) selected dimensions; category always matches."
+                 + alternativas
+        }
         if r.minimoEmComum == r.atributosPedidos {
             return "All \(r.atributosPedidos) attributes matched."
         }

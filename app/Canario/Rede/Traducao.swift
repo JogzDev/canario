@@ -44,6 +44,12 @@ enum Traducao {
         rotulosCorrigidos[termo.id] ?? termo.rotulo
     }
 
+    /// Rótulo de um id quando a resposta do servidor não traz o `Termo`
+    /// completo (por exemplo, `categoria_usada` no cálculo do cluster).
+    static func rotuloExibido(id: String, fallback: String? = nil) -> String {
+        rotulosCorrigidos[id] ?? fallback ?? id
+    }
+
     /// Dimensões cujo rótulo pede JULGAMENTO em vez de observação.
     ///
     /// "Dress", "Black", "Midi" a pessoa responde olhando. "Romantic" ela

@@ -14,6 +14,7 @@
 		66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */; };
 		D4191FF2A6872250AA14D5B6 /* Autenticacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675971567B5B02959B863354 /* Autenticacao.swift */; };
 		17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAE067E291E7143C7B5D2FD /* Cluster.swift */; };
+		8FC8DA501430F62731F31745 /* Compartilhamento.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E67FA7D9CC47EF0A49882DE /* Compartilhamento.swift */; };
 		9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */; };
 		26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */; };
 		531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */; };
@@ -62,6 +63,7 @@
 		98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnalisesDeHoje.swift"; sourceTree = "<group>"; };
 		675971567B5B02959B863354 /* Autenticacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Autenticacao.swift"; sourceTree = "<group>"; };
 		8EAE067E291E7143C7B5D2FD /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cluster.swift"; sourceTree = "<group>"; };
+		4E67FA7D9CC47EF0A49882DE /* Compartilhamento.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Compartilhamento.swift"; sourceTree = "<group>"; };
 		CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CorDaPeca.swift"; sourceTree = "<group>"; };
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhos.swift"; sourceTree = "<group>"; };
 		DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntradasDoMenu.swift"; sourceTree = "<group>"; };
@@ -186,6 +188,7 @@
 				98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */,
 				675971567B5B02959B863354 /* Autenticacao.swift */,
 				8EAE067E291E7143C7B5D2FD /* Cluster.swift */,
+				4E67FA7D9CC47EF0A49882DE /* Compartilhamento.swift */,
 				CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */,
 				94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */,
 				DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */,
@@ -317,6 +320,7 @@
 				66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */,
 				D4191FF2A6872250AA14D5B6 /* Autenticacao.swift in Sources */,
 				17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */,
+				8FC8DA501430F62731F31745 /* Compartilhamento.swift in Sources */,
 				9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */,
 				26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */,
 				531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */,

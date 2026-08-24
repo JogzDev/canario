@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct CanarioApp: App {
     @StateObject private var conta = GestorDaConta.shared
+    @StateObject private var links = CentralDeLinksCompartilhados.shared
 
     var body: some Scene {
         // A paleta escura experimental de 19/08 nunca passou por revisão de
@@ -25,8 +26,12 @@ struct CanarioApp: App {
                 }
             }
             .environmentObject(conta)
+            .environmentObject(links)
             .preferredColorScheme(.light)
-            .onOpenURL { conta.receberLink($0) }
+            .onOpenURL {
+                conta.receberLink($0)
+                links.receber($0)
+            }
         }
     }
 }
@@ -38,6 +43,7 @@ struct Raiz: View {
     /// Os nomes e símbolos das abas vivem em `AbaDoApp`, fora da View, porque
     /// já divergiram entre as duas navegações uma vez.
     typealias Aba = AbaDoApp
+    @EnvironmentObject private var links: CentralDeLinksCompartilhados
 
     struct ItemDoMenu: Identifiable {
         let nome: String
@@ -77,6 +83,10 @@ struct Raiz: View {
         }
         .fullScreenCover(item: $itemDoMenu) { item in
             TelaDoMenu(nome: item.nome)
+        }
+        .sheet(item: $links.recebida) { peca in
+            ReceberPecaCompartilhada(peca: peca)
+                .presentationDetents([.medium])
         }
     }
 
