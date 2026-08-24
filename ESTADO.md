@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 24/08/2026, 17:36 em São Paulo
+**Última atualização:** 24/08/2026, 18:03 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -54,9 +54,12 @@ Depois dos filtros de população, **3.768 produtos** ficaram em `direcao_intl`:
 produto dessas marcas fora do segmento. Elas não entram no denominador
 brasileiro e, com cinco fontes, continuam abaixo do mínimo de oito para índice.
 
-Bloqueios atuais: telas finais do Figma e ativação do SMTP gratuito. A Brevo
-exige endereço comercial, CEP e cidade reais; Supabase, Apple e Google já estão
-configurados. A lista exata e atual está em `PENDENCIAS.md`.
+Bloqueios atuais: telas finais do Figma e aprovação humana do SMTP gratuito.
+A conta Brevo, o endereço, o telefone com 2FA e o plano gratuito foram
+confirmados. O pedido de ativação transacional **#5525910** está aberto; o
+Supabase já está configurado e um cadastro técnico provou que ainda não há log
+de entrega. Apple e Google também estão configurados. A lista exata e atual
+está em `PENDENCIAS.md`.
 
 ---
 
