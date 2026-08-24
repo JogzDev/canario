@@ -54,6 +54,12 @@ struct MinhasPecas: View {
             }
         }
         .task { await carregar() }
+        .onReceive(NotificationCenter.default.publisher(for: .closetMudouDeUsuario)) { _ in
+            Task { await carregar() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .closetFoiSincronizado)) { _ in
+            Task { await carregar() }
+        }
     }
 
     private var vazio: some View {

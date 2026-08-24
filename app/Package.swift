@@ -25,6 +25,8 @@ let package = Package(
                       "Rede/CurvaDeTamanhos.swift", "Rede/Similares.swift",
                       "Rede/Cluster.swift", "Rede/SerieDoCluster.swift", "Rede/SemelhancaVisual.swift",
                       "Rede/PecasSalvas.swift", "Rede/MascaraDeInstancia.swift",
+                      "Rede/Autenticacao.swift",
+                      "Rede/SincronizacaoDoCloset.swift",
                       "Rede/IntencaoDoToque.swift",
                       "Design/Formato.swift"]
         ),

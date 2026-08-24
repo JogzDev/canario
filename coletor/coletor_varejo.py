@@ -722,6 +722,23 @@ def _precisa_snapshot(d, ex, hoje):
         return True
 
 
+def _produto_mudou(d, ex):
+    """Só regrava a linha larga quando algum estado durável mudou."""
+    if ex is None:
+        return True
+    pares = (
+        ("url", "url"), ("titulo", "titulo"),
+        ("categoria_site", "categoria_site"), ("imagem_url", "imagem_url"),
+        ("preco_atual", "ultimo_preco_atual"),
+        ("preco_original", "ultimo_preco_original"),
+        ("grade_por_tamanho", "ultima_grade"),
+    )
+    for novo, antigo in pares:
+        if (d.get(novo) or None) != (ex.get(antigo) or None):
+            return True
+    return False
+
+
 def gravar_lote(marca_id, coletados, hoje):
     """Grava um bloco de produtos coletados. Devolve (gravados, campos_ok)."""
     if not coletados:
@@ -732,19 +749,30 @@ def gravar_lote(marca_id, coletados, hoje):
     for sub in _pedacos(ids, BLOCO_LEITURA):
         lista = ",".join('"{}"'.format(i) for i in sub)
         params = ("?marca_id=eq.{}&id_externo=in.({})"
-                  "&select=id,id_externo,ultimo_preco_atual,ultimo_preco_original,"
-                  "ultima_grade,ultimo_snapshot_em,primeiro_avistamento,"
-                  "ultimo_avistamento_em,ofertavel".format(marca_id, lista))
+                  "&select=id,id_externo,url,titulo,categoria_site,imagem_url,"
+                  "ultimo_preco_atual,ultimo_preco_original,ultima_grade,"
+                  "primeiro_avistamento".format(marca_id, lista))
         for r in supabase_rest.selecionar("produtos", params):
             existentes[r["id_externo"]] = r
 
-    prod_rows, snap_alvo = [], []
+    ids_produto = [r["id"] for r in existentes.values()]
+    existente_por_id = {r["id"]: r for r in existentes.values()}
+    for sub in _pedacos(ids_produto, BLOCO_LEITURA):
+        lista = ",".join(str(i) for i in sub)
+        params = ("?produto_id=in.({})&select=produto_id,ultimo_snapshot_em,"
+                  "ultimo_avistamento_em,ofertavel".format(lista))
+        for estado in supabase_rest.selecionar("estado_dos_produtos", params):
+            ex = existente_por_id.get(estado["produto_id"])
+            if ex is not None:
+                ex.update(estado)
+
+    prod_rows, estado_alvo, snap_alvo = [], [], []
     campos_ok = 0
     for d in coletados:
         ex = existentes.get(d["id_externo"])
         escreve = _precisa_snapshot(d, ex, hoje)
         campos_ok += 1 if (d["preco_atual"] is not None and d["grade_por_tamanho"] and d["titulo"]) else 0
-        prod_rows.append({
+        produto = {
             "marca_id": marca_id,
             "id_externo": d["id_externo"],
             "url": d["url"],
@@ -752,25 +780,38 @@ def gravar_lote(marca_id, coletados, hoje):
             "categoria_site": d["categoria_site"],
             "imagem_url": d["imagem_url"],
             "primeiro_avistamento": (ex.get("primeiro_avistamento") if ex else hoje.isoformat()) or hoje.isoformat(),
-            # Visita e snapshot sao sinais diferentes. Este campo anda TODO
-            # dia em que o produto foi realmente devolvido pela loja; o
-            # snapshot continua esparso (mudanca ou batimento semanal).
-            "ultimo_avistamento_em": hoje.isoformat(),
-            "ofertavel": bool(d.get("ofertavel")),
             "ultimo_preco_atual": d["preco_atual"],
             "ultimo_preco_original": d["preco_original"],
             "ultima_grade": d["grade_por_tamanho"],
-            "ultimo_snapshot_em": hoje.isoformat() if escreve else (ex.get("ultimo_snapshot_em") if ex else hoje.isoformat()),
-        })
+        }
+        if _produto_mudou(d, ex):
+            prod_rows.append(produto)
+        estado_alvo.append((d, escreve, ex))
         if escreve:
             snap_alvo.append(d)
 
-    id_por_externo = {}
+    id_por_externo = {chave: valor["id"] for chave, valor in existentes.items()}
     for bloco in _pedacos(prod_rows, BLOCO_ESCRITA):
         ret = supabase_rest.upsert("produtos", bloco,
                                    on_conflict="marca_id,id_externo", retornar=True)
         for r in ret:
             id_por_externo[r["id_externo"]] = r["id"]
+
+    estado_rows = []
+    for d, escreve, ex in estado_alvo:
+        pid = id_por_externo.get(d["id_externo"])
+        if pid is None:
+            continue
+        estado_rows.append({
+            "produto_id": pid,
+            "ultimo_avistamento_em": hoje.isoformat(),
+            "ofertavel": bool(d.get("ofertavel")),
+            "ultimo_snapshot_em": (hoje.isoformat() if escreve else
+                                    (ex.get("ultimo_snapshot_em") if ex else hoje.isoformat())),
+        })
+    for bloco in _pedacos(estado_rows, BLOCO_ESCRITA):
+        supabase_rest.upsert("estado_dos_produtos", bloco,
+                             on_conflict="produto_id")
 
     snap_rows = []
     for d in snap_alvo:

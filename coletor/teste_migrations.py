@@ -61,8 +61,8 @@ def main():
         "limit 12",
         "p.segmento = 'feminino_casual_br'",
         "least(greatest(coalesce($2, 12), 1), 24)",
-        "p.ofertavel is true",
-        "p.ultimo_avistamento_em >= current_date - 7",
+        "ep.ofertavel is true",
+        "ep.ultimo_avistamento_em >= current_date - 7",
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
         "cardinality(par.categorias) = 0",
@@ -75,7 +75,7 @@ def main():
     _, serie_varejo = ultima_definicao(
         arquivos, "create or replace function public.computar_serie_varejo")
     exigencias_presenca = [
-        "p.ultimo_avistamento_em",
+        "ep.ultimo_avistamento_em",
         "e.ofertavel is true",
         "s.data + 6",
         "lead(s.data) over",
@@ -109,8 +109,8 @@ def main():
         arquivos, "create or replace function public.computar_raridade")
     exigencias_raridade_atual = [
         "ativos as materialized",
-        "p.ofertavel is true",
-        "p.ultimo_avistamento_em >=",
+        "ep.ofertavel is true",
+        "ep.ultimo_avistamento_em >=",
         "at time zone 'America/Sao_Paulo'",
     ]
     for trecho in exigencias_raridade_atual:

@@ -6,3 +6,6 @@ project_id = "canario"
 # reject every legitimate request before the handler runs.
 [functions.analisar-peca]
 verify_jwt = false
+
+[functions.excluir-conta]
+verify_jwt = true

@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 21/08/2026, 23:48 em São Paulo
+**Última atualização:** 24/08/2026, 15:20 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -22,10 +22,23 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Frente | Estado | Número que importa |
 |---|---|---|
 | Dados e pipeline | verde; 15 de 15 marcas com cobertura completa | 45.677 produtos visitados; nenhum corte ou falha de contagem |
-| Banco | estabilizado, ainda no plano gratuito | 406.072.467 bytes — **81,2%** do limite decimal |
+| Banco | plano gratuito; A27 pronto localmente para parar a reescrita larga | **427 MB / 500 MB** no painel Supabase em 24/08 |
 | Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
-| App na loja | **1.0 publicada; 1.1 build 5 enviado** | upload recebido às 23:56 e em processamento; não enviado à revisão |
-| Testes | 227 Swift · 28 suítes Python · 6 UI | lógica, rede, Compare, curva de Stripes e fluxos críticos no simulador |
+| App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | conta opcional e sync compilando; ainda sem Archive/upload |
+| Testes | **234 Swift** · portões Python ativos · 6 UI | Auth, Keychain, sync, RLS contratual e fluxos existentes |
+
+## 0. Trabalho ativo de 24/08 — conta e capacidade
+
+A 1.2 revoga somente a antiga regra de ausência de conta. A conta continua
+opcional: Apple, Google ou e-mail; o app permanece utilizável como convidado.
+Sessões ficam no Keychain, os dados estruturados do Closet sincronizam com RLS
+e as fotos permanecem locais. Há recuperação de senha, logout e exclusão
+integral iniciada dentro do app.
+
+A27 move `ultimo_avistamento_em`, `ofertavel` e `ultimo_snapshot_em` para
+`estado_dos_produtos`, uma linha estreita. O coletor deixa de regravar a linha
+larga quando o produto não mudou. Migração e coletor estão prontos localmente,
+mas **ainda não foram aplicados em produção**.
 
 ---
 

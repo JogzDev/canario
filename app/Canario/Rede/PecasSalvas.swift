@@ -37,7 +37,7 @@ import Foundation
 /// PNG transparente quando o recorte local é confiável, ou JPEG reamostrado
 /// quando não é; ambos sem metadados e apagados junto com a peça. A foto
 /// original continua não sendo copiada para o app.
-struct PecaSalva: Codable, Equatable, Identifiable {
+struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
 
     /// Estável entre execuções: é ele que a aba Comparar usa para escolher.
     let id: UUID
@@ -51,6 +51,9 @@ struct PecaSalva: Codable, Equatable, Identifiable {
     var precoAlvo: Double?
     var canal: String?
     var criadaEm: Date
+    /// Relógio de conflito da A26. Não é leitura de mercado: marca somente a
+    /// última edição feita pelo usuário, inclusive quando estava offline.
+    var atualizadaEm: Date?
     /// Nome opaco da miniatura local. Nunca contém caminho, URL de origem ou imagem
     /// em base64; `PecasSalvas` valida o nome antes de abrir.
     var miniaturaArquivo: String?
@@ -64,13 +67,15 @@ struct PecaSalva: Codable, Equatable, Identifiable {
     init(id: UUID = UUID(), apelido: String = "", termoIds: [String],
          precoAlvo: Double? = nil, canal: String? = nil,
          criadaEm: Date = Date(), miniaturaArquivo: String? = nil,
-         favorita: Bool? = nil, similaresRejeitados: Bool? = nil) {
+         favorita: Bool? = nil, similaresRejeitados: Bool? = nil,
+         atualizadaEm: Date? = nil) {
         self.id = id
         self.apelido = apelido
         self.termoIds = termoIds
         self.precoAlvo = precoAlvo
         self.canal = canal
         self.criadaEm = criadaEm
+        self.atualizadaEm = atualizadaEm
         self.miniaturaArquivo = miniaturaArquivo
         self.favorita = favorita
         self.similaresRejeitados = similaresRejeitados
@@ -112,6 +117,11 @@ struct PecaSalva: Codable, Equatable, Identifiable {
 actor PecasSalvas {
     static let shared = PecasSalvas()
 
+    struct EstadoParaSincronizar: Sendable {
+        let itens: [PecaSalva]
+        let exclusoes: [UUID: Date]
+    }
+
     /// Teto deliberado. O relatório da revisão imaginou 5000 peças; 5000 peças
     /// numa lista sem hierarquia é o mesmo problema de tela cheia, em outro
     /// lugar. Enquanto não houver pasta ou busca dentro da lista, o teto evita
@@ -119,24 +129,73 @@ actor PecasSalvas {
     static let teto = 200
 
     private var itens: [PecaSalva] = []
+    private var exclusoes: [UUID: Date] = [:]
     private var carregado = false
-    private let arquivo: URL?
-    private let pastaDeMiniaturas: URL?
+    private var arquivo: URL?
+    private var arquivoDeExclusoes: URL?
+    private var pastaDeMiniaturas: URL?
+    private let raizGerenciada: URL?
+    private var usuarioAtual: UUID?
 
     init(arquivo: URL? = nil, pastaDeMiniaturas: URL? = nil) {
         if let arquivo {
             self.arquivo = arquivo
+            self.arquivoDeExclusoes = arquivo.deletingPathExtension()
+                .appendingPathExtension("exclusoes.json")
             self.pastaDeMiniaturas = pastaDeMiniaturas
                 ?? arquivo.deletingLastPathComponent()
                     .appendingPathComponent("pecas_salvas_miniaturas", isDirectory: true)
+            self.raizGerenciada = nil
         } else {
             let base = try? FileManager.default.url(
                 for: .applicationSupportDirectory, in: .userDomainMask,
                 appropriateFor: nil, create: true)
             self.arquivo = base?.appendingPathComponent("pecas_salvas.json")
+            self.arquivoDeExclusoes = base?.appendingPathComponent("pecas_salvas_exclusoes.json")
             self.pastaDeMiniaturas = pastaDeMiniaturas
                 ?? base?.appendingPathComponent("pecas_salvas_miniaturas", isDirectory: true)
+            self.raizGerenciada = base
         }
+    }
+
+    /// Troca o namespace local depois de autenticar. A cópia convidada da 1.1
+    /// é importada somente na primeira abertura daquela identidade e nunca é
+    /// removida durante o merge, permitindo voltar ao modo local sem perda.
+    func usarEspacoDoUsuario(_ usuario: UUID?) {
+        guard let raizGerenciada, usuarioAtual != usuario else { return }
+        let fm = FileManager.default
+        let arquivoConvidado = raizGerenciada.appendingPathComponent("pecas_salvas.json")
+        let pastaConvidada = raizGerenciada.appendingPathComponent(
+            "pecas_salvas_miniaturas", isDirectory: true)
+
+        if let usuario {
+            let sufixo = usuario.uuidString.lowercased()
+            let novoArquivo = raizGerenciada.appendingPathComponent("pecas_salvas_\(sufixo).json")
+            let novaPasta = raizGerenciada.appendingPathComponent(
+                "pecas_salvas_miniaturas_\(sufixo)", isDirectory: true)
+            if !fm.fileExists(atPath: novoArquivo.path),
+               fm.fileExists(atPath: arquivoConvidado.path) {
+                try? fm.copyItem(at: arquivoConvidado, to: novoArquivo)
+                if fm.fileExists(atPath: pastaConvidada.path) {
+                    try? fm.copyItem(at: pastaConvidada, to: novaPasta)
+                }
+            }
+            arquivo = novoArquivo
+            arquivoDeExclusoes = raizGerenciada.appendingPathComponent(
+                "pecas_salvas_exclusoes_\(sufixo).json")
+            pastaDeMiniaturas = novaPasta
+        } else {
+            arquivo = arquivoConvidado
+            arquivoDeExclusoes = raizGerenciada.appendingPathComponent(
+                "pecas_salvas_exclusoes.json")
+            pastaDeMiniaturas = pastaConvidada
+        }
+        usuarioAtual = usuario
+        itens = []
+        exclusoes = [:]
+        carregado = false
+        carregarSeNecessario()
+        NotificationCenter.default.post(name: .closetMudouDeUsuario, object: nil)
     }
 
     func todas() -> [PecaSalva] {
@@ -153,6 +212,7 @@ actor PecasSalvas {
         guard existente != nil || itens.count < Self.teto else { return false }
 
         var salva = peca
+        salva.atualizadaEm = Date()
         if salva.miniaturaArquivo == nil {
             salva.miniaturaArquivo = existente?.miniaturaArquivo
         }
@@ -168,7 +228,9 @@ actor PecasSalvas {
         } else {
             itens.append(salva)
         }
+        exclusoes.removeValue(forKey: salva.id)
         gravar()
+        agendarSincronizacaoSeNecessario()
         return true
     }
 
@@ -183,8 +245,10 @@ actor PecasSalvas {
         if let nome = itens.first(where: { $0.id == id })?.miniaturaArquivo {
             apagarMiniatura(nome)
         }
+        if itens.contains(where: { $0.id == id }) { exclusoes[id] = Date() }
         itens.removeAll { $0.id == id }
         gravar()
+        agendarSincronizacaoSeNecessario()
     }
 
     func apagarTudo() {
@@ -192,17 +256,68 @@ actor PecasSalvas {
         for item in itens {
             if let nome = item.miniaturaArquivo { apagarMiniatura(nome) }
         }
+        let agora = Date()
+        for item in itens { exclusoes[item.id] = agora }
         itens.removeAll()
         gravar()
+        agendarSincronizacaoSeNecessario()
+    }
+
+    func estadoParaSincronizar() -> EstadoParaSincronizar {
+        carregarSeNecessario()
+        return EstadoParaSincronizar(itens: itens, exclusoes: exclusoes)
+    }
+
+    /// Aplica a visão remota sem fabricar novas edições locais. O mais recente
+    /// ganha por peça; exclusão é uma versão, não ausência de linha.
+    func aplicarRemotos(_ remotos: [PecaSalva], removidos: [UUID: Date]) {
+        carregarSeNecessario()
+        var porId = Dictionary(uniqueKeysWithValues: itens.map { ($0.id, $0) })
+        for remoto in remotos {
+            let dataRemota = remoto.atualizadaEm ?? remoto.criadaEm
+            let local = porId[remoto.id]
+            let dataLocal = local.map { $0.atualizadaEm ?? $0.criadaEm }
+            let exclusaoLocal = exclusoes[remoto.id]
+            if let exclusaoLocal, exclusaoLocal >= dataRemota { continue }
+            if dataLocal == nil || dataRemota > dataLocal! {
+                var mesclado = remoto
+                // Foto nunca vem da nuvem. Uma edição estrutural remota não
+                // pode apagar a referência da miniatura que este aparelho tem.
+                mesclado.miniaturaArquivo = local?.miniaturaArquivo
+                porId[remoto.id] = mesclado
+                if exclusaoLocal != nil { exclusoes.removeValue(forKey: remoto.id) }
+            }
+        }
+        for (id, dataRemota) in removidos {
+            let dataLocal = porId[id].map { $0.atualizadaEm ?? $0.criadaEm }
+            if dataLocal == nil || dataRemota >= dataLocal! {
+                if let nome = porId[id]?.miniaturaArquivo { apagarMiniatura(nome) }
+                porId.removeValue(forKey: id)
+            }
+            if let exclusaoLocal = exclusoes[id], dataRemota >= exclusaoLocal {
+                exclusoes.removeValue(forKey: id)
+            }
+        }
+        itens = Array(porId.values)
+        gravar()
+        NotificationCenter.default.post(name: .closetFoiSincronizado, object: nil)
     }
 
     private func carregarSeNecessario() {
         guard !carregado else { return }
         carregado = true
-        guard let arquivo, let dados = try? Data(contentsOf: arquivo) else { return }
-        // Arquivo corrompido não derruba o app nem apaga o que sobrou: começa
-        // vazio e a próxima gravação reescreve.
-        itens = (try? JSONDecoder().decode([PecaSalva].self, from: dados)) ?? []
+        if let arquivo, let dados = try? Data(contentsOf: arquivo) {
+            // Arquivo corrompido não derruba o app nem apaga o que sobrou:
+            // começa vazio e a próxima gravação reescreve.
+            itens = (try? JSONDecoder().decode([PecaSalva].self, from: dados)) ?? []
+        }
+        if let arquivoDeExclusoes,
+           let dados = try? Data(contentsOf: arquivoDeExclusoes),
+           let registros = try? JSONDecoder().decode([String: Date].self, from: dados) {
+            exclusoes = Dictionary(uniqueKeysWithValues: registros.compactMap { chave, data in
+                UUID(uuidString: chave).map { ($0, data) }
+            })
+        }
     }
 
     private func gravar() {
@@ -212,6 +327,12 @@ actor PecasSalvas {
         guard let dados = try? cod.encode(itens) else { return }
         try? dados.write(to: arquivo, options: .atomic)
         excluirDeBackup(arquivo)
+        if let arquivoDeExclusoes,
+           let dadosExclusoes = try? JSONEncoder().encode(Dictionary(
+            uniqueKeysWithValues: exclusoes.map { ($0.key.uuidString.lowercased(), $0.value) })) {
+            try? dadosExclusoes.write(to: arquivoDeExclusoes, options: .atomic)
+            excluirDeBackup(arquivoDeExclusoes)
+        }
     }
 
     private func gravarMiniatura(_ dados: Data, id: UUID) -> String? {
@@ -253,4 +374,14 @@ actor PecasSalvas {
         var mutavel = url
         try? mutavel.setResourceValues(valores)
     }
+
+    private func agendarSincronizacaoSeNecessario() {
+        guard usuarioAtual != nil else { return }
+        Task { try? await SincronizacaoDoCloset.shared.sincronizar() }
+    }
+}
+
+extension Notification.Name {
+    static let closetMudouDeUsuario = Notification.Name("DataDrobe.closetMudouDeUsuario")
+    static let closetFoiSincronizado = Notification.Name("DataDrobe.closetFoiSincronizado")
 }

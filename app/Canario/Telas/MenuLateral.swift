@@ -211,30 +211,6 @@ private struct MiniaturaFavorita: View {
     }
 }
 
-private struct ContaDoMenu: View {
-    @State private var quantidade = 0
-
-    var body: some View {
-        ScrollView {
-            PaginaInformativa {
-                BlocoInformativo(
-                    icone: "iphone",
-                    titulo: "Stored on this iPhone",
-                    texto: "Your Closet currently lives only on this device. It contains \(quantidade) saved item\(quantidade == 1 ? "" : "s").")
-                BlocoInformativo(
-                    icone: "person.crop.circle.badge.xmark",
-                    titulo: "No account connected",
-                    texto: "This build does not collect an email address, password or profile, and it does not sync your Closet to another device.")
-                BlocoInformativo(
-                    icone: "lock.shield",
-                    titulo: "No silent sign-in",
-                    texto: "When account sync is introduced, it must explain what leaves the phone and ask you to sign in. This screen will never create an account in the background.")
-            }
-        }
-        .task { quantidade = await PecasSalvas.shared.todas().count }
-    }
-}
-
 private struct TermosDoMenu: View {
     var body: some View {
         ScrollView {
@@ -252,7 +228,7 @@ private struct TermosDoMenu: View {
                     texto: "Prices, stock, product images and links come from the named stores and can change after collection. Purchases happen on the store website under that store's terms; this app is not the seller.")
                 TextoComTitulo(
                     titulo: "Your Closet",
-                    texto: "You control the items you save. Removing an item deletes its local record and thumbnail. Reinstalling the app can remove the entire local Closet because it is not synced in this build.")
+                    texto: "You control the items you save. Without an account they stay on this iPhone. After you sign in, item details can sync across your devices; photos remain local. Removing an item also removes its synchronized record.")
                 TextoComTitulo(
                     titulo: "Fair use of the service",
                     texto: "Do not use the app to overload source websites, bypass access controls, copy third-party catalogs or misrepresent its readings as facts about future demand.")
@@ -333,9 +309,13 @@ private struct PrivacidadeDoMenu: View {
                     titulo: "Store images and links",
                     texto: "Similar-product images load directly from the store's image host. The store or its CDN can therefore receive the network information normally sent when an image is requested.")
                 BlocoInformativo(
-                    icone: "person.crop.circle.badge.xmark",
-                    titulo: "No account data yet",
-                    texto: "There is no sign-in in this build, so the app does not collect an email address, password or synced Closet. A cloud-analyzed photo is not linked to an account or advertising identifier.")
+                    icone: "person.crop.circle.badge.checkmark",
+                    titulo: "Optional account",
+                    texto: "If you sign in, Supabase processes your account identifier, email when provided, and the Closet details needed for sync. DataDrobe does not store your password itself. You can use the app without an account and delete a connected account from Account settings.")
+                BlocoInformativo(
+                    icone: "arrow.triangle.2.circlepath.icloud",
+                    titulo: "What syncs",
+                    texto: "Item names, confirmed attribute ids, optional target price and channel, favorites and explicit similar-item choices can sync. Photos, thumbnails and calculated market readings do not leave the iPhone through account sync. A separately authorized cloud photo analysis is not attached to the account.")
             }
         }
     }
@@ -380,7 +360,7 @@ private struct PaginaInformativa<Conteudo: View>: View {
     }
 }
 
-private struct BlocoInformativo: View {
+struct BlocoInformativo: View {
     let icone: String
     let titulo: String
     let texto: String

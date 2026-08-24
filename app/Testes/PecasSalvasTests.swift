@@ -115,6 +115,47 @@ final class PecasSalvasTests: XCTestCase {
         XCTAssertEqual(todas.first?.apelido, "corrigida")
     }
 
+    func testMergeRemotoMaisNovoGanhaSemDuplicar() async throws {
+        let arquivo = arquivoTemporario()
+        defer {
+            try? FileManager.default.removeItem(at: arquivo)
+            try? FileManager.default.removeItem(
+                at: arquivo.deletingPathExtension().appendingPathExtension("exclusoes.json"))
+        }
+        let loja = PecasSalvas(arquivo: arquivo)
+        let id = UUID()
+        await loja.salvar(PecaSalva(id: id, apelido: "local", termoIds: ["camisa"]))
+        let remoto = PecaSalva(
+            id: id, apelido: "outro iPhone", termoIds: ["camisa", "listra"],
+            criadaEm: Date(timeIntervalSince1970: 1_000),
+            atualizadaEm: Date().addingTimeInterval(60))
+
+        await loja.aplicarRemotos([remoto], removidos: [:])
+        let todas = await loja.todas()
+        XCTAssertEqual(todas.count, 1)
+        XCTAssertEqual(todas.first?.apelido, "outro iPhone")
+        XCTAssertEqual(todas.first?.termoIds, ["camisa", "listra"])
+    }
+
+    func testExclusaoOfflinePersisteComoVersaoParaNaoRenascer() async throws {
+        let arquivo = arquivoTemporario()
+        let exclusoes = arquivo.deletingPathExtension().appendingPathExtension("exclusoes.json")
+        defer {
+            try? FileManager.default.removeItem(at: arquivo)
+            try? FileManager.default.removeItem(at: exclusoes)
+        }
+        let id = UUID()
+        let loja = PecasSalvas(arquivo: arquivo)
+        await loja.salvar(PecaSalva(id: id, termoIds: ["vestido"]))
+        await loja.apagar(id)
+
+        let reaberta = PecasSalvas(arquivo: arquivo)
+        let estado = await reaberta.estadoParaSincronizar()
+        XCTAssertTrue(estado.itens.isEmpty)
+        XCTAssertNotNil(estado.exclusoes[id],
+                        "ausência de linha não basta: outro aparelho faria a peça renascer")
+    }
+
     func testFavoritoPersisteSemGuardarLeituraCalculada() async throws {
         let arquivo = arquivoTemporario()
         defer { try? FileManager.default.removeItem(at: arquivo) }
@@ -272,5 +313,54 @@ final class PecasSalvasTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: pasta.appendingPathComponent(nomeJPEG).path),
             "substituir a foto não pode deixar a JPEG anterior órfã")
+    }
+
+    func testEdicaoRemotaPreservaMiniaturaExclusivaDesteAparelho() async throws {
+        let arquivo = arquivoTemporario()
+        let pasta = pastaTemporaria()
+        defer {
+            try? FileManager.default.removeItem(at: arquivo)
+            try? FileManager.default.removeItem(at: pasta)
+        }
+        let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
+        let original = PecaSalva(apelido: "local", termoIds: ["camisa"])
+        await loja.salvar(original, miniaturaDados: Data([1, 2, 3]))
+        let antes = await loja.todas()
+        let salva = try XCTUnwrap(antes.first)
+        let nome = try XCTUnwrap(salva.miniaturaArquivo)
+        let remota = PecaSalva(
+            id: salva.id, apelido: "remota", termoIds: ["camisa", "verde"],
+            criadaEm: salva.criadaEm, atualizadaEm: Date().addingTimeInterval(5))
+
+        await loja.aplicarRemotos([remota], removidos: [:])
+
+        let depois = await loja.todas()
+        let mesclada = try XCTUnwrap(depois.first)
+        XCTAssertEqual(mesclada.apelido, "remota")
+        XCTAssertEqual(mesclada.miniaturaArquivo, nome)
+        let miniatura = await loja.miniatura(de: mesclada)
+        XCTAssertEqual(miniatura, Data([1, 2, 3]))
+    }
+
+    func testExclusaoRemotaApagaMiniaturaLocal() async throws {
+        let arquivo = arquivoTemporario()
+        let pasta = pastaTemporaria()
+        defer {
+            try? FileManager.default.removeItem(at: arquivo)
+            try? FileManager.default.removeItem(at: pasta)
+        }
+        let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
+        let original = PecaSalva(apelido: "apagar", termoIds: ["saia"])
+        await loja.salvar(original, miniaturaDados: Data([4, 5, 6]))
+        let antes = await loja.todas()
+        let salva = try XCTUnwrap(antes.first)
+        let caminho = pasta.appendingPathComponent(try XCTUnwrap(salva.miniaturaArquivo))
+
+        await loja.aplicarRemotos(
+            [], removidos: [salva.id: Date().addingTimeInterval(5)])
+
+        let depois = await loja.todas()
+        XCTAssertTrue(depois.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: caminho.path))
     }
 }

@@ -74,24 +74,33 @@ def main():
     original_selecionar = varejo.supabase_rest.selecionar
     original_upsert = varejo.supabase_rest.upsert
     produtos_gravados = []
+    estados_gravados = []
     snapshots_gravados = []
 
-    def selecionar_falso(_tabela, _params):
+    def selecionar_falso(tabela, _params):
+        if tabela == "estado_dos_produtos":
+            return [{
+                "produto_id": 7,
+                "ultimo_snapshot_em": "2026-08-19",
+                "ultimo_avistamento_em": "2026-08-19",
+                "ofertavel": True,
+            }]
         return [{
             "id": 7, "id_externo": "x1",
+            "url": "https://loja.test/x1", "titulo": "Blusa",
+            "categoria_site": "Blusas", "imagem_url": None,
             "ultimo_preco_atual": 100.0,
             "ultimo_preco_original": 120.0,
             "ultima_grade": {"M": True},
-            "ultimo_snapshot_em": "2026-08-19",
             "primeiro_avistamento": "2026-08-01",
-            "ultimo_avistamento_em": "2026-08-19",
-            "ofertavel": True,
         }]
 
     def upsert_falso(tabela, linhas, on_conflict, retornar=False):
         if tabela == "produtos":
             produtos_gravados.extend(linhas)
             return [{"id": 7, "id_externo": "x1"}] if retornar else []
+        if tabela == "estado_dos_produtos":
+            estados_gravados.extend(linhas)
         if tabela == "snapshots":
             snapshots_gravados.extend(linhas)
         return []
@@ -112,10 +121,12 @@ def main():
 
     if gravados != 0 or snapshots_gravados:
         return falhar("produto sem delta ganhou snapshot diario")
-    if (len(produtos_gravados) != 1
-            or produtos_gravados[0].get("ultimo_avistamento_em") != "2026-08-20"
-            or produtos_gravados[0].get("ofertavel") is not True):
-        return falhar("visita diaria nao atualizou avistamento e oferta")
+    if produtos_gravados:
+        return falhar("produto largo sem delta foi reescrito")
+    if (len(estados_gravados) != 1
+            or estados_gravados[0].get("ultimo_avistamento_em") != "2026-08-20"
+            or estados_gravados[0].get("ofertavel") is not True):
+        return falhar("estado estreito nao atualizou avistamento e oferta")
 
     if not varejo._mudou(
             {"preco_atual": 100, "preco_original": 120,

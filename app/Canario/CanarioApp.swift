@@ -2,6 +2,8 @@ import SwiftUI
 
 @main
 struct CanarioApp: App {
+    @StateObject private var conta = GestorDaConta.shared
+
     var body: some Scene {
         // A paleta escura experimental de 19/08 nunca passou por revisão de
         // design e, no teste em aparelho, fez o mesmo build parecer outro app.
@@ -22,7 +24,9 @@ struct CanarioApp: App {
                     Raiz()
                 }
             }
+            .environmentObject(conta)
             .preferredColorScheme(.light)
+            .onOpenURL { conta.receberLink($0) }
         }
     }
 }
@@ -47,8 +51,15 @@ struct Raiz: View {
     @State private var buscaAberta = false
     @State private var menuAberto = ProcessInfo.processInfo.arguments.contains(
         "-CanarioMenuAberto")
-    @State private var itemDoMenu: ItemDoMenu? = ProcessInfo.processInfo.arguments.contains(
-        "-CanarioAbrirPrivacy") ? ItemDoMenu(nome: "Privacy") : nil
+    @State private var itemDoMenu: ItemDoMenu? = {
+        if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirPrivacy") {
+            return ItemDoMenu(nome: "Privacy")
+        }
+        if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirAccount") {
+            return ItemDoMenu(nome: "Account")
+        }
+        return nil
+    }()
 
     var body: some View {
         Group {

@@ -31,8 +31,8 @@ NOME = "Canario"
 BUNDLE = "br.com.canario.ch3.app"
 TIME_DE_DESENVOLVIMENTO = "67AYPRFZH8"
 IOS_MINIMO = "17.0"
-VERSAO_DO_APP = "1.1"
-BUILD_DO_APP = "5"
+VERSAO_DO_APP = "1.2"
+BUILD_DO_APP = "1"
 
 
 def ident(*partes):
@@ -378,6 +378,7 @@ def main():
     alvo_comuns = [
         'ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;',
         'CODE_SIGN_STYLE = Automatic;',
+        'CODE_SIGN_ENTITLEMENTS = "{}/Canario.entitlements";'.format(NOME),
         'CURRENT_PROJECT_VERSION = {};'.format(BUILD_DO_APP),
         'DEVELOPMENT_TEAM = {};'.format(TIME_DE_DESENVOLVIMENTO),
         'ENABLE_PREVIEWS = YES;',

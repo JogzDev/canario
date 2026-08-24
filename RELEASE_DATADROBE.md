@@ -1,18 +1,18 @@
-# DataDrobe 1.1 — corte, assinatura e distribuição
+# DataDrobe 1.2 — corte, assinatura e distribuição
 
-Estado conferido em 21/08/2026. Este é o guia ativo do próximo envio; a ficha
+Estado iniciado em 24/08/2026. Este é o guia ativo do próximo envio; a ficha
 da 1.0 permanece apenas como registro histórico.
 
 | Campo | Valor do candidato |
 |---|---|
 | Produto | **DataDrobe** |
 | Bundle ID | `br.com.canario.ch3.app` |
-| Versão | **1.1** |
-| Build | **5** |
+| Versão | **1.2** |
+| Build | **1** |
 | Team | `67AYPRFZH8` |
 | Plataforma | iPhone, iOS 17+ |
 | Idioma-fonte | inglês |
-| Análise visual | Luna v8 habilitada, sempre com consentimento explícito |
+| Análise visual | OpenAI/Luna v8 habilitada, sempre com consentimento explícito |
 
 A versão 1.0 já está publicada. O upload da 1.1 deve ir para o mesmo registro;
 `com.canario.app` é um identificador histórico sem relação com este envio.
@@ -22,12 +22,10 @@ concluída e upload 1.1 (2) aceito às 09:18. O pacote entrou em processamento n
 TestFlight e não foi submetido à App Review. O Archive está preservado no
 Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 
-**Candidato atual:** build 5. Ele preserva as correções do build 4 e corrige a
-semana parcial que reduzia o Compare a Dress, a regra que apagava a curva de
-tamanhos de Stripes, o excesso de altura na ajuda e a repetição visual dos
-sinais. O build 5 foi arquivado e recebido pelo App Store Connect às 23:56;
-está em processamento no TestFlight. O Archive correto é
-`DataDrobe 1.1 (5) 23.52.xcarchive`. Nenhum build foi submetido à App Review.
+**Candidato atual:** 1.2 build 1, ainda local. Inclui conta opcional por Apple,
+Google ou e-mail, sessão no Keychain, Closet offline-first sincronizado sem
+fotos, recuperação de senha e exclusão integral iniciada dentro do app. Ainda
+não existe Archive nem upload deste candidato.
 
 ## Portões antes do Archive
 
@@ -55,7 +53,7 @@ Todos precisam estar verdes no mesmo commit:
 No Xcode, use **Any iOS Device (arm64)** e **Product > Archive**. Em seguida,
 no Organizer:
 
-1. abra o Archive 1.1 (5);
+1. abra o Archive 1.2 (1);
 2. escolha **Validate App**;
 3. confirme DataDrobe, `br.com.canario.ch3.app` e Team `67AYPRFZH8`;
 4. leia todos os warnings e corrija qualquer divergência de entitlement,
@@ -85,12 +83,12 @@ permissões, desempenho térmico nem o renderizador do iOS 18.
 
 ## Privacidade que precisa acompanhar este binário
 
-A 1.1 pode enviar somente a cópia reduzida e sem metadados confirmada pela
+A 1.2 pode enviar somente a cópia reduzida e sem metadados confirmada pela
 pessoa, via Supabase para OpenAI, depois de um consentimento separado. O app
 não guarda a imagem enviada; a OpenAI pode manter logs de monitoramento de
-abuso por até 30 dias. Não há conta, tracking, publicidade nem ligação da foto
-a uma identidade. O App Privacy deve declarar **Photos or Videos**, não ligado
-à pessoa, não usado para tracking, finalidade **App Functionality**.
+abuso por até 30 dias. A conta é opcional. Quando conectada, e-mail, User ID e
+os dados estruturados do Closet são ligados ao usuário para sincronização;
+fotos do Closet continuam locais. Não há tracking nem publicidade.
 
 Essas frases precisam estar de acordo em quatro lugares: tela Privacy,
 disclosure antes do envio, `PrivacyInfo.xcprivacy` e ficha da App Store 1.1.
@@ -106,5 +104,5 @@ disclosure antes do envio, `PrivacyInfo.xcprivacy` e ficha da App Store 1.1.
 - falha de autenticação no upload: renove a sessão da conta no Xcode; preserve
   o Archive validado para repetir o upload sem recompilar.
 
-Metadados para copiar estão em `FICHA_APP_STORE_1.1.md`; instruções operacionais
+Metadados para copiar estão em `FICHA_APP_STORE_1.2.md`; instruções operacionais
 curtas do beta estão em `TESTFLIGHT.md`.

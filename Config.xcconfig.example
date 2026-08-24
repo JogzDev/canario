@@ -31,6 +31,12 @@
 SUPABASE_URL = https://SEU-PROJETO.supabase.co
 SUPABASE_PUBLISHABLE_KEY = sb_publishable_COLE_A_SUA_AQUI
 
+// Opcional: projeto separado só para identidade e Closet. Enquanto estes dois
+// valores estiverem vazios, Auth usa o mesmo projeto acima. Isso permite abrir
+// a tela e testar sem obrigar a criação do segundo projeto no primeiro build.
+AUTH_SUPABASE_URL =
+AUTH_SUPABASE_PUBLISHABLE_KEY =
+
 // Só troque para YES depois de aplicar a migração P6, implantar a função
 // `analisar-peca` e cadastrar OPENAI_API_KEY + AI_RATE_LIMIT_SALT nos secrets
 // da Edge Function. Em NO, o app mantém OCR/cor local e formulário manual.

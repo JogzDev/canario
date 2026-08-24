@@ -1,18 +1,17 @@
-# TestFlight — DataDrobe 1.1 (build 5)
+# TestFlight — DataDrobe 1.2 (build 1)
 
-Checklist ativo em 21/08/2026.
+Checklist iniciado em 24/08/2026.
 
-- App publicado: **DataDrobe 1.0**.
-- Próximo beta: **1.1 (build 5)**.
+- App publicado: **DataDrobe 1.1**.
+- Próximo beta: **1.2 (build 1)**.
 - Bundle: `br.com.canario.ch3.app`.
 - Team: `67AYPRFZH8`.
 - Idioma-fonte do app: inglês.
 - Destino: iPhone, iOS 17+.
 - Análise visual: Luna v8 ligada; cópia reduzida e sem metadados só é enviada
   após consentimento explícito.
-- Upload atual: **build 5 recebido pelo App Store Connect às 23:56 de
-  21/08/2026 e em processamento**, sem submissão à App Review.
-- Archive preservado no Organizer: `DataDrobe 1.1 (5) 23.52.xcarchive`.
+- Upload atual: **ainda não enviado**.
+- Archive: **ainda não gerado**.
 
 ## Envio
 
@@ -28,13 +27,13 @@ Checklist ativo em 21/08/2026.
 ## What to Test
 
 ```text
-DataDrobe 1.1 adds a four-step item flow, optional cloud visual suggestions,
-manual correction of every suggested attribute, local Closet thumbnails,
-favorites, clearer market reports, and fresher Similar Pieces links.
+DataDrobe 1.2 adds optional Apple, Google and email accounts, offline-first
+Closet sync without photo upload, password recovery and in-app account deletion.
 
 Please test camera, Photos and PDF/file import; target selection and crop;
-the cloud-consent disclosure; manual fallback while offline or after a refused
-analysis; saving, editing and deleting Closet items; favorites; Similar Pieces
+the cloud-consent disclosure; guest use; all three sign-in methods; confirmation
+and password-reset links; offline edits and conflict merge; signing out; account
+deletion; saving, editing and deleting Closet items; favorites; Similar Pieces
 and store links; scrolling over attribute chips; consistent light appearance,
 larger text and VoiceOver.
 

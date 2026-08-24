@@ -12,6 +12,7 @@
 		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
 		B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */; };
 		66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */; };
+		D4191FF2A6872250AA14D5B6 /* Autenticacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675971567B5B02959B863354 /* Autenticacao.swift */; };
 		17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EAE067E291E7143C7B5D2FD /* Cluster.swift */; };
 		9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */; };
 		26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */; };
@@ -27,6 +28,7 @@
 		FD257BCD1FC049D0AD24E2CC /* SemelhancaVisual.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */; };
 		39E616BFFE0F0474C732A319 /* SerieDoCluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */; };
 		578ADA6A037865606BC6408A /* Similares.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */; };
+		B7C6B605D7DB135603AAF51A /* SincronizacaoDoCloset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693354123BBAEE5AE11D8D55 /* SincronizacaoDoCloset.swift */; };
 		4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCED70ADF52E633975D5BF1 /* Supabase.swift */; };
 		C72E0F744301265B0597C210 /* Traducao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CF3CC6A070433478308663E /* Traducao.swift */; };
 		E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907420D533A7734E5A3F0DE7 /* Analisar.swift */; };
@@ -34,6 +36,7 @@
 		BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2112E929103203C6F4819581 /* BlocoDeSimilares.swift */; };
 		5FDF252206C79440DA22050B /* CapturaDeCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E96E5B513F3761978E00AECB /* CapturaDeCamera.swift */; };
 		88385EED03003FB44A18542E /* Comparar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4913E2A3FAD2255EF6E66096 /* Comparar.swift */; };
+		5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDF62FF20F46B96ACD76E75 /* Conta.swift */; };
 		8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */; };
 		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
 		2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */; };
@@ -57,6 +60,7 @@
 		7D66F3CA4E705669DD73EF9B /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tokens.swift"; sourceTree = "<group>"; };
 		8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AbasDoApp.swift"; sourceTree = "<group>"; };
 		98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnalisesDeHoje.swift"; sourceTree = "<group>"; };
+		675971567B5B02959B863354 /* Autenticacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Autenticacao.swift"; sourceTree = "<group>"; };
 		8EAE067E291E7143C7B5D2FD /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cluster.swift"; sourceTree = "<group>"; };
 		CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CorDaPeca.swift"; sourceTree = "<group>"; };
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhos.swift"; sourceTree = "<group>"; };
@@ -72,6 +76,7 @@
 		FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SemelhancaVisual.swift"; sourceTree = "<group>"; };
 		1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SerieDoCluster.swift"; sourceTree = "<group>"; };
 		C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Similares.swift"; sourceTree = "<group>"; };
+		693354123BBAEE5AE11D8D55 /* SincronizacaoDoCloset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SincronizacaoDoCloset.swift"; sourceTree = "<group>"; };
 		5DCED70ADF52E633975D5BF1 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Supabase.swift"; sourceTree = "<group>"; };
 		1CF3CC6A070433478308663E /* Traducao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Traducao.swift"; sourceTree = "<group>"; };
 		907420D533A7734E5A3F0DE7 /* Analisar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Analisar.swift"; sourceTree = "<group>"; };
@@ -79,6 +84,7 @@
 		2112E929103203C6F4819581 /* BlocoDeSimilares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BlocoDeSimilares.swift"; sourceTree = "<group>"; };
 		E96E5B513F3761978E00AECB /* CapturaDeCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CapturaDeCamera.swift"; sourceTree = "<group>"; };
 		4913E2A3FAD2255EF6E66096 /* Comparar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparar.swift"; sourceTree = "<group>"; };
+		4DDF62FF20F46B96ACD76E75 /* Conta.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Conta.swift"; sourceTree = "<group>"; };
 		F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhosView.swift"; sourceTree = "<group>"; };
 		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
 		330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportarPeca.swift"; sourceTree = "<group>"; };
@@ -178,6 +184,7 @@
 			children = (
 				8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */,
 				98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */,
+				675971567B5B02959B863354 /* Autenticacao.swift */,
 				8EAE067E291E7143C7B5D2FD /* Cluster.swift */,
 				CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */,
 				94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */,
@@ -193,6 +200,7 @@
 				FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */,
 				1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */,
 				C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */,
+				693354123BBAEE5AE11D8D55 /* SincronizacaoDoCloset.swift */,
 				5DCED70ADF52E633975D5BF1 /* Supabase.swift */,
 				1CF3CC6A070433478308663E /* Traducao.swift */,
 			);
@@ -207,6 +215,7 @@
 				2112E929103203C6F4819581 /* BlocoDeSimilares.swift */,
 				E96E5B513F3761978E00AECB /* CapturaDeCamera.swift */,
 				4913E2A3FAD2255EF6E66096 /* Comparar.swift */,
+				4DDF62FF20F46B96ACD76E75 /* Conta.swift */,
 				F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */,
 				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
 				330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */,
@@ -306,6 +315,7 @@
 				90BBD61C629F5B7911560245 /* Tokens.swift in Sources */,
 				B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */,
 				66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */,
+				D4191FF2A6872250AA14D5B6 /* Autenticacao.swift in Sources */,
 				17EAC80BF2C66ECA6DFF1874 /* Cluster.swift in Sources */,
 				9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */,
 				26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */,
@@ -321,6 +331,7 @@
 				FD257BCD1FC049D0AD24E2CC /* SemelhancaVisual.swift in Sources */,
 				39E616BFFE0F0474C732A319 /* SerieDoCluster.swift in Sources */,
 				578ADA6A037865606BC6408A /* Similares.swift in Sources */,
+				B7C6B605D7DB135603AAF51A /* SincronizacaoDoCloset.swift in Sources */,
 				4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */,
 				C72E0F744301265B0597C210 /* Traducao.swift in Sources */,
 				E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */,
@@ -328,6 +339,7 @@
 				BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */,
 				5FDF252206C79440DA22050B /* CapturaDeCamera.swift in Sources */,
 				88385EED03003FB44A18542E /* Comparar.swift in Sources */,
+				5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */,
 				8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */,
 				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
 				2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */,
@@ -395,7 +407,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CODE_SIGN_ENTITLEMENTS = "Canario/Canario.entitlements";
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -404,7 +417,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -418,7 +431,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CODE_SIGN_ENTITLEMENTS = "Canario/Canario.entitlements";
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -427,7 +441,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -439,10 +453,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app.UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -455,10 +469,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 67AYPRFZH8;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "br.com.canario.ch3.app.UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
