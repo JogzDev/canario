@@ -48,6 +48,8 @@ jobs:
         run: "$PY coletor/teste_saude.py"
       - name: Portao de capacidade do banco
         run: "$PY coletor/teste_capacidade_banco.py"
+      - name: Isolamento dos paineis por segmento
+        run: "$PY coletor/teste_isolamento_segmento.py"
       - name: Paginacao VTEX sem perda por empate de preco
         run: "$PY coletor/teste_paginacao_vtex.py"
       - name: Presenca e oferta observadas no varejo
