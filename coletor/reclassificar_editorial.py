@@ -21,7 +21,7 @@ import supabase_rest
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VEICULOS = os.path.join(RAIZ, "anexos", "veiculos.csv")
-PAGINA = 1000
+PAGINA = 250
 
 
 def carregar_artigos():
@@ -31,6 +31,13 @@ def carregar_artigos():
             "artigos", "?select=id,veiculo,url,titulo,data_pub&id=gt.{}"
             "&order=id.asc&limit={}".format(ultimo, PAGINA))
         if not lote:
+            return
+        for artigo in lote:
+            yield artigo
+        ultimo = lote[-1]["id"]
+        if ultimo % 10000 < PAGINA:
+            print("  {} artigos lidos...".format(ultimo), file=sys.stderr, flush=True)
+        if len(lote) < PAGINA:
             return
 
 
@@ -52,11 +59,6 @@ def inicios_ja_medidos():
         ultimo = lote[-1]["id"]
         if len(lote) < PAGINA:
             return inicios
-        for artigo in lote:
-            yield artigo
-        ultimo = lote[-1]["id"]
-        if len(lote) < PAGINA:
-            return
 
 
 def segundas(inicio, fim):
