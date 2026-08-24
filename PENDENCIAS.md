@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 24/08/2026 às 17:30 BRT.** Esta lista substitui a triagem de
+**Atualizado em 24/08/2026 às 17:36 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueios externos — precisam do JP ou do Figma
@@ -59,6 +59,7 @@
   contagens cruas e zero honesto no lugar do “−100%” enganoso.
 - Editorial dos atributos acessível a partir da peça salva.
 - Painel `direcao_intl` isolado com Doen, Rouje, Staud, Faithfull the Brand e
-  With Jean: 4.956 produtos coletados em produção sem alterar a coorte brasileira.
+  With Jean: 4.956 itens visitados, 3.768 produtos elegíveis e zero produto das
+  cinco marcas fora do segmento, comprovados pelo portão de produção.
 - 239 testes Swift, portões Python e seis fluxos de UI (incluindo o filtro do
   Closet) verdes no ambiente local.

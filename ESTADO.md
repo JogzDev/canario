@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 24/08/2026, 17:35 em São Paulo
+**Última atualização:** 24/08/2026, 17:36 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -21,8 +21,8 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | coorte BR preservada; direção internacional isolada | 5 marcas estrangeiras · **4.956 produtos** coletados em produção |
-| Banco | plano gratuito; A27 e A30 em produção | **397.790.355 bytes / 500 MB** antes da coleta internacional; retenção segura ativa |
+| Dados e pipeline | coorte BR preservada; direção internacional isolada e verificada | 5 marcas · 4.956 visitados · **3.768 produtos elegíveis** no segmento |
+| Banco | plano gratuito; A27 e A30 em produção | **404.343.955 bytes / 500 MB (80,9%)** após a expansão internacional |
 | Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | Testes | **239 Swift** · portões Python ativos · 6 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
@@ -39,17 +39,20 @@ A27 moveu `ultimo_avistamento_em`, `ofertavel` e `ultimo_snapshot_em` para
 `estado_dos_produtos`, uma linha estreita, e já está em produção. A30 mantém
 35 dias de snapshots crus sem apagar a série semanal histórica. Depois do
 `VACUUM FULL` seguro, o banco caiu de 445.123.731 para 388.861.075 bytes; antes
-da coleta internacional estava em 397.790.355 bytes (79,6%).
+da coleta internacional estava em 397.790.355 bytes (79,6%) e, depois dela e
+do motor, em **404.343.955 bytes (80,9%)**, com 95.656.045 bytes livres.
 
 A 1.2 também já contém compartilhamento e exportação por um único botão,
 Universal Links autocontidos, importação por URL de produto, motivos visuais
 de estampa, couro, similares relaxados com explicação, editorial feminino
 reclassificável, detalhe clicável das fontes e busca/filtro local do Closet.
 
-As cinco marcas de direção internacional foram materializadas e coletadas em
-segmento próprio: Doen 672, Faithfull the Brand 690, Rouje 1.170, Staud 2.031 e
-With Jean 393. Elas não entram no denominador brasileiro e, com cinco fontes,
-continuam abaixo do mínimo de oito para qualquer índice próprio.
+As cinco marcas de direção internacional foram materializadas e coletadas:
+Doen 672, Faithfull the Brand 690, Rouje 1.170, Staud 2.031 e With Jean 393.
+Depois dos filtros de população, **3.768 produtos** ficaram em `direcao_intl`:
+666, 617, 917, 1.282 e 286, respectivamente. O portão de produção contou zero
+produto dessas marcas fora do segmento. Elas não entram no denominador
+brasileiro e, com cinco fontes, continuam abaixo do mínimo de oito para índice.
 
 Bloqueios atuais: telas finais do Figma e ativação do SMTP gratuito. A Brevo
 exige endereço comercial, CEP e cidade reais; Supabase, Apple e Google já estão
