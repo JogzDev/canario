@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 24/08/2026 às 18:03 BRT.** Esta lista substitui a triagem de
+**Atualizado em 24/08/2026 às 18:09 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueios externos — precisam do JP ou do Figma
@@ -8,13 +8,7 @@
 1. **Pacote visual do Figma.** Aplicar as novas telas e os assets finais. A
    hierarquia do Market panel e a redução de texto em “Which item” ficam nesta
    etapa para não desenhar duas vezes a mesma interface.
-2. **Aprovação humana do e-mail transacional gratuito.** Conta, endereço,
-   telefone/2FA e plano gratuito da Brevo estão confirmados; Supabase já usa as
-   credenciais SMTP. A plataforma ainda não aceitou o primeiro envio e não criou
-   log. O pedido de ativação **#5525910** foi aberto em 24/08, descrevendo apenas
-   confirmação de conta e recuperação de senha, sem campanha ou lista comprada.
-   Aguardar a resposta da Brevo e repetir o teste; não abrir ticket duplicado.
-3. **Validação física final dos provedores.** Depois do SMTP, testar no iPhone
+2. **Validação física final dos provedores.** Testar no iPhone
    uma conta Apple, uma Google e uma por e-mail, incluindo logout, restauração do
    Closet e exclusão. O contrato local, RLS e callbacks já têm testes automáticos.
 
@@ -45,6 +39,10 @@
 
 ## Entregue na 1.2 antes do Figma
 
+- E-mail transacional gratuito validado de ponta a ponta em 24/08: Supabase →
+  Brevo → Gmail, com envio, entrega e primeira abertura registrados. O chamado
+  **#5525910** recebeu a confirmação e foi respondido como resolvido; usuários
+  técnicos de teste foram apagados.
 - Login opcional com Apple, Google e e-mail/senha; recuperação, logout, exclusão,
   Keychain, RLS e sincronização offline-first do Closet.
 - Banco estabilizado no plano gratuito: estado volátil em tabela estreita,

@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 24/08/2026, 18:03 em São Paulo
+**Última atualização:** 24/08/2026, 18:09 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -25,6 +25,7 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Banco | plano gratuito; A27 e A30 em produção | **404.343.955 bytes / 500 MB (80,9%)** após a expansão internacional |
 | Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
+| E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Testes | **239 Swift** · portões Python ativos · 6 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
 
 ## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
@@ -54,12 +55,14 @@ Depois dos filtros de população, **3.768 produtos** ficaram em `direcao_intl`:
 produto dessas marcas fora do segmento. Elas não entram no denominador
 brasileiro e, com cinco fontes, continuam abaixo do mínimo de oito para índice.
 
-Bloqueios atuais: telas finais do Figma e aprovação humana do SMTP gratuito.
-A conta Brevo, o endereço, o telefone com 2FA e o plano gratuito foram
-confirmados. O pedido de ativação transacional **#5525910** está aberto; o
-Supabase já está configurado e um cadastro técnico provou que ainda não há log
-de entrega. Apple e Google também estão configurados. A lista exata e atual
-está em `PENDENCIAS.md`.
+Bloqueios atuais: telas finais do Figma e validação física dos três provedores
+de conta no iPhone. O SMTP gratuito está resolvido: a Brevo confirmou no pedido
+**#5525910** que o relay transacional já estava habilitado, e um cadastro técnico
+percorreu Supabase → Brevo → Gmail com eventos de envio, entrega e primeira
+abertura. Os usuários temporários foram removidos depois da prova. Sem domínio
+próprio autenticado, o remetente continua sendo reescrito para o subdomínio
+gratuito da Brevo; isso afeta apresentação, não funcionamento. Apple e Google
+também estão configurados. A lista exata e atual está em `PENDENCIAS.md`.
 
 ---
 
