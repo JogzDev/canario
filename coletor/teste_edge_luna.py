@@ -25,7 +25,9 @@ def main():
     exigir(funcao, [
         'withSupabase({ auth: "publishable" }',
         'const MODEL = "gpt-5.6-luna"',
-        'const PROMPT_VERSION = "alvo-estrutura-v8"',
+        'const PROMPT_VERSION = "alvo-estrutura-motivos-v9"',
+        'print_motifs',
+        'tomate_print',
         'A pullover, sweatshirt, hoodie or quarter-zip fleece is upper_other',
         'store: false',
         'detail: "high"',

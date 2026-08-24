@@ -1,7 +1,7 @@
 import { withSupabase } from "npm:@supabase/server";
 
 const MODEL = "gpt-5.6-luna";
-const PROMPT_VERSION = "alvo-estrutura-v8";
+const PROMPT_VERSION = "alvo-estrutura-motivos-v9";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const MAX_IMAGE_BYTES = 3_000_000;
 
@@ -19,7 +19,8 @@ const CATEGORY_BY_STRUCTURE: Record<string, string> = {
 
 const IDS = {
   estampa: ["liso", "floral", "listra", "animal_print", "xadrez", "geometrica"],
-  tecido: ["algodao", "linho", "jeans", "malha", "trico_croche", "viscose_fluido"],
+  motivo_estampa: ["tomate_print", "cereja_print", "morango_print", "banana_print", "abacaxi_print", "melancia_print"],
+  tecido: ["algodao", "linho", "jeans", "couro", "malha", "trico_croche", "viscose_fluido"],
   comprimento: ["curto", "midi", "longo"],
   silhueta: ["flare", "reta_wide"],
   cintura: ["cintura_alta"],
@@ -28,7 +29,8 @@ const IDS = {
 } as const;
 
 const TAXONOMY = `- pattern: liso (solid|plain); floral (floral|flower print); listra (stripe|striped); animal_print (animal print|leopard|zebra|snake); xadrez (plaid|check|tartan|gingham|houndstooth); geometrica (geometric|polka dot|abstract|ethnic)
-- fabrics: algodao (cotton|poplin); linho (linen); jeans (denim|jeans); malha (knit|jersey|fleece|ribbed); trico_croche (knitwear|crochet); viscose_fluido (viscose|rayon|satin|silk|chiffon)
+- print_motifs: tomate_print (tomato); cereja_print (cherry); morango_print (strawberry); banana_print (banana); abacaxi_print (pineapple); melancia_print (watermelon). Return a motif only when the recognizable object materially recurs as part of the garment print, never for a color name, logo, prop, or background.
+- fabrics: algodao (cotton|poplin); linho (linen); jeans (denim|jeans); couro (leather|faux leather|vegan leather); malha (knit|jersey|fleece|ribbed); trico_croche (knitwear|crochet); viscose_fluido (viscose|rayon|satin|silk|chiffon)
 - length: curto (mini|short length); midi (midi); longo (maxi|long)
 - silhouette: flare (flare|a-line|fit and flare); reta_wide (straight|wide leg)
 - waist: cintura_alta (high waist|high-waisted|high rise)
@@ -140,7 +142,8 @@ highlights. Metallic means the garment surface itself visibly behaves like
 metal, foil, or mirror. Mustard, ochre, or golden-yellow velvet and fabric stay
 amarelo_laranja even when they have reflective highlights, gold-colored trim,
 sequins, or rhinestones.
-Aesthetics has at most three ids. additional_visual_attributes has at most five
+Aesthetics has at most three ids. print_motifs has at most three ids and is
+empty when no listed motif is visibly recognizable. additional_visual_attributes has at most five
 short, concrete English phrases not already represented below. Never repeat an
 item or place a free-form guess in a taxonomy field. decision_evidence must
 name only visible cues and must not reveal or assume catalog metadata.
@@ -148,7 +151,7 @@ name only visible cues and must not reveal or assume catalog metadata.
 4. Abstention contract
 For ambiguous_target, return garment_structure=target_not_determinable;
 pattern, length, silhouette, and waist=not_visible; and fabrics, aesthetics,
-colors, and additional_visual_attributes=[] . For every other target_clarity,
+colors, print_motifs, and additional_visual_attributes=[] . For every other target_clarity,
 choose a determinate structure and at least one color. decision_evidence is
 still required for an ambiguous target and should state why no garment wins.
 
@@ -162,6 +165,7 @@ function schema() {
     garment_structure: { type: "string", enum: Object.keys(CATEGORY_BY_STRUCTURE) },
     decision_evidence: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
     pattern: { type: "string", enum: notVisible(IDS.estampa) },
+    print_motifs: { type: "array", items: { type: "string", enum: IDS.motivo_estampa }, maxItems: 3 },
     fabrics: { type: "array", items: { type: "string", enum: IDS.tecido }, maxItems: 3 },
     length: { type: "string", enum: notVisible(IDS.comprimento) },
     silhouette: { type: "string", enum: notVisible(IDS.silhueta) },
@@ -204,6 +208,7 @@ function normalize(raw: any) {
   if (!category) throw new Error("invalid_structure");
   if (!validList(raw.decision_evidence, null, 4) || !raw.decision_evidence.length) throw new Error("invalid_evidence");
   if (!validList(raw.fabrics, IDS.tecido, 3) || !validList(raw.aesthetics, IDS.estetica, 3) ||
+      !validList(raw.print_motifs, IDS.motivo_estampa, 3) ||
       !validList(raw.colors, IDS.cor, 3) || !validList(raw.additional_visual_attributes, null, 5)) {
     throw new Error("invalid_list");
   }
@@ -214,7 +219,7 @@ function normalize(raw: any) {
   if (raw.target_clarity === "ambiguous_target") {
     if (structure !== "target_not_determinable" || raw.pattern !== "not_visible" ||
         raw.length !== "not_visible" || raw.silhouette !== "not_visible" || raw.waist !== "not_visible" ||
-        raw.fabrics.length || raw.aesthetics.length || raw.colors.length || raw.additional_visual_attributes.length) {
+        raw.fabrics.length || raw.aesthetics.length || raw.colors.length || raw.print_motifs.length || raw.additional_visual_attributes.length) {
       throw new Error("invalid_abstention");
     }
   } else if (structure === "target_not_determinable" || raw.colors.length === 0) {

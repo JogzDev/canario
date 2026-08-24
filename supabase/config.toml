@@ -1,11 +1,39 @@
 project_id = "canario"
 
-# The iOS app has no user accounts in v1, so this function authenticates the
-# project publishable key in its own handler. New `sb_publishable_…` keys are
-# API keys, not JWTs; leaving the legacy platform JWT check enabled would
-# reject every legitimate request before the handler runs.
+[auth]
+site_url = "https://jogzdev.github.io/"
+additional_redirect_urls = ["datadrobe://auth-callback"]
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+max_frequency = "60s"
+otp_length = 8
+
+# Luna continues to accept the public app key for the pre-login analysis flow.
+# Account-scoped operations use their own authenticated Edge Function below.
 [functions.analisar-peca]
 verify_jwt = false
 
 [functions.excluir-conta]
 verify_jwt = true
+
+# Production values are injected only while running `supabase config push`.
+# No SMTP credential is stored in the repository.
+[auth.email.smtp]
+enabled = true
+host = "env(DATADROBE_SMTP_HOST)"
+port = 587
+user = "env(DATADROBE_SMTP_USER)"
+pass = "env(DATADROBE_SMTP_PASSWORD)"
+admin_email = "env(DATADROBE_SMTP_FROM)"
+sender_name = "DataDrobe"
+
+[auth.external.apple]
+enabled = true
+client_id = "br.com.canario.ch3.app"

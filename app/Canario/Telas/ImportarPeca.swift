@@ -33,11 +33,12 @@ struct ImportarPeca: View {
     @State private var avisoDeUso: String?
 
     enum Espera {
-        case lendoArquivo, separandoPeca, analisandoLocal, analisandoNaNuvem
+        case lendoArquivo, lendoLink, separandoPeca, analisandoLocal, analisandoNaNuvem
 
         var mensagem: String {
             switch self {
             case .lendoArquivo:     return "Reading the file…"
+            case .lendoLink:        return "Checking the product link…"
             case .separandoPeca:    return "Separating the garment…"
             case .analisandoLocal:  return "Reading the garment…"
             case .analisandoNaNuvem: return "Reading the garment…"
@@ -48,7 +49,7 @@ struct ImportarPeca: View {
         /// ruído; ausência de aviso em espera longa parece travamento.
         var expectativa: String? {
             switch self {
-            case .lendoArquivo, .analisandoLocal: return nil
+            case .lendoArquivo, .lendoLink, .analisandoLocal: return nil
             case .separandoPeca:
                 return "This happens on this iPhone."
             case .analisandoNaNuvem:
@@ -83,6 +84,7 @@ struct ImportarPeca: View {
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
     @State private var precoDigitado = ""
+    @State private var linkDigitado = ""
     @State private var miniaturaJPEG: Data?
     @State private var imagemPendente: CGImage?
     /// A foto como ela entrou, antes de qualquer recorte.
@@ -112,6 +114,7 @@ struct ImportarPeca: View {
     @State private var nomeConfirmadoPendente: String?
     @State private var descricaoConfirmadaPendente: String?
     @FocusState private var precoEmFoco: Bool
+    @FocusState private var linkEmFoco: Bool
     @FocusState private var dicaDoAlvoEmFoco: Bool
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
@@ -390,7 +393,10 @@ struct ImportarPeca: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") { precoEmFoco = false }
+                Button("Done") {
+                    precoEmFoco = false
+                    linkEmFoco = false
+                }
             }
         }
     }
@@ -434,7 +440,25 @@ struct ImportarPeca: View {
 
     private var importador: some View {
         Cartao {
-            Text("Photo or file").font(Tokens.Fonte.secao)
+            Text("Product link, photo or file").font(Tokens.Fonte.secao)
+            TextField("Paste a product link", text: $linkDigitado)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+                .textFieldStyle(.roundedBorder)
+                .focused($linkEmFoco)
+                .submitLabel(.go)
+                .onSubmit { Task { await processarLink() } }
+            Button {
+                Task { await processarLink() }
+            } label: {
+                Label("Read product link", systemImage: "link")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(linkDigitado.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            Divider()
             // A câmera vem primeiro porque é o gesto mais direto de quem está
             // com a peça na mão -- que é a situação do comprador em showroom.
             // Some no simulador e em aparelho sem câmera, em vez de abrir nada.
@@ -571,6 +595,57 @@ struct ImportarPeca: View {
         await prepararConfirmacao(imagem, nome: "photo library image")
     }
 
+    /// URL já coletada é a rota mais barata e mais auditável: reaproveita os
+    /// atributos derivados do título da própria loja e não chama visão.
+    private func processarLink() async {
+        let texto = linkDigitado.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: texto), url.scheme == "https", url.host != nil else {
+            erro = "Paste a complete https product link."
+            return
+        }
+        linkEmFoco = false
+        esperaAtual = .lendoLink
+        lendo = true
+        erro = nil
+        do {
+            guard let produto = try await Supabase.shared.produtoDoPainel(url: texto) else {
+                erro = "This product is not in the market panel yet. Add a photo instead and I will read the visible item."
+                lendo = false
+                return
+            }
+            let existentes = Set(termos.map(\.id))
+            detectados = FormularioDaPeca.podar(
+                Set(produto.termIDs).intersection(existentes), termos: termos)
+            guard FormularioDaPeca.temCategoria(detectados, termos: termos) else {
+                erro = "I found this product, but its category is not classified yet. Add a photo or choose the attributes manually."
+                etapa = .atributos
+                lendo = false
+                return
+            }
+            if precoDigitado.isEmpty, let preco = produto.price {
+                precoDigitado = String(format: "%.2f", preco)
+                    .replacingOccurrences(of: ".", with: ",")
+            }
+            nomeDoArquivo = "\(produto.brand) product link"
+            procedencia = [
+                "Matched \(produto.brand) · \(produto.title ?? "product") in the market panel.",
+                "Attributes came from the store title and the panel taxonomy. No visual-analysis credit was used."
+            ]
+            if let imagem = produto.imageURL.flatMap(URL.init(string:)),
+               imagem.scheme == "https",
+               let (dados, resposta) = try? await URLSession.shared.data(from: imagem),
+               (resposta as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) == true,
+               dados.count <= 8_000_000,
+               let cg = MiniaturaLocal.imagem(de: dados) {
+                miniaturaJPEG = await MiniaturaLocal.dados(de: cg)
+            }
+            etapa = .atributos
+        } catch {
+            erro = "I couldn't check this product link right now. You can still add a photo or file."
+        }
+        lendo = false
+    }
+
     /// Câmera e fototeca passam pelo mesmo portão visual. A opção pré-selecionada
     /// ainda exige um toque explícito no botão de confirmação.
     /// `recorteDe` chega preenchido só quando esta imagem veio do editor. Sem
@@ -688,6 +763,7 @@ struct ImportarPeca: View {
         procedencia = []
         miniaturaJPEG = nil
         precoDigitado = ""
+        linkDigitado = ""
         erro = nil
     }
 

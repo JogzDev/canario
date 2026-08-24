@@ -21,8 +21,11 @@ enum Traducao {
         "liso": "Solid", "floral": "Floral", "listra": "Stripes",
         "animal_print": "Animal print", "xadrez": "Checks & plaid",
         "geometrica": "Graphic & geometric",
+        "tomate_print": "Tomato print", "cereja_print": "Cherry print",
+        "morango_print": "Strawberry print", "banana_print": "Banana print",
+        "abacaxi_print": "Pineapple print", "melancia_print": "Watermelon print",
         // Material
-        "algodao": "Cotton", "linho": "Linen", "jeans": "Denim",
+        "algodao": "Cotton", "linho": "Linen", "jeans": "Denim", "couro": "Leather",
         "malha": "Knit", "trico_croche": "Knitwear & crochet",
         "viscose_fluido": "Viscose & fluid fabrics",
         // Length, silhouette and waist
@@ -91,7 +94,7 @@ enum Traducao {
         [
             "categoria": "Category",
             "cor": "Color",
-            "estampa": "Pattern",
+            "estampa": "Pattern", "motivo_estampa": "Print motif",
             "tecido": "Material",
             "estetica": "Style",
             "comprimento": "Length",

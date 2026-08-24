@@ -55,7 +55,7 @@ def main():
             return falhar("cluster final nao garante: {}".format(trecho))
 
     _, similares = ultima_definicao(
-        arquivos, "create or replace function public.similares_da_peca")
+        arquivos, "create or replace function public.similares_da_peca(")
     exigencias_similares = [
         "t.status = 'aprovado'",
         "limit 12",
@@ -72,6 +72,19 @@ def main():
         if trecho not in similares:
             return falhar("similares final nao garante: {}".format(trecho))
 
+    _, similares_amplos = ultima_definicao(
+        arquivos, "create or replace function public.similares_da_peca_amplo(")
+    exigencias_amostra_util = [
+        "jsonb_array_length(coalesce(estrita->'pecas'",
+        "t.dimensao not in ('categoria', 'motivo_estampa')",
+        "dimensao_relaxada",
+        "public.similares_da_peca(termos_reduzidos",
+        "grant execute on function public.similares_da_peca_amplo",
+    ]
+    for trecho in exigencias_amostra_util:
+        if trecho not in similares_amplos:
+            return falhar("amostra ampliada nao garante: {}".format(trecho))
+
     _, serie_varejo = ultima_definicao(
         arquivos, "create or replace function public.computar_serie_varejo")
     exigencias_presenca = [
@@ -85,6 +98,7 @@ def main():
         "cobertura_dimensao_pct",
         "n_com_atributo_na_dimensao",
         "t.papel in ('atributo', 'denominador')",
+        "s.semana >= (select min(semana) from _serie_varejo_nova)",
     ]
     for trecho in exigencias_presenca:
         if trecho not in serie_varejo:
@@ -123,6 +137,20 @@ def main():
         arquivos, "create or replace function public.eventos_recentes")
     if "public.url_publica_produto(p.url, m.nome)" not in eventos_recentes:
         return falhar("eventos recentes ainda devolvem host administrativo")
+
+    _, produto_por_url = ultima_definicao(
+        arquivos, "create or replace function public.produto_do_painel_por_url")
+    exigencias_url = [
+        "length(p_url) > 2048",
+        "p_url !~ '^https://[^/]+/'",
+        "p.segmento = 'feminino_casual_br'",
+        "ep.ofertavel is true",
+        "ep.ultimo_avistamento_em >= current_date - 7",
+        "grant execute on function public.produto_do_painel_por_url(text)",
+    ]
+    for trecho in exigencias_url:
+        if trecho not in produto_por_url:
+            return falhar("entrada por URL nao garante: {}".format(trecho))
 
     estado_final = "\n".join(
         open(c, encoding="utf-8").read().lower() for c in arquivos)
@@ -186,12 +214,26 @@ def main():
         "r_indice := public.computar_indice()",
         "r_curva := public.computar_curva_tamanhos()",
         "r_raridade := public.computar_raridade()",
+        "r_snapshots_removidos := public.podar_snapshots(35)",
     ]
     posicoes = [motor.find(p) for p in passos_motor]
     if any(p < 0 for p in posicoes) or posicoes != sorted(posicoes):
-        return falhar("computar_motor nao preserva a ordem dos sete passos")
+        return falhar("computar_motor nao preserva a ordem dos passos")
     if "revoke execute on function public.computar_motor()" not in motor:
         return falhar("computar_motor ficou executavel publicamente")
+
+    _, poda = ultima_definicao(
+        arquivos, "create or replace function public.podar_snapshots")
+    exigencias_poda = [
+        "p_retencao_dias integer default 35",
+        "p_retencao_dias < 21",
+        "data < (current_date - p_retencao_dias)",
+        "revoke execute on function public.podar_snapshots(integer)",
+    ]
+    for trecho in exigencias_poda:
+        if trecho not in poda:
+            return falhar("retencao de snapshots nao garante: {}".format(
+                trecho))
 
     _, lote = ultima_definicao(
         arquivos, "create or replace function public.publicar_motor")

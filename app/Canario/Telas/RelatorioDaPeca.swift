@@ -134,6 +134,7 @@ struct RelatorioDaPeca: View {
                     resumo
                     blocoDeSimilares
                     porAtributo
+                    if pecaSalva != nil { editorialDosAtributos }
                     blocoDoCluster
                     blocoDoHistorico
                 }
@@ -149,6 +150,39 @@ struct RelatorioDaPeca: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
+        }
+    }
+
+    /// Atalho pedido para o Closet: cada atributo abre a mesma série editorial
+    /// auditável usada em Trends, sem criar uma leitura especial por peça.
+    private var editorialDosAtributos: some View {
+        Cartao {
+            Text("How the press is covering these attributes")
+                .font(Tokens.Fonte.secao)
+            Text("Open an attribute to see Brazilian and international coverage, weekly counts and contributing publications.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+            ForEach(termos) { termo in
+                NavigationLink {
+                    RelatorioDoTermo(termo: termo)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(Traducao.rotuloExibido(termo))
+                                .foregroundStyle(.primary)
+                            Text(Traducao.rotuloDaDimensao(termo.dimensao))
+                                .font(Tokens.Fonte.miudo)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                    }
+                    .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -607,7 +641,7 @@ struct RelatorioDaPeca: View {
                 return argumentos
             }()
             async let respostaSimilar: Similares.Resposta = Supabase.shared.chamar(
-                "similares_da_peca", args)
+                "similares_da_peca_amplo", args)
             async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
                 "indice_do_cluster", ["termos": termoIds])
             async let respostaSerie: SerieDoCluster.Resposta = Supabase.shared.chamar(

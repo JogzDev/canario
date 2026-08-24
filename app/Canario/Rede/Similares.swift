@@ -38,6 +38,7 @@ enum Similares {
         let dimensoesPedidas: Int?
         let minimoEmComum: Int
         let minimoDimensoes: Int?
+        let dimensaoRelaxada: String?
         let nComTodos: Int
         let comPreco: Int
         let pctPrecoCheio: Double?
@@ -56,6 +57,7 @@ enum Similares {
             case dimensoesPedidas = "dimensoes_pedidas"
             case minimoEmComum = "minimo_em_comum"
             case minimoDimensoes = "minimo_dimensoes"
+            case dimensaoRelaxada = "dimensao_relaxada"
             case nComTodos = "n_com_todos"
             case comPreco = "com_preco"
             case pctPrecoCheio = "pct_preco_cheio"
@@ -203,8 +205,12 @@ enum Similares {
                 ? " Selections within the same dimension are alternatives."
                 : ""
             if minimoDimensoes < base {
-                return "No item reached the usual \(base)-of-\(dimensoes)-dimension match. "
+                let omitida = r.dimensaoRelaxada.map {
+                    " The expanded set does not require \(Traducao.rotuloDaDimensao($0).lowercased())."
+                } ?? ""
+                return "No useful set reached the usual \(base)-of-\(dimensoes)-dimension match. "
                      + "Showing the closest available matches at \(minimoDimensoes) of \(dimensoes); category still matches."
+                     + omitida
                      + alternativas
             }
             return "Matches cover at least \(minimoDimensoes) of \(dimensoes) selected dimensions; category always matches."

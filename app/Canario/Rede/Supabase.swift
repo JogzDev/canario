@@ -11,6 +11,7 @@ struct AnaliseVisualRemota: Decodable, Equatable {
     let category: String
     let decisionEvidence: [String]
     let pattern: String
+    let printMotifs: [String]
     let fabrics: [String]
     let length: String
     let silhouette: String
@@ -25,6 +26,7 @@ struct AnaliseVisualRemota: Decodable, Equatable {
         case category, pattern, fabrics, length, silhouette, waist, aesthetics, colors, model
         case targetClarity = "target_clarity"
         case garmentStructure = "garment_structure"
+        case printMotifs = "print_motifs"
         case decisionEvidence = "decision_evidence"
         case additionalVisualAttributes = "additional_visual_attributes"
         case promptVersion = "prompt_version"
@@ -35,12 +37,29 @@ struct AnaliseVisualRemota: Decodable, Equatable {
     func idsSugeridos(existentes: Set<String>) -> Set<String> {
         let escalares = [category, pattern, length, silhouette, waist]
             .filter { $0 != "not_visible" }
-        return Set(escalares + fabrics + aesthetics + colors)
+        return Set(escalares + printMotifs + fabrics + aesthetics + colors)
             .intersection(existentes)
     }
 
     var alvoAmbiguo: Bool {
         targetClarity == "ambiguous_target" || category == "not_visible"
+    }
+}
+
+/// Produto que o coletor já conhece. A origem é explícita: estes atributos
+/// vieram do título/catalogação da loja, não da câmera nem de uma inferência.
+struct ProdutoDoPainel: Decodable, Equatable, Sendable {
+    let id: Int
+    let title: String?
+    let brand: String
+    let imageURL: String?
+    let price: Double?
+    let termIDs: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, brand, price
+        case imageURL = "image_url"
+        case termIDs = "term_ids"
     }
 }
 
@@ -306,6 +325,12 @@ actor Supabase {
         } catch {
             throw Falha.rede(error)
         }
+    }
+
+    /// Atalho sem custo de visão: só resolve uma URL exata que já existe no
+    /// painel. URLs externas voltam `nil` e permanecem no fluxo normal da foto.
+    func produtoDoPainel(url: String) async throws -> ProdutoDoPainel? {
+        try await chamar("produto_do_painel_por_url", ["p_url": url])
     }
 
     /// Envia apenas a miniatura já reamostrada e sem metadados para a função
