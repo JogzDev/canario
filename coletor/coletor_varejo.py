@@ -62,6 +62,7 @@ BACKOFF_5XX = 5         # recusa transitoria do backend, uma unica repeticao
 PRECO_TETO = 200000     # teto de preco para o particionamento (R$)
 NIVEL_MAXIMO = 4        # profundidade maxima da arvore de categorias da VTEX
 FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
+SEGMENTO_PRINCIPAL = "feminino_casual_br"
 
 _trava = threading.Lock()
 _ultima = [0.0]
@@ -916,7 +917,7 @@ def coletar_marca(marca, hoje, cache_deps):
 # Saude (§20 + K9)
 # ---------------------------------------------------------------------------
 
-def escrever_saude(hoje, metricas):
+def escrever_saude(hoje, metricas, renderizar=True):
     """Grava a saude no banco e RE-RENDERIZA o SAUDE.md a partir dele.
 
     Renderizar do banco, e nao das metricas em memoria, e o que permite duas
@@ -930,7 +931,8 @@ def escrever_saude(hoje, metricas):
             "total_declarado": m["declarado"], "pct_campos_ok": m["pct_campos_ok"],
             "alertas": m["alertas"],
         }], on_conflict="data,fonte,marca_id")
-    renderizar_saude(hoje, metricas)
+    if renderizar:
+        renderizar_saude(hoje, metricas)
 
 
 def _valor_de_saude(linha):
@@ -1176,13 +1178,15 @@ def metricas_varejo_ativas(atuais, nomes, marcas_ativas):
     return metricas
 
 
-def renderizar_saude(hoje, fallback_varejo=None):
+def renderizar_saude(hoje, fallback_varejo=None,
+                     segmento=SEGMENTO_PRINCIPAL):
     """Renderiza uma visão única depois de todas as pernas da coleta."""
     inicio = hoje - timedelta(days=7)
     marcas = supabase_rest.selecionar(
-        "marcas", "?select=id,nome,plataforma,status_teste,ativa&order=nome")
+        "marcas", "?select=id,nome,plataforma,status_teste,ativa,segmento&order=nome")
     marcas_ativas = [m for m in marcas
                      if m.get("ativa")
+                     and m.get("segmento") == segmento
                      and m.get("status_teste") in ("vtex", "shopify")]
     nomes = {m["id"]: (m["nome"], m.get("plataforma") or "?") for m in marcas}
     registros = supabase_rest.selecionar(
@@ -1318,15 +1322,23 @@ def main():
     # datacenter do GitHub e 200 do IP residencial. Assim o runner do Mac cuida
     # so delas, e o datacenter cuida das VTEX, que responde bem.
     plataforma = os.environ.get("COLETA_PLATAFORMA", "").strip().lower()
+    # O pipeline principal continua congelado no segmento brasileiro. Outros
+    # paineis rodam em execucoes próprias e não alteram nem o portão nem a
+    # composição da série v1.
+    segmento = (os.environ.get("COLETA_SEGMENTO", "").strip()
+                or SEGMENTO_PRINCIPAL)
     marcas = supabase_rest.selecionar(
         "marcas",
-        "?status_teste=in.(vtex,shopify)&ativa=eq.true&select=id,nome,dominio,plataforma&order=nome")
+        "?status_teste=in.(vtex,shopify)&ativa=eq.true&segmento=eq.{}"
+        "&select=id,nome,dominio,plataforma,segmento&order=nome".format(
+            urllib.parse.quote(segmento)))
     if filtro:
         marcas = [m for m in marcas if m["nome"].lower() == filtro.lower()]
     if plataforma:
         marcas = [m for m in marcas if (m["plataforma"] or "").lower() == plataforma]
-    print("Marcas a coletar: {}{}".format(
-        len(marcas), " (filtro: {})".format(filtro) if filtro else ""), file=sys.stderr)
+    print("Marcas a coletar: {} no segmento {}{}".format(
+        len(marcas), segmento,
+        " (filtro: {})".format(filtro) if filtro else ""), file=sys.stderr)
 
     hoje = data_operacional()
     metricas = []
@@ -1379,7 +1391,11 @@ def main():
     # redescoberta amanha, e nao pode se perder se a saude falhar.
     _salvar_cache_departamentos(cache_deps)
     if metricas:
-        escrever_saude(hoje, metricas)
+        # SAUDE.md e o portão diário descrevem a coorte principal congelada.
+        # A direção internacional conserva suas métricas na tabela `saude`,
+        # sem reescrever o relatório operacional do painel brasileiro.
+        escrever_saude(hoje, metricas,
+                       renderizar=(segmento == SEGMENTO_PRINCIPAL))
     print("Coleta concluída.", file=sys.stderr)
     return 0
 

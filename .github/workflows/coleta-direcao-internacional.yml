@@ -1,0 +1,29 @@
+name: Coleta de direção internacional
+
+# Painel separado: não altera a coorte congelada nem o z-score brasileiro.
+# É manual enquanto tem cinco marcas (abaixo do mínimo metodológico de oito),
+# mas já entrega catálogo rastreável e similares. Quando chegar a oito fontes,
+# pode ganhar agenda própria sem tocar no pipeline diário da v1.
+on:
+  workflow_dispatch:
+    inputs:
+      marca:
+        description: 'Coletar só uma marca (vazio = todas)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canario-dados
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    uses: ./.github/workflows/coleta-shopify.yml
+    with:
+      plataforma: shopify
+      segmento: direcao_intl
+      marca: ${{ inputs.marca }}
+    secrets: inherit

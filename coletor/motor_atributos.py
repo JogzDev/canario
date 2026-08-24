@@ -13,9 +13,10 @@ O que faz:
   * preenche `produtos.segmento` (B4).
 
 Sobre o segmento: o coletor so desce departamentos que o classificador aprova
-como vestuario feminino, em TODO nivel da arvore. Entao todo produto que ele
-trouxe esta no segmento por construcao, e nao por suposicao -- e o que o B4
-queria derivar do mapa de categorias ja esta garantido pelo caminho da coleta.
+como vestuario feminino, em TODO nivel da arvore. A marca fornece o segmento
+operacional de fallback; o produto continua sendo a coluna autoritativa (B4).
+Isto importa quando dois paineis coexistem: uma Dôen nunca pode ser rebatizada
+silenciosamente como feminino_casual_br pelo motor da madrugada.
 
 Idempotente: pode rodar todo dia. O casamento inteiro vai para um stage
 invisivel; so depois de todos os produtos chegarem um job interno troca o
@@ -48,10 +49,11 @@ import supabase_rest  # noqa: E402
 FORA_DO_SEGMENTO = compilar_lista([
     # outro publico
     "masculin*", "menino*", "menina*", "infant*", "kids", "bebe*", "baby",
-    "homem", "homens", "teen", "junior",
+    "homem", "homens", "teen", "junior", "men", "mens", "boys", "girls",
     # outro segmento (§8: o recorte e casual/social, nao intimo nem praia)
     "calcinha*", "sutia*", "lingerie", "cueca*", "pijama*", "camisola*",
     "biquini*", "maio", "maios", "sunga*", "moda praia", "beachwear",
+    "bikini*", "swimwear", "sleepwear", "underwear",
 ])
 
 
@@ -95,6 +97,11 @@ ACESSORIO = [
     "presilha", "guarda-chuva",
     # beleza, que aparece em marca de grupo
     "perfume", "hidratante", "batom", "esmalte", "sabonete",
+    # equivalentes das lojas internacionais do painel de direção
+    "shoe", "shoes", "sneaker", "sneakers", "sandal", "sandals", "boot",
+    "boots", "bag", "bags", "handbag", "handbags", "purse", "purses",
+    "earring", "earrings", "necklace", "necklaces", "bracelet", "bracelets",
+    "ring", "rings", "belt", "belts", "hat", "hats", "sunglasses",
 ]
 
 # A mesma lista para o campo de categoria do site, onde a palavra pode estar em
@@ -105,7 +112,8 @@ _ACESSORIO_NO_INICIO = re.compile(
     re.IGNORECASE)
 _ACESSORIO_NA_CATEGORIA = compilar_lista(
     [p + "*" for p in ACESSORIO] + ["acessorio*", "joia", "joias", "bijuteria*",
-                                    "calcado*", "sapatos"],
+                                    "calcado*", "sapatos", "accessor*", "jewelry",
+                                    "footwear"],
     flexionar=False)
 
 
@@ -123,7 +131,6 @@ def e_acessorio(titulo, categoria_site):
         return True
     return False
 
-SEGMENTO = "feminino_casual_br"
 PAGINA = 1000
 BLOCO_ESCRITA = 500
 
@@ -265,9 +272,11 @@ def main():
 
     total = casados = ligacoes = fora = 0
     sem_categoria = 0
-    # id -> nome, para tirar o nome da marca do texto antes de casar.
-    marcas = {m["id"]: m.get("nome")
-              for m in supabase_rest.selecionar("marcas", "?select=id,nome")}
+    # id -> configuracao. O segmento da marca e apenas o fallback que o B4
+    # previu; cada produto recebe sua propria copia no stage atomico.
+    marcas = {m["id"]: m
+              for m in supabase_rest.selecionar(
+                  "marcas", "?select=id,nome,segmento")}
 
     buffer_pt, buffer_produtos = [], []
 
@@ -288,7 +297,8 @@ def main():
             texto = " ".join(filter(None, [p.get("titulo"),
                                            p.get("categoria_site")]))
             # O nome de quem vende nao descreve o que se vende.
-            texto = limpar_nome_da_marca(texto, marcas.get(p.get("marca_id")))
+            marca = marcas.get(p.get("marca_id")) or {}
+            texto = limpar_nome_da_marca(texto, marca.get("nome"))
             # Antes de casar atributo: este produto pertence ao segmento?
             #
             # Duas perguntas diferentes. `fora_do_segmento` pergunta se e OUTRA
@@ -321,7 +331,7 @@ def main():
             buffer_produtos.append({
                 "execucao": execucao,
                 "produto_id": p["id"],
-                "segmento": SEGMENTO,
+                "segmento": marca.get("segmento"),
             })
 
             if len(buffer_pt) >= BLOCO_ESCRITA:

@@ -32,14 +32,19 @@ CASOS = [
     ("Blusas e Camisas", "sim"),
     # Outro publico.
     ("Moda Masculina", "nao"),
+    ("Men's Clothing", "nao"),
     ("Roupas Infantis", "nao"),
+    ("Men", "nao"),
     ("Moda Infantil", "nao"),
     # Nao e vestuario.
     ("Bolsas e Acessorios", "nao"),
     ("Oculos de Sol", "nao"),
+    ("Shoes", "nao"),
+    ("Accessories", "nao"),
     # Outro segmento.
     ("Biquinis Tops", "nao"),
     ("Moda Praia", "nao"),
+    ("Swimwear", "nao"),
     # Nao e categoria de produto.
     ("Blusas em Sale", "nao"),
     ("Novidades da Semana", "nao"),
@@ -87,11 +92,20 @@ def main():
         if obtido != esperado:
             falhas.append(("loja_so_feminina " + str(deps), obtido, esperado))
 
+    # Painel internacional compartilha as regras de população, mas nunca pode
+    # cair no segmento brasileiro por um default escondido.
+    if classificar("Dresses", "direcao_intl")[1] != "direcao_intl":
+        falhas.append(("segmento explicito", classificar("Dresses", "direcao_intl")[1],
+                       "direcao_intl"))
+    if classificar_populacao("Sale", "direcao_intl")[1] != "direcao_intl":
+        falhas.append(("segmento populacao", classificar_populacao(
+            "Sale", "direcao_intl")[1], "direcao_intl"))
+
     for caminho, obtido, esperado in falhas:
         print("FALHOU: {!r} -> {} (esperado {})".format(caminho, obtido, esperado))
 
     print("{} casos, {} falhas".format(
-        len(CASOS) + len(CASOS_POPULACAO) + len(CASOS_LOJA), len(falhas)))
+        len(CASOS) + len(CASOS_POPULACAO) + len(CASOS_LOJA) + 2, len(falhas)))
     return 1 if falhas else 0
 
 

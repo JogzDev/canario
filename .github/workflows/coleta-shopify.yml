@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: ''
+      segmento:
+        description: 'Segmento isolado a coletar'
+        required: false
+        type: string
+        default: 'feminino_casual_br'
     secrets:
       SUPABASE_URL:
         required: true
@@ -40,6 +45,10 @@ on:
         description: 'Coletar só uma marca (vazio = todas da plataforma)'
         required: false
         default: ''
+      segmento:
+        description: 'Segmento isolado a coletar'
+        required: false
+        default: 'feminino_casual_br'
 
 permissions:
   contents: read
@@ -69,4 +78,5 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           COLETA_PLATAFORMA: ${{ inputs.plataforma }}
           COLETA_MARCA: ${{ inputs.marca }}
+          COLETA_SEGMENTO: ${{ inputs.segmento }}
         run: "$PY coletor/coletor_varejo.py"

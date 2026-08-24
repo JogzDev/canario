@@ -69,6 +69,22 @@ def checar_orquestracao(workflows):
         if "schedule" in gatilhos:
             falhar(arquivo, "workflow individual voltou a ter cron proprio")
 
+    # Coletas de novos paineis não podem cair no brasileiro por omissão.
+    for arquivo in ("coleta.yml", "coleta-shopify.yml"):
+        dados = workflows.get(arquivo, {})
+        gatilhos = dados.get("on", dados.get(True, {})) or {}
+        chamada = (gatilhos.get("workflow_call") or {}).get("inputs", {})
+        segmento = chamada.get("segmento", {})
+        if segmento.get("default") != "feminino_casual_br":
+            falhar(arquivo, "coleta reutilizavel sem segmento brasileiro explicito")
+
+    direcao = workflows.get("coleta-direcao-internacional.yml", {})
+    job_direcao = direcao.get("jobs", {}).get("coletar", {})
+    if (job_direcao.get("uses") != individuais["coleta-shopify.yml"] or
+            job_direcao.get("with", {}).get("segmento") != "direcao_intl"):
+        falhar("coleta-direcao-internacional.yml",
+               "direcao internacional nao esta isolada em direcao_intl")
+
     for arquivo in ["coleta.yml", "coleta-shopify.yml",
                     "coleta-editorial.yml", "coleta-trends.yml"]:
         passos = workflows.get(arquivo, {}).get("jobs", {}).get(

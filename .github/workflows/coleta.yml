@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ''
+      segmento:
+        description: 'Segmento isolado a coletar'
+        required: false
+        type: string
+        default: 'feminino_casual_br'
     secrets:
       SUPABASE_URL:
         required: true
@@ -23,6 +28,10 @@ on:
         description: 'Coletar so uma marca (particionamento; vazio = todas)'
         required: false
         default: ''
+      segmento:
+        description: 'Segmento isolado a coletar'
+        required: false
+        default: 'feminino_casual_br'
 
 permissions:
   contents: write
@@ -70,6 +79,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           COLETA_MARCA: ${{ inputs.marca }}
+          COLETA_SEGMENTO: ${{ inputs.segmento }}
           # Divisao de trabalho por plataforma: as Shopify (Amaro, PatBo) dao
           # 429 daqui e ficam com o runner residencial (coleta-shopify.yml).
           COLETA_PLATAFORMA: vtex
