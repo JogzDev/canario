@@ -16,6 +16,10 @@ struct MinhasPecas: View {
     @State private var processandoFotos: Set<UUID> = []
     @State private var editando: PecaSalva?
     @State private var compartilhando = false
+    @State private var filtrando = false
+    @State private var somenteFavoritas = false
+    @State private var atributosFiltrados: Set<String> = []
+    @State private var busca = ""
 
     private let colunas = [
         GridItem(.flexible(), spacing: 18),
@@ -29,6 +33,31 @@ struct MinhasPecas: View {
     private var categorias: [String: String] {
         Dictionary(uniqueKeysWithValues: termos.filter { $0.dimensao == "categoria" }
             .map { ($0.id, Traducao.rotuloExibido($0)) })
+    }
+
+    private var temFiltro: Bool {
+        somenteFavoritas || !atributosFiltrados.isEmpty || !busca.isEmpty
+    }
+
+    private var pecasVisiveis: [PecaSalva] {
+        let consulta = Traducao.normalizar(busca)
+        let filtrosPorDimensao = Dictionary(grouping: termos.filter {
+            atributosFiltrados.contains($0.id)
+        }, by: \.dimensao).mapValues { Set($0.map(\.id)) }
+        return pecas.filter { peca in
+            if somenteFavoritas && !(peca.favorita ?? false) { return false }
+            let idsDaPeca = Set(peca.termoIds)
+            // AND entre dimensões, OR dentro da mesma dimensão: Green +
+            // Stripes exige os dois; Green + Blue aceita qualquer das cores.
+            if !filtrosPorDimensao.values.allSatisfy({ !idsDaPeca.isDisjoint(with: $0) }) {
+                return false
+            }
+            guard !consulta.isEmpty else { return true }
+            let texto = ([peca.nome(comRotulos: rotulos)]
+                         + peca.termoIds.compactMap { rotulos[$0] })
+                .joined(separator: " ")
+            return Traducao.normalizar(texto).contains(consulta)
+        }
     }
 
     var body: some View {
@@ -53,14 +82,24 @@ struct MinhasPecas: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        compartilhando = true
-                    } label: {
-                        Label("Share or export", systemImage: "square.and.arrow.up")
+                    HStack {
+                        Button {
+                            filtrando = true
+                        } label: {
+                            Label("Filter Closet", systemImage: temFiltro
+                                  ? "line.3.horizontal.decrease.circle.fill"
+                                  : "line.3.horizontal.decrease.circle")
+                        }
+                        Button {
+                            compartilhando = true
+                        } label: {
+                            Label("Share or export", systemImage: "square.and.arrow.up")
+                        }
+                        .disabled(pecas.isEmpty)
                     }
-                    .disabled(pecas.isEmpty)
                 }
             }
+            .searchable(text: $busca, prompt: "Search names or attributes")
         }
         .task { await carregar() }
         .onReceive(NotificationCenter.default.publisher(for: .closetMudouDeUsuario)) { _ in
@@ -71,6 +110,14 @@ struct MinhasPecas: View {
         }
         .sheet(isPresented: $compartilhando) {
             CompartilharCloset(pecas: pecas, termos: termos)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $filtrando) {
+            FiltroDoCloset(
+                termos: termos,
+                somenteFavoritas: $somenteFavoritas,
+                selecionados: $atributosFiltrados)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
@@ -101,25 +148,34 @@ struct MinhasPecas: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                LazyVGrid(columns: colunas, spacing: 20) {
-                    ForEach(pecas) { peca in
-                        CartaoDoArmario(
-                            peca: peca,
-                            termos: termos,
-                            rotulos: rotulos,
-                            categoria: peca.termoIds.compactMap { categorias[$0] }.first,
-                            idsDeCategoria: Set(categorias.keys),
-                            processandoFoto: processandoFotos.contains(peca.id),
-                            aoEscolherFoto: { item in
-                                await substituirFoto(de: peca, por: item)
-                            },
-                            aoFavoritar: { favoritar(peca) },
-                            aoRenomear: { editando = peca },
-                            aoApagar: { apagar(peca) })
+                if pecasVisiveis.isEmpty {
+                    ContentUnavailableView(
+                        "No matching clothes",
+                        systemImage: "line.3.horizontal.decrease.circle",
+                        description: Text(
+                            "Try removing an attribute or clearing the search."))
+                        .frame(minHeight: 360)
+                } else {
+                    LazyVGrid(columns: colunas, spacing: 20) {
+                        ForEach(pecasVisiveis) { peca in
+                            CartaoDoArmario(
+                                peca: peca,
+                                termos: termos,
+                                rotulos: rotulos,
+                                categoria: peca.termoIds.compactMap { categorias[$0] }.first,
+                                idsDeCategoria: Set(categorias.keys),
+                                processandoFoto: processandoFotos.contains(peca.id),
+                                aoEscolherFoto: { item in
+                                    await substituirFoto(de: peca, por: item)
+                                },
+                                aoFavoritar: { favoritar(peca) },
+                                aoRenomear: { editando = peca },
+                                aoApagar: { apagar(peca) })
+                        }
                     }
                 }
 
-                Text("\(pecas.count) of \(PecasSalvas.teto) · Market readings are recalculated whenever you open an item.")
+                Text("\(pecasVisiveis.count) shown · \(pecas.count) saved of \(PecasSalvas.teto) · Market readings are recalculated whenever you open an item.")
                     .font(Tokens.Fonte.miudo)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -202,6 +258,68 @@ struct MinhasPecas: View {
 private struct PacoteDeAtividade: Identifiable {
     let id = UUID()
     let itens: [Any]
+}
+
+/// Filtro local e barato: nenhuma consulta ao servidor e nenhuma nova cópia do
+/// armário. Dimensões se somam; opções da mesma dimensão se alternam.
+private struct FiltroDoCloset: View {
+    let termos: [Termo]
+    @Binding var somenteFavoritas: Bool
+    @Binding var selecionados: Set<String>
+    @Environment(\.dismiss) private var dismiss
+
+    private var dimensoes: [String] {
+        Array(Set(termos.map(\.dimensao))).sorted {
+            Traducao.rotuloDaDimensao($0) < Traducao.rotuloDaDimensao($1)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Toggle("Favorites only", isOn: $somenteFavoritas)
+                }
+                ForEach(dimensoes, id: \.self) { dimensao in
+                    Section(Traducao.rotuloDaDimensao(dimensao)) {
+                        ForEach(termos.filter { $0.dimensao == dimensao }) { termo in
+                            Button {
+                                if selecionados.contains(termo.id) {
+                                    selecionados.remove(termo.id)
+                                } else {
+                                    selecionados.insert(termo.id)
+                                }
+                            } label: {
+                                HStack {
+                                    Text(Traducao.rotuloExibido(termo))
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    if selecionados.contains(termo.id) {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(Tokens.Cor.acao)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Filter Closet")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Reset") {
+                        somenteFavoritas = false
+                        selecionados = []
+                    }
+                    .disabled(!somenteFavoritas && selecionados.isEmpty)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
 }
 
 /// Um único ponto de saída para link, redes sociais e planilha. A seleção fica

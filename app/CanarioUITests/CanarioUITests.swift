@@ -28,6 +28,11 @@ final class CanarioUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Closet"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Filter Closet"].exists)
+        app.buttons["Filter Closet"].tap()
+        XCTAssertTrue(app.navigationBars["Filter Closet"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.switches["Favorites only"].exists)
+        XCTAssertTrue(app.buttons["Done"].exists)
     }
 
     func testPrivacyAbrePeloCaminhoDeterministico() {
