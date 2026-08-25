@@ -141,8 +141,14 @@ jobs:
         working-directory: app
         run: |
           set -o pipefail
-          xcrun simctl shutdown 'iPhone 17' 2>/dev/null || true
+          # Aparelho exclusivo do runner: uma validacao local no iPhone 17
+          # nao pode deixar o SpringBoard ocupado e derrubar o CI com
+          # FBSOpenApplicationErrorDomain/Busy.
+          xcrun simctl shutdown 'DataDrobe-CI' 2>/dev/null || true
+          trap "xcrun simctl shutdown 'DataDrobe-CI' 2>/dev/null || true" EXIT
+          xcrun simctl boot 'DataDrobe-CI'
+          xcrun simctl bootstatus 'DataDrobe-CI' -b
           caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
             -destination-timeout 120 -parallel-testing-enabled NO \
             -only-testing:CanarioUITests CODE_SIGNING_ALLOWED=NO | tail -20
