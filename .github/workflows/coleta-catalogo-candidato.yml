@@ -47,4 +47,24 @@ jobs:
       plataforma: shopify
       segmento: catalogo_candidato_br
       marca: ${{ inputs.marca }}
+      verificar_isolamento: false
     secrets: inherit
+
+  publicar:
+    needs: [vtex, shopify]
+    if: ${{ always() && (needs.vtex.result == 'success' || needs.shopify.result == 'success') }}
+    uses: ./.github/workflows/motor.yml
+    secrets: inherit
+
+  verificar:
+    needs: publicar
+    runs-on: ${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/python-mac
+      - name: Provar isolamento depois da publicação
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SEGMENTO_VERIFICADO: catalogo_candidato_br
+        run: "$PY coletor/verificar_isolamento_segmento.py"

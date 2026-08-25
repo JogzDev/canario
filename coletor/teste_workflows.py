@@ -120,6 +120,21 @@ def checar_orquestracao(workflows):
         if job == "vtex" and definicao.get("with", {}).get("pente_fino") is not False:
             falhar("coleta-catalogo-candidato.yml",
                    "catalogo candidato VTEX ainda dispara sonda ampla")
+        if (job == "shopify" and
+                definicao.get("with", {}).get("verificar_isolamento") is not False):
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato verifica antes do motor")
+    publicacao_candidatos = jobs_candidatos.get("publicar", {})
+    if (publicacao_candidatos.get("uses") != individuais["motor.yml"] or
+            set(publicacao_candidatos.get("needs", [])) != {"vtex", "shopify"}):
+        falhar("coleta-catalogo-candidato.yml",
+               "catalogo candidato nao publica o motor depois das coletas")
+    verificacao_candidatos = jobs_candidatos.get("verificar", {})
+    if (verificacao_candidatos.get("needs") != "publicar" or
+            "verificar_isolamento_segmento.py" not in str(
+                verificacao_candidatos.get("steps", []))):
+        falhar("coleta-catalogo-candidato.yml",
+               "catalogo candidato nao prova isolamento depois do motor")
 
     for arquivo in ["coleta.yml", "coleta-shopify.yml",
                     "coleta-editorial.yml", "coleta-trends.yml"]:
