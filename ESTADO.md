@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 24/08/2026, 21:51 em São Paulo
+**Última atualização:** 25/08/2026, 03:00 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -21,13 +21,13 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | coorte BR preservada; direção internacional isolada e verificada | 5 marcas · 4.956 visitados · **3.768 produtos elegíveis** no segmento |
-| Banco | plano gratuito; A27 e A30 em produção | **404.343.955 bytes / 500 MB (80,9%)** após a expansão internacional |
+| Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **14.678 produtos candidatos** |
+| Banco | plano gratuito; retenção crua no piso seguro de 21 dias | **422.145.171 bytes / 500 MB (84,4%)** após toda a expansão |
 | Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
-| Testes | **239 Swift** · portões Python ativos · 7 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
+| Testes | **242 Swift** · portões Python ativos · 7 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
 
 ## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
 
@@ -38,8 +38,8 @@ e as fotos permanecem locais. Há recuperação de senha, logout e exclusão
 integral iniciada dentro do app.
 
 A27 moveu `ultimo_avistamento_em`, `ofertavel` e `ultimo_snapshot_em` para
-`estado_dos_produtos`, uma linha estreita, e já está em produção. A30 mantém
-35 dias de snapshots crus sem apagar a série semanal histórica. Depois do
+`estado_dos_produtos`, uma linha estreita, e já está em produção. A42 mantém
+21 dias de snapshots crus sem apagar a série semanal histórica. Depois do
 `VACUUM FULL` seguro, o banco caiu de 445.123.731 para 388.861.075 bytes; antes
 da coleta internacional estava em 397.790.355 bytes (79,6%) e, depois dela e
 do motor, em **404.343.955 bytes (80,9%)**, com 95.656.045 bytes livres.
@@ -59,6 +59,32 @@ Depois dos filtros de população, **3.768 produtos** ficaram em `direcao_intl`:
 666, 617, 917, 1.282 e 286, respectivamente. O portão de produção contou zero
 produto dessas marcas fora do segmento. Elas não entram no denominador
 brasileiro e, com cinco fontes, continuam abaixo do mínimo de oito para índice.
+
+Em 25/08, 12 marcas brasileiras adicionais entraram em
+`catalogo_candidato_br`: Calvin Klein BR, Charry, Damyller, Dudalina, Iorane,
+John John, Levi's BR, Lez a Lez, Maria Valentina, Osklen, Sacada e Scalon.
+Foram 16.376 produtos crus; o recorte de população manteve **14.678** no
+catálogo candidato, excluiu 1.698 masculinos/infantis/íntimos/praia e atribuiu
+**zero** produto a outro segmento. Essas peças ampliam similares, mas não
+alteram o painel brasileiro, índice, raridade ou z-score. O retry final da
+Dudalina confirmou 552 visitados = 552 declarados e zero gravação nova.
+
+O editorial foi recomposto integralmente a partir de **170.813 artigos**:
+86.087 classificados como femininos, 50.755 neutros e 33.971 masculinos
+excluídos. Título + resumo agora produzem somente pares compactos em
+`artigo_termos`; são 16.287 ligações em 7.587 artigos, ocupando 1,65 MB, sem
+armazenar resumo ou texto integral. A troca atômica publicou 11.179 pontos BR e
+5.764 internacionais. Na semana de 24/08, 28/46 termos BR e 22/47 internacionais
+têm artigo qualificado. `floral` permanece zero nas duas pernas porque nenhum
+artigo recente passou simultaneamente pelo matching e pelo contexto de roupa;
+flores pessoais, unhas, casamento e calçados não são convertidos em roupa.
+
+A expansão e a primeira recomputação levaram o banco temporariamente a 97,15%.
+A retenção no piso seguro removeu 93.587 snapshots fora da janela, compactou a
+tabela e preservou todas as séries. Depois dos pares editoriais e do motor final,
+o banco fechou em **422.145.171 bytes (84,4%)**, com 77.854.829 bytes livres.
+O motor final provou idempotência: 106.298 produtos, 257.070 ligações e zero
+produto, segmento ou ligação alterado na segunda publicação.
 
 O único bloqueio de implementação antes do fechamento da release são as telas
 finais do Figma. Apple, Google e e-mail foram validados no iPhone em 24/08. O

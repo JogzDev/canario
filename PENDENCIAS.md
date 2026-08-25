@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 24/08/2026 às 21:51 BRT.** Esta lista substitui a triagem de
+**Atualizado em 25/08/2026 às 03:00 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -29,14 +29,16 @@
   orçamento explícito. Isso não bloqueia o Figma nem os fluxos manuais.
 - **Cold launch e artefato rosa no iOS 18.7.** Exigem o iPhone 15 no qual foram
   relatados. Build, simulador iOS 26.2 e os fluxos automatizados estão verdes.
-- **Novos veículos editoriais.** ELLE US, Harper's Bazaar US, Marie Claire US e
-  Glamour US tiveram feeds femininos públicos confirmados em 24/08. Não entram
-  ainda porque oferecem só a cauda recente: adicioná-los sem backfill criaria
-  outro degrau falso no denominador histórico. A entrada exige estratégia de
-  arquivo uniforme e recomputo, não apenas uma linha no CSV.
-- **Marcas brasileiras Tier A.** Permanecem candidatas para a próxima virada de
-  temporada. A regra 5 não foi quebrada; cinco marcas internacionais já entraram
-  em painel separado de direção.
+- **Floral recente é zero verdadeiro.** A recomputação leu 170.813 artigos e
+  persistiu 16.287 pares de título+resumo. Na semana atual, 28/46 termos BR e
+  22/47 internacionais têm cobertura; `floral` não tem matéria que também
+  declare contexto de roupa. Flores pessoais, unhas, casamento e calçados
+  continuam excluídos. A próxima expansão de fonte deve ser guiada por recall
+  feminino medido, nunca pela necessidade de fabricar um número para essa tela.
+- **Malwee permanece inativa.** As outras 12 candidatas já entregam 14.678
+  produtos elegíveis sem contaminar o painel. Malwee só entra depois de medir o
+  espaço marginal do catálogo completo; não bloqueia a 1.2 nem a expansão já
+  entregue.
 
 ## Entregue na 1.2 antes do Figma
 
@@ -69,5 +71,11 @@
 - Painel `direcao_intl` isolado com Doen, Rouje, Staud, Faithfull the Brand e
   With Jean: 4.956 itens visitados, 3.768 produtos elegíveis e zero produto das
   cinco marcas fora do segmento, comprovados pelo portão de produção.
-- 239 testes Swift, portões Python e sete fluxos de UI (incluindo o filtro do
+- 242 testes Swift, portões Python e sete fluxos de UI (incluindo o filtro do
   Closet) verdes no ambiente local.
+- Editorial recomposto em produção: 11.179 pontos BR, 5.764 internacionais,
+  16.287 pares artigo/termo e filtro masculino aplicado ao arquivo inteiro.
+- Catálogo candidato brasileiro com 12 marcas, 14.678 produtos elegíveis,
+  1.698 exclusões de população e zero vazamento para outro segmento.
+- Banco no plano gratuito em 422.145.171 / 500.000.000 bytes (84,4%), com
+  retenção permanente de 21 dias no cru e séries históricas preservadas.
