@@ -148,6 +148,14 @@
    "origem": "busca"
   }
  ],
+ "Iorane": [
+  {
+   "id": 345,
+   "loja_so_feminina": true,
+   "nome": "Shop All",
+   "origem": "busca"
+  }
+ ],
  "Lanca Perfume": [
   {
    "id": 1,
