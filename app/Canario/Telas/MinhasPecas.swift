@@ -9,6 +9,8 @@ import ImageIO
 /// gráfico são recomputados do painel quando a peça abre; a miniatura é a única
 /// cópia visual persistente e fica no aparelho, sem metadados.
 struct MinhasPecas: View {
+    var menuAberto = false
+    var alternarMenu: (() -> Void)?
     @State private var pecas: [PecaSalva] = []
     @State private var termos: [Termo] = []
     @State private var carregando = true
@@ -75,10 +77,11 @@ struct MinhasPecas: View {
             .navigationTitle("Closet")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink {
-                        Comparar()
-                    } label: {
-                        Label("Compare", systemImage: "arrow.left.arrow.right")
+                    if let alternarMenu {
+                        Button(action: alternarMenu) {
+                            Image(systemName: menuAberto ? "xmark" : "ellipsis")
+                        }
+                        .accessibilityLabel(menuAberto ? "Close menu" : "Open menu")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -99,7 +102,9 @@ struct MinhasPecas: View {
                     }
                 }
             }
-            .searchable(text: $busca, prompt: "Search names or attributes")
+            .searchable(text: $busca,
+                        placement: .navigationBarDrawer(displayMode: .automatic),
+                        prompt: "Search names or attributes")
         }
         .task { await carregar() }
         .onReceive(NotificationCenter.default.publisher(for: .closetMudouDeUsuario)) { _ in

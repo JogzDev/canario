@@ -19,6 +19,8 @@ import UIKit
 /// sem metadados, pode ser persistida e é apagada com a peça.
 struct ImportarPeca: View {
     let termos: [Termo]
+    var mostrarDetalhes: (_ selecionados: Set<String>, _ precoAlvo: Double?,
+                          _ miniaturaJPEG: Data?, _ descricaoAmigavel: String?) -> Void
 
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
@@ -59,7 +61,8 @@ struct ImportarPeca: View {
     }
     @State private var erro: String?
     @State private var detectados: Set<String> = []
-    /// As quatro telas do fluxo, nomeadas.
+    /// As três telas do fluxo de preenchimento, nomeadas. O resultado abre
+    /// depois como Clothing Details em tela cheia, fora desta sheet.
     ///
     /// Antes isto era um encadeado de booleanos -- `lendo`, `imagemPendente`,
     /// `confirmou` -- e a tela de atributos convivia com a de upload no mesmo
@@ -73,8 +76,6 @@ struct ImportarPeca: View {
         case confirmarAlvo
         /// O que o app leu, já marcado, para a pessoa corrigir.
         case atributos
-        /// O painel de mercado.
-        case painel
     }
 
     /// Ver o comentário na tela de confirmação do alvo.
@@ -150,20 +151,6 @@ struct ImportarPeca: View {
                     case .entrada:       telaDeEntrada
                     case .confirmarAlvo: confirmacaoDoAlvo
                     case .atributos:     telaDeAtributos
-                    case .painel:
-                        RelatorioDaPeca(
-                            termos: termos.filter { detectados.contains($0.id) },
-                            precoAlvo: precoAlvo,
-                            miniaturaJPEG: miniaturaJPEG,
-                            pecaSalva: nil,
-                            todosOsTermos: termos,
-                            selecao: $detectados,
-                            aoConcluir: { encerrarFluxo() })
-                        // Corrigir um chip aqui recria a view, e o `.task` dela
-                        // recalcula o painel. NÃO chama a Luna de novo: reler a
-                        // foto é outra ação, e custa dinheiro. Corrigir o que
-                        // ela leu é grátis e instantâneo.
-                        .id(detectados)
                     }
                 }
             }
@@ -183,7 +170,14 @@ struct ImportarPeca: View {
             }
         }
         // Lido na abertura, para quem já estava perto do teto antes de começar.
-        .task { avisoDeUso = await RegistroDeAnalises.shared.aviso() }
+        .task {
+            avisoDeUso = await RegistroDeAnalises.shared.aviso()
+            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
+                detectados = Set(["vestido", "preto"])
+                procedencia = ["Offline interface test."]
+                etapa = .atributos
+            }
+        }
         .fileImporter(
             isPresented: $mostrandoSeletor,
             allowedContentTypes: tiposAceitos,
@@ -425,9 +419,10 @@ struct ImportarPeca: View {
                 atributos
                 if !detectados.isEmpty {
                     Button {
-                        etapa = .painel
+                        mostrarDetalhes(detectados, precoAlvo, miniaturaJPEG,
+                                        descricaoDoAlvoNormalizada)
                     } label: {
-                        Label("See the market panel", systemImage: "chart.bar.doc.horizontal")
+                        Label("Open Clothing Details", systemImage: "tshirt")
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 44)
                     }
@@ -728,7 +723,6 @@ struct ImportarPeca: View {
         case .entrada:       return "Analyze an item"
         case .confirmarAlvo: return "Which item"
         case .atributos:     return "Check what I read"
-        case .painel:        return "Market panel"
         }
     }
 
@@ -740,7 +734,6 @@ struct ImportarPeca: View {
         case .entrada:       break
         case .confirmarAlvo: cancelarConfirmacao()
         case .atributos:     etapa = .entrada
-        case .painel:        etapa = .atributos
         }
     }
 
@@ -753,18 +746,6 @@ struct ImportarPeca: View {
         alvoEscolhido = nil
         daFototeca = nil
         descricaoDoAlvo = ""
-    }
-
-    /// A peça foi guardada e o fluxo acabou. Volta ao começo pronto para a
-    /// próxima, em vez de deixar a pessoa desandar as etapas uma a uma.
-    private func encerrarFluxo() {
-        cancelarConfirmacao()
-        detectados = []
-        procedencia = []
-        miniaturaJPEG = nil
-        precoDigitado = ""
-        linkDigitado = ""
-        erro = nil
     }
 
     private var descricaoDoAlvoNormalizada: String? {

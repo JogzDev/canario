@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 24/08/2026 às 21:35 BRT.** Esta lista substitui a triagem de
+**Atualizado em 24/08/2026 às 21:51 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -22,12 +22,11 @@
 
 ## Validações posteriores, não bloqueadoras da implementação
 
-- **Holdout Luna de 300 imagens.** A taxonomia expandida da 1.2 mudou o conteúdo
-  do prompt. Três novas rodadas contra o mesmo gabarito humano deram 57/72 em
-  categoria e 57/72 em cor (79,2%): o portão de 80% ficou fechado e impediu o
-  gasto de 300 respostas. Corrigir as abstenções recorrentes em camisa/short,
-  repetir as 24 e só então liberar o holdout. Isso não bloqueia o Figma nem os
-  fluxos manuais existentes.
+- **Calibração Luna somente com amostra nova.** A taxonomia expandida da 1.2
+  deu 57/72 em categoria e cor (79,2%) nas mesmas 24 imagens. O conjunto não
+  será repetido nem usado para perseguir décimos: cinco casos difíceis ficam
+  registrados como erro conhecido. Um futuro holdout usa imagens novas e
+  orçamento explícito. Isso não bloqueia o Figma nem os fluxos manuais.
 - **Cold launch e artefato rosa no iOS 18.7.** Exigem o iPhone 15 no qual foram
   relatados. Build, simulador iOS 26.2 e os fluxos automatizados estão verdes.
 - **Novos veículos editoriais.** ELLE US, Harper's Bazaar US, Marie Claire US e
@@ -56,6 +55,10 @@
   fallback da App Store, card social e CSV de uma peça, seleção ou Closet inteiro,
   com opção de incluir leitura de mercado e sua data.
 - Nome visível/editável, busca e filtro local do Closet por favorito e atributos.
+- Depois de Fill the Info, Clothing Details abre em tela cheia; Add to Closet
+  fica no canto superior esquerdo com instrução explícita. A busca do Closet é
+  o drawer recolhível nativo, o canto esquerdo virou menu de três pontos e o
+  Compare passou para Weekly Trends.
 - Similares com foto no alto do relatório, polo como camisa, relaxamento declarado
   por cobertura e fallback sem abandonar categoria nem motivo de estampa.
 - Importação por URL de produto; Farm/tomate funciona sem visão quando o produto
@@ -66,5 +69,5 @@
 - Painel `direcao_intl` isolado com Doen, Rouje, Staud, Faithfull the Brand e
   With Jean: 4.956 itens visitados, 3.768 produtos elegíveis e zero produto das
   cinco marcas fora do segmento, comprovados pelo portão de produção.
-- 239 testes Swift, portões Python e seis fluxos de UI (incluindo o filtro do
+- 239 testes Swift, portões Python e sete fluxos de UI (incluindo o filtro do
   Closet) verdes no ambiente local.

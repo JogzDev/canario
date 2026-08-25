@@ -102,7 +102,8 @@ struct Raiz: View {
             }
             Tab(Aba.armario.titulo, systemImage: Aba.armario.simbolo,
                 value: .armario) {
-                MinhasPecas()
+                MinhasPecas(menuAberto: menuAberto,
+                            alternarMenu: { menuAberto.toggle() })
             }
             Tab(Aba.dados.titulo, systemImage: Aba.dados.simbolo,
                 value: .dados) {
@@ -138,7 +139,9 @@ struct Raiz: View {
     private var conteudoDaAba: some View {
         switch aba {
         case .adicionar: TelaInicialAdicionar()
-        case .armario: MinhasPecas()
+        case .armario:
+            MinhasPecas(menuAberto: menuAberto,
+                        alternarMenu: { menuAberto.toggle() })
         case .dados: Explorar()
         case .buscar: Analisar()
         }
@@ -161,7 +164,7 @@ struct Raiz: View {
             // Um único controle troca apenas o símbolo. Assim ellipsis e X
             // ocupam literalmente a mesma coordenada e compartilham a mesma
             // safe area; duas telas nunca mais podem divergir no recuo.
-            if aba == .adicionar {
+            if aba == .adicionar || (aba == .armario && menuAberto) {
                 VStack {
                     HStack {
                         BotaoCircularDoMenu(

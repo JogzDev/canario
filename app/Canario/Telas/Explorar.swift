@@ -103,6 +103,7 @@ struct Explorar: View {
                             .foregroundStyle(Tokens.Cor.tintaFraca)
                     }
                 }
+                atalhoDeComparacao
                 radarDeBusca
                 radarEditorial
                 digest
@@ -115,6 +116,36 @@ struct Explorar: View {
             .padding(Tokens.Espaco.m)
             .padding(.bottom, 20)
         }
+    }
+
+    /// Comparar é uma ferramenta de leitura de tendências, não uma forma de
+    /// encontrar uma peça. Mantê-la nesta aba evita competir com a Search da
+    /// barra principal e dá contexto antes de escolher os atributos.
+    private var atalhoDeComparacao: some View {
+        NavigationLink {
+            Comparar()
+        } label: {
+            Cartao {
+                HStack(spacing: Tokens.Espaco.m) {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Tokens.Cor.acao)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Compare attributes")
+                            .font(Tokens.Fonte.secao)
+                            .foregroundStyle(Tokens.Cor.tinta)
+                        Text("Put market readings side by side.")
+                            .font(Tokens.Fonte.apoio)
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(Tokens.Fonte.miudo.weight(.semibold))
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Movimento das marcas

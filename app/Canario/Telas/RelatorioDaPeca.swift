@@ -42,6 +42,9 @@ struct RelatorioDaPeca: View {
     /// Existe porque guardar a peça deixava a pessoa presa no painel: era
     /// preciso voltar passo a passo até o começo. "Deveria sair direto."
     var aoConcluir: (() -> Void)? = nil
+    /// No fluxo Add, Clothing Details ocupa a tela inteira e a ação principal
+    /// pedida pelo teste de uso mora no canto superior esquerdo.
+    var adicionarAoClosetNoCantoEsquerdo = false
 
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
@@ -110,7 +113,8 @@ struct RelatorioDaPeca: View {
                     if guardada == true { pecaGuardadaNestaTela = nova }
                 }
             } label: {
-                Label("Save", systemImage: "archivebox")
+                Label(adicionarAoClosetNoCantoEsquerdo ? "Add to Closet" : "Save",
+                      systemImage: "archivebox")
             }
             .disabled(termos.isEmpty)
             }
@@ -125,6 +129,15 @@ struct RelatorioDaPeca: View {
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else {
+                    if adicionarAoClosetNoCantoEsquerdo {
+                        Cartao {
+                            Text("Keep this item")
+                                .font(Tokens.Fonte.secao)
+                            Text("Tap Add to Closet above to keep the confirmed attributes and this photo. You can still review the full market reading first.")
+                                .font(Tokens.Fonte.apoio)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                    }
                     if pecaSalva != nil { fotoDaPeca }
                     if let selecao, !todosOsTermos.isEmpty {
                         chipsDeCorrecao(selecao)
@@ -149,7 +162,11 @@ struct RelatorioDaPeca: View {
             Task { await substituirFoto(item) }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
+            if adicionarAoClosetNoCantoEsquerdo {
+                ToolbarItem(placement: .topBarLeading) { botaoDeGuardar }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
+            }
         }
     }
 

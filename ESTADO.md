@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 24/08/2026, 21:35 em São Paulo
+**Última atualização:** 24/08/2026, 21:51 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -27,7 +27,7 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
-| Testes | **239 Swift** · portões Python ativos · 6 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
+| Testes | **239 Swift** · portões Python ativos · 7 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
 
 ## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
 
@@ -48,6 +48,10 @@ A 1.2 também já contém compartilhamento e exportação por um único botão,
 Universal Links autocontidos, importação por URL de produto, motivos visuais
 de estampa, couro, similares relaxados com explicação, editorial feminino
 reclassificável, detalhe clicável das fontes e busca/filtro local do Closet.
+Em 24/08, o preenchimento da peça deixou de manter Clothing Details dentro da
+sheet: o resultado agora abre em tela cheia, com Add to Closet no canto superior
+esquerdo. A busca do Closet usa o drawer nativo recolhível; o canto que levava
+ao Compare virou o menu de três pontos, e Compare passou para Weekly Trends.
 
 As cinco marcas de direção internacional foram materializadas e coletadas:
 Doen 672, Faithfull the Brand 690, Rouje 1.170, Staud 2.031 e With Jean 393.
@@ -290,7 +294,15 @@ essa decisão por sorteio:
 `45f9ce7e00c66499847aa2dcf1effb1de347826f4ffa4ae76871b55c2b94dc4f`.
 O relatório completo, incluindo intervalos de confiança e as falhas estáveis,
 está em `anexos/avaliacao_luna/relatorio-20-08-v7.md`. O gasto já realizado nas
-quatro rodadas foi US$ 0,071; não houve razão para comprar novas execuções.
+quatro rodadas iniciais foi US$ 0,071.
+
+Uma tentativa posterior de validar o vocabulário ampliado da 1.2 nas mesmas 24
+imagens fechou em 57/72 para categoria e cor (79,2%). Ela **não substituiu a v7
+de produção**. Duas repetições foram interrompidas em 24/08 quando ficou claro
+que otimizar décimos sobre as mesmas imagens seria overfitting e gasto sem valor
+para o uso real. Regra vigente: essas cinco imagens difíceis permanecem como
+erro conhecido; não se compra outra rodada nesse conjunto. Qualquer calibração
+futura usa imagens novas/holdout e orçamento explícito.
 
 A Edge Function e o avaliador usam essa mesma v7. Os testes de contrato,
 consolidação e hash passaram em 21/08, e a sonda diária confirma que credenciais
@@ -306,8 +318,8 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 ## 4. App e loja
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
-* Loja: **1.0 publicada**
-* Repositório: **1.1 (build 5)** no `main`; upload recebido pelo App Store Connect
+* Loja: **1.1 publicada**
+* Repositório: **1.2 build 1 em desenvolvimento** no PR #16
 * TestFlight: upload aceito pela Apple às 09:18 de 21/08; pacote em processamento
 * App Review: **não enviado**
 * Time: `67AYPRFZH8`
@@ -341,12 +353,12 @@ catálogo.
 
 ## 5. Testes
 
-* **226** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **239** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
 * **27** suítes Python — rodam a cada push
-* **4** testes de interface no alvo `CanarioUITests`: Add/menu, importação, Closet e Privacy
+* **7** testes de interface no alvo `CanarioUITests`; cinco rotas offline rodam no CI
 
 O gerador é dono do alvo de UI test e o CI o executa num iPhone 17 simulado.
-Isso protege quatro caminhos estruturais enquanto as telas novas chegam sem
+Isso protege os caminhos estruturais enquanto as telas novas chegam sem
 transformar o `project.pbxproj` em edição manual recorrente.
 
 ---
@@ -361,9 +373,9 @@ transformar o `project.pbxproj` em edição manual recorrente.
 
 ### Decisões de produto, sem prazo
 
-Conta e sincronização do Closet · taxonomia `blusa_top` · fluxo semanal
-unificado de Trends e Search · curadoria visual dos similares. Nenhuma é dívida
-técnica; são escopos não decididos, e só entram na fila quando forem decididos.
+Taxonomia `blusa_top` · fluxo semanal unificado de Trends e Search · curadoria
+visual dos similares. Nenhuma é dívida técnica; são escopos não decididos, e só
+entram na fila quando forem decididos.
 
 ### Técnico, em ordem de valor
 

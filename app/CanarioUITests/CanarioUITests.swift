@@ -28,11 +28,25 @@ final class CanarioUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Closet"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Open menu"].exists)
         XCTAssertTrue(app.buttons["Filter Closet"].exists)
         app.buttons["Filter Closet"].tap()
         XCTAssertTrue(app.navigationBars["Filter Closet"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.switches["Favorites only"].exists)
         XCTAssertTrue(app.buttons["Done"].exists)
+    }
+
+    func testFillInfoAbreClothingDetailsForaDaSheet() {
+        let app = aplicativo(argumentos: ["-CanarioUITestDetalhes"])
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Check what I read"]
+            .waitForExistence(timeout: 5))
+        app.buttons["Open Clothing Details"].tap()
+        XCTAssertTrue(app.navigationBars["Clothing Details"]
+            .waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Add to Closet"].exists)
+        XCTAssertTrue(app.buttons["Close"].exists)
     }
 
     func testPrivacyAbrePeloCaminhoDeterministico() {
