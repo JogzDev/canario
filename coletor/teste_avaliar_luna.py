@@ -50,6 +50,9 @@ def testar_taxonomia_e_schema():
     assert "sharp color or texture change by itself" in prompt
     assert "Require at least two independent composition cues" in prompt
     assert "roughly twice the visible garment surface" in prompt
+    assert "Cropping is evaluated on the garment, not the person" in prompt
+    assert "waistband plus lower-construction evidence" in prompt
+    assert "abstention is for a remaining tie" in prompt
     assert "free tie-front tails remains shirt construction" in prompt
     assert "A waist seam also does not prove separation" in prompt
     assert "surface area on the target garment only" in prompt
