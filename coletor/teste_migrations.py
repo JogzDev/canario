@@ -217,7 +217,7 @@ def main():
         "r_indice := public.computar_indice()",
         "r_curva := public.computar_curva_tamanhos()",
         "r_raridade := public.computar_raridade()",
-        "r_snapshots_removidos := public.podar_snapshots(35)",
+        "r_snapshots_removidos := public.podar_snapshots(21)",
     ]
     posicoes = [motor.find(p) for p in passos_motor]
     if any(p < 0 for p in posicoes) or posicoes != sorted(posicoes):
@@ -228,7 +228,7 @@ def main():
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")
     exigencias_poda = [
-        "p_retencao_dias integer default 35",
+        "p_retencao_dias integer default 21",
         "p_retencao_dias < 21",
         "data < (current_date - p_retencao_dias)",
         "revoke execute on function public.podar_snapshots(integer)",

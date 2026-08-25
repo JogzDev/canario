@@ -24,6 +24,23 @@ VEICULOS = os.path.join(RAIZ, "anexos", "veiculos.csv")
 PAGINA = 250
 
 
+def carregar_termos_persistidos():
+    """Carrega o resultado compacto do matching título+resumo da A43."""
+    termos = defaultdict(set)
+    offset = 0
+    while True:
+        lote = supabase_rest.selecionar(
+            "artigo_termos", "?select=artigo_id,termo_id"
+            "&order=artigo_id.asc,termo_id.asc&offset={}&limit=1000".format(offset))
+        if not lote:
+            return termos
+        for ligacao in lote:
+            termos[ligacao["artigo_id"]].add(ligacao["termo_id"])
+        if len(lote) < 1000:
+            return termos
+        offset += len(lote)
+
+
 def carregar_artigos():
     ultimo = 0
     while True:
@@ -86,6 +103,7 @@ def main():
     exemplos = defaultdict(list)
     classificacoes = []
     totais = defaultdict(int)
+    termos_persistidos = carregar_termos_persistidos()
 
     for artigo in carregar_artigos():
         titulo = artigo.get("titulo") or ""
@@ -106,9 +124,13 @@ def main():
         quando = date.fromisoformat(artigo["data_pub"])
         semana = semana_de(quando)
         denominador[(fonte, semana)].add(artigo["url"])
-        achados = termos_que_casam(titulo, termos)
-        achados = filtrar_contexto_editorial(
-            titulo, "", achados, categorias, achados_no_titulo=achados)
+        achados = termos_persistidos.get(artigo["id"])
+        if not achados:
+            # Compatibilidade com artigos antigos que ainda não passaram pelo
+            # backfill A43; o título continua sendo uma evidência reproduzível.
+            achados = termos_que_casam(titulo, termos)
+            achados = filtrar_contexto_editorial(
+                titulo, "", achados, categorias, achados_no_titulo=achados)
         for termo in achados:
             chave = (termo, fonte, semana)
             crua[chave].add(artigo["url"])

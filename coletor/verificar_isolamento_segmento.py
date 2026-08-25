@@ -31,7 +31,8 @@ def main():
 
     total = supabase_rest.contar(
         "produtos", "segmento=eq.{}".format(segmento_q))
-    fora_total = 0
+    contaminados_total = 0
+    excluidos_total = 0
     print("Segmento {}: {} produtos em {} marcas.".format(
         segmento, total, len(marcas)))
     for marca in marcas:
@@ -39,17 +40,22 @@ def main():
         dentro = supabase_rest.contar(
             "produtos", "marca_id=eq.{}&segmento=eq.{}".format(
                 marca_q, segmento_q))
-        fora = supabase_rest.contar(
-            "produtos", "marca_id=eq.{}&or=(segmento.is.null,segmento.neq.{})".format(
+        excluidos = supabase_rest.contar(
+            "produtos", "marca_id=eq.{}&segmento=is.null".format(marca_q))
+        contaminados = supabase_rest.contar(
+            "produtos", "marca_id=eq.{}&segmento=not.is.null&segmento=neq.{}".format(
                 marca_q, segmento_q))
-        fora_total += fora or 0
-        print("- {}: {} no segmento; {} fora".format(
-            marca["nome"], dentro, fora))
+        excluidos_total += excluidos or 0
+        contaminados_total += contaminados or 0
+        print("- {}: {} no segmento; {} excluidos pelo recorte; {} contaminados".format(
+            marca["nome"], dentro, excluidos, contaminados))
 
-    if fora_total:
-        print("ERRO: {} produtos das marcas do painel ficaram fora de {}."
-              .format(fora_total, segmento), file=sys.stderr)
+    if contaminados_total:
+        print("ERRO: {} produtos das marcas do painel vazaram para outro segmento."
+              .format(contaminados_total), file=sys.stderr)
         return 1
+    print("Isolamento confirmado; {} produtos fora do recorte permaneceram sem segmento."
+          .format(excluidos_total))
     return 0
 
 

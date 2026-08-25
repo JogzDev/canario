@@ -270,6 +270,7 @@ def main():
     print("Veiculos com feed: {}".format(len(veiculos)), file=sys.stderr)
 
     artigos_novos = []
+    ligacoes_artigos = []
     # (termo_id, fonte, semana) -> numero de artigos distintos
     contagem = defaultdict(set)
     # (termo_id, fonte, semana) -> {veiculo: n}. O app precisa NOMEAR as fontes:
@@ -310,16 +311,20 @@ def main():
                 continue
             semana = semana_de(quando)
             semanas_observadas[fonte].add(semana)
-            # A41: só o título. Usar resumo apenas daqui em diante criaria uma
-            # regra melhor no presente e impossível de reproduzir no arquivo.
+            # A43 persiste somente os pares artigo/termo. Assim o resumo pode
+            # melhorar o recall sem guardar texto protegido e o backfill
+            # reproduz exatamente a mesma regra no histórico.
             achados_titulo = termos_que_casam(titulo, termos)
+            achados_texto = termos_que_casam(
+                titulo + " " + (resumo or ""), termos)
             achados = filtrar_contexto_editorial(
-                titulo, "", achados_titulo, categorias,
+                titulo, resumo, achados_texto, categorias,
                 achados_no_titulo=achados_titulo)
             if not achados:
                 continue
             casados += 1
             for termo_id in achados:
+                ligacoes_artigos.append({"url": link, "termo_id": termo_id})
                 # §11: conjunto de artigos, entao o mesmo artigo conta 1 por
                 # termo mesmo que varias palavras do termo aparecam.
                 celula = (termo_id, fonte, semana)
@@ -351,6 +356,12 @@ def main():
     for i in range(0, len(unicos), 500):
         supabase_rest.inserir_ignorando_existentes(
             "artigos", unicos[i:i + 500], on_conflict="url")
+
+    ligacoes_unicas = list({(l["url"], l["termo_id"]): l
+                            for l in ligacoes_artigos}.values())
+    for i in range(0, len(ligacoes_unicas), 1000):
+        supabase_rest.rpc("registrar_termos_editoriais",
+                          {"ligacoes": ligacoes_unicas[i:i + 1000]})
 
     # Ao introduzir novas fontes, primeiro ampliamos o arquivo e depois o
     # recomputamos inteiro. Publicar aqui uma semana calculada só com a cauda

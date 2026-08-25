@@ -112,6 +112,7 @@ def main():
 
     coorte = []
     artigos, contagem = [], defaultdict(set)
+    ligacoes_artigos = []
     # Mesma razao do coletor diario: o app precisa nomear quem publicou, nao so
     # contar. Sem isto o backfill sobrescreveria a meta do diario com uma versao
     # mais pobre, porque os dois fazem upsert na mesma chave.
@@ -152,6 +153,7 @@ def main():
             if achados:
                 semana = semana_de(quando)
                 for termo_id in achados:
+                    ligacoes_artigos.append({"url": link, "termo_id": termo_id})
                     celula = (termo_id, fonte, semana)
                     if link not in contagem[celula]:
                         veiculos_por_celula[celula][v["veiculo"]] += 1
@@ -180,6 +182,15 @@ def main():
     for i in range(0, len(unicos), 500):
         supabase_rest.inserir_ignorando_existentes(
             "artigos", unicos[i:i + 500], on_conflict="url")
+
+    ligacoes_unicas = list({(l["url"], l["termo_id"]): l
+                            for l in ligacoes_artigos}.values())
+    inseridas = 0
+    for i in range(0, len(ligacoes_unicas), 1000):
+        inseridas += supabase_rest.rpc(
+            "registrar_termos_editoriais",
+            {"ligacoes": ligacoes_unicas[i:i + 1000]}) or 0
+    print("{} ligacoes artigo/termo novas.".format(inseridas), file=sys.stderr)
 
     nomes = sorted(c["veiculo"] for c in coorte)
     with open(COORTE, "w", encoding="utf-8") as f:

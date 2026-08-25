@@ -5,7 +5,7 @@ import os
 import verificar_isolamento_segmento as alvo
 
 
-def executar(fora):
+def executar(contaminados, excluidos=3):
     selecionar_original = alvo.supabase_rest.selecionar
     contar_original = alvo.supabase_rest.contar
     configurado_original = alvo.supabase_rest.configurado
@@ -19,7 +19,11 @@ def executar(fora):
         def contar(_tabela, params=""):
             if "marca_id" not in params:
                 return 12
-            return fora if "or=(segmento.is.null,segmento.neq." in params else 12
+            if "segmento=is.null" in params:
+                return excluidos
+            if "segmento=not.is.null" in params:
+                return contaminados
+            return 12
 
         alvo.supabase_rest.contar = contar
         return alvo.main()
@@ -33,6 +37,6 @@ def executar(fora):
             os.environ["SEGMENTO_VERIFICADO"] = ambiente_original
 
 
-assert executar(0) == 0
-assert executar(3) == 1
+assert executar(0, excluidos=3) == 0
+assert executar(3, excluidos=0) == 1
 print("OK: isolamento de segmentos")
