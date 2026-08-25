@@ -116,7 +116,11 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Logica pura em macOS
         working-directory: app
-        run: swift test
+        # O runner e um MacBook. Em 24/08 ele dormiu durante o xcodebuild de UI:
+        # os testes terminaram com exit 0 quando a maquina acordou, mas o GitHub
+        # ja tinha encerrado o job por perda de contato. Cada etapa longa segura
+        # o sistema acordado sem alterar a configuracao de energia do usuario.
+        run: caffeinate -dimsu swift test
       # O Config.xcconfig real esta no .gitignore (contem a chave). Para o CI
       # so precisamos que o arquivo EXISTA, porque o projeto o referencia como
       # base de configuracao -- sem ele o build falha antes de compilar. Os
@@ -128,13 +132,17 @@ jobs:
       - name: Compilar para o simulador
         working-directory: app
         run: |
-          xcodebuild -project Canario.xcodeproj -target Canario \
+          set -o pipefail
+          caffeinate -dimsu xcodebuild -project Canario.xcodeproj -target Canario \
             -sdk iphonesimulator -configuration Debug build \
             CODE_SIGNING_ALLOWED=NO | tail -5
 
       - name: Fluxos criticos de interface no simulador
         working-directory: app
         run: |
-          xcodebuild test -project Canario.xcodeproj -scheme Canario \
+          set -o pipefail
+          xcrun simctl shutdown 'iPhone 17' 2>/dev/null || true
+          caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
             -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination-timeout 120 -parallel-testing-enabled NO \
             -only-testing:CanarioUITests CODE_SIGNING_ALLOWED=NO | tail -20

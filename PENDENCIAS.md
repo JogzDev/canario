@@ -1,16 +1,13 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 24/08/2026 às 18:09 BRT.** Esta lista substitui a triagem de
+**Atualizado em 24/08/2026 às 21:04 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
-## Bloqueios externos — precisam do JP ou do Figma
+## Bloqueio externo — depende do Figma
 
 1. **Pacote visual do Figma.** Aplicar as novas telas e os assets finais. A
    hierarquia do Market panel e a redução de texto em “Which item” ficam nesta
    etapa para não desenhar duas vezes a mesma interface.
-2. **Validação física final dos provedores.** Testar no iPhone
-   uma conta Apple, uma Google e uma por e-mail, incluindo logout, restauração do
-   Closet e exclusão. O contrato local, RLS e callbacks já têm testes automáticos.
 
 ## Fechamento de release — depois do Figma
 
@@ -39,6 +36,7 @@
 
 ## Entregue na 1.2 antes do Figma
 
+- Apple, Google e e-mail/senha validados fisicamente no iPhone pelo JP em 24/08.
 - E-mail transacional gratuito validado de ponta a ponta em 24/08: Supabase →
   Brevo → Gmail, com envio, entrega e primeira abertura registrados. O chamado
   **#5525910** recebeu a confirmação e foi respondido como resolvido; usuários
