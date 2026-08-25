@@ -158,6 +158,9 @@ def main():
         "unique nulls not distinct (data, fonte, marca_id)",
         "revoke execute on functions from public, anon, authenticated",
         "revoke select on table public.raridade_do_atributo",
+        "('claudia', 'editorial_br')",
+        "('fashion gone rogue', 'editorial_intl')",
+        "('red carpet fashion awards', 'editorial_intl')",
     ]
     for trecho in exigencias_finais:
         if trecho not in estado_final:

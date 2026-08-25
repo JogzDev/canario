@@ -20,8 +20,8 @@ Regras que este modulo cumpre:
     decidiria um indice de mid-market brasileiro. A divergencia entre as duas
     series e justamente o sinal de antecipacao que interessa ao comercial.
   * C5 -- Lyst (`tipo=dado_agregado`) fica FORA da soma editorial.
-  * K8 -- casa apenas titulo + resumo do feed: uniforme entre veiculos e imune a
-    paywall (BoF, WWD e Vogue Business sao pagos).
+  * A41 -- casa somente o título persistido: histórico e futuro obedecem à
+    mesma entrada, inclusive em fontes cujo resumo antigo não existe.
   * regra 7 -- 1 req/s por dominio, User-Agent identificavel, robots.txt.
 """
 
@@ -310,11 +310,11 @@ def main():
                 continue
             semana = semana_de(quando)
             semanas_observadas[fonte].add(semana)
-            # K8: titulo + resumo, nunca o texto integral (§18).
+            # A41: só o título. Usar resumo apenas daqui em diante criaria uma
+            # regra melhor no presente e impossível de reproduzir no arquivo.
             achados_titulo = termos_que_casam(titulo, termos)
             achados = filtrar_contexto_editorial(
-                titulo, resumo,
-                termos_que_casam(titulo + " " + limpar(resumo), termos), categorias,
+                titulo, "", achados_titulo, categorias,
                 achados_no_titulo=achados_titulo)
             if not achados:
                 continue
