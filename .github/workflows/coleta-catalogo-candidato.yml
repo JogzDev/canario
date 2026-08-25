@@ -4,6 +4,10 @@ name: Coleta do catalogo candidato brasileiro
 # E manual enquanto a primeira carga prova o consumo real de cada marca. Cada
 # perna reutiliza o mesmo portao de capacidade das coletas regulares.
 on:
+  schedule:
+    # Segunda e quinta, 08:35 BRT. O intervalo maximo de quatro dias mantém o
+    # avistamento dentro dos sete dias mesmo se uma execução isolada falhar.
+    - cron: '35 11 * * 1,4'
   workflow_dispatch:
     inputs:
       plataforma:
@@ -28,7 +32,7 @@ concurrency:
 
 jobs:
   vtex:
-    if: ${{ inputs.plataforma == 'vtex' }}
+    if: ${{ github.event_name == 'schedule' || inputs.plataforma == 'vtex' }}
     uses: ./.github/workflows/coleta.yml
     with:
       segmento: catalogo_candidato_br
@@ -36,7 +40,7 @@ jobs:
     secrets: inherit
 
   shopify:
-    if: ${{ inputs.plataforma == 'shopify' }}
+    if: ${{ github.event_name == 'schedule' || inputs.plataforma == 'shopify' }}
     uses: ./.github/workflows/coleta-shopify.yml
     with:
       plataforma: shopify

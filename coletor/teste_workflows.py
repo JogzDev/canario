@@ -100,6 +100,11 @@ def checar_orquestracao(workflows):
                "direcao internacional nao esta isolada em direcao_intl")
 
     candidatos = workflows.get("coleta-catalogo-candidato.yml", {})
+    gatilhos_candidatos = candidatos.get(
+        "on", candidatos.get(True, {})) or {}
+    if "schedule" not in gatilhos_candidatos:
+        falhar("coleta-catalogo-candidato.yml",
+               "catalogo candidato sem manutencao recorrente")
     jobs_candidatos = candidatos.get("jobs", {})
     for job, reutilizavel in (("vtex", individuais["coleta.yml"]),
                               ("shopify", individuais["coleta-shopify.yml"])):
@@ -109,6 +114,9 @@ def checar_orquestracao(workflows):
                 "catalogo_candidato_br"):
             falhar("coleta-catalogo-candidato.yml",
                    "catalogo candidato {} nao esta isolado".format(job))
+        if "github.event_name == 'schedule'" not in str(definicao.get("if", "")):
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato {} nao roda na agenda".format(job))
 
     for arquivo in ["coleta.yml", "coleta-shopify.yml",
                     "coleta-editorial.yml", "coleta-trends.yml"]:
