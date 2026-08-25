@@ -69,6 +69,20 @@ def checar_orquestracao(workflows):
         if "schedule" in gatilhos:
             falhar(arquivo, "workflow individual voltou a ter cron proprio")
 
+    editorial = workflows.get("coleta-editorial.yml", {})
+    entrada_editorial = (editorial.get("on", editorial.get(True, {})) or {})
+    for gatilho in ("workflow_call", "workflow_dispatch"):
+        entradas = (entrada_editorial.get(gatilho) or {}).get("inputs", {})
+        if "somente_arquivo" not in entradas:
+            falhar("coleta-editorial.yml",
+                   "coleta editorial sem modo de arquivo atomico")
+    passos_editorial = editorial.get("jobs", {}).get("coletar", {}).get("steps", [])
+    passo_coleta_editorial = next((p for p in passos_editorial
+                                   if "coletor_editorial.py" in str(p.get("run", ""))), {})
+    if "EDITORIAL_SOMENTE_ARQUIVO" not in passo_coleta_editorial.get("env", {}):
+        falhar("coleta-editorial.yml",
+               "entrada somente_arquivo nao chega ao coletor")
+
     # Coletas de novos paineis não podem cair no brasileiro por omissão.
     for arquivo in ("coleta.yml", "coleta-shopify.yml"):
         dados = workflows.get(arquivo, {})

@@ -29,12 +29,24 @@ name: Coleta editorial (share of voice)
 # veiculos e o Mac dormindo so custaria dois veiculos, e nao a coleta.
 on:
   workflow_call:
+    inputs:
+      somente_arquivo:
+        description: 'Arquivar feeds sem publicar a serie intermediaria'
+        required: false
+        type: boolean
+        default: false
     secrets:
       SUPABASE_URL:
         required: true
       SUPABASE_SECRET_KEY:
         required: true
   workflow_dispatch:
+    inputs:
+      somente_arquivo:
+        description: 'Arquivar feeds sem publicar a serie intermediaria'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -62,4 +74,5 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          EDITORIAL_SOMENTE_ARQUIVO: ${{ inputs.somente_arquivo && '1' || '0' }}
         run: "$PY coletor/coletor_editorial.py"

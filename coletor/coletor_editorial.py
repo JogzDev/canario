@@ -352,6 +352,12 @@ def main():
         supabase_rest.inserir_ignorando_existentes(
             "artigos", unicos[i:i + 500], on_conflict="url")
 
+    # Ao introduzir novas fontes, primeiro ampliamos o arquivo e depois o
+    # recomputamos inteiro. Publicar aqui uma semana calculada só com a cauda
+    # curta dos feeds criaria um estado intermediário falso antes da troca
+    # atômica de `reclassificar_editorial.py`.
+    somente_arquivo = os.environ.get("EDITORIAL_SOMENTE_ARQUIVO") == "1"
+
     # --- serie editorial em janela movel de 4 semanas (§18) ---
     # A semana crua tambem vai gravada, porque o `pico` (C4) precisa dela.
     crua = dict((k, len(v)) for k, v in contagem.items())
@@ -410,9 +416,10 @@ def main():
                             "a semana crua serve ao estado `pico` (C4)",
                      "coletado_em": agora},
         })
-    for i in range(0, len(linhas), 500):
-        supabase_rest.upsert("series_semanais", linhas[i:i + 500],
-                             on_conflict="termo_id,segmento,fonte,semana")
+    if not somente_arquivo:
+        for i in range(0, len(linhas), 500):
+            supabase_rest.upsert("series_semanais", linhas[i:i + 500],
+                                 on_conflict="termo_id,segmento,fonte,semana")
 
     # --- saude (§20): UMA linha por dia para a fonte editorial ---
     # Nao uma por veiculo: a chave unica e (data, fonte, marca_id) e marca_id e
@@ -438,8 +445,12 @@ def main():
 
     br = sum(1 for k in crua if k[1] == "editorial_br")
     intl = sum(1 for k in crua if k[1] == "editorial_intl")
-    print("\n{} artigos únicos, {} pontos de série ({} BR, {} internacional).".format(
-        len(unicos), len(linhas), br, intl), file=sys.stderr)
+    if somente_arquivo:
+        print("\n{} artigos únicos arquivados; série viva preservada para a "
+              "troca atômica.".format(len(unicos)), file=sys.stderr)
+    else:
+        print("\n{} artigos únicos, {} pontos de série ({} BR, {} internacional).".format(
+            len(unicos), len(linhas), br, intl), file=sys.stderr)
     if semanas:
         print("Semanas cobertas: {} a {}".format(semanas[0], semanas[-1]),
               file=sys.stderr)
