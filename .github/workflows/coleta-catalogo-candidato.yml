@@ -37,6 +37,7 @@ jobs:
     with:
       segmento: catalogo_candidato_br
       marca: ${{ inputs.marca }}
+      pente_fino: false
     secrets: inherit
 
   shopify:

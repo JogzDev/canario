@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: 'feminino_casual_br'
+      pente_fino:
+        description: 'Rodar sonda ampla quando marca estiver vazia'
+        required: false
+        type: boolean
+        default: true
     secrets:
       SUPABASE_URL:
         required: true
@@ -32,6 +37,11 @@ on:
         description: 'Segmento isolado a coletar'
         required: false
         default: 'feminino_casual_br'
+      pente_fino:
+        description: 'Rodar sonda ampla quando marca estiver vazia'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -61,14 +71,14 @@ jobs:
         run: "$PY coletor/verificar_capacidade_banco.py"
 
       - name: Pente fino do datacenter
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' && inputs.pente_fino }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: "$PY coletor/pente_fino_datacenter.py"
 
       - name: Commitar veredito do pente fino
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' && inputs.pente_fino }}
         run: >-
           bash .github/commitar.sh
           "PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv"

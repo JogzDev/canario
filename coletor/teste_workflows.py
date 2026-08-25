@@ -117,6 +117,9 @@ def checar_orquestracao(workflows):
         if "github.event_name == 'schedule'" not in str(definicao.get("if", "")):
             falhar("coleta-catalogo-candidato.yml",
                    "catalogo candidato {} nao roda na agenda".format(job))
+        if job == "vtex" and definicao.get("with", {}).get("pente_fino") is not False:
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato VTEX ainda dispara sonda ampla")
 
     for arquivo in ["coleta.yml", "coleta-shopify.yml",
                     "coleta-editorial.yml", "coleta-trends.yml"]:
@@ -140,7 +143,8 @@ def checar_orquestracao(workflows):
     passos_pente = [p for p in passos_varejo
                     if "Pente fino" in str(p.get("name", ""))]
     if (len(passos_pente) != 1 or
-            "inputs.marca == ''" not in str(passos_pente[0].get("if", ""))):
+            "inputs.marca == ''" not in str(passos_pente[0].get("if", "")) or
+            "inputs.pente_fino" not in str(passos_pente[0].get("if", ""))):
         falhar("coleta.yml",
                "coleta direcionada nao deve repetir o pente fino inteiro")
 
