@@ -119,6 +119,15 @@ def main():
         supabase_rest.rpc("registrar_classificacao_editorial",
                           {"classificacoes": classificacoes})
 
+    # Termo novo pode ser retroativamente observável no arquivo, mesmo sem uma
+    # linha antiga em `series_semanais`. Ele nasce na primeira semana em que há
+    # um casamento real; nunca fabricamos zeros anteriores à primeira evidência.
+    primeira_evidencia = {}
+    for termo, fonte, semana in crua:
+        chave = (termo, fonte)
+        primeira_evidencia[chave] = min(
+            primeira_evidencia.get(chave, semana), semana)
+
     for fonte in ("editorial_br", "editorial_intl"):
         semanas = sorted(s for f, s in denominador if f == fonte)
         if not semanas:
@@ -130,7 +139,8 @@ def main():
             if not total:
                 continue
             for termo in termos:
-                inicio = inicios.get((termo, fonte))
+                inicio = inicios.get((termo, fonte)) or primeira_evidencia.get(
+                    (termo, fonte))
                 if inicio is None or semana < inicio:
                     continue
                 contagens = [len(crua.get((termo, fonte, semana - timedelta(weeks=w)), ()))

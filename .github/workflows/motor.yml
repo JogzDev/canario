@@ -50,7 +50,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          BACKFILL_SOMENTE_ARQUIVO: '1'
         run: "$PY coletor/backfill_editorial.py"
+
+      - name: Reclassificar e trocar as duas pernas editoriais atomicamente
+        if: inputs.backfill_editorial
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: "$PY coletor/reclassificar_editorial.py"
 
       # Fica por ultimo inclusive no modo backfill: o script prepara o stage,
       # agenda a transacao dentro do Postgres e acompanha ate o COMMIT.

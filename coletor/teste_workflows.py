@@ -237,11 +237,22 @@ def checar_orquestracao(workflows):
               if "motor_computar.py" in comando]
     backfill = [i for i, comando in enumerate(comandos)
                 if "backfill_editorial.py" in comando]
+    reclassificar = [i for i, comando in enumerate(comandos)
+                     if "reclassificar_editorial.py" in comando]
     if len(atributos) != 1 or legado:
         falhar("motor.yml",
                "workflow deve ter uma unica publicacao atomica do motor")
     if backfill and atributos and backfill[0] > atributos[0]:
         falhar("motor.yml", "backfill deve acontecer antes da publicacao")
+    if (len(reclassificar) != 1 or not backfill or
+            not (backfill[0] < reclassificar[0] < atributos[0])):
+        falhar("motor.yml",
+               "reclassificacao editorial deve ficar entre arquivo e motor")
+    passos_motor = motor.get("steps", [])
+    passo_backfill = next((p for p in passos_motor
+                           if "backfill_editorial.py" in str(p.get("run", ""))), {})
+    if passo_backfill.get("env", {}).get("BACKFILL_SOMENTE_ARQUIVO") != "1":
+        falhar("motor.yml", "backfill completo pode publicar serie intermediaria")
 
     testes = workflows.get("testes.yml", {}).get("jobs", {}).get("app", {})
     comandos_app = [str(p.get("run", ""))
