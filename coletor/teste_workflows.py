@@ -85,6 +85,17 @@ def checar_orquestracao(workflows):
         falhar("coleta-direcao-internacional.yml",
                "direcao internacional nao esta isolada em direcao_intl")
 
+    candidatos = workflows.get("coleta-catalogo-candidato.yml", {})
+    jobs_candidatos = candidatos.get("jobs", {})
+    for job, reutilizavel in (("vtex", individuais["coleta.yml"]),
+                              ("shopify", individuais["coleta-shopify.yml"])):
+        definicao = jobs_candidatos.get(job, {})
+        if (definicao.get("uses") != reutilizavel or
+                definicao.get("with", {}).get("segmento") !=
+                "catalogo_candidato_br"):
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato {} nao esta isolado".format(job))
+
     for arquivo in ["coleta.yml", "coleta-shopify.yml",
                     "coleta-editorial.yml", "coleta-trends.yml"]:
         passos = workflows.get(arquivo, {}).get("jobs", {}).get(

@@ -1,0 +1,45 @@
+name: Coleta do catalogo candidato brasileiro
+
+# Amplia o universo de similares sem alterar a coorte estatistica congelada.
+# E manual enquanto a primeira carga prova o consumo real de cada marca. Cada
+# perna reutiliza o mesmo portao de capacidade das coletas regulares.
+on:
+  workflow_dispatch:
+    inputs:
+      plataforma:
+        description: 'Plataforma da marca'
+        required: true
+        type: choice
+        options:
+          - vtex
+          - shopify
+        default: vtex
+      marca:
+        description: 'Marca exata (vazio = todas da plataforma)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canario-dados
+  cancel-in-progress: false
+
+jobs:
+  vtex:
+    if: ${{ inputs.plataforma == 'vtex' }}
+    uses: ./.github/workflows/coleta.yml
+    with:
+      segmento: catalogo_candidato_br
+      marca: ${{ inputs.marca }}
+    secrets: inherit
+
+  shopify:
+    if: ${{ inputs.plataforma == 'shopify' }}
+    uses: ./.github/workflows/coleta-shopify.yml
+    with:
+      plataforma: shopify
+      segmento: catalogo_candidato_br
+      marca: ${{ inputs.marca }}
+    secrets: inherit

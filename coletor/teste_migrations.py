@@ -59,7 +59,7 @@ def main():
     exigencias_similares = [
         "t.status = 'aprovado'",
         "limit 12",
-        "p.segmento = 'feminino_casual_br'",
+        "p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')",
         "least(greatest(coalesce($2, 12), 1), 24)",
         "ep.ofertavel is true",
         "ep.ultimo_avistamento_em >= current_date - 7",
@@ -143,7 +143,7 @@ def main():
     exigencias_url = [
         "length(p_url) > 2048",
         "p_url !~ '^https://[^/]+/'",
-        "p.segmento = 'feminino_casual_br'",
+        "p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')",
         "ep.ofertavel is true",
         "ep.ultimo_avistamento_em >= current_date - 7",
         "grant execute on function public.produto_do_painel_por_url(text)",
