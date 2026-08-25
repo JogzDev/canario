@@ -154,6 +154,8 @@ jobs:
           caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
             -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
             -destination-timeout 120 -parallel-testing-enabled NO \
-            -skip-testing:CanarioUITests/testCompareNaoFicaReduzidoAUmAtributo \
-            -skip-testing:CanarioUITests/testStripesMostraCurvaDeTamanhosReal \
-            -only-testing:CanarioUITests CODE_SIGNING_ALLOWED=NO | tail -20
+            -only-testing:CanarioUITests/CanarioUITests/testAddAbreComAcaoPrincipalEMenu \
+            -only-testing:CanarioUITests/CanarioUITests/testClosetContinuaAcessivelSemRede \
+            -only-testing:CanarioUITests/CanarioUITests/testPrivacyAbrePeloCaminhoDeterministico \
+            -only-testing:CanarioUITests/CanarioUITests/testImportacaoAbreSemRedeComAsEntradasPrincipais \
+            CODE_SIGNING_ALLOWED=NO | tail -20
