@@ -19,8 +19,11 @@ def testar_taxonomia_e_schema():
         "vestido", "saia", "blusa_top", "camisa", "calca", "short",
         "casaco_jaqueta", "macacao",
     ]
-    assert sum(len(itens) for itens in taxonomia.values()) == 42
+    assert sum(len(itens) for itens in taxonomia.values()) == 45
     assert "couro" in MODULO.ids(taxonomia, "tecido")
+    assert "conversacional" in MODULO.ids(taxonomia, "estampa")
+    assert MODULO.ids(taxonomia, "cintura") == [
+        "cintura_alta", "cintura_media", "cintura_baixa"]
     schema = MODULO.montar_schema(taxonomia)
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(schema["properties"])
