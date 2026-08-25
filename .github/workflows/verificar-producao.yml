@@ -1,0 +1,34 @@
+name: Verificar produção (somente leitura)
+
+on:
+  workflow_dispatch:
+    inputs:
+      segmento:
+        description: 'Segmento cuja separação deve ser comprovada'
+        required: true
+        default: 'direcao_intl'
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: ./.github/actions/python-linux
+
+      - name: Medir capacidade
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: "$PY coletor/verificar_capacidade_banco.py"
+
+      - name: Verificar isolamento do segmento
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SEGMENTO_VERIFICADO: ${{ inputs.segmento }}
+        run: "$PY coletor/verificar_isolamento_segmento.py"

@@ -52,6 +52,16 @@ def main():
         print("FALHOU: marca VTEX comprovada deixou de ser coletavel")
         return 1
 
+    capacidade = registro_da_marca({
+        "marca": "Malwee", "dominio": "www.malwee.com.br",
+        "segmento": "catalogo_candidato_br", "papel": "ancora",
+        "justificativa": "capacidade", "status_teste": "pendente",
+        "data_teste": "2026-08-24", "detalhe_teste": "aguarda folga",
+    })
+    if capacidade["plataforma"] is not None or capacidade["ativa"]:
+        print("FALHOU: marca pendente de capacidade ficou coletavel")
+        return 1
+
     print("Materializacao: configuracao preservada, escopo adulto ativo e estado medido intocado")
     return 0
 

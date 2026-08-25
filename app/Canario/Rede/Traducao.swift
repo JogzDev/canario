@@ -21,14 +21,19 @@ enum Traducao {
         "liso": "Solid", "floral": "Floral", "listra": "Stripes",
         "animal_print": "Animal print", "xadrez": "Checks & plaid",
         "geometrica": "Graphic & geometric",
+        "conversacional": "Conversational prints",
+        "tomate_print": "Tomato print", "cereja_print": "Cherry print",
+        "morango_print": "Strawberry print", "banana_print": "Banana print",
+        "abacaxi_print": "Pineapple print", "melancia_print": "Watermelon print",
         // Material
-        "algodao": "Cotton", "linho": "Linen", "jeans": "Denim",
+        "algodao": "Cotton", "linho": "Linen", "jeans": "Denim", "couro": "Leather",
         "malha": "Knit", "trico_croche": "Knitwear & crochet",
         "viscose_fluido": "Viscose & fluid fabrics",
         // Length, silhouette and waist
         "curto": "Short", "midi": "Midi", "longo": "Long",
         "flare": "Flared & A-line", "reta_wide": "Straight & wide-leg",
-        "cintura_alta": "High waist",
+        "cintura_alta": "High rise", "cintura_media": "Mid rise",
+        "cintura_baixa": "Low rise",
         // Aesthetic
         "basico": "Essential", "romantico": "Romantic",
         "boho_artesanal": "Boho & artisanal", "alfaiataria": "Tailored",
@@ -91,7 +96,7 @@ enum Traducao {
         [
             "categoria": "Category",
             "cor": "Color",
-            "estampa": "Pattern",
+            "estampa": "Pattern", "motivo_estampa": "Pattern",
             "tecido": "Material",
             "estetica": "Style",
             "comprimento": "Length",
@@ -203,7 +208,9 @@ enum FormularioDaPeca {
         // silhueta e cintura --, que é o que a Bianca descreveu: "Todas também
         // terão Padrão e Material! O que tem que aparecer condicional é estilo
         // da calça e por aí vai."
-        var resultado: Set<String> = ["categoria", "cor", "estampa", "tecido", "estetica"]
+        var resultado: Set<String> = [
+            "categoria", "cor", "estampa", "motivo_estampa", "tecido", "estetica"
+        ]
         if !categorias.isDisjoint(with: ["vestido", "saia"]) {
             resultado.insert("comprimento")
         }

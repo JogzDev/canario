@@ -86,4 +86,29 @@ final class ElegibilidadeTests: XCTestCase {
         XCTAssertEqual(Elegibilidade.semanaComum(
             indices: indices, varejo: varejo, coberturas: coberturas), "2026-08-10")
     }
+
+    func testCatalogoDoCompararNaoSomeQuandoIndiceFalta() {
+        XCTAssertTrue(Elegibilidade.varejoComparavel(varejo()))
+        XCTAssertTrue(Elegibilidade.varejoComparavel(varejo(termo: "floral")))
+        XCTAssertEqual(Elegibilidade.semanaComVarejo([
+            varejo(termo: "isolado", semana: "2026-08-24"),
+            varejo(termo: "preto", semana: "2026-08-17"),
+            varejo(termo: "floral", semana: "2026-08-17")
+        ]), "2026-08-17")
+    }
+
+    func testCompararPrefereSemanaRicaSemEsconderVarejo() {
+        var indices = [indice(termo: "unico", semana: "2026-08-24")]
+        var varejos = [varejo(termo: "unico", semana: "2026-08-24"),
+                       varejo(termo: "outro", semana: "2026-08-24")]
+        var coberturas = [cobertura(termo: "unico", semana: "2026-08-24")]
+        for n in 0..<8 {
+            let id = "termo_\(n)"
+            indices.append(indice(termo: id, semana: "2026-08-10"))
+            varejos.append(varejo(termo: id, semana: "2026-08-10"))
+            coberturas.append(cobertura(termo: id, semana: "2026-08-10"))
+        }
+        XCTAssertEqual(Elegibilidade.semanaDeComparacao(
+            indices: indices, varejo: varejos, coberturas: coberturas), "2026-08-10")
+    }
 }

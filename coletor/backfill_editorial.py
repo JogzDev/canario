@@ -112,6 +112,7 @@ def main():
 
     coorte = []
     artigos, contagem = [], defaultdict(set)
+    ligacoes_artigos = []
     # Mesma razao do coletor diario: o app precisa nomear quem publicou, nao so
     # contar. Sem isto o backfill sobrescreveria a meta do diario com uma versao
     # mais pobre, porque os dois fazem upsert na mesma chave.
@@ -152,6 +153,7 @@ def main():
             if achados:
                 semana = semana_de(quando)
                 for termo_id in achados:
+                    ligacoes_artigos.append({"url": link, "termo_id": termo_id})
                     celula = (termo_id, fonte, semana)
                     if link not in contagem[celula]:
                         veiculos_por_celula[celula][v["veiculo"]] += 1
@@ -181,10 +183,35 @@ def main():
         supabase_rest.inserir_ignorando_existentes(
             "artigos", unicos[i:i + 500], on_conflict="url")
 
+    ligacoes_unicas = list({(l["url"], l["termo_id"]): l
+                            for l in ligacoes_artigos}.values())
+    inseridas = 0
+    for i in range(0, len(ligacoes_unicas), 1000):
+        inseridas += supabase_rest.rpc(
+            "registrar_termos_editoriais",
+            {"ligacoes": ligacoes_unicas[i:i + 1000]}) or 0
+    print("{} ligacoes artigo/termo novas.".format(inseridas), file=sys.stderr)
+
+    nomes = sorted(c["veiculo"] for c in coorte)
+    with open(COORTE, "w", encoding="utf-8") as f:
+        json.dump({"definida_em": date.today().isoformat(),
+                   "janela_anos": ANOS,
+                   "criterio": "expoe wp-json E cobre a janela inteira",
+                   "veiculos": coorte}, f, ensure_ascii=False, indent=1)
+
+    # No fluxo de recomputação completa, este script só amplia o arquivo. A
+    # série viva permanece intacta até `reclassificar_editorial.py` trocar cada
+    # perna inteira numa transação. Sem este modo, o app enxergaria por alguns
+    # minutos uma série intermediária calculada apenas sobre a coorte WP.
+    if os.environ.get("BACKFILL_SOMENTE_ARQUIVO") == "1":
+        print("\n{} artigos únicos preparados; série viva preservada para a troca atômica."
+              .format(len(unicos)), file=sys.stderr)
+        print("Coorte profunda: {}".format(", ".join(nomes)), file=sys.stderr)
+        return 0
+
     # --- serie em janela movel de 4 semanas (§18), coorte fixa ---
     crua = dict((k, len(v)) for k, v in contagem.items())
     agora = datetime.now(timezone.utc).isoformat()
-    nomes = sorted(c["veiculo"] for c in coorte)
     linhas = []
     for (termo_id, fonte, semana) in sorted(crua):
         janela = [crua.get((termo_id, fonte, semana - timedelta(weeks=w)), 0)
@@ -210,12 +237,6 @@ def main():
     for i in range(0, len(linhas), 500):
         supabase_rest.upsert("series_semanais", linhas[i:i + 500],
                              on_conflict="termo_id,segmento,fonte,semana")
-
-    with open(COORTE, "w", encoding="utf-8") as f:
-        json.dump({"definida_em": date.today().isoformat(),
-                   "janela_anos": ANOS,
-                   "criterio": "expoe wp-json E cobre a janela inteira",
-                   "veiculos": coorte}, f, ensure_ascii=False, indent=1)
 
     semanas = sorted({k[2] for k in crua})
     print("\n{} artigos unicos, {} pontos de serie.".format(len(unicos), len(linhas)),

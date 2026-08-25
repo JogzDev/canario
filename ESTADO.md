@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 24/08/2026, 15:20 em São Paulo
+**Última atualização:** 25/08/2026, 03:00 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -21,13 +21,15 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | verde; 15 de 15 marcas com cobertura completa | 45.677 produtos visitados; nenhum corte ou falha de contagem |
-| Banco | plano gratuito; A27 pronto localmente para parar a reescrita larga | **427 MB / 500 MB** no painel Supabase em 24/08 |
-| Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
-| App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | conta opcional e sync compilando; ainda sem Archive/upload |
-| Testes | **234 Swift** · portões Python ativos · 6 UI | Auth, Keychain, sync, RLS contratual e fluxos existentes |
+| Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **14.678 produtos candidatos** |
+| Banco | plano gratuito; retenção crua no piso seguro de 21 dias | **422.145.171 bytes / 500 MB (84,4%)** após toda a expansão |
+| Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
+| App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
+| E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
+| Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
+| Testes | **242 Swift** · portões Python ativos · 7 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
 
-## 0. Trabalho ativo de 24/08 — conta e capacidade
+## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
 
 A 1.2 revoga somente a antiga regra de ausência de conta. A conta continua
 opcional: Apple, Google ou e-mail; o app permanece utilizável como convidado.
@@ -35,10 +37,68 @@ Sessões ficam no Keychain, os dados estruturados do Closet sincronizam com RLS
 e as fotos permanecem locais. Há recuperação de senha, logout e exclusão
 integral iniciada dentro do app.
 
-A27 move `ultimo_avistamento_em`, `ofertavel` e `ultimo_snapshot_em` para
-`estado_dos_produtos`, uma linha estreita. O coletor deixa de regravar a linha
-larga quando o produto não mudou. Migração e coletor estão prontos localmente,
-mas **ainda não foram aplicados em produção**.
+A27 moveu `ultimo_avistamento_em`, `ofertavel` e `ultimo_snapshot_em` para
+`estado_dos_produtos`, uma linha estreita, e já está em produção. A42 mantém
+21 dias de snapshots crus sem apagar a série semanal histórica. Depois do
+`VACUUM FULL` seguro, o banco caiu de 445.123.731 para 388.861.075 bytes; antes
+da coleta internacional estava em 397.790.355 bytes (79,6%) e, depois dela e
+do motor, em **404.343.955 bytes (80,9%)**, com 95.656.045 bytes livres.
+
+A 1.2 também já contém compartilhamento e exportação por um único botão,
+Universal Links autocontidos, importação por URL de produto, motivos visuais
+de estampa, couro, similares relaxados com explicação, editorial feminino
+reclassificável, detalhe clicável das fontes e busca/filtro local do Closet.
+Em 24/08, o preenchimento da peça deixou de manter Clothing Details dentro da
+sheet: o resultado agora abre em tela cheia, com Add to Closet no canto superior
+esquerdo. A busca do Closet usa o drawer nativo recolhível; o canto que levava
+ao Compare virou o menu de três pontos, e Compare passou para Weekly Trends.
+
+As cinco marcas de direção internacional foram materializadas e coletadas:
+Doen 672, Faithfull the Brand 690, Rouje 1.170, Staud 2.031 e With Jean 393.
+Depois dos filtros de população, **3.768 produtos** ficaram em `direcao_intl`:
+666, 617, 917, 1.282 e 286, respectivamente. O portão de produção contou zero
+produto dessas marcas fora do segmento. Elas não entram no denominador
+brasileiro e, com cinco fontes, continuam abaixo do mínimo de oito para índice.
+
+Em 25/08, 12 marcas brasileiras adicionais entraram em
+`catalogo_candidato_br`: Calvin Klein BR, Charry, Damyller, Dudalina, Iorane,
+John John, Levi's BR, Lez a Lez, Maria Valentina, Osklen, Sacada e Scalon.
+Foram 16.376 produtos crus; o recorte de população manteve **14.678** no
+catálogo candidato, excluiu 1.698 masculinos/infantis/íntimos/praia e atribuiu
+**zero** produto a outro segmento. Essas peças ampliam similares, mas não
+alteram o painel brasileiro, índice, raridade ou z-score. O retry final da
+Dudalina confirmou 552 visitados = 552 declarados e zero gravação nova.
+
+O editorial foi recomposto integralmente a partir de **170.813 artigos**:
+86.087 classificados como femininos, 50.755 neutros e 33.971 masculinos
+excluídos. Título + resumo agora produzem somente pares compactos em
+`artigo_termos`; são 16.287 ligações em 7.587 artigos, ocupando 1,65 MB, sem
+armazenar resumo ou texto integral. A troca atômica publicou 11.179 pontos BR e
+5.764 internacionais. Na semana de 24/08, 28/46 termos BR e 22/47 internacionais
+têm artigo qualificado. `floral` permanece zero nas duas pernas porque nenhum
+artigo recente passou simultaneamente pelo matching e pelo contexto de roupa;
+flores pessoais, unhas, casamento e calçados não são convertidos em roupa.
+
+A expansão e a primeira recomputação levaram o banco temporariamente a 97,15%.
+A retenção no piso seguro removeu 93.587 snapshots fora da janela, compactou a
+tabela e preservou todas as séries. Depois dos pares editoriais e do motor final,
+o banco fechou em **422.145.171 bytes (84,4%)**, com 77.854.829 bytes livres.
+O motor final provou idempotência: 106.298 produtos, 257.070 ligações e zero
+produto, segmento ou ligação alterado na segunda publicação.
+
+O único bloqueio de implementação antes do fechamento da release são as telas
+finais do Figma. Apple, Google e e-mail foram validados no iPhone em 24/08. O
+Google foi depois migrado do navegador hospedado pela Supabase para o SDK nativo
+oficial: o cliente OAuth iOS, os dois públicos aceitos pelo Supabase e o esquema
+de retorno estão configurados, e o build de simulador passou. Falta apenas
+repetir esse provedor no iPhone para validar o novo caminho físico. O
+SMTP gratuito está resolvido: a Brevo confirmou no pedido
+**#5525910** que o relay transacional já estava habilitado, e um cadastro técnico
+percorreu Supabase → Brevo → Gmail com eventos de envio, entrega e primeira
+abertura. Os usuários temporários foram removidos depois da prova. Sem domínio
+próprio autenticado, o remetente continua sendo reescrito para o subdomínio
+gratuito da Brevo; isso afeta apresentação, não funcionamento. A lista exata e
+atual está em `PENDENCIAS.md`.
 
 ---
 
@@ -260,7 +320,15 @@ essa decisão por sorteio:
 `45f9ce7e00c66499847aa2dcf1effb1de347826f4ffa4ae76871b55c2b94dc4f`.
 O relatório completo, incluindo intervalos de confiança e as falhas estáveis,
 está em `anexos/avaliacao_luna/relatorio-20-08-v7.md`. O gasto já realizado nas
-quatro rodadas foi US$ 0,071; não houve razão para comprar novas execuções.
+quatro rodadas iniciais foi US$ 0,071.
+
+Uma tentativa posterior de validar o vocabulário ampliado da 1.2 nas mesmas 24
+imagens fechou em 57/72 para categoria e cor (79,2%). Ela **não substituiu a v7
+de produção**. Duas repetições foram interrompidas em 24/08 quando ficou claro
+que otimizar décimos sobre as mesmas imagens seria overfitting e gasto sem valor
+para o uso real. Regra vigente: essas cinco imagens difíceis permanecem como
+erro conhecido; não se compra outra rodada nesse conjunto. Qualquer calibração
+futura usa imagens novas/holdout e orçamento explícito.
 
 A Edge Function e o avaliador usam essa mesma v7. Os testes de contrato,
 consolidação e hash passaram em 21/08, e a sonda diária confirma que credenciais
@@ -276,8 +344,8 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 ## 4. App e loja
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
-* Loja: **1.0 publicada**
-* Repositório: **1.1 (build 5)** no `main`; upload recebido pelo App Store Connect
+* Loja: **1.1 publicada**
+* Repositório: **1.2 build 1 em desenvolvimento** no PR #16
 * TestFlight: upload aceito pela Apple às 09:18 de 21/08; pacote em processamento
 * App Review: **não enviado**
 * Time: `67AYPRFZH8`
@@ -311,12 +379,12 @@ catálogo.
 
 ## 5. Testes
 
-* **226** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **239** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
 * **27** suítes Python — rodam a cada push
-* **4** testes de interface no alvo `CanarioUITests`: Add/menu, importação, Closet e Privacy
+* **7** testes de interface no alvo `CanarioUITests`; cinco rotas offline rodam no CI
 
 O gerador é dono do alvo de UI test e o CI o executa num iPhone 17 simulado.
-Isso protege quatro caminhos estruturais enquanto as telas novas chegam sem
+Isso protege os caminhos estruturais enquanto as telas novas chegam sem
 transformar o `project.pbxproj` em edição manual recorrente.
 
 ---
@@ -331,9 +399,9 @@ transformar o `project.pbxproj` em edição manual recorrente.
 
 ### Decisões de produto, sem prazo
 
-Conta e sincronização do Closet · taxonomia `blusa_top` · fluxo semanal
-unificado de Trends e Search · curadoria visual dos similares. Nenhuma é dívida
-técnica; são escopos não decididos, e só entram na fila quando forem decididos.
+Taxonomia `blusa_top` · fluxo semanal unificado de Trends e Search · curadoria
+visual dos similares. Nenhuma é dívida técnica; são escopos não decididos, e só
+entram na fila quando forem decididos.
 
 ### Técnico, em ordem de valor
 

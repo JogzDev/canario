@@ -69,6 +69,73 @@ def checar_orquestracao(workflows):
         if "schedule" in gatilhos:
             falhar(arquivo, "workflow individual voltou a ter cron proprio")
 
+    editorial = workflows.get("coleta-editorial.yml", {})
+    entrada_editorial = (editorial.get("on", editorial.get(True, {})) or {})
+    for gatilho in ("workflow_call", "workflow_dispatch"):
+        entradas = (entrada_editorial.get(gatilho) or {}).get("inputs", {})
+        if "somente_arquivo" not in entradas:
+            falhar("coleta-editorial.yml",
+                   "coleta editorial sem modo de arquivo atomico")
+    passos_editorial = editorial.get("jobs", {}).get("coletar", {}).get("steps", [])
+    passo_coleta_editorial = next((p for p in passos_editorial
+                                   if "coletor_editorial.py" in str(p.get("run", ""))), {})
+    if "EDITORIAL_SOMENTE_ARQUIVO" not in passo_coleta_editorial.get("env", {}):
+        falhar("coleta-editorial.yml",
+               "entrada somente_arquivo nao chega ao coletor")
+
+    # Coletas de novos paineis não podem cair no brasileiro por omissão.
+    for arquivo in ("coleta.yml", "coleta-shopify.yml"):
+        dados = workflows.get(arquivo, {})
+        gatilhos = dados.get("on", dados.get(True, {})) or {}
+        chamada = (gatilhos.get("workflow_call") or {}).get("inputs", {})
+        segmento = chamada.get("segmento", {})
+        if segmento.get("default") != "feminino_casual_br":
+            falhar(arquivo, "coleta reutilizavel sem segmento brasileiro explicito")
+
+    direcao = workflows.get("coleta-direcao-internacional.yml", {})
+    job_direcao = direcao.get("jobs", {}).get("coletar", {})
+    if (job_direcao.get("uses") != individuais["coleta-shopify.yml"] or
+            job_direcao.get("with", {}).get("segmento") != "direcao_intl"):
+        falhar("coleta-direcao-internacional.yml",
+               "direcao internacional nao esta isolada em direcao_intl")
+
+    candidatos = workflows.get("coleta-catalogo-candidato.yml", {})
+    gatilhos_candidatos = candidatos.get(
+        "on", candidatos.get(True, {})) or {}
+    if "schedule" not in gatilhos_candidatos:
+        falhar("coleta-catalogo-candidato.yml",
+               "catalogo candidato sem manutencao recorrente")
+    jobs_candidatos = candidatos.get("jobs", {})
+    for job, reutilizavel in (("vtex", individuais["coleta.yml"]),
+                              ("shopify", individuais["coleta-shopify.yml"])):
+        definicao = jobs_candidatos.get(job, {})
+        if (definicao.get("uses") != reutilizavel or
+                definicao.get("with", {}).get("segmento") !=
+                "catalogo_candidato_br"):
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato {} nao esta isolado".format(job))
+        if "github.event_name == 'schedule'" not in str(definicao.get("if", "")):
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato {} nao roda na agenda".format(job))
+        if job == "vtex" and definicao.get("with", {}).get("pente_fino") is not False:
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato VTEX ainda dispara sonda ampla")
+        if (job == "shopify" and
+                definicao.get("with", {}).get("verificar_isolamento") is not False):
+            falhar("coleta-catalogo-candidato.yml",
+                   "catalogo candidato verifica antes do motor")
+    publicacao_candidatos = jobs_candidatos.get("publicar", {})
+    if (publicacao_candidatos.get("uses") != individuais["motor.yml"] or
+            set(publicacao_candidatos.get("needs", [])) != {"vtex", "shopify"}):
+        falhar("coleta-catalogo-candidato.yml",
+               "catalogo candidato nao publica o motor depois das coletas")
+    verificacao_candidatos = jobs_candidatos.get("verificar", {})
+    if (verificacao_candidatos.get("needs") != "publicar" or
+            "verificar_isolamento_segmento.py" not in str(
+                verificacao_candidatos.get("steps", []))):
+        falhar("coleta-catalogo-candidato.yml",
+               "catalogo candidato nao prova isolamento depois do motor")
+
     for arquivo in ["coleta.yml", "coleta-shopify.yml",
                     "coleta-editorial.yml", "coleta-trends.yml"]:
         passos = workflows.get(arquivo, {}).get("jobs", {}).get(
@@ -91,7 +158,8 @@ def checar_orquestracao(workflows):
     passos_pente = [p for p in passos_varejo
                     if "Pente fino" in str(p.get("name", ""))]
     if (len(passos_pente) != 1 or
-            "inputs.marca == ''" not in str(passos_pente[0].get("if", ""))):
+            "inputs.marca == ''" not in str(passos_pente[0].get("if", "")) or
+            "inputs.pente_fino" not in str(passos_pente[0].get("if", ""))):
         falhar("coleta.yml",
                "coleta direcionada nao deve repetir o pente fino inteiro")
 
@@ -210,11 +278,22 @@ def checar_orquestracao(workflows):
               if "motor_computar.py" in comando]
     backfill = [i for i, comando in enumerate(comandos)
                 if "backfill_editorial.py" in comando]
+    reclassificar = [i for i, comando in enumerate(comandos)
+                     if "reclassificar_editorial.py" in comando]
     if len(atributos) != 1 or legado:
         falhar("motor.yml",
                "workflow deve ter uma unica publicacao atomica do motor")
     if backfill and atributos and backfill[0] > atributos[0]:
         falhar("motor.yml", "backfill deve acontecer antes da publicacao")
+    if (len(reclassificar) != 1 or not backfill or
+            not (backfill[0] < reclassificar[0] < atributos[0])):
+        falhar("motor.yml",
+               "reclassificacao editorial deve ficar entre arquivo e motor")
+    passos_motor = motor.get("steps", [])
+    passo_backfill = next((p for p in passos_motor
+                           if "backfill_editorial.py" in str(p.get("run", ""))), {})
+    if passo_backfill.get("env", {}).get("BACKFILL_SOMENTE_ARQUIVO") != "1":
+        falhar("motor.yml", "backfill completo pode publicar serie intermediaria")
 
     testes = workflows.get("testes.yml", {}).get("jobs", {}).get("app", {})
     comandos_app = [str(p.get("run", ""))

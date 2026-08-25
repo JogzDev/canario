@@ -20,8 +20,8 @@ Regras que este modulo cumpre:
     decidiria um indice de mid-market brasileiro. A divergencia entre as duas
     series e justamente o sinal de antecipacao que interessa ao comercial.
   * C5 -- Lyst (`tipo=dado_agregado`) fica FORA da soma editorial.
-  * K8 -- casa apenas titulo + resumo do feed: uniforme entre veiculos e imune a
-    paywall (BoF, WWD e Vogue Business sao pagos).
+  * A41 -- casa somente o título persistido: histórico e futuro obedecem à
+    mesma entrada, inclusive em fontes cujo resumo antigo não existe.
   * regra 7 -- 1 req/s por dominio, User-Agent identificavel, robots.txt.
 """
 
@@ -270,6 +270,7 @@ def main():
     print("Veiculos com feed: {}".format(len(veiculos)), file=sys.stderr)
 
     artigos_novos = []
+    ligacoes_artigos = []
     # (termo_id, fonte, semana) -> numero de artigos distintos
     contagem = defaultdict(set)
     # (termo_id, fonte, semana) -> {veiculo: n}. O app precisa NOMEAR as fontes:
@@ -310,16 +311,20 @@ def main():
                 continue
             semana = semana_de(quando)
             semanas_observadas[fonte].add(semana)
-            # K8: titulo + resumo, nunca o texto integral (§18).
+            # A43 persiste somente os pares artigo/termo. Assim o resumo pode
+            # melhorar o recall sem guardar texto protegido e o backfill
+            # reproduz exatamente a mesma regra no histórico.
             achados_titulo = termos_que_casam(titulo, termos)
+            achados_texto = termos_que_casam(
+                titulo + " " + (resumo or ""), termos)
             achados = filtrar_contexto_editorial(
-                titulo, resumo,
-                termos_que_casam(titulo + " " + limpar(resumo), termos), categorias,
+                titulo, resumo, achados_texto, categorias,
                 achados_no_titulo=achados_titulo)
             if not achados:
                 continue
             casados += 1
             for termo_id in achados:
+                ligacoes_artigos.append({"url": link, "termo_id": termo_id})
                 # §11: conjunto de artigos, entao o mesmo artigo conta 1 por
                 # termo mesmo que varias palavras do termo aparecam.
                 celula = (termo_id, fonte, semana)
@@ -351,6 +356,18 @@ def main():
     for i in range(0, len(unicos), 500):
         supabase_rest.inserir_ignorando_existentes(
             "artigos", unicos[i:i + 500], on_conflict="url")
+
+    ligacoes_unicas = list({(l["url"], l["termo_id"]): l
+                            for l in ligacoes_artigos}.values())
+    for i in range(0, len(ligacoes_unicas), 1000):
+        supabase_rest.rpc("registrar_termos_editoriais",
+                          {"ligacoes": ligacoes_unicas[i:i + 1000]})
+
+    # Ao introduzir novas fontes, primeiro ampliamos o arquivo e depois o
+    # recomputamos inteiro. Publicar aqui uma semana calculada só com a cauda
+    # curta dos feeds criaria um estado intermediário falso antes da troca
+    # atômica de `reclassificar_editorial.py`.
+    somente_arquivo = os.environ.get("EDITORIAL_SOMENTE_ARQUIVO") == "1"
 
     # --- serie editorial em janela movel de 4 semanas (§18) ---
     # A semana crua tambem vai gravada, porque o `pico` (C4) precisa dela.
@@ -410,9 +427,10 @@ def main():
                             "a semana crua serve ao estado `pico` (C4)",
                      "coletado_em": agora},
         })
-    for i in range(0, len(linhas), 500):
-        supabase_rest.upsert("series_semanais", linhas[i:i + 500],
-                             on_conflict="termo_id,segmento,fonte,semana")
+    if not somente_arquivo:
+        for i in range(0, len(linhas), 500):
+            supabase_rest.upsert("series_semanais", linhas[i:i + 500],
+                                 on_conflict="termo_id,segmento,fonte,semana")
 
     # --- saude (§20): UMA linha por dia para a fonte editorial ---
     # Nao uma por veiculo: a chave unica e (data, fonte, marca_id) e marca_id e
@@ -438,8 +456,12 @@ def main():
 
     br = sum(1 for k in crua if k[1] == "editorial_br")
     intl = sum(1 for k in crua if k[1] == "editorial_intl")
-    print("\n{} artigos únicos, {} pontos de série ({} BR, {} internacional).".format(
-        len(unicos), len(linhas), br, intl), file=sys.stderr)
+    if somente_arquivo:
+        print("\n{} artigos únicos arquivados; série viva preservada para a "
+              "troca atômica.".format(len(unicos)), file=sys.stderr)
+    else:
+        print("\n{} artigos únicos, {} pontos de série ({} BR, {} internacional).".format(
+            len(unicos), len(linhas), br, intl), file=sys.stderr)
     if semanas:
         print("Semanas cobertas: {} a {}".format(semanas[0], semanas[-1]),
               file=sys.stderr)

@@ -42,7 +42,9 @@ jobs:
             -framework Vision -framework CoreImage -framework ImageIO \
             -framework UniformTypeIdentifiers \
             -o "$RUNNER_TEMP/segmentar-fundo"
-          python3 ferramentas/avaliar_luna.py \
+          # 300 imagens levam dezenas de minutos; manter o MacBook acordado
+          # evita perder respostas pagas no meio do benchmark.
+          caffeinate -dimsu python3 ferramentas/avaliar_luna.py \
             --quantidade "$QUANTIDADE" \
             --segmentador "$RUNNER_TEMP/segmentar-fundo" \
             --saida "$RUNNER_TEMP/avaliacao-luna.jsonl" \

@@ -1,5 +1,6 @@
 import AuthenticationServices
 import CryptoKit
+import GoogleSignIn
 import Security
 import SwiftUI
 
@@ -15,8 +16,6 @@ final class GestorDaConta: NSObject, ObservableObject {
     @Published var mostrarNovaSenha = false
     @Published var mostrarRevogacaoManualApple = false
 
-    private var sessaoWeb: ASWebAuthenticationSession?
-    private var verificadorGoogle: String?
     private var nonceApple: String?
 
     override private init() {
@@ -56,44 +55,26 @@ final class GestorDaConta: NSObject, ObservableObject {
     }
 
     func entrarComGoogle() {
-        Task {
-            do {
-                let desafio = try await Autenticacao.shared.desafioOAuthGoogle()
-                verificadorGoogle = desafio.verificador
-                let web = ASWebAuthenticationSession(
-                    url: desafio.endereco, callbackURLScheme: "datadrobe") { [weak self] callback, erro in
-                        Task { @MainActor in
-                            guard let self else { return }
-                            self.sessaoWeb = nil
-                            let verificador = self.verificadorGoogle
-                            self.verificadorGoogle = nil
-                            if let erro = erro as? ASWebAuthenticationSessionError,
-                               erro.code == .canceledLogin { return }
-                            guard let callback else {
-                                self.mensagemDeErro = erro?.localizedDescription
-                                    ?? Autenticacao.Falha.callbackInvalido.localizedDescription
-                                return
-                            }
-                            self.trabalhando = true
-                            defer { self.trabalhando = false }
-                            do {
-                                await self.adotar(try await Autenticacao.shared.receberCallback(
-                                    callback, verificadorPKCE: verificador))
-                            } catch {
-                                self.mensagemDeErro = error.localizedDescription
-                            }
-                        }
-                    }
-                web.presentationContextProvider = self
-                web.prefersEphemeralWebBrowserSession = false
-                sessaoWeb = web
-                guard web.start() else {
-                    sessaoWeb = nil
-                    mensagemDeErro = "Google Sign-In could not be opened."
+        guard let apresentador = Self.controladorVisivel() else {
+            mensagemDeErro = "Google Sign-In could not be opened."
+            return
+        }
+        trabalhando = true
+        GIDSignIn.sharedInstance.signIn(withPresenting: apresentador) { [weak self] resultado, erro in
+            Task { @MainActor in
+                guard let self else { return }
+                guard let token = resultado?.user.idToken?.tokenString else {
+                    self.trabalhando = false
+                    if let erro { self.mensagemDeErro = erro.localizedDescription }
                     return
                 }
-            } catch {
-                mensagemDeErro = error.localizedDescription
+                defer { self.trabalhando = false }
+                do {
+                    await self.adotar(try await Autenticacao.shared.entrarComToken(
+                        token, provedor: .google, nonce: nil))
+                } catch {
+                    self.mensagemDeErro = error.localizedDescription
+                }
             }
         }
     }
@@ -161,6 +142,7 @@ final class GestorDaConta: NSObject, ObservableObject {
     }
 
     func receberLink(_ url: URL) {
+        if GIDSignIn.sharedInstance.handle(url) { return }
         guard url.scheme == "datadrobe", url.host == "auth-callback" else { return }
         trabalhando = true
         Task {
@@ -225,6 +207,13 @@ final class GestorDaConta: NSObject, ObservableObject {
 
     private static func sha256(_ entrada: String) -> String {
         SHA256.hash(data: Data(entrada.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func controladorVisivel() -> UIViewController? {
+        let cenas = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        var atual = cenas.flatMap(\.windows).first(where: \.isKeyWindow)?.rootViewController
+        while let apresentado = atual?.presentedViewController { atual = apresentado }
+        return atual
     }
 }
 

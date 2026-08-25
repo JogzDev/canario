@@ -32,6 +32,7 @@ final class SimilaresTests: XCTestCase {
         Similares.Resumo(
             nSimilares: similares, nMarcas: marcas, atributosPedidos: pedidos,
             dimensoesPedidas: nil, minimoEmComum: minimo, minimoDimensoes: nil,
+            dimensaoRelaxada: nil,
             nComTodos: comTodos, comPreco: comPreco,
             pctPrecoCheio: cheio, pctGradeQuebrada: quebrada, pctEsgotada: esgotada,
             precoMin: 29.99, precoMax: 12998, precoMediana: mediana,

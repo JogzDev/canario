@@ -46,15 +46,18 @@ PROFUNDIDADE = 2  # departamento > categoria: a granularidade que da para revisa
 # junto, e `bota` precisa ser exato para nao levar `botao`.
 EXCLUSOES = [
     ("outro publico", ["masculin*", "infant*", "kids", "menino*", "menina*",
-                       "bebe*", "baby", "teen", "unissex", "homem", "homens"]),
+                       "bebe*", "baby", "teen", "unissex", "homem", "homens",
+                       "men", "mens", "boys", "girls"]),
     ("nao e vestuario", ["calcado*", "sapato*", "tenis", "sandalia*", "bota",
                          "botas", "bolsa", "bolsas", "acessorio*", "joia",
                          "joias", "bijuteria*", "oculos", "cinto", "cintos",
                          "chapeu*", "perfume*", "beleza", "casa",
-                         "decoracao", "pet", "livro*"]),
+                         "decoracao", "pet", "livro*", "shoes", "footwear",
+                         "bags", "handbags", "accessories", "jewelry"]),
     ("outro segmento", ["praia", "biquini*", "maio", "maios", "beachwear",
                         "fitness", "esporte*", "academia", "lingerie",
-                        "pijama*", "moda intima", "sleepwear", "underwear"]),
+                        "pijama*", "moda intima", "sleepwear", "underwear",
+                        "swim", "swimwear", "bikini*"]),
     ("nao e categoria de produto", ["sale", "outlet", "promocao", "promocoes",
                                     "bazar", "liquidacao", "ultimas pecas",
                                     "black", "novidade*", "lancamento*",
@@ -71,13 +74,16 @@ _EXCLUSOES_COMPILADAS = [(motivo, compilar_lista(gatilhos, flexionar=False))
                          for motivo, gatilhos in EXCLUSOES]
 
 
-def classificar(caminho):
+SEGMENTO_PADRAO = "feminino_casual_br"
+
+
+def classificar(caminho, segmento=SEGMENTO_PADRAO):
     """Propoe incluir/excluir para um caminho de categoria."""
     alvo = normalizar(caminho)
     for motivo, regexes in _EXCLUSOES_COMPILADAS:
         if casa_algum(alvo, regexes):
             return "nao", "", motivo
-    return "sim", "feminino_casual_br", "vestuario feminino: proposto para o segmento v1"
+    return "sim", segmento, "vestuario feminino: proposto para {}".format(segmento)
 
 
 # Motivos que falam de POPULACAO (gente ou produto diferente) contra motivos
@@ -85,7 +91,7 @@ def classificar(caminho):
 MOTIVO_VITRINE = "nao e categoria de produto"
 
 
-def classificar_populacao(caminho):
+def classificar_populacao(caminho, segmento=SEGMENTO_PADRAO):
     """Como `classificar`, mas ignora recorte comercial.
 
     Existe por um erro real: excluir "bazar" derrubou o Dress To de 4540 para
@@ -105,7 +111,7 @@ def classificar_populacao(caminho):
             continue
         if casa_algum(alvo, regexes):
             return "nao", "", motivo
-    return "sim", "feminino_casual_br", "vestuario feminino"
+    return "sim", segmento, "vestuario feminino"
 
 
 def loja_so_feminina(nomes_departamentos):
@@ -191,6 +197,7 @@ def categorias_shopify(dominio):
 
 def processar(linha):
     marca, dominio, plataforma = linha["marca"], linha["dominio"], linha["status_teste"]
+    segmento_da_marca = (linha.get("segmento") or SEGMENTO_PADRAO).strip()
     if plataforma == "vtex":
         cats, erro = categorias_vtex(dominio)
     elif plataforma == "shopify":
@@ -206,7 +213,7 @@ def processar(linha):
     for c in cats:
         if not c["caminho"].strip():
             continue
-        incluir, segmento, motivo = classificar(c["caminho"])
+        incluir, segmento, motivo = classificar(c["caminho"], segmento_da_marca)
         linhas.append({
             "marca": marca, "plataforma": plataforma,
             "caminho_no_site": c["caminho"], "id_categoria": c["id_categoria"],
@@ -242,7 +249,7 @@ def main():
         w.writerows(linhas)
 
     incluidas = sum(1 for r in linhas if r["incluir"] == "sim")
-    print("\n{} categorias no total, {} propostas para feminino_casual_br".format(
+    print("\n{} categorias no total, {} propostas para seus segmentos".format(
         len(linhas), incluidas), file=sys.stderr)
 
 

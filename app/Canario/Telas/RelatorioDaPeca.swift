@@ -42,6 +42,9 @@ struct RelatorioDaPeca: View {
     /// Existe porque guardar a peça deixava a pessoa presa no painel: era
     /// preciso voltar passo a passo até o começo. "Deveria sair direto."
     var aoConcluir: (() -> Void)? = nil
+    /// No fluxo Add, Clothing Details ocupa a tela inteira e a ação principal
+    /// pedida pelo teste de uso mora no canto superior esquerdo.
+    var adicionarAoClosetNoCantoEsquerdo = false
 
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var coberturas: [String: Cobertura] = [:]
@@ -110,7 +113,8 @@ struct RelatorioDaPeca: View {
                     if guardada == true { pecaGuardadaNestaTela = nova }
                 }
             } label: {
-                Label("Save", systemImage: "archivebox")
+                Label(adicionarAoClosetNoCantoEsquerdo ? "Add to Closet" : "Save",
+                      systemImage: "archivebox")
             }
             .disabled(termos.isEmpty)
             }
@@ -125,6 +129,15 @@ struct RelatorioDaPeca: View {
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else {
+                    if adicionarAoClosetNoCantoEsquerdo {
+                        Cartao {
+                            Text("Keep this item")
+                                .font(Tokens.Fonte.secao)
+                            Text("Tap Add to Closet above to keep the confirmed attributes and this photo. You can still review the full market reading first.")
+                                .font(Tokens.Fonte.apoio)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                    }
                     if pecaSalva != nil { fotoDaPeca }
                     if let selecao, !todosOsTermos.isEmpty {
                         chipsDeCorrecao(selecao)
@@ -134,6 +147,7 @@ struct RelatorioDaPeca: View {
                     resumo
                     blocoDeSimilares
                     porAtributo
+                    if pecaSalva != nil { editorialDosAtributos }
                     blocoDoCluster
                     blocoDoHistorico
                 }
@@ -148,7 +162,44 @@ struct RelatorioDaPeca: View {
             Task { await substituirFoto(item) }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
+            if adicionarAoClosetNoCantoEsquerdo {
+                ToolbarItem(placement: .topBarLeading) { botaoDeGuardar }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
+            }
+        }
+    }
+
+    /// Atalho pedido para o Closet: cada atributo abre a mesma série editorial
+    /// auditável usada em Trends, sem criar uma leitura especial por peça.
+    private var editorialDosAtributos: some View {
+        Cartao {
+            Text("How the press is covering these attributes")
+                .font(Tokens.Fonte.secao)
+            Text("Open an attribute to see Brazilian and international coverage, weekly counts and contributing publications.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+            ForEach(termos) { termo in
+                NavigationLink {
+                    RelatorioDoTermo(termo: termo)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(Traducao.rotuloExibido(termo))
+                                .foregroundStyle(.primary)
+                            Text(Traducao.rotuloDaDimensao(termo.dimensao))
+                                .font(Tokens.Fonte.miudo)
+                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                    }
+                    .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -607,7 +658,7 @@ struct RelatorioDaPeca: View {
                 return argumentos
             }()
             async let respostaSimilar: Similares.Resposta = Supabase.shared.chamar(
-                "similares_da_peca", args)
+                "similares_da_peca_amplo", args)
             async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
                 "indice_do_cluster", ["termos": termoIds])
             async let respostaSerie: SerieDoCluster.Resposta = Supabase.shared.chamar(

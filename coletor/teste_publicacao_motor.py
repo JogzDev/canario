@@ -24,11 +24,17 @@ def testar_atributos():
         {"id": 2, "titulo": "Bolsa media", "descricao": None,
          "categoria_site": "Acessorios", "segmento": "feminino_casual_br",
          "marca_id": 10},
+        {"id": 3, "titulo": "Floral midi dress", "descricao": None,
+         "categoria_site": "Dresses", "segmento": None, "marca_id": 20},
     ]])
     motor_atributos.termos_que_casam = (
-        lambda texto, termos: {"vestido"} if "vestido" in texto else set())
+        lambda texto, termos: {"vestido"}
+        if "vestido" in texto or "dress" in texto else set())
     motor_atributos.supabase_rest.selecionar = (
-        lambda tabela, params="": [{"id": 10, "nome": "Marca X"}]
+        lambda tabela, params="": [
+            {"id": 10, "nome": "Marca X", "segmento": "feminino_casual_br"},
+            {"id": 20, "nome": "Brand Y", "segmento": "direcao_intl"},
+        ]
         if tabela == "marcas" else [])
 
     def upsert(tabela, linhas, on_conflict, retornar=False):
@@ -38,7 +44,7 @@ def testar_atributos():
     estados = iter([
         [{"status": "queued", "resultado": None, "erro": None}],
         [{"status": "success", "resultado": {
-            "atributos": {"produtos": 2, "ligacoes": 1},
+            "atributos": {"produtos": 3, "ligacoes": 2},
             "calculos": {nome: 1 for nome, _ in motor_computar.PASSOS}},
           "erro": None}],
     ])
@@ -52,7 +58,10 @@ def testar_atributos():
     motor_atributos.supabase_rest.upsert = upsert
     motor_atributos.supabase_rest._requisicao = rpc
     motor_atributos.supabase_rest.selecionar = (
-        lambda tabela, params="": [{"id": 10, "nome": "Marca X"}]
+        lambda tabela, params="": [
+            {"id": 10, "nome": "Marca X", "segmento": "feminino_casual_br"},
+            {"id": 20, "nome": "Brand Y", "segmento": "direcao_intl"},
+        ]
         if tabela == "marcas" else next(estados))
     motor_atributos.time.sleep = lambda _: None
     motor_atributos.supabase_rest.apagar = (
@@ -70,17 +79,17 @@ def testar_atributos():
         return falhar("matcher escreveu fora do stage: {}".format(tabelas))
     produtos = [x for tabela, linhas, _ in gravacoes
                 if tabela == "motor_produtos_stage" for x in linhas]
-    if len(produtos) != 2 or {x["segmento"] for x in produtos} != {
-            None, "feminino_casual_br"}:
+    if len(produtos) != 3 or {x["segmento"] for x in produtos} != {
+            None, "feminino_casual_br", "direcao_intl"}:
         return falhar("stage nao representa todos os produtos e segmentos")
     termos = [x for tabela, linhas, _ in gravacoes
               if tabela == "motor_termos_stage" for x in linhas]
-    if len(termos) != 1 or termos[0]["termo_id"] != "vestido":
+    if len(termos) != 2 or {x["termo_id"] for x in termos} != {"vestido"}:
         return falhar("stage de termos incorreto")
     if [chamada[1] for chamada in rpcs] != [
             "rpc/preparar_stage_motor", "rpc/solicitar_publicacao_motor"]:
         return falhar("motor nao recupera stage antes de agendar a publicacao")
-    if rpcs[1][2].get("p_total") != 2:
+    if rpcs[1][2].get("p_total") != 3:
         return falhar("RPC nao recebeu a cardinalidade completa")
     return 0
 

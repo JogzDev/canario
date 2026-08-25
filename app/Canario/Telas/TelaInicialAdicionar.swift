@@ -1,18 +1,35 @@
 import SwiftUI
 import UIKit
 
+/// Estado que atravessa a fronteira entre a sheet de preenchimento e a tela
+/// completa de detalhes. A foto continua em memória; só é persistida se a
+/// pessoa tocar em Add to Closet.
+private struct RascunhoParaDetalhes: Identifiable {
+    let id = UUID()
+    let termos: [Termo]
+    let selecionados: Set<String>
+    let precoAlvo: Double?
+    let miniaturaJPEG: Data?
+    let descricaoAmigavel: String?
+}
+
 /// Primeira tela do app, construída a partir do fluxo da Bianca e dos ativos do
 /// Fadul. O Dynamic Island é o elemento real do iPhone: o app desenha somente
 /// o feixe abaixo dele, nunca uma pílula preta falsa.
 struct TelaInicialAdicionar: View {
+    var menuAberto = false
+    var alternarMenu: (() -> Void)?
     @Environment(\.colorScheme) private var tema
     @State private var termos: [Termo] = []
     @State private var buscandoTermos = false
     @State private var erro: String?
     @State private var importando = false
+    @State private var detalheDepoisDaSheet: RascunhoParaDetalhes?
+    @State private var detalheAberto: RascunhoParaDetalhes?
     @State private var miniaturas: [UIImage] = []
 
     var body: some View {
+        NavigationStack {
         ZStack {
             Tokens.Cor.ceu.ignoresSafeArea()
 
@@ -76,8 +93,28 @@ struct TelaInicialAdicionar: View {
             }
 
         }
-        .sheet(isPresented: $importando, onDismiss: carregarMiniaturas) {
-            ImportarPeca(termos: termos)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if let alternarMenu {
+                    BotaoDoMenu(menuAberto: menuAberto, acao: alternarMenu)
+                }
+            }
+        }
+        .toolbarBackground(.hidden, for: .navigationBar)
+        }
+        .sheet(isPresented: $importando, onDismiss: encerrarSheetDeImportacao) {
+            ImportarPeca(termos: termos) { selecionados, preco, miniatura, descricao in
+                detalheDepoisDaSheet = RascunhoParaDetalhes(
+                    termos: termos,
+                    selecionados: selecionados,
+                    precoAlvo: preco,
+                    miniaturaJPEG: miniatura,
+                    descricaoAmigavel: descricao)
+                importando = false
+            }
+        }
+        .fullScreenCover(item: $detalheAberto, onDismiss: carregarMiniaturas) { rascunho in
+            DetalhesDaPecaImportada(rascunho: rascunho)
         }
         // O Figma é uma experiência de entrada imersiva; o Dynamic Island
         // permanece físico, mas relógio/sinal não competem com menu e feixe.
@@ -87,8 +124,8 @@ struct TelaInicialAdicionar: View {
             // taxonomia mínima e sem rede. Não entra em builds normais; existe
             // para o teste proteger a principal jornada da 1.1 mesmo quando o
             // Supabase ou o simulador estiverem offline.
-            if ProcessInfo.processInfo.arguments.contains(
-                "-CanarioUITestImportacao") {
+            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestImportacao")
+                || ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
                 termos = [
                     Termo(id: "vestido", rotulo: "Dress",
                           dimensao: "categoria", exclusiva: true,
@@ -180,6 +217,53 @@ struct TelaInicialAdicionar: View {
                 }
             }
             miniaturas = imagens
+        }
+    }
+
+    private func encerrarSheetDeImportacao() {
+        carregarMiniaturas()
+        guard let proximo = detalheDepoisDaSheet else { return }
+        detalheDepoisDaSheet = nil
+        // Apresentar no ciclo seguinte evita pedir uma full-screen cover no
+        // mesmo frame em que a sheet ainda está terminando de descer.
+        Task { @MainActor in
+            await Task.yield()
+            detalheAberto = proximo
+        }
+    }
+}
+
+/// Clothing Details fora da sheet de preenchimento. A seleção permanece
+/// editável e recalcula o relatório sem repetir análise visual.
+private struct DetalhesDaPecaImportada: View {
+    let rascunho: RascunhoParaDetalhes
+    @Environment(\.dismiss) private var dismiss
+    @State private var selecionados: Set<String>
+
+    init(rascunho: RascunhoParaDetalhes) {
+        self.rascunho = rascunho
+        _selecionados = State(initialValue: rascunho.selecionados)
+    }
+
+    var body: some View {
+        NavigationStack {
+            RelatorioDaPeca(
+                termos: rascunho.termos.filter { selecionados.contains($0.id) },
+                precoAlvo: rascunho.precoAlvo,
+                miniaturaJPEG: rascunho.miniaturaJPEG,
+                todosOsTermos: rascunho.termos,
+                selecao: $selecionados,
+                descricaoAmigavel: rascunho.descricaoAmigavel,
+                aoConcluir: { dismiss() },
+                adicionarAoClosetNoCantoEsquerdo: true)
+                .id(selecionados)
+                .navigationTitle("Clothing Details")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Close") { dismiss() }
+                    }
+                }
         }
     }
 }

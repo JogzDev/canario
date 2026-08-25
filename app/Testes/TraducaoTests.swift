@@ -128,9 +128,24 @@ final class TraducaoTests: XCTestCase {
         // reconheceu a peça, e disso quem cuida é `temCategoria` acima.
         let semCategoria = FormularioDaPeca.dimensoesPermitidas(categorias: [])
         XCTAssertEqual(semCategoria,
-                       ["categoria", "cor", "estampa", "tecido", "estetica"])
+                       ["categoria", "cor", "estampa", "motivo_estampa",
+                        "tecido", "estetica"])
         XCTAssertEqual(FormularioDaPeca.podar(["verde"], termos: termos), ["verde"],
                        "a cor marcada antes da categoria não pode ser apagada")
+    }
+
+    func testMotivoVisualNaoSomeAntesDosSimilares() {
+        let termos = [
+            Termo(id: "vestido", rotulo: "Vestido", dimensao: "categoria",
+                  exclusiva: true, sinonimos: nil, semPernaBusca: nil,
+                  palavrasPt: nil, palavrasEn: nil),
+            Termo(id: "tomate_print", rotulo: "Tomate", dimensao: "motivo_estampa",
+                  exclusiva: false, sinonimos: nil, semPernaBusca: "sim",
+                  palavrasPt: nil, palavrasEn: nil),
+        ]
+        XCTAssertEqual(FormularioDaPeca.podar(
+            ["vestido", "tomate_print"], termos: termos),
+            ["vestido", "tomate_print"])
     }
 
     /// Comprimento, silhueta e cintura continuam presos à categoria: são eles

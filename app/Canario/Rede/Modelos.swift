@@ -293,6 +293,51 @@ enum Elegibilidade {
             && indice.semana == varejo.semana
     }
 
+    /// A lista do Compare não pode desaparecer só porque o índice composto
+    /// reprovou um portão. Presença no varejo continua sendo uma medição real
+    /// e comparável; o segundo eixo fica explicitamente indisponível na linha.
+    static func varejoComparavel(_ varejo: PontoSerie?) -> Bool {
+        varejo?.fonte == "varejo" && varejo?.valorBruto != nil
+    }
+
+    /// Semana mais recente que contém pelo menos duas medições de varejo.
+    /// Índice e cobertura enriquecem a comparação, mas não são pré-requisitos
+    /// para a pessoa conseguir escolher entre os atributos observados.
+    static func semanaComVarejo(_ varejo: [PontoSerie]) -> String? {
+        let porSemana = Dictionary(grouping: varejo.filter(varejoComparavel), by: \.semana)
+        return porSemana.keys.sorted(by: >).first {
+            Set(porSemana[$0, default: []].map(\.termoId)).count >= 2
+        }
+    }
+
+    /// Recorte do Compare: prefere a semana mais recente com uma base externa
+    /// material, sem apagar os demais termos que têm presença no painel. Uma
+    /// atualização parcial de dois índices não deve rebaixar a ferramenta
+    /// inteira a duas escolhas.
+    static func semanaDeComparacao(indices: [IndiceSemanal], varejo: [PontoSerie],
+                                   coberturas: [Cobertura], minimoRico: Int = 8) -> String? {
+        let semanas = Dictionary(grouping: varejo.filter(varejoComparavel), by: \.semana)
+            .keys.sorted(by: >)
+        var primeiraComVarejo: String?
+        for semana in semanas {
+            let mapaI = Dictionary(uniqueKeysWithValues: indices
+                .filter { $0.segmento == Recorte.segmento && $0.semana == semana }
+                .map { ($0.termoId, $0) })
+            let mapaV = Dictionary(uniqueKeysWithValues: varejo
+                .filter { $0.semana == semana }.map { ($0.termoId, $0) })
+            let mapaC = Dictionary(uniqueKeysWithValues: coberturas
+                .filter { $0.segmento == Recorte.segmento && $0.semana == semana }
+                .map { ($0.termoId, $0) })
+            let medidos = Set(mapaV.compactMap { varejoComparavel($0.value) ? $0.key : nil })
+            if medidos.count >= 2, primeiraComVarejo == nil { primeiraComVarejo = semana }
+            let completos = medidos.filter {
+                comparacao(indice: mapaI[$0], varejo: mapaV[$0], cobertura: mapaC[$0])
+            }
+            if completos.count >= minimoRico { return semana }
+        }
+        return primeiraComVarejo
+    }
+
     /// A aba Comparar precisa de um recorte comum; "o mais recente de cada"
     /// pode juntar semanas diferentes numa frase só. A semana também precisa
     /// sustentar uma comparação de verdade: uma atualização parcial com um

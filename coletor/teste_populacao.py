@@ -114,6 +114,9 @@ checa("infantil fora", fora_do_segmento("vestido infantil floral"), True)
 checa("moda praia fora", fora_do_segmento("biquini cortininha"), True)
 checa("lingerie fora", fora_do_segmento("calcinha algodao"), True)
 checa("roupa feminina fica", fora_do_segmento("vestido midi floral"), False)
+checa("mens fora", fora_do_segmento("men's striped polo shirt"), True)
+checa("swimwear fora", fora_do_segmento("floral swimwear"), True)
+checa("bolsa inglesa fora", e_acessorio("Leather Handbag", "Accessories"), True)
 
 # A regressao de sempre, agora cruzando este caminho.
 checa("`bota` nao pode casar `botao`", e_acessorio("Camisa Com Botao", None), False)

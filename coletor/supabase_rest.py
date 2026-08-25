@@ -164,9 +164,11 @@ def inserir(tabela, linhas, retornar=False):
     return dados or []
 
 
-def contar(tabela):
-    """Contagem exata via header Content-Range (barata)."""
-    endereco = "{}/rest/v1/{}?select=*".format(URL, tabela)
+def contar(tabela, params=""):
+    """Contagem exata via Content-Range, opcionalmente com filtros REST."""
+    separador = "&" if params else ""
+    endereco = "{}/rest/v1/{}?select=*{}{}".format(
+        URL, tabela, separador, params.lstrip("?"))
     cabecalhos = {"apikey": KEY, "Authorization": "Bearer " + KEY,
                   "Prefer": "count=exact", "Range": "0-0"}
     req = urllib.request.Request(endereco, headers=cabecalhos, method="GET")

@@ -34,7 +34,21 @@
 				<string>datadrobe</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>google-sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.693323431492-8qrjh4k10ss3obksbc2f2pcspbvglvlo</string>
+			</array>
+		</dict>
 	</array>
+	<key>GIDClientID</key>
+	<string>693323431492-8qrjh4k10ss3obksbc2f2pcspbvglvlo.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>693323431492-gkh4momvlddvc2nlaitegg6hbf2lk7a5.apps.googleusercontent.com</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>

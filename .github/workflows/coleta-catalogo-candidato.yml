@@ -1,0 +1,70 @@
+name: Coleta do catalogo candidato brasileiro
+
+# Amplia o universo de similares sem alterar a coorte estatistica congelada.
+# E manual enquanto a primeira carga prova o consumo real de cada marca. Cada
+# perna reutiliza o mesmo portao de capacidade das coletas regulares.
+on:
+  schedule:
+    # Segunda e quinta, 08:35 BRT. O intervalo maximo de quatro dias mantém o
+    # avistamento dentro dos sete dias mesmo se uma execução isolada falhar.
+    - cron: '35 11 * * 1,4'
+  workflow_dispatch:
+    inputs:
+      plataforma:
+        description: 'Plataforma da marca'
+        required: true
+        type: choice
+        options:
+          - vtex
+          - shopify
+        default: vtex
+      marca:
+        description: 'Marca exata (vazio = todas da plataforma)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canario-dados
+  cancel-in-progress: false
+
+jobs:
+  vtex:
+    if: ${{ github.event_name == 'schedule' || inputs.plataforma == 'vtex' }}
+    uses: ./.github/workflows/coleta.yml
+    with:
+      segmento: catalogo_candidato_br
+      marca: ${{ inputs.marca }}
+      pente_fino: false
+    secrets: inherit
+
+  shopify:
+    if: ${{ github.event_name == 'schedule' || inputs.plataforma == 'shopify' }}
+    uses: ./.github/workflows/coleta-shopify.yml
+    with:
+      plataforma: shopify
+      segmento: catalogo_candidato_br
+      marca: ${{ inputs.marca }}
+      verificar_isolamento: false
+    secrets: inherit
+
+  publicar:
+    needs: [vtex, shopify]
+    if: ${{ always() && (needs.vtex.result == 'success' || needs.shopify.result == 'success') }}
+    uses: ./.github/workflows/motor.yml
+    secrets: inherit
+
+  verificar:
+    needs: publicar
+    runs-on: ${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/python-mac
+      - name: Provar isolamento depois da publicação
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SEGMENTO_VERIFICADO: catalogo_candidato_br
+        run: "$PY coletor/verificar_isolamento_segmento.py"

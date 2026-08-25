@@ -134,7 +134,37 @@ def main():
         print("FALHOU: String Catalog existe, mas nao entra no app")
         return 1
 
-    # 5. Os documentos ATIVOS de distribuição precisam acompanhar a versão.
+    # 5. Google nativo precisa de quatro peças que o Xcode não relaciona por
+    #    conta própria: pacote, client iOS, audience web e URL scheme reverso.
+    #    Qualquer uma ausente compila em alguns caminhos e falha só depois que
+    #    a pessoa escolhe a conta no Google.
+    try:
+        with open(info, "rb") as arquivo:
+            plist_do_app = plistlib.load(arquivo)
+    except (OSError, ValueError) as exc:
+        print("FALHOU: Info.plist invalido ao conferir Google: {}".format(exc))
+        return 1
+    cliente_google = plist_do_app.get("GIDClientID", "")
+    servidor_google = plist_do_app.get("GIDServerClientID", "")
+    sufixo_google = ".apps.googleusercontent.com"
+    if not cliente_google.endswith(sufixo_google) or not servidor_google.endswith(sufixo_google):
+        print("FALHOU: client IDs do Google nativo ausentes no Info.plist")
+        return 1
+    esquema_esperado = "com.googleusercontent.apps." + cliente_google[:-len(sufixo_google)]
+    esquemas = {
+        esquema
+        for tipo in plist_do_app.get("CFBundleURLTypes", [])
+        for esquema in tipo.get("CFBundleURLSchemes", [])
+    }
+    if esquema_esperado not in esquemas or "datadrobe" not in esquemas:
+        print("FALHOU: URL schemes do Google ou do DataDrobe incompletos")
+        return 1
+    if ("GoogleSignIn-iOS" not in pbx
+            or "GoogleSignIn in Frameworks" not in pbx):
+        print("FALHOU: GoogleSignIn nao esta ligado ao target do app")
+        return 1
+
+    # 6. Os documentos ATIVOS de distribuição precisam acompanhar a versão.
     # O guia anterior ficou em 0.1/1.0 enquanto o projeto já estava em 1.1 e
     # chegou a afirmar que o app era pt-BR e não enviava foto. Bundle correto
     # sozinho não torna uma ficha de privacidade correta.
@@ -168,7 +198,7 @@ def main():
                 doc, ", ".join(repr(x) for x in ausentes)))
             return 1
 
-    # 6. Os guias que uma pessoa segue tem que citar o mesmo bundle -- guia com
+    # 7. Os guias que uma pessoa segue tem que citar o mesmo bundle -- guia com
     #    bundle errado ja custou uma submissao. Mas apagar as mencoes antigas
     #    tambem e ruim: elas contam o que aconteceu, e sem esse registro alguem
     #    "corrige" o projeto de volta para o bundle sem perfil de distribuicao.

@@ -21,6 +21,16 @@ on:
         required: false
         type: string
         default: ''
+      segmento:
+        description: 'Segmento isolado a coletar'
+        required: false
+        type: string
+        default: 'feminino_casual_br'
+      verificar_isolamento:
+        description: 'Verificar segmento antes de um motor posterior'
+        required: false
+        type: boolean
+        default: true
     secrets:
       SUPABASE_URL:
         required: true
@@ -40,6 +50,15 @@ on:
         description: 'Coletar só uma marca (vazio = todas da plataforma)'
         required: false
         default: ''
+      segmento:
+        description: 'Segmento isolado a coletar'
+        required: false
+        default: 'feminino_casual_br'
+      verificar_isolamento:
+        description: 'Verificar segmento antes de um motor posterior'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -69,4 +88,13 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           COLETA_PLATAFORMA: ${{ inputs.plataforma }}
           COLETA_MARCA: ${{ inputs.marca }}
+          COLETA_SEGMENTO: ${{ inputs.segmento }}
         run: "$PY coletor/coletor_varejo.py"
+
+      - name: Provar isolamento do painel adicional
+        if: ${{ inputs.segmento != 'feminino_casual_br' && inputs.verificar_isolamento }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SEGMENTO_VERIFICADO: ${{ inputs.segmento }}
+        run: "$PY coletor/verificar_isolamento_segmento.py"

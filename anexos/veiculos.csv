@@ -16,4 +16,14 @@ Refinery29,US,https://www.refinery29.com,editorial,media,/feed.xml,https://www.r
 Hypebeast,HK,https://hypebeast.com,editorial,media,/feed,https://hypebeast.com/feed,20,2026-07-24,nao,2026-07-24,20/20 itens com titulo+link+data,masculino
 Highsnobiety,DE,https://www.highsnobiety.com,editorial,media,/feed,https://www.highsnobiety.com/feed,17,2026-07-23,nao,2026-07-24,17/17 itens com titulo+link+data,masculino
 Dazed,UK,https://www.dazeddigital.com,editorial,baixa,/rss,https://www.dazeddigital.com/rss,15,2026-07-23,nao,2026-07-24,15/15 itens com titulo+link+data
+Claudia,BR,https://claudia.abril.com.br,editorial,media,wp-json,https://claudia.abril.com.br/wp-json/wp/v2/posts?per_page=10,10,2026-08-23,sim,2026-08-24,10/10 itens validos; WP JSON e robots permitem backfill,feminino
+Marie Claire US,US,https://www.marieclaire.com,editorial,alta,/rss,https://www.marieclaire.com/rss,50,2026-08-20,nao,2026-08-24,50/50 itens com titulo+link+data,feminino
+The Zoe Report,US,https://www.thezoereport.com,editorial,alta,/rss,https://www.thezoereport.com/rss,50,2026-08-13,nao,2026-08-24,50/50 itens com titulo+link+data,feminino
+W Magazine,US,https://www.wmagazine.com,editorial,alta,/rss,https://www.wmagazine.com/rss,50,2026-08-11,nao,2026-08-24,50/50 itens com titulo+link+data,feminino
+Glamour US,US,https://www.glamour.com,editorial,alta,link-alternate,https://www.glamour.com/feed/rss,30,2026-08-15,nao,2026-08-24,30/30 itens com titulo+link+data,feminino
+Fashion Gone Rogue,US,https://www.fashiongonerogue.com,editorial,media,wp-json,https://www.fashiongonerogue.com/wp-json/wp/v2/posts?per_page=10,10,2025-08-12,sim,2026-08-24,10/10 itens validos; WP JSON e robots permitem backfill,feminino
+Fashion Bomb Daily,US,https://fashionbombdaily.com,editorial,media,wp-json,https://fashionbombdaily.com/wp-json/wp/v2/posts?per_page=10,10,2026-08-15,sim,2026-08-24,10/10 itens validos; WP JSON e robots permitem backfill,feminino
+Tom and Lorenzo,US,https://tomandlorenzo.com,editorial,media,wp-json,https://tomandlorenzo.com/wp-json/wp/v2/posts?per_page=10,10,2026-08-21,sim,2026-08-24,10/10 itens validos; WP JSON e robots permitem backfill,misto
+Fashion Week Daily,US,https://fashionweekdaily.com,editorial,media,wp-json,https://fashionweekdaily.com/wp-json/wp/v2/posts?per_page=10,10,2026-08-20,sim,2026-08-24,10/10 itens validos; WP JSON e robots permitem backfill,feminino
+Red Carpet Fashion Awards,UK,https://www.redcarpet-fashionawards.com,editorial,media,/feed,https://www.redcarpet-fashionawards.com/feed,30,2026-08-10,nao,2026-08-24,30/30 itens com titulo+link+data; WP JSON recusado por robots,feminino
 Lyst,UK,https://www.lyst.com,dado_agregado,alta,falhou,,,,nao,2026-07-24,"dado_agregado, nao editorial: sem RSS; entra por outra via (secao 12), nao pela descoberta de feed"

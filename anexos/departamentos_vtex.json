@@ -20,6 +20,26 @@
    "origem": "busca"
   }
  ],
+ "Calvin Klein BR": [
+  {
+   "id": 621,
+   "loja_so_feminina": false,
+   "nome": "Feminino",
+   "origem": "busca"
+  },
+  {
+   "id": 1000003,
+   "loja_so_feminina": false,
+   "nome": "Oportunidades",
+   "origem": "busca"
+  },
+  {
+   "id": 1000203,
+   "loja_so_feminina": false,
+   "nome": "CK Sport",
+   "origem": "busca"
+  }
+ ],
  "Cantao": [
   {
    "id": 13,
@@ -62,6 +82,20 @@
    "origem": "busca"
   }
  ],
+ "Damyller": [
+  {
+   "id": 101,
+   "loja_so_feminina": false,
+   "nome": "Moda Feminina",
+   "origem": "busca"
+  },
+  {
+   "id": 106,
+   "loja_so_feminina": false,
+   "nome": "Moda Feminina Jeans",
+   "origem": "busca"
+  }
+ ],
  "Dress To": [
   {
    "id": 28,
@@ -72,6 +106,14 @@
    "id": 58,
    "nome": "dress to",
    "origem": "arvore"
+  }
+ ],
+ "Dudalina": [
+  {
+   "id": 47,
+   "loja_so_feminina": false,
+   "nome": "Feminino",
+   "origem": "busca"
   }
  ],
  "Farm": [
@@ -148,6 +190,28 @@
    "origem": "busca"
   }
  ],
+ "Iorane": [
+  {
+   "id": 345,
+   "loja_so_feminina": true,
+   "nome": "Shop All",
+   "origem": "busca"
+  }
+ ],
+ "John John": [
+  {
+   "id": 1,
+   "loja_so_feminina": false,
+   "nome": "Category",
+   "origem": "busca"
+  },
+  {
+   "id": 2,
+   "loja_so_feminina": false,
+   "nome": "Feminino",
+   "origem": "busca"
+  }
+ ],
  "Lanca Perfume": [
   {
    "id": 1,
@@ -162,6 +226,64 @@
    "origem": "busca"
   }
  ],
+ "Levis BR": [
+  {
+   "id": 126419,
+   "loja_so_feminina": false,
+   "nome": "Feminino",
+   "origem": "busca"
+  }
+ ],
+ "Lez a Lez": [
+  {
+   "id": 1,
+   "loja_so_feminina": true,
+   "nome": "Vestidos",
+   "origem": "busca"
+  },
+  {
+   "id": 4,
+   "loja_so_feminina": true,
+   "nome": "Saias",
+   "origem": "busca"
+  },
+  {
+   "id": 7,
+   "loja_so_feminina": true,
+   "nome": "Blusas",
+   "origem": "busca"
+  },
+  {
+   "id": 11,
+   "loja_so_feminina": true,
+   "nome": "Calças",
+   "origem": "busca"
+  },
+  {
+   "id": 13,
+   "loja_so_feminina": true,
+   "nome": "Camisas",
+   "origem": "busca"
+  },
+  {
+   "id": 16,
+   "loja_so_feminina": true,
+   "nome": "Casacos",
+   "origem": "busca"
+  },
+  {
+   "id": 22,
+   "loja_so_feminina": true,
+   "nome": "Macacões",
+   "origem": "busca"
+  },
+  {
+   "id": 26,
+   "loja_so_feminina": true,
+   "nome": "Shorts",
+   "origem": "busca"
+  }
+ ],
  "Maria Filo": [
   {
    "id": 35,
@@ -172,6 +294,20 @@
    "id": 60,
    "nome": "Loja",
    "origem": "busca"
+  }
+ ],
+ "Maria Valentina": [
+  {
+   "id": 900000,
+   "loja_so_feminina": true,
+   "nome": "OUTLET",
+   "origem": "arvore"
+  },
+  {
+   "id": 102,
+   "loja_so_feminina": true,
+   "nome": "Roupas",
+   "origem": "arvore"
   }
  ],
  "Morena Rosa": [
@@ -195,6 +331,34 @@
   {
    "id": 131,
    "nome": "Linhas",
+   "origem": "busca"
+  }
+ ],
+ "Osklen": [
+  {
+   "id": 134,
+   "loja_so_feminina": true,
+   "nome": "Coleção",
+   "origem": "busca"
+  },
+  {
+   "id": 135,
+   "loja_so_feminina": true,
+   "nome": "Outlet",
+   "origem": "busca"
+  }
+ ],
+ "Sacada": [
+  {
+   "id": 1,
+   "loja_so_feminina": true,
+   "nome": "OFF",
+   "origem": "busca"
+  },
+  {
+   "id": 4,
+   "loja_so_feminina": true,
+   "nome": "SHOP",
    "origem": "busca"
   }
  ],

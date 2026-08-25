@@ -19,6 +19,8 @@ import UIKit
 /// sem metadados, pode ser persistida e é apagada com a peça.
 struct ImportarPeca: View {
     let termos: [Termo]
+    var mostrarDetalhes: (_ selecionados: Set<String>, _ precoAlvo: Double?,
+                          _ miniaturaJPEG: Data?, _ descricaoAmigavel: String?) -> Void
 
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
@@ -33,11 +35,12 @@ struct ImportarPeca: View {
     @State private var avisoDeUso: String?
 
     enum Espera {
-        case lendoArquivo, separandoPeca, analisandoLocal, analisandoNaNuvem
+        case lendoArquivo, lendoLink, separandoPeca, analisandoLocal, analisandoNaNuvem
 
         var mensagem: String {
             switch self {
             case .lendoArquivo:     return "Reading the file…"
+            case .lendoLink:        return "Checking the product link…"
             case .separandoPeca:    return "Separating the garment…"
             case .analisandoLocal:  return "Reading the garment…"
             case .analisandoNaNuvem: return "Reading the garment…"
@@ -48,7 +51,7 @@ struct ImportarPeca: View {
         /// ruído; ausência de aviso em espera longa parece travamento.
         var expectativa: String? {
             switch self {
-            case .lendoArquivo, .analisandoLocal: return nil
+            case .lendoArquivo, .lendoLink, .analisandoLocal: return nil
             case .separandoPeca:
                 return "This happens on this iPhone."
             case .analisandoNaNuvem:
@@ -58,7 +61,8 @@ struct ImportarPeca: View {
     }
     @State private var erro: String?
     @State private var detectados: Set<String> = []
-    /// As quatro telas do fluxo, nomeadas.
+    /// As três telas do fluxo de preenchimento, nomeadas. O resultado abre
+    /// depois como Clothing Details em tela cheia, fora desta sheet.
     ///
     /// Antes isto era um encadeado de booleanos -- `lendo`, `imagemPendente`,
     /// `confirmou` -- e a tela de atributos convivia com a de upload no mesmo
@@ -72,8 +76,6 @@ struct ImportarPeca: View {
         case confirmarAlvo
         /// O que o app leu, já marcado, para a pessoa corrigir.
         case atributos
-        /// O painel de mercado.
-        case painel
     }
 
     /// Ver o comentário na tela de confirmação do alvo.
@@ -83,6 +85,7 @@ struct ImportarPeca: View {
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
     @State private var precoDigitado = ""
+    @State private var linkDigitado = ""
     @State private var miniaturaJPEG: Data?
     @State private var imagemPendente: CGImage?
     /// A foto como ela entrou, antes de qualquer recorte.
@@ -112,6 +115,7 @@ struct ImportarPeca: View {
     @State private var nomeConfirmadoPendente: String?
     @State private var descricaoConfirmadaPendente: String?
     @FocusState private var precoEmFoco: Bool
+    @FocusState private var linkEmFoco: Bool
     @FocusState private var dicaDoAlvoEmFoco: Bool
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
@@ -147,20 +151,6 @@ struct ImportarPeca: View {
                     case .entrada:       telaDeEntrada
                     case .confirmarAlvo: confirmacaoDoAlvo
                     case .atributos:     telaDeAtributos
-                    case .painel:
-                        RelatorioDaPeca(
-                            termos: termos.filter { detectados.contains($0.id) },
-                            precoAlvo: precoAlvo,
-                            miniaturaJPEG: miniaturaJPEG,
-                            pecaSalva: nil,
-                            todosOsTermos: termos,
-                            selecao: $detectados,
-                            aoConcluir: { encerrarFluxo() })
-                        // Corrigir um chip aqui recria a view, e o `.task` dela
-                        // recalcula o painel. NÃO chama a Luna de novo: reler a
-                        // foto é outra ação, e custa dinheiro. Corrigir o que
-                        // ela leu é grátis e instantâneo.
-                        .id(detectados)
                     }
                 }
             }
@@ -180,7 +170,14 @@ struct ImportarPeca: View {
             }
         }
         // Lido na abertura, para quem já estava perto do teto antes de começar.
-        .task { avisoDeUso = await RegistroDeAnalises.shared.aviso() }
+        .task {
+            avisoDeUso = await RegistroDeAnalises.shared.aviso()
+            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
+                detectados = Set(["vestido", "preto"])
+                procedencia = ["Offline interface test."]
+                etapa = .atributos
+            }
+        }
         .fileImporter(
             isPresented: $mostrandoSeletor,
             allowedContentTypes: tiposAceitos,
@@ -390,7 +387,10 @@ struct ImportarPeca: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") { precoEmFoco = false }
+                Button("Done") {
+                    precoEmFoco = false
+                    linkEmFoco = false
+                }
             }
         }
     }
@@ -402,6 +402,13 @@ struct ImportarPeca: View {
     private var telaDeAtributos: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                if let miniaturaJPEG {
+                    PreviaDoAlvo(dados: miniaturaJPEG,
+                                 id: miniaturaJPEG.count,
+                                 altura: 220,
+                                 selecionada: true)
+                        .accessibilityLabel("Item being described")
+                }
                 if let erro {
                     // O título dizia "I could not tell which category this is"
                     // em TODA falha -- inclusive quando o motivo era o teto
@@ -419,9 +426,10 @@ struct ImportarPeca: View {
                 atributos
                 if !detectados.isEmpty {
                     Button {
-                        etapa = .painel
+                        mostrarDetalhes(detectados, precoAlvo, miniaturaJPEG,
+                                        descricaoDoAlvoNormalizada)
                     } label: {
-                        Label("See the market panel", systemImage: "chart.bar.doc.horizontal")
+                        Label("Open Clothing Details", systemImage: "tshirt")
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 44)
                     }
@@ -434,7 +442,25 @@ struct ImportarPeca: View {
 
     private var importador: some View {
         Cartao {
-            Text("Photo or file").font(Tokens.Fonte.secao)
+            Text("Product link, photo or file").font(Tokens.Fonte.secao)
+            TextField("Paste a product link", text: $linkDigitado)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+                .textFieldStyle(.roundedBorder)
+                .focused($linkEmFoco)
+                .submitLabel(.go)
+                .onSubmit { Task { await processarLink() } }
+            Button {
+                Task { await processarLink() }
+            } label: {
+                Label("Read product link", systemImage: "link")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(linkDigitado.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            Divider()
             // A câmera vem primeiro porque é o gesto mais direto de quem está
             // com a peça na mão -- que é a situação do comprador em showroom.
             // Some no simulador e em aparelho sem câmera, em vez de abrir nada.
@@ -518,7 +544,7 @@ struct ImportarPeca: View {
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                     FluxoDeChips(
-                        termos: termos.filter { $0.dimensao == dimensao },
+                        termos: termosVisiveis(na: dimensao),
                         todos: termos,
                         marcados: $detectados)
                 }
@@ -547,10 +573,31 @@ struct ImportarPeca: View {
             .map(\.id))
         let permitidas = FormularioDaPeca.dimensoesPermitidas(categorias: categorias)
         var vistas: [String] = []
-        for t in termos where permitidas.contains(t.dimensao) && !vistas.contains(t.dimensao) {
-            vistas.append(t.dimensao)
+        for t in termos where permitidas.contains(t.dimensao) {
+            let visivel = t.dimensao == "motivo_estampa" ? "estampa" : t.dimensao
+            if !vistas.contains(visivel) { vistas.append(visivel) }
         }
         return vistas
+    }
+
+    private func termosVisiveis(na dimensao: String) -> [Termo] {
+        let encontrados = termos.filter {
+            $0.dimensao == dimensao
+                || (dimensao == "estampa" && $0.dimensao == "motivo_estampa")
+        }
+        guard dimensao == "estampa" else { return encontrados }
+        // Animal print é uma linguagem central da moda feminina, não um item
+        // residual depois de padrões com mais títulos catalogados. A ordem da
+        // tela é de reconhecimento humano; a ordem estatística segue intacta.
+        let prioridade = [
+            "animal_print", "floral", "listra", "xadrez", "geometrica",
+            "conversacional", "tomate_print", "cereja_print", "morango_print",
+            "banana_print", "abacaxi_print", "melancia_print", "liso",
+        ]
+        return encontrados.sorted {
+            (prioridade.firstIndex(of: $0.id) ?? 99)
+                < (prioridade.firstIndex(of: $1.id) ?? 99)
+        }
     }
 
     // MARK: Leitura
@@ -569,6 +616,57 @@ struct ImportarPeca: View {
             return
         }
         await prepararConfirmacao(imagem, nome: "photo library image")
+    }
+
+    /// URL já coletada é a rota mais barata e mais auditável: reaproveita os
+    /// atributos derivados do título da própria loja e não chama visão.
+    private func processarLink() async {
+        let texto = linkDigitado.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: texto), url.scheme == "https", url.host != nil else {
+            erro = "Paste a complete https product link."
+            return
+        }
+        linkEmFoco = false
+        esperaAtual = .lendoLink
+        lendo = true
+        erro = nil
+        do {
+            guard let produto = try await Supabase.shared.produtoDoPainel(url: texto) else {
+                erro = "This product is not in the market panel yet. Add a photo instead and I will read the visible item."
+                lendo = false
+                return
+            }
+            let existentes = Set(termos.map(\.id))
+            detectados = FormularioDaPeca.podar(
+                Set(produto.termIDs).intersection(existentes), termos: termos)
+            guard FormularioDaPeca.temCategoria(detectados, termos: termos) else {
+                erro = "I found this product, but its category is not classified yet. Add a photo or choose the attributes manually."
+                etapa = .atributos
+                lendo = false
+                return
+            }
+            if precoDigitado.isEmpty, let preco = produto.price {
+                precoDigitado = String(format: "%.2f", preco)
+                    .replacingOccurrences(of: ".", with: ",")
+            }
+            nomeDoArquivo = "\(produto.brand) product link"
+            procedencia = [
+                "Matched \(produto.brand) · \(produto.title ?? "product") in the market panel.",
+                "Attributes came from the store title and the panel taxonomy. No visual-analysis credit was used."
+            ]
+            if let imagem = produto.imageURL.flatMap(URL.init(string:)),
+               imagem.scheme == "https",
+               let (dados, resposta) = try? await URLSession.shared.data(from: imagem),
+               (resposta as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) == true,
+               dados.count <= 8_000_000,
+               let cg = MiniaturaLocal.imagem(de: dados) {
+                miniaturaJPEG = await MiniaturaLocal.dados(de: cg)
+            }
+            etapa = .atributos
+        } catch {
+            erro = "I couldn't check this product link right now. You can still add a photo or file."
+        }
+        lendo = false
     }
 
     /// Câmera e fototeca passam pelo mesmo portão visual. A opção pré-selecionada
@@ -653,7 +751,6 @@ struct ImportarPeca: View {
         case .entrada:       return "Analyze an item"
         case .confirmarAlvo: return "Which item"
         case .atributos:     return "Check what I read"
-        case .painel:        return "Market panel"
         }
     }
 
@@ -665,7 +762,6 @@ struct ImportarPeca: View {
         case .entrada:       break
         case .confirmarAlvo: cancelarConfirmacao()
         case .atributos:     etapa = .entrada
-        case .painel:        etapa = .atributos
         }
     }
 
@@ -678,17 +774,6 @@ struct ImportarPeca: View {
         alvoEscolhido = nil
         daFototeca = nil
         descricaoDoAlvo = ""
-    }
-
-    /// A peça foi guardada e o fluxo acabou. Volta ao começo pronto para a
-    /// próxima, em vez de deixar a pessoa desandar as etapas uma a uma.
-    private func encerrarFluxo() {
-        cancelarConfirmacao()
-        detectados = []
-        procedencia = []
-        miniaturaJPEG = nil
-        precoDigitado = ""
-        erro = nil
     }
 
     private var descricaoDoAlvoNormalizada: String? {
