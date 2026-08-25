@@ -50,6 +50,7 @@
 		0D84DC35CA70B3050CF0ECA0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00CF251BD47C47E7D73F68E0 /* Assets.xcassets */; };
 		B5F4296D54E2C90E4074A18A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 810255762B89FD0FC5D16D6A /* PrivacyInfo.xcprivacy */; };
 		4E76466AC997891ED20776B2 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CDE29ACC1749F039A6BA5E6B /* Localizable.xcstrings */; };
+		0475A93E344B00527EBFC903 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2D5E68DB6AE4F168B842F9A4 /* GoogleSignIn */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -117,7 +118,9 @@
 		287CA93205B19FFB0C44728B = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (
+				0475A93E344B00527EBFC903 /* GoogleSignIn in Frameworks */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		6E4B6D6043C593A65066BFD5 = {
@@ -247,6 +250,9 @@
 			name = "Canario";
 			productName = "Canario";
 			productReference = DCA037677632104E4598159D ;
+			packageProductDependencies = (
+				2D5E68DB6AE4F168B842F9A4 /* GoogleSignIn */,
+			);
 			productType = "com.apple.product-type.application";
 		};
 		309A40032FBF2290592E48A9 /* CanarioUITests */ = {
@@ -279,6 +285,9 @@
 			knownRegions = (en, Base, );
 			mainGroup = 017282487AEAE6079E734CB7 ;
 			productRefGroup = 5CAC9C2F49F815B0F5A5D463 ;
+			packageReferences = (
+				49479D10DDBF4F3E3DA41713 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -516,6 +525,22 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		49479D10DDBF4F3E3DA41713 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = { kind = exactVersion; version = 9.0.0; };
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2D5E68DB6AE4F168B842F9A4 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49479D10DDBF4F3E3DA41713 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXTargetDependency section */
 		88C94579B28BC77F9DB777AC = {isa = PBXTargetDependency; target = 60FCB50722E3F1420F940980; targetProxy = 23962201AAB25B2DF4F2D4A2; };

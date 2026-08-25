@@ -33,6 +33,8 @@ TIME_DE_DESENVOLVIMENTO = "67AYPRFZH8"
 IOS_MINIMO = "17.0"
 VERSAO_DO_APP = "1.2"
 BUILD_DO_APP = "1"
+GOOGLE_SIGN_IN_VERSAO = "9.0.0"
+GOOGLE_SIGN_IN_REPOSITORIO = "https://github.com/google/GoogleSignIn-iOS"
 
 
 def ident(*partes):
@@ -113,6 +115,9 @@ def main():
     grupo_produtos = ident("grupo", "produtos")
     proxy_ui = ident("proxy", "ui-tests", "app")
     dependencia_ui = ident("dependencia", "ui-tests", "app")
+    pacote_google = ident("pacote", "GoogleSignIn")
+    produto_google = ident("produto-pacote", "GoogleSignIn")
+    build_google = ident("build-pacote", "GoogleSignIn")
 
     # Um grupo por pasta, para o navegador do Xcode espelhar o disco.
     pastas = sorted({os.path.dirname(a) for a in arquivos if os.path.dirname(a) != NOME})
@@ -138,6 +143,8 @@ def main():
     for caminho, nome, _tipo in pacote:
         A("\t\t{} /* {} in Resources */ = {{isa = PBXBuildFile; fileRef = {} /* {} */; }};".format(
             ident("build", caminho), nome, ident("ref", caminho), nome))
+    A("\t\t{} /* GoogleSignIn in Frameworks */ = {{isa = PBXBuildFile; productRef = {} /* GoogleSignIn */; }};".format(
+        build_google, produto_google))
     A("/* End PBXBuildFile section */")
 
     # --- PBXFileReference ---
@@ -191,7 +198,8 @@ def main():
     A("\t\t{} = {{".format(fase_frameworks))
     A("\t\t\tisa = PBXFrameworksBuildPhase;")
     A("\t\t\tbuildActionMask = 2147483647;")
-    A("\t\t\tfiles = ();")
+    A("\t\t\tfiles = (\n\t\t\t\t{} /* GoogleSignIn in Frameworks */,\n\t\t\t);".format(
+        build_google))
     A("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
     A("\t\t};")
     A("\t\t{} = {{".format(fase_frameworks_ui))
@@ -277,6 +285,8 @@ def main():
     A('\t\t\tname = "{}";'.format(NOME))
     A('\t\t\tproductName = "{}";'.format(NOME))
     A("\t\t\tproductReference = {} ;".format(produto))
+    A("\t\t\tpackageProductDependencies = (\n\t\t\t\t{} /* GoogleSignIn */,\n\t\t\t);".format(
+        produto_google))
     A('\t\t\tproductType = "com.apple.product-type.application";')
     A("\t\t};")
     A("\t\t{} /* {}UITests */ = {{".format(alvo_ui, NOME))
@@ -311,6 +321,8 @@ def main():
     A("\t\t\tknownRegions = (en, Base, );")
     A("\t\t\tmainGroup = {} ;".format(grupo_raiz))
     A("\t\t\tproductRefGroup = {} ;".format(grupo_produtos))
+    A("\t\t\tpackageReferences = (\n\t\t\t\t{} /* XCRemoteSwiftPackageReference \"GoogleSignIn-iOS\" */,\n\t\t\t);".format(
+        pacote_google))
     A('\t\t\tprojectDirPath = "";')
     A('\t\t\tprojectRoot = "";')
     A("\t\t\ttargets = (\n\t\t\t\t{} ,\n\t\t\t\t{} ,\n\t\t\t);".format(
@@ -463,6 +475,25 @@ def main():
         A("\t\t\tdefaultConfigurationName = Release;")
         A("\t\t};")
     A("/* End XCConfigurationList section */")
+
+    # --- Swift Package Manager ---
+    A("\n/* Begin XCRemoteSwiftPackageReference section */")
+    A('\t\t{} /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {{'.format(
+        pacote_google))
+    A("\t\t\tisa = XCRemoteSwiftPackageReference;")
+    A('\t\t\trepositoryURL = "{}";'.format(GOOGLE_SIGN_IN_REPOSITORIO))
+    A("\t\t\trequirement = { kind = exactVersion; version = %s; };" % GOOGLE_SIGN_IN_VERSAO)
+    A("\t\t};")
+    A("/* End XCRemoteSwiftPackageReference section */")
+
+    A("\n/* Begin XCSwiftPackageProductDependency section */")
+    A("\t\t{} /* GoogleSignIn */ = {{".format(produto_google))
+    A("\t\t\tisa = XCSwiftPackageProductDependency;")
+    A("\t\t\tpackage = {} /* XCRemoteSwiftPackageReference \"GoogleSignIn-iOS\" */;".format(
+        pacote_google))
+    A("\t\t\tproductName = GoogleSignIn;")
+    A("\t\t};")
+    A("/* End XCSwiftPackageProductDependency section */")
 
     # --- PBXTargetDependency ---
     A("\n/* Begin PBXTargetDependency section */")

@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 24/08/2026 às 21:04 BRT.** Esta lista substitui a triagem de
+**Atualizado em 24/08/2026 às 21:35 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -11,6 +11,9 @@
 
 ## Fechamento de release — depois do Figma
 
+- Repetir o login Google no iPhone com o novo SDK nativo. O cliente OAuth iOS,
+  os IDs aceitos no Supabase, o callback e o build já estão verdes; esta prova
+  confirma que o usuário vê Google/DataDrobe sem o domínio interno da Supabase.
 - Rodar a regressão visual no iPhone e a suíte completa.
 - Gerar Archive Release 1.2, validar assinatura/entitlements, enviar ao
   TestFlight e repetir os fluxos críticos no binário distribuído.
@@ -19,10 +22,12 @@
 
 ## Validações posteriores, não bloqueadoras da implementação
 
-- **Holdout Luna de 300 imagens.** O portão humano foi aberto e o runtime está
-  protegido. A rodada maior consome créditos e mede generalização; não é
-  necessária para aplicar o Figma nem para os fluxos manuais continuarem
-  funcionando.
+- **Holdout Luna de 300 imagens.** A taxonomia expandida da 1.2 mudou o conteúdo
+  do prompt. Três novas rodadas contra o mesmo gabarito humano deram 57/72 em
+  categoria e 57/72 em cor (79,2%): o portão de 80% ficou fechado e impediu o
+  gasto de 300 respostas. Corrigir as abstenções recorrentes em camisa/short,
+  repetir as 24 e só então liberar o holdout. Isso não bloqueia o Figma nem os
+  fluxos manuais existentes.
 - **Cold launch e artefato rosa no iOS 18.7.** Exigem o iPhone 15 no qual foram
   relatados. Build, simulador iOS 26.2 e os fluxos automatizados estão verdes.
 - **Novos veículos editoriais.** ELLE US, Harper's Bazaar US, Marie Claire US e
@@ -37,6 +42,8 @@
 ## Entregue na 1.2 antes do Figma
 
 - Apple, Google e e-mail/senha validados fisicamente no iPhone pelo JP em 24/08.
+  O fluxo Google hospedado foi depois substituído pelo SDK oficial nativo para
+  não expor o domínio interno da Supabase; integração e build estão verdes.
 - E-mail transacional gratuito validado de ponta a ponta em 24/08: Supabase →
   Brevo → Gmail, com envio, entrega e primeira abertura registrados. O chamado
   **#5525910** recebeu a confirmação e foi respondido como resolvido; usuários

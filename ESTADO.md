@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 24/08/2026, 21:04 em São Paulo
+**Última atualização:** 24/08/2026, 21:35 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -23,10 +23,10 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 |---|---|---|
 | Dados e pipeline | coorte BR preservada; direção internacional isolada e verificada | 5 marcas · 4.956 visitados · **3.768 produtos elegíveis** no segmento |
 | Banco | plano gratuito; A27 e A30 em produção | **404.343.955 bytes / 500 MB (80,9%)** após a expansão internacional |
-| Rota paga de visão (Luna) | de pé; portão humano **aberto** | 59/72 categoria · 60/72 cor |
+| Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
-| Autenticação no aparelho | **Apple, Google e e-mail validados** | três provedores confirmados no iPhone em 24/08 |
+| Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
 | Testes | **239 Swift** · portões Python ativos · 6 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
 
 ## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
@@ -56,8 +56,12 @@ Depois dos filtros de população, **3.768 produtos** ficaram em `direcao_intl`:
 produto dessas marcas fora do segmento. Elas não entram no denominador
 brasileiro e, com cinco fontes, continuam abaixo do mínimo de oito para índice.
 
-O único bloqueio funcional externo antes do fechamento da release são as telas
+O único bloqueio de implementação antes do fechamento da release são as telas
 finais do Figma. Apple, Google e e-mail foram validados no iPhone em 24/08. O
+Google foi depois migrado do navegador hospedado pela Supabase para o SDK nativo
+oficial: o cliente OAuth iOS, os dois públicos aceitos pelo Supabase e o esquema
+de retorno estão configurados, e o build de simulador passou. Falta apenas
+repetir esse provedor no iPhone para validar o novo caminho físico. O
 SMTP gratuito está resolvido: a Brevo confirmou no pedido
 **#5525910** que o relay transacional já estava habilitado, e um cadastro técnico
 percorreu Supabase → Brevo → Gmail com eventos de envio, entrega e primeira
