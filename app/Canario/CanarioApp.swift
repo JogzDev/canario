@@ -52,8 +52,15 @@ struct Raiz: View {
 
     /// Argumento de inspeção visual: permite abrir o Closet no simulador sem
     /// adicionar um atalho de produto nem disparar consultas das abas ocultas.
-    @State private var aba: Aba = ProcessInfo.processInfo.arguments.contains(
-        "-CanarioAbrirCloset") ? .armario : .adicionar
+    @State private var aba: Aba = {
+        if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirCloset") {
+            return .armario
+        }
+        if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirTrends") {
+            return .dados
+        }
+        return .adicionar
+    }()
     @State private var buscaAberta = false
     @State private var menuAberto = ProcessInfo.processInfo.arguments.contains(
         "-CanarioMenuAberto")
@@ -76,7 +83,6 @@ struct Raiz: View {
             }
         }
         .overlay { sobreposicoes }
-        .statusBarHidden(aba == .adicionar)
         .animation(.snappy(duration: 0.35), value: menuAberto)
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })
@@ -98,7 +104,8 @@ struct Raiz: View {
         TabView(selection: $aba) {
             Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
                 value: .adicionar) {
-                TelaInicialAdicionar()
+                TelaInicialAdicionar(menuAberto: menuAberto,
+                                     alternarMenu: { menuAberto.toggle() })
             }
             Tab(Aba.armario.titulo, systemImage: Aba.armario.simbolo,
                 value: .armario) {
@@ -107,7 +114,8 @@ struct Raiz: View {
             }
             Tab(Aba.dados.titulo, systemImage: Aba.dados.simbolo,
                 value: .dados) {
-                Explorar()
+                Explorar(menuAberto: menuAberto,
+                         alternarMenu: { menuAberto.toggle() })
             }
             Tab(Aba.buscar.titulo, systemImage: Aba.buscar.simbolo,
                 value: .buscar, role: .search) {
@@ -138,11 +146,15 @@ struct Raiz: View {
     @ViewBuilder
     private var conteudoDaAba: some View {
         switch aba {
-        case .adicionar: TelaInicialAdicionar()
+        case .adicionar:
+            TelaInicialAdicionar(menuAberto: menuAberto,
+                                 alternarMenu: { menuAberto.toggle() })
         case .armario:
             MinhasPecas(menuAberto: menuAberto,
                         alternarMenu: { menuAberto.toggle() })
-        case .dados: Explorar()
+        case .dados:
+            Explorar(menuAberto: menuAberto,
+                     alternarMenu: { menuAberto.toggle() })
         case .buscar: Analisar()
         }
     }
@@ -161,24 +173,6 @@ struct Raiz: View {
                 .zIndex(10)
             }
 
-            // Um único controle troca apenas o símbolo. Assim ellipsis e X
-            // ocupam literalmente a mesma coordenada e compartilham a mesma
-            // safe area; duas telas nunca mais podem divergir no recuo.
-            if aba == .adicionar || (aba == .armario && menuAberto) {
-                VStack {
-                    HStack {
-                        BotaoCircularDoMenu(
-                            simbolo: menuAberto ? "xmark" : "ellipsis",
-                            acessibilidade: menuAberto ? "Close menu" : "Open menu",
-                            acao: { menuAberto.toggle() })
-                        Spacer()
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .zIndex(11)
-            }
         }
     }
 }

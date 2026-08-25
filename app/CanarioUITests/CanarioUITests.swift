@@ -36,6 +36,18 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Done"].exists)
     }
 
+    func testAsTresTelasPrincipaisUsamOMesmoMenu() {
+        for argumento in [nil, "-CanarioAbrirCloset", "-CanarioAbrirTrends"] {
+            let app = aplicativo(argumentos: argumento.map { [$0] } ?? [])
+            app.launch()
+
+            XCTAssertTrue(app.buttons["Open menu"].waitForExistence(timeout: 5))
+            app.buttons["Open menu"].tap()
+            XCTAssertTrue(app.buttons["Privacy"].waitForExistence(timeout: 2))
+            app.terminate()
+        }
+    }
+
     func testFillInfoAbreClothingDetailsForaDaSheet() {
         let app = aplicativo(argumentos: ["-CanarioUITestDetalhes"])
         app.launch()

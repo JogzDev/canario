@@ -21,6 +21,8 @@ import SwiftUI
 ///    todo cartão dizia a mesma frase de perna. Agora cada um traz o número com
 ///    unidade, a regra que produziu o estado e o nome de quem publicou.
 struct Explorar: View {
+    var menuAberto = false
+    var alternarMenu: (() -> Void)?
     @State private var todos: [IndiceSemanal] = []
     @State private var termos: [Termo] = []
     @State private var series: [String: [PontoSerie]] = [:]
@@ -84,6 +86,13 @@ struct Explorar: View {
                 }
             }
             .navigationTitle("Weekly Trends")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if let alternarMenu {
+                        BotaoDoMenu(menuAberto: menuAberto, acao: alternarMenu)
+                    }
+                }
+            }
         }
         .task { await carregar() }
     }

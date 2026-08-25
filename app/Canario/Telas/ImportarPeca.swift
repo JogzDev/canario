@@ -402,6 +402,13 @@ struct ImportarPeca: View {
     private var telaDeAtributos: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                if let miniaturaJPEG {
+                    PreviaDoAlvo(dados: miniaturaJPEG,
+                                 id: miniaturaJPEG.count,
+                                 altura: 220,
+                                 selecionada: true)
+                        .accessibilityLabel("Item being described")
+                }
                 if let erro {
                     // O título dizia "I could not tell which category this is"
                     // em TODA falha -- inclusive quando o motivo era o teto
@@ -537,7 +544,7 @@ struct ImportarPeca: View {
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                     FluxoDeChips(
-                        termos: termos.filter { $0.dimensao == dimensao },
+                        termos: termosVisiveis(na: dimensao),
                         todos: termos,
                         marcados: $detectados)
                 }
@@ -566,10 +573,31 @@ struct ImportarPeca: View {
             .map(\.id))
         let permitidas = FormularioDaPeca.dimensoesPermitidas(categorias: categorias)
         var vistas: [String] = []
-        for t in termos where permitidas.contains(t.dimensao) && !vistas.contains(t.dimensao) {
-            vistas.append(t.dimensao)
+        for t in termos where permitidas.contains(t.dimensao) {
+            let visivel = t.dimensao == "motivo_estampa" ? "estampa" : t.dimensao
+            if !vistas.contains(visivel) { vistas.append(visivel) }
         }
         return vistas
+    }
+
+    private func termosVisiveis(na dimensao: String) -> [Termo] {
+        let encontrados = termos.filter {
+            $0.dimensao == dimensao
+                || (dimensao == "estampa" && $0.dimensao == "motivo_estampa")
+        }
+        guard dimensao == "estampa" else { return encontrados }
+        // Animal print é uma linguagem central da moda feminina, não um item
+        // residual depois de padrões com mais títulos catalogados. A ordem da
+        // tela é de reconhecimento humano; a ordem estatística segue intacta.
+        let prioridade = [
+            "animal_print", "floral", "listra", "xadrez", "geometrica",
+            "conversacional", "tomate_print", "cereja_print", "morango_print",
+            "banana_print", "abacaxi_print", "melancia_print", "liso",
+        ]
+        return encontrados.sorted {
+            (prioridade.firstIndex(of: $0.id) ?? 99)
+                < (prioridade.firstIndex(of: $1.id) ?? 99)
+        }
     }
 
     // MARK: Leitura

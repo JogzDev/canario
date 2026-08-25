@@ -87,39 +87,55 @@ struct Comparar: View {
                 }
             }
 
-            Section(escolhidos.count >= 2 ? "Change selection" : "Attributes") {
-                ForEach(termosComparaveis) { termo in
-                    Button {
-                        alternar(termo.id)
-                    } label: {
-                        HStack {
-                            Image(systemName: escolhidos.contains(termo.id)
-                                  ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(escolhidos.contains(termo.id)
-                                                 ? Tokens.Cor.tinta : Tokens.Cor.semDado)
-                            Text(Traducao.rotuloExibido(termo)).foregroundStyle(Tokens.Cor.tinta)
-                            Spacer()
-                            Text(Traducao.rotuloDaDimensao(termo.dimensao))
-                                .font(Tokens.Fonte.miudo)
-                                .foregroundStyle(Tokens.Cor.tintaFraca)
+            ForEach(dimensoesComparaveis, id: \.self) { dimensao in
+                Section(Traducao.rotuloDaDimensao(dimensao)) {
+                    ForEach(termosComparaveis.filter {
+                        $0.dimensao == dimensao
+                            || (dimensao == "estampa"
+                                && $0.dimensao == "motivo_estampa")
+                    }) { termo in
+                        Button {
+                            alternar(termo.id)
+                        } label: {
+                            HStack {
+                                Image(systemName: escolhidos.contains(termo.id)
+                                      ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(escolhidos.contains(termo.id)
+                                                     ? Tokens.Cor.tinta : Tokens.Cor.semDado)
+                                Text(Traducao.rotuloExibido(termo))
+                                    .foregroundStyle(Tokens.Cor.tinta)
+                                Spacer()
+                                if indices[termo.id]?.indice == nil {
+                                    Text("Panel only")
+                                        .font(Tokens.Fonte.miudo)
+                                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                                }
+                            }
                         }
+                        .disabled(!escolhidos.contains(termo.id)
+                                  && escolhidos.count >= maximo)
                     }
-                    .disabled(!escolhidos.contains(termo.id) && escolhidos.count >= maximo)
                 }
             }
         }
         .listStyle(.insetGrouped)
     }
 
-    /// A seleção oferece somente atributos para os quais os dois eixos podem
-    /// ser mostrados. O portão continua rigoroso sem transformar ausências em
-    /// linhas de erro dentro de uma ferramenta de comparação.
+    /// Toda medição real de varejo entra no catálogo. O índice composto mantém
+    /// seu portão rigoroso, mas sua ausência não apaga dados que existem.
     private var termosComparaveis: [Termo] {
-        termos.filter {
-            Elegibilidade.comparacao(
-                indice: indices[$0.id], varejo: varejo[$0.id],
-                cobertura: coberturas[$0.id])
-        }
+        termos.filter { Elegibilidade.varejoComparavel(varejo[$0.id]) }
+            .sorted { Traducao.rotuloExibido($0) < Traducao.rotuloExibido($1) }
+    }
+
+    private var dimensoesComparaveis: [String] {
+        let ordem = ["categoria", "cor", "estampa", "tecido", "comprimento",
+                     "silhueta", "cintura", "estetica"]
+        let presentes = Set(termosComparaveis.map {
+            $0.dimensao == "motivo_estampa" ? "estampa" : $0.dimensao
+        })
+        return ordem.filter(presentes.contains)
+            + presentes.filter { !ordem.contains($0) }.sorted()
     }
 
     /// Ordena pela presença no varejo, que é o eixo com dado para todos. O
@@ -175,7 +191,7 @@ struct Comparar: View {
             let dadosI = try await i
             let dadosV = try await v
             let dadosC = try await c
-            guard let semana = Elegibilidade.semanaComum(
+            guard let semana = Elegibilidade.semanaDeComparacao(
                     indices: dadosI, varejo: dadosV, coberturas: dadosC) else {
                 indices = [:]
                 varejo = [:]
@@ -185,7 +201,15 @@ struct Comparar: View {
             }
 
             var mapaI: [String: IndiceSemanal] = [:]
-            for x in dadosI where x.semana == semana { mapaI[x.termoId] = x }
+            for x in dadosI where x.semana == semana {
+                let cobertura = dadosC.first {
+                    $0.termoId == x.termoId && $0.semana == semana
+                        && $0.segmento == Recorte.segmento
+                }
+                if Elegibilidade.indice(x, cobertura: cobertura), x.indice != nil {
+                    mapaI[x.termoId] = x
+                }
+            }
             indices = mapaI
 
             var mapaV: [String: PontoSerie] = [:]
@@ -230,6 +254,11 @@ struct LinhaComparada: View {
                      detalhe: indice?.indice == nil ? "—" : "statistical scale")
             }
             LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")). Signal: \(Perna.frase(indice?.pernasAtivas)).")
+            if indice?.indice == nil {
+                LinhaInsumo(texto: cobertura.map {
+                    "The panel measurement exists. The combined external signal is withheld: \($0.oQueFalta)."
+                } ?? "The panel measurement exists. No qualified combined external signal is available for this week.")
+            }
             if let semana = varejo?.semana ?? indice?.semana {
                 LinhaInsumo(texto: "Week of \(Formato.data(semana)).")
             }

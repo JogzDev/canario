@@ -208,8 +208,11 @@ enum Similares {
                 let omitida = r.dimensaoRelaxada.map {
                     " The expanded set does not require \(Traducao.rotuloDaDimensao($0).lowercased())."
                 } ?? ""
+                let ancora = r.dimensaoRelaxada == "categoria"
+                    ? "The recognizable print motif still matches; clothing category may differ."
+                    : "Category still matches."
                 return "No useful set reached the usual \(base)-of-\(dimensoes)-dimension match. "
-                     + "Showing the closest available matches at \(minimoDimensoes) of \(dimensoes); category still matches."
+                     + "Showing the closest available matches at \(minimoDimensoes) of \(dimensoes). \(ancora)"
                      + omitida
                      + alternativas
             }

@@ -158,61 +158,20 @@ struct Cartao<Conteudo: View>: View {
     }
 }
 
-// MARK: - Controle circular do menu
+// MARK: - Controle do menu
 
-/// O mesmo componente abre e fecha o menu. Compartilhar tamanho, material e
-/// símbolo evita o salto de posição que aparecia na transição da home.
-struct BotaoCircularDoMenu: View {
-    let simbolo: String
-    let acessibilidade: String
+/// Conteúdo único do `ToolbarItem` que abre o menu nas três telas principais.
+/// Tamanho, fundo e posição pertencem ao toolbar nativo; desenhar um círculo
+/// próprio aqui foi justamente o que fez Add divergir de Closet.
+struct BotaoDoMenu: View {
+    let menuAberto: Bool
     let acao: () -> Void
 
-    /// Este número é o do RÓTULO, não o do círculo desenhado.
-    ///
-    /// A lupa e este botão declaravam 62 os dois, e mesmo assim três pessoas
-    /// relataram que este parecia maior. Medido no simulador, em pontos:
-    ///
-    ///     lupa      62 declarados  ->  62 desenhados
-    ///     menu      52 declarados  ->  67 desenhados
-    ///
-    /// `.buttonStyle(.glass)` acrescenta a própria margem em volta do rótulo,
-    /// e a lupa escapa disso por estar dentro de um `GlassEffectContainer`,
-    /// que dimensiona o grupo. Ou seja: não era impressão, e mexer no 62 não
-    /// resolvia -- o que chega na tela é outro número.
-    ///
-    /// 47 no rótulo dá 62 desenhados, que é o que o JP pediu: o mesmo tamanho
-    /// da lupa. O alvo de toque é o círculo desenhado, então continua acima dos
-    /// 44 pt mínimos da Apple.
-    private static let diametro: CGFloat = 47
-
     var body: some View {
-        Group {
-            if #available(iOS 26.0, *) {
-                Button(action: acao) {
-                    icone.frame(width: Self.diametro, height: Self.diametro)
-                }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-            } else {
-                Button(action: acao) {
-                    ZStack {
-                        Vidro(forma: Circle())
-                        icone
-                    }
-                    .frame(width: Self.diametro, height: Self.diametro)
-                }
-                .buttonStyle(.plain)
-            }
+        Button(action: acao) {
+            Image(systemName: menuAberto ? "xmark" : "ellipsis")
         }
-        .accessibilityLabel(acessibilidade)
-        .accessibilityAddTraits(.isButton)
-    }
-
-    private var icone: some View {
-        Image(systemName: simbolo)
-            .font(.system(size: simbolo == "xmark" ? 22 : 19,
-                          weight: simbolo == "xmark" ? .medium : .semibold))
-            .foregroundStyle(Tokens.Cor.noite)
+        .accessibilityLabel(menuAberto ? "Close menu" : "Open menu")
     }
 }
 

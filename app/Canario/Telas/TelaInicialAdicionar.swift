@@ -17,6 +17,8 @@ private struct RascunhoParaDetalhes: Identifiable {
 /// Fadul. O Dynamic Island é o elemento real do iPhone: o app desenha somente
 /// o feixe abaixo dele, nunca uma pílula preta falsa.
 struct TelaInicialAdicionar: View {
+    var menuAberto = false
+    var alternarMenu: (() -> Void)?
     @Environment(\.colorScheme) private var tema
     @State private var termos: [Termo] = []
     @State private var buscandoTermos = false
@@ -27,6 +29,7 @@ struct TelaInicialAdicionar: View {
     @State private var miniaturas: [UIImage] = []
 
     var body: some View {
+        NavigationStack {
         ZStack {
             Tokens.Cor.ceu.ignoresSafeArea()
 
@@ -89,6 +92,15 @@ struct TelaInicialAdicionar: View {
                 Spacer(minLength: 100)
             }
 
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if let alternarMenu {
+                    BotaoDoMenu(menuAberto: menuAberto, acao: alternarMenu)
+                }
+            }
+        }
+        .toolbarBackground(.hidden, for: .navigationBar)
         }
         .sheet(isPresented: $importando, onDismiss: encerrarSheetDeImportacao) {
             ImportarPeca(termos: termos) { selecionados, preco, miniatura, descricao in

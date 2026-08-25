@@ -22,6 +22,7 @@ struct MinhasPecas: View {
     @State private var somenteFavoritas = false
     @State private var atributosFiltrados: Set<String> = []
     @State private var busca = ""
+    @State private var buscaApresentada = false
 
     private let colunas = [
         GridItem(.flexible(), spacing: 18),
@@ -45,7 +46,8 @@ struct MinhasPecas: View {
         let consulta = Traducao.normalizar(busca)
         let filtrosPorDimensao = Dictionary(grouping: termos.filter {
             atributosFiltrados.contains($0.id)
-        }, by: \.dimensao).mapValues { Set($0.map(\.id)) }
+        }, by: { $0.dimensao == "motivo_estampa" ? "estampa" : $0.dimensao })
+            .mapValues { Set($0.map(\.id)) }
         return pecas.filter { peca in
             if somenteFavoritas && !(peca.favorita ?? false) { return false }
             let idsDaPeca = Set(peca.termoIds)
@@ -78,10 +80,7 @@ struct MinhasPecas: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let alternarMenu {
-                        Button(action: alternarMenu) {
-                            Image(systemName: menuAberto ? "xmark" : "ellipsis")
-                        }
-                        .accessibilityLabel(menuAberto ? "Close menu" : "Open menu")
+                        BotaoDoMenu(menuAberto: menuAberto, acao: alternarMenu)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -102,7 +101,7 @@ struct MinhasPecas: View {
                     }
                 }
             }
-            .searchable(text: $busca,
+            .searchable(text: $busca, isPresented: $buscaApresentada,
                         placement: .navigationBarDrawer(displayMode: .automatic),
                         prompt: "Search names or attributes")
         }
@@ -190,6 +189,14 @@ struct MinhasPecas: View {
             .padding(.top, Tokens.Espaco.s)
             .padding(.bottom, 100)
         }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12).onChanged { gesto in
+                // O drawer nativo abre ao puxar a lista para baixo. Ao voltar
+                // a empurrá-la para cima, fechamos a busca vazia como o Music.
+                if gesto.translation.height < -12 && busca.isEmpty {
+                    buscaApresentada = false
+                }
+            })
         .refreshable { await carregar() }
         .sheet(item: $editando) { peca in
             EditorDaPeca(peca: peca) { nova in
@@ -273,9 +280,48 @@ private struct FiltroDoCloset: View {
     @Binding var selecionados: Set<String>
     @Environment(\.dismiss) private var dismiss
 
+    private struct Opcao: Identifiable {
+        let id: String
+        let rotulo: String
+        let dimensao: String
+        let ids: Set<String>
+    }
+
     private var dimensoes: [String] {
-        Array(Set(termos.map(\.dimensao))).sorted {
+        Array(Set(opcoes.map(\.dimensao))).sorted {
             Traducao.rotuloDaDimensao($0) < Traducao.rotuloDaDimensao($1)
+        }
+    }
+
+    private var opcoes: [Opcao] {
+        let motivos = Set(termos.filter {
+            $0.dimensao == "motivo_estampa" || $0.id == "conversacional"
+        }.map(\.id))
+        let tricos = Set(["malha", "trico_croche"]).intersection(termos.map(\.id))
+        var resultado = termos.compactMap { termo -> Opcao? in
+            if motivos.contains(termo.id) || tricos.contains(termo.id) { return nil }
+            return Opcao(id: termo.id, rotulo: Traducao.rotuloExibido(termo),
+                         dimensao: termo.dimensao, ids: [termo.id])
+        }
+        if !motivos.isEmpty {
+            resultado.append(Opcao(id: "conversational_prints",
+                                   rotulo: "Conversational prints",
+                                   dimensao: "estampa", ids: motivos))
+        }
+        if !tricos.isEmpty {
+            resultado.append(Opcao(id: "knit_and_crochet",
+                                   rotulo: "Knit & crochet",
+                                   dimensao: "tecido", ids: tricos))
+        }
+        let prioridadeDeEstampa = ["animal_print", "floral", "listra", "xadrez",
+                                   "geometrica", "conversational_prints", "liso"]
+        return resultado.sorted { esquerda, direita in
+            if esquerda.dimensao == "estampa", direita.dimensao == "estampa" {
+                return (prioridadeDeEstampa.firstIndex(of: esquerda.id) ?? 99)
+                    < (prioridadeDeEstampa.firstIndex(of: direita.id) ?? 99)
+            }
+            return esquerda.rotulo.localizedCaseInsensitiveCompare(direita.rotulo)
+                == .orderedAscending
         }
     }
 
@@ -287,19 +333,19 @@ private struct FiltroDoCloset: View {
                 }
                 ForEach(dimensoes, id: \.self) { dimensao in
                     Section(Traducao.rotuloDaDimensao(dimensao)) {
-                        ForEach(termos.filter { $0.dimensao == dimensao }) { termo in
+                        ForEach(opcoes.filter { $0.dimensao == dimensao }) { opcao in
                             Button {
-                                if selecionados.contains(termo.id) {
-                                    selecionados.remove(termo.id)
+                                if opcao.ids.isSubset(of: selecionados) {
+                                    selecionados.subtract(opcao.ids)
                                 } else {
-                                    selecionados.insert(termo.id)
+                                    selecionados.formUnion(opcao.ids)
                                 }
                             } label: {
                                 HStack {
-                                    Text(Traducao.rotuloExibido(termo))
+                                    Text(opcao.rotulo)
                                         .foregroundStyle(.primary)
                                     Spacer()
-                                    if selecionados.contains(termo.id) {
+                                    if !selecionados.isDisjoint(with: opcao.ids) {
                                         Image(systemName: "checkmark")
                                             .foregroundStyle(Tokens.Cor.acao)
                                     }
