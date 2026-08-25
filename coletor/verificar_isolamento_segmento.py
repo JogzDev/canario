@@ -40,7 +40,7 @@ def main():
             "produtos", "marca_id=eq.{}&segmento=eq.{}".format(
                 marca_q, segmento_q))
         fora = supabase_rest.contar(
-            "produtos", "marca_id=eq.{}&segmento=neq.{}".format(
+            "produtos", "marca_id=eq.{}&or=(segmento.is.null,segmento.neq.{})".format(
                 marca_q, segmento_q))
         fora_total += fora or 0
         print("- {}: {} no segmento; {} fora".format(

@@ -19,7 +19,7 @@ def executar(fora):
         def contar(_tabela, params=""):
             if "marca_id" not in params:
                 return 12
-            return fora if "segmento=neq" in params else 12
+            return fora if "or=(segmento.is.null,segmento.neq." in params else 12
 
         alvo.supabase_rest.contar = contar
         return alvo.main()
