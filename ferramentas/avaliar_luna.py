@@ -27,7 +27,7 @@ import urllib.request
 
 
 MODELO = "gpt-5.6-luna"
-VERSAO_DO_PROMPT = "alvo-estrutura-v9"
+VERSAO_DO_PROMPT = "alvo-estrutura-v8"
 VERSAO_DO_PREPROCESSAMENTO = "vision-instance-mask-v2"
 URL_RESPOSTAS = "https://api.openai.com/v1/responses"
 SEMENTE_PADRAO = 20260810
@@ -212,21 +212,8 @@ sale item, or hidden construction. Accuracy is more important than coverage.
   jumpsuit. Matching color or material does not by itself make the target
   ambiguous: when one piece occupies roughly twice the visible garment surface
   or the other is materially cropped, select the dominant piece.
-- Do not call a normal ecommerce look ambiguous merely because it contains a
-  top and bottom. Cropping is evaluated on the garment, not the person: a lower
-  garment that continues beyond the bottom frame is materially cropped when
-  the upper garment is visible from shoulders to hem. Select that complete,
-  centered upper garment when it also exposes construction details such as a
-  collar, lapels, placket, cuffs, pockets, or closure.
-- Conversely, select a complete centered lower garment when it occupies clearly
-  greater vertical extent and exposes its waistband plus lower-construction
-  evidence (crotch, inseam, leg openings, or one continuous skirt panel). A
-  belt, pockets, distinct color, or centered waist detail may be the second cue.
-  The presence of a complete but visually smaller top does not erase those cues.
 - If two or more garments are plausible targets, use ambiguous_target. Never
-  guess which item the catalog or user intended. Apply all dominance rules
-  above first; abstention is for a remaining tie, not a synonym for "more than
-  one garment is visible".
+  guess which item the catalog or user intended.
 - Ignore body, skin, hair, pose, background, props, footwear, bags, jewelry,
   and all non-target layers.
 
