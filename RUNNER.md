@@ -22,6 +22,40 @@ máquina própria. O workflow já está preparado — ele lê a variável
 
 ---
 
+## Medido em 26/08/2026: a premissa do IP residencial não vale mais
+
+O texto acima diz que o valor da máquina é o **endereço residencial**. Medindo:
+
+* o i7 é `10.46.53.103` e o Mac do JP é `10.46.83.76` — mesma rede privada
+  `10.46.x.x`, ou seja, **os dois runners estão atrás da mesma infraestrutura**;
+* a saída pública dessa rede é `139.82.91.130`, um endereço institucional fixo,
+  **não residencial**.
+
+Consequência prática: trocar a coleta de um runner para o outro **não muda o IP
+de saída**, e portanto não é remédio para recusa de origem. O quadro de
+comparação acima descreve uma situação que não é mais a atual.
+
+O que continua verdadeiro: as 13 marcas VTEX coletam bem dessa rede.
+
+### O que isso NÃO explica
+
+Em 25 e 26/08 Amaro e PatBô voltaram zero do i7 (`429` persistente e `500`),
+enquanto as 13 VTEX coletavam normalmente na mesma execução. Testado da mesma
+rede, no mesmo dia, com o User-Agent do CanarioBot e o ritmo de 1 req/s:
+
+```
+robots.txt          200   (amaro.com e www.patbo.com.br)
+products.json       200   com produto real nas duas
+10 páginas seguidas 200   em todas, sem 429
+```
+
+Ou seja: **não é o IP e não é o ritmo.** No mesmo dia o serviço do runner do i7
+travou (`busy=true` com `status=offline`, fila parada). A explicação mais
+econômica é que a máquina está degradada e as duas falhas são o mesmo problema —
+mas isso **não está provado**. O experimento que decide é rodar
+`coleta-shopify.yml` no i7 depois de ele voltar; enquanto o runner não aceita
+job, a causa continua em aberto.
+
 ## Passo a passo
 
 ### 1. Registrar o runner (no Mac, ~5 minutos)

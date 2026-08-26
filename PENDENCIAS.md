@@ -9,6 +9,23 @@
    hierarquia do Market panel e a redução de texto em “Which item” ficam nesta
    etapa para não desenhar duas vezes a mesma interface.
 
+## Operacional — aberto agora
+
+- **Runner `sempre-ligado` (i7) não aceita job.** Em 26/08 ele apareceu
+  `status=offline` com `busy=true`, voltou a `online` e mesmo assim a fila não
+  andou. Doze workflows dependem desse rótulo: pipeline diário, motor, coletas,
+  sondas e o job Python do CI. Sintoma descrito em [`RUNNER.md`](RUNNER.md):
+  `cd actions-runner && ./svc.sh status`. **Exige mão na máquina.**
+- **Amaro e PatBô em zero há 2 dias, causa NÃO determinada.** Medido em 26/08,
+  da mesma rede do runner: `robots.txt` 200, `products.json` 200 com produto
+  real, e 10 páginas seguidas a 1 req/s sem nenhum 429. Portanto **não é IP nem
+  ritmo** — as hipóteses anteriores caíram. As 13 marcas VTEX coletam bem da
+  mesma máquina na mesma execução. A coincidência com o travamento do runner
+  sugere máquina degradada, mas isso não está provado. O experimento que decide
+  é uma execução de `coleta-shopify.yml` no i7 depois de ele voltar.
+- No 3º dia consecutivo de zero o portão vira crítico e o motor não publica
+  (`DIAS_DE_ZERO_PARA_BLOQUEAR = 3`). Com o runner parado, nem a contagem avança.
+
 ## Trabalho local do JP ainda não commitado
 
 - `app/Canario/Localizable.xcstrings` tem **212 chaves** na cópia local e **145**
