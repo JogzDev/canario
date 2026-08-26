@@ -49,12 +49,28 @@ products.json       200   com produto real nas duas
 10 páginas seguidas 200   em todas, sem 429
 ```
 
-Ou seja: **não é o IP e não é o ritmo.** No mesmo dia o serviço do runner do i7
-travou (`busy=true` com `status=offline`, fila parada). A explicação mais
-econômica é que a máquina está degradada e as duas falhas são o mesmo problema —
-mas isso **não está provado**. O experimento que decide é rodar
-`coleta-shopify.yml` no i7 depois de ele voltar; enquanto o runner não aceita
-job, a causa continua em aberto.
+Ou seja: **não era o IP e não era o ritmo.**
+
+### E também não era a máquina
+
+O experimento rodou às 13:37 de 26/08, no i7, com o mesmo workflow que falhara
+duas vezes: **Amaro 256 visitados em 10 s e PatBô 7.470 em 134 s, sem erro** —
+volumes normais. Portanto a máquina está sã, e as três hipóteses caíram:
+
+| Hipótese | Como caiu |
+|---|---|
+| IP do runner recusado | a mesma rede responde 200 nos dois domínios |
+| limite de ritmo/volume | 10 páginas seguidas a 1 req/s, todas 200 |
+| máquina degradada | a mesma máquina coletou tudo, sem erro |
+
+O que restou é **recusa transitória do lado da Shopify**, atravessando as
+janelas de 25 e 26/08. Não há conserto a fazer: o remédio, se repetir, é uma
+execução manual de `coleta-shopify.yml`, que grava o dado do próprio dia e zera
+o contador de dias seguidos antes de ele chegar em três.
+
+O que travou a fila naquela tarde foi outra coisa, sem relação: o grupo de
+concorrência `canario-dados`, preso por um run que o GitHub listava como
+`queued` e recusava cancelar. Destravou sozinho.
 
 ## Passo a passo
 

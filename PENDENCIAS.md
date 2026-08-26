@@ -11,14 +11,17 @@
 
 ## Operacional — aberto agora
 
-- **Amaro e PatBô em zero há 2 dias, causa NÃO determinada.** No 3º dia
-  consecutivo o portão vira crítico e o motor não publica
-  (`DIAS_DE_ZERO_PARA_BLOQUEAR = 3`); a coleta de 26/08 já contou o 2º. Medido
-  em 26/08, da mesma rede do runner: `robots.txt` 200, `products.json` 200 com
-  produto real, e 10 páginas seguidas a 1 req/s sem nenhum 429. **Não é IP e não
-  é ritmo** — as duas hipóteses anteriores caíram por medição. As 13 marcas VTEX
-  coletam bem da mesma máquina na mesma execução. Uma coleta manual bem-sucedida
-  grava o dado do próprio dia e zera o contador.
+- **Amaro e PatBô: RESOLVIDO em 26/08, e a causa era transitória.** As duas
+  voltaram a coletar normalmente **na mesma máquina que falhava** (o i7,
+  `10-46-53-103`): Amaro 256 visitados em 10 s, PatBô 7.470 em 134 s, sem erro.
+  O banco confirma que o dado bom sobrescreveu o zero de hoje, então sobrou
+  25/08 como zero isolado e o contador de dias seguidos está em **zero**.
+  Antes disso, três hipóteses caíram por medição: **não era IP** (a mesma rede
+  responde 200), **não era ritmo** (10 páginas seguidas a 1 req/s sem 429) e
+  **não era a máquina** (a mesma coletou tudo). Foi recusa transitória do lado
+  da Shopify, atravessando duas janelas de coleta. `SAUDE.md` no repositório
+  ainda mostra "2º dia" porque é gerado pelo pipeline; refaz sozinho amanhã.
+
 - **O grupo de concorrência `canario-dados` já travou uma vez.** Em 26/08 três
   execuções de coleta ficaram presas atrás de um run que o GitHub listava como
   `queued` e recusava cancelar dizendo ora "completed", ora "não enfileirado".
