@@ -494,6 +494,10 @@ private struct CartaoDoArmario: View {
 
     @State private var miniatura: UIImage?
     @State private var fotoEscolhida: PhotosPickerItem?
+    /// O seletor virou item de menu, e menu não pode conter um
+    /// `PhotosPicker` que se apresenta sozinho: ele é acionado por este
+    /// sinalizador, e o seletor mora fora do menu.
+    @State private var escolhendoFoto = false
 
     private var temFoto: Bool { miniatura != nil }
 
@@ -564,22 +568,21 @@ private struct CartaoDoArmario: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
 
-                PhotosPicker(selection: $fotoEscolhida, matching: .images) {
-                    HStack(spacing: 6) {
-                        if processandoFoto {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Image(systemName: temFoto ? "photo.on.rectangle" : "photo.badge.plus")
-                        }
-                        Text(temFoto ? "Edit photo" : "Add photo").lineLimit(1)
-                    }
-                    .font(Tokens.Fonte.miudo.weight(.semibold))
-                    .foregroundStyle(Tokens.Cor.acao)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .disabled(processandoFoto)
+                Spacer(minLength: 0)
 
+                // Um botão só, pedido em 26/08. Antes eram dois — a foto
+                // ocupava a largura toda com texto ("Add photo"/"Edit photo") e
+                // ainda sobrava um `ellipsis` ao lado. Trocar foto é tão pouco
+                // frequente quanto renomear e apagar; as três moram no mesmo
+                // lugar e o card fica com coração de um lado, ações do outro.
                 Menu {
+                    Button {
+                        escolhendoFoto = true
+                    } label: {
+                        Label(temFoto ? "Edit photo" : "Add photo",
+                              systemImage: temFoto ? "photo.on.rectangle" : "photo.badge.plus")
+                    }
+                    .disabled(processandoFoto)
                     Button(action: aoRenomear) {
                         Label("Rename", systemImage: "pencil")
                     }
@@ -587,14 +590,28 @@ private struct CartaoDoArmario: View {
                         Label("Delete from Closet", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .frame(width: 44, height: 44)
+                    Group {
+                        if processandoFoto {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(Tokens.Cor.noite)
+                        }
+                    }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
                 }
-                .accessibilityLabel("More item actions")
+                .accessibilityLabel("Item actions")
             }
         }
         .padding(10)
-        .frame(minHeight: 250, alignment: .top)
+        // Altura FIXA, não mínima: com `minHeight` cada card crescia conforme o
+        // próprio texto e a grade ficava com dois vizinhos de alturas
+        // diferentes. O conteúdo agora encosta no topo e o excesso é cortado
+        // pelo nome/detalhe, que já são limitados a duas linhas.
+        .frame(height: 268, alignment: .top)
+        .clipped()
         .background { Vidro(raio: 24) }
         .contextMenu {
             Button(action: aoFavoritar) {
@@ -608,6 +625,8 @@ private struct CartaoDoArmario: View {
                 Label("Delete from Closet", systemImage: "trash")
             }
         }
+        .photosPicker(isPresented: $escolhendoFoto,
+                      selection: $fotoEscolhida, matching: .images)
         .onChange(of: fotoEscolhida) { _, item in
             guard let item else { return }
             Task {

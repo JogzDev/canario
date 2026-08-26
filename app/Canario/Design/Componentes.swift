@@ -14,16 +14,27 @@ struct SeloEstado: View {
     let estado: String?
     var leitura: Double? = nil
 
+    /// Padding e raio crescem junto com a fonte do sistema. Com valores fixos,
+    /// aumentar o texto nos ajustes de acessibilidade fazia a frase encostar na
+    /// borda e truncar dentro da cápsula.
+    @ScaledMetric(relativeTo: .footnote) private var respiro: CGFloat = 12
+    @ScaledMetric(relativeTo: .footnote) private var raio: CGFloat = 14
+
     var body: some View {
         if let leitura {
             let faixa = Leitura.faixa(leitura)
             Label(faixa.rotulo, systemImage: faixa.icone)
                 .font(Tokens.Fonte.miudo.weight(.semibold))
-                .padding(.horizontal, 12)
-                .frame(minHeight: 28)
+                .lineLimit(nil)
+                .multilineTextAlignment(.leading)
+                // Sem isto o selo continua com uma linha só e a frase corta em
+                // "Far Above the usual…" nos tamanhos grandes.
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, respiro)
+                .padding(.vertical, respiro * 0.5)
                 .background(cores(faixa).fundo)
                 .foregroundStyle(cores(faixa).frente)
-                .clipShape(Capsule())
+                .clipShape(RoundedRectangle(cornerRadius: raio, style: .continuous))
                 .accessibilityLabel("Current signal: \(faixa.rotulo).")
         } else if let bruto = estado, let e = Estado(rawValue: bruto) {
             Label(e.rotulo, systemImage: e.icone)
@@ -37,29 +48,46 @@ struct SeloEstado: View {
         }
     }
 
+    /// A paleta dos sete estados, uma cor por tema.
+    ///
+    /// POR QUE FOI REFEITA EM 26/08
+    /// ============================
+    ///
+    /// A primeira versão copiou os SVGs de referência literalmente: pares RGB
+    /// fixos, vários deles com `opacity(0.56)` sobre um fundo que o desenho
+    /// presumia. Fora daquele fundo o resultado ia de sofrível a ilegível — o
+    /// pior caso era `abaixo`, laranja translúcido com texto laranja-claro por
+    /// cima. E, sendo fixos, os sete ignoravam o modo escuro.
+    ///
+    /// O JP: *"eu queria que você usasse as cores e o texto deles mas fizesse o
+    /// seu próprio, que se adaptaria naturalmente"*. Então o que veio do
+    /// desenho é a **família de cor** de cada nível e o texto; o valor exato é
+    /// escolhido por tema e **medido**: os 14 pares passam de 4,5:1 em contraste
+    /// WCAG AA (o menor é 6,19:1). `Tokens.Cor.adaptativa` resolve no momento de
+    /// desenhar, então trocar de tema com o app aberto repinta o selo.
     private func cores(_ faixa: Leitura.Faixa) -> (fundo: Color, frente: Color) {
         switch faixa {
         case .muitoAcima:
-            return (Color(red: 130/255, green: 218/255, blue: 77/255),
-                    Color(red: 57/255, green: 106/255, blue: 27/255))
+            return (Tokens.Cor.adaptativa(claro: (222, 246, 214), escuro: (24, 58, 30)),
+                    Tokens.Cor.adaptativa(claro: (24, 80, 30), escuro: (168, 230, 160)))
         case .acima:
-            return (Color(red: 0, green: 136/255, blue: 1).opacity(0.56),
-                    Color(red: 180/255, green: 208/255, blue: 1))
+            return (Tokens.Cor.adaptativa(claro: (219, 234, 254), escuro: (26, 48, 84)),
+                    Tokens.Cor.adaptativa(claro: (26, 58, 120), escuro: (168, 200, 250)))
         case .poucoAcima:
-            return (Color(red: 31/255, green: 73/255, blue: 105/255),
-                    Color(red: 167/255, green: 208/255, blue: 238/255))
+            return (Tokens.Cor.adaptativa(claro: (226, 236, 246), escuro: (30, 52, 72)),
+                    Tokens.Cor.adaptativa(claro: (32, 66, 102), escuro: (168, 205, 235)))
         case .habitual:
-            return (Color(red: 144/255, green: 160/255, blue: 173/255).opacity(0.56),
-                    Color(red: 55/255, green: 70/255, blue: 82/255))
+            return (Tokens.Cor.adaptativa(claro: (233, 236, 239), escuro: (48, 54, 60)),
+                    Tokens.Cor.adaptativa(claro: (55, 65, 74), escuro: (202, 210, 217)))
         case .poucoAbaixo:
-            return (Color(red: 174/255, green: 75/255, blue: 36/255).opacity(0.56),
-                    Color(red: 255/255, green: 192/255, blue: 167/255))
+            return (Tokens.Cor.adaptativa(claro: (255, 236, 222), escuro: (74, 45, 26)),
+                    Tokens.Cor.adaptativa(claro: (140, 62, 20), escuro: (250, 200, 165)))
         case .abaixo:
-            return (Color(red: 254/255, green: 72/255, blue: 0).opacity(0.56),
-                    Color(red: 255/255, green: 196/255, blue: 172/255))
+            return (Tokens.Cor.adaptativa(claro: (255, 226, 209), escuro: (82, 40, 20)),
+                    Tokens.Cor.adaptativa(claro: (150, 50, 8), escuro: (255, 190, 150)))
         case .muitoAbaixo:
-            return (Color(red: 1, green: 50/255, blue: 50/255).opacity(0.56),
-                    Color(red: 57/255, green: 0, blue: 0))
+            return (Tokens.Cor.adaptativa(claro: (255, 224, 224), escuro: (84, 28, 28)),
+                    Tokens.Cor.adaptativa(claro: (140, 26, 26), escuro: (255, 180, 180)))
         }
     }
 

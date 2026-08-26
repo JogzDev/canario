@@ -525,11 +525,18 @@ enum Leitura {
             }
         }
 
+        /// A seta de tendência do desenho de referência, e não uma seta reta:
+        /// o que o selo comunica é movimento contra a própria história, não
+        /// direção num mapa. `equal` fica no meio porque "dentro da faixa" não
+        /// tem direção nenhuma. §32: o ícone anda sempre junto do texto.
         var icone: String {
             switch self {
-            case .muitoAcima, .acima, .poucoAcima: return "arrow.up.right"
-            case .habitual: return "equal"
-            case .poucoAbaixo, .abaixo, .muitoAbaixo: return "arrow.down.right"
+            case .muitoAcima, .acima, .poucoAcima:
+                return "chart.line.uptrend.xyaxis"
+            case .habitual:
+                return "equal"
+            case .poucoAbaixo, .abaixo, .muitoAbaixo:
+                return "chart.line.downtrend.xyaxis"
             }
         }
     }

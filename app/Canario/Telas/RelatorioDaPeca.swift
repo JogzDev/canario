@@ -393,7 +393,9 @@ struct RelatorioDaPeca: View {
         } else if let s = similares, let r = s.resumo,
                   !s.pecas.filter(Similares.podeExibir).isEmpty {
             if rejeitouSimilares {
-                LinhaInsumo(texto: "You marked this selection as not similar. You can review it again at any time.")
+                // Pedido em 26/08: a resposta ao feedback agradece em vez de
+                // só repetir de volta o que a pessoa marcou.
+                LinhaInsumo(texto: "Thanks for the feedback! We'll keep working to bring you better suggestions.")
                 Button("Review similar pieces again") { rejeitarSimilares(false) }
                     .buttonStyle(.bordered)
             } else {

@@ -21,19 +21,6 @@ struct ImportarPeca: View {
     let termos: [Termo]
     var aoSalvar: (() -> Void)? = nil
 
-    /// A imagem da loja é acessória: os atributos já chegaram pelo painel. Um
-    /// CDN lento não pode manter a tela inteira em espera pelo timeout padrão
-    /// de um minuto da `URLSession.shared`.
-    private static let sessaoDaImagemDoProduto: URLSession = {
-        let configuracao = URLSessionConfiguration.ephemeral
-        configuracao.timeoutIntervalForRequest = 10
-        configuracao.waitsForConnectivity = false
-        configuracao.requestCachePolicy = .returnCacheDataElseLoad
-        configuracao.urlCache = URLCache(memoryCapacity: 4 << 20,
-                                         diskCapacity: 24 << 20)
-        return URLSession(configuration: configuracao)
-    }()
-
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
     @State private var daFototeca: PhotosPickerItem?
@@ -47,12 +34,11 @@ struct ImportarPeca: View {
     @State private var avisoDeUso: String?
 
     enum Espera {
-        case lendoArquivo, lendoLink, separandoPeca, analisandoLocal, analisandoNaNuvem
+        case lendoArquivo, separandoPeca, analisandoLocal, analisandoNaNuvem
 
         var mensagem: String {
             switch self {
             case .lendoArquivo:     return "Reading the file…"
-            case .lendoLink:        return "Checking the product link…"
             case .separandoPeca:    return "Separating the garment…"
             case .analisandoLocal:  return "Reading the garment…"
             case .analisandoNaNuvem: return "Reading the garment…"
@@ -63,7 +49,7 @@ struct ImportarPeca: View {
         /// ruído; ausência de aviso em espera longa parece travamento.
         var expectativa: String? {
             switch self {
-            case .lendoArquivo, .lendoLink, .analisandoLocal: return nil
+            case .lendoArquivo, .analisandoLocal: return nil
             case .separandoPeca:
                 return "This happens on this iPhone."
             case .analisandoNaNuvem:
@@ -76,7 +62,7 @@ struct ImportarPeca: View {
         /// lembrar que Close existe. `nil` onde a espera é curta por natureza.
         var avisoDeDemora: String? {
             switch self {
-            case .lendoArquivo, .lendoLink, .analisandoLocal: return nil
+            case .lendoArquivo, .analisandoLocal: return nil
             case .separandoPeca:
                 return "Still separating the garment on this iPhone. You can close and try a tighter photo."
             case .analisandoNaNuvem:
@@ -111,7 +97,6 @@ struct ImportarPeca: View {
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
     @State private var precoDigitado = ""
-    @State private var linkDigitado = ""
     @State private var miniaturaJPEG: Data?
     @State private var imagemPendente: CGImage?
     /// A foto como ela entrou, antes de qualquer recorte.
@@ -144,7 +129,6 @@ struct ImportarPeca: View {
     @State private var nomeConfirmadoPendente: String?
     @State private var descricaoConfirmadaPendente: String?
     @FocusState private var precoEmFoco: Bool
-    @FocusState private var linkEmFoco: Bool
     @FocusState private var dicaDoAlvoEmFoco: Bool
     @FocusState private var nomeDaPecaEmFoco: Bool
 
@@ -432,7 +416,6 @@ struct ImportarPeca: View {
                 Spacer()
                 Button("Done") {
                     precoEmFoco = false
-                    linkEmFoco = false
                     dicaDoAlvoEmFoco = false
                     nomeDaPecaEmFoco = false
                 }
@@ -467,7 +450,10 @@ struct ImportarPeca: View {
                         explicacao: erro,
                         oQueTem: "You can select the attributes below and continue.")
                 }
-                if !procedencia.isEmpty { oQueLi }
+                // Ordem pedida em 26/08: o nome vem antes do que foi lido. Quem
+                // acabou de confirmar a peça está pensando nela, não na
+                // procedência dos atributos -- e nomear é a única coisa desta
+                // tela que só a pessoa pode fazer.
                 Cartao {
                     Text("Name this item").font(Tokens.Fonte.secao)
                     TextField("Clothing name (optional)", text: $nomeDaPeca)
@@ -477,6 +463,7 @@ struct ImportarPeca: View {
                         .onSubmit { nomeDaPecaEmFoco = false }
                     LinhaInsumo(texto: "If left blank, Closet, links and spreadsheets use the confirmed category.")
                 }
+                if !procedencia.isEmpty { oQueLi }
                 atributos
                 if !detectados.isEmpty {
                     Button {
@@ -497,27 +484,16 @@ struct ImportarPeca: View {
         }
     }
 
+    /// A entrada por link de produto saiu em 26/08/2026, a pedido do JP: ela
+    /// nunca tinha sido pedida e não estava funcionando na mão dele.
+    ///
+    /// **Só a porta saiu.** `produto_do_painel_por_url` e os índices das A31,
+    /// A32, A39 e A45 continuam em produção, e a resolução de URL segue sendo o
+    /// caminho sem custo de visão. Recolocar a entrada é reconstruir este
+    /// cartão; o servidor não precisa de nada.
     private var importador: some View {
         Cartao {
-            Text("Product link, photo or file").font(Tokens.Fonte.secao)
-            TextField("Paste a product link", text: $linkDigitado)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .keyboardType(.URL)
-                .textFieldStyle(.roundedBorder)
-                .focused($linkEmFoco)
-                .submitLabel(.go)
-                .onSubmit { Task { await processarLink() } }
-            Button {
-                Task { await processarLink() }
-            } label: {
-                Label("Read product link", systemImage: "link")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(linkDigitado.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-            Divider()
+            Text("Photo or file").font(Tokens.Fonte.secao)
             // A câmera vem primeiro porque é o gesto mais direto de quem está
             // com a peça na mão -- que é a situação do comprador em showroom.
             // Some no simulador e em aparelho sem câmera, em vez de abrir nada.
@@ -692,59 +668,6 @@ struct ImportarPeca: View {
 
     /// URL já coletada é a rota mais barata e mais auditável: reaproveita os
     /// atributos derivados do título da própria loja e não chama visão.
-    private func processarLink() async {
-        let texto = linkDigitado.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: texto), url.scheme == "https", url.host != nil else {
-            erro = "Paste a complete https product link."
-            return
-        }
-        linkEmFoco = false
-        esperaAtual = .lendoLink
-        lendo = true
-        erro = nil
-        do {
-            guard let produto = try await Supabase.shared.produtoDoPainel(url: texto) else {
-                erro = "This product is not in the market panel yet. Add a photo instead and I will read the visible item."
-                lendo = false
-                return
-            }
-            let existentes = Set(termos.map(\.id))
-            detectados = FormularioDaPeca.podar(
-                Set(produto.termIDs).intersection(existentes), termos: termos)
-            guard FormularioDaPeca.temCategoria(detectados, termos: termos) else {
-                erro = "I found this product, but its category is not classified yet. Add a photo or choose the attributes manually."
-                etapa = .atributos
-                lendo = false
-                return
-            }
-            if precoDigitado.isEmpty, let preco = produto.price {
-                precoDigitado = String(format: "%.2f", preco)
-                    .replacingOccurrences(of: ".", with: ",")
-            }
-            nomeDoArquivo = "\(produto.brand) product link"
-            procedencia = [
-                "Matched \(produto.brand) · \(produto.title ?? "product") in the market panel.",
-                "Attributes came from the store title and the panel taxonomy. No visual-analysis credit was used."
-            ]
-            // O resultado textual já está completo. A tela abre agora e a
-            // foto entra quando o CDN responder; imagem acessória nunca segura
-            // a navegação nem dá aparência de travamento.
-            etapa = .atributos
-            lendo = false
-            if let imagem = produto.imageURL.flatMap(URL.init(string:)),
-               imagem.scheme == "https",
-               let (dados, resposta) = try? await Self.sessaoDaImagemDoProduto.data(from: imagem),
-               (resposta as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) == true,
-               dados.count <= 8_000_000,
-               let cg = MiniaturaLocal.imagem(de: dados) {
-                miniaturaJPEG = await MiniaturaLocal.dados(de: cg)
-            }
-        } catch {
-            erro = "I couldn't check this product link right now. You can still add a photo or file."
-        }
-        lendo = false
-    }
-
     /// Câmera e fototeca passam pelo mesmo portão visual. A opção pré-selecionada
     /// ainda exige um toque explícito no botão de confirmação.
     /// `recorteDe` chega preenchido só quando esta imagem veio do editor. Sem

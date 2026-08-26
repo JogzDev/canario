@@ -246,19 +246,40 @@ private struct TermosDoMenu: View {
 private struct AjustesDoMenu: View {
     @State private var quantidade = 0
     @State private var confirmarExclusao = false
-    @State private var usarAnaliseNaNuvem = true
+    @State private var preferenciaVisual = PreferenciaDaAnaliseVisual.perguntar
     @State private var carregouPreferenciaVisual = false
     @Environment(\.accessibilityReduceMotion) private var reduzirMovimento
+
+    private var explicacaoDaPreferencia: String {
+        switch preferenciaVisual {
+        case .perguntar:
+            return "You'll be asked once, the first time you analyze a photo. Your answer is remembered and can be changed here."
+        case .nuvem:
+            return "Recommended for more complete attribute suggestions. Only the reduced, metadata-free image you confirm is analyzed."
+        case .aparelho:
+            return "Analysis stays on this iPhone and does not use the shared cloud-analysis limit."
+        }
+    }
 
     var body: some View {
         List {
             if Supabase.analiseRemotaHabilitada {
                 Section("Visual analysis") {
-                    Toggle("Use cloud visual analysis", isOn: $usarAnaliseNaNuvem)
-                        .disabled(!carregouPreferenciaVisual)
-                    Text(usarAnaliseNaNuvem
-                         ? "Recommended for more complete attribute suggestions. Only the reduced, metadata-free image you confirm is analyzed."
-                         : "Analysis stays on this iPhone and does not use the shared cloud-analysis limit.")
+                    // Três estados, não dois. O interruptor anterior só sabia
+                    // dizer nuvem/aparelho e mapeava `perguntar` para "nuvem
+                    // ligada" -- então, enquanto a escolha ainda não tinha sido
+                    // feita, os Ajustes afirmavam uma coisa e o fluxo de Add
+                    // fazia outra: perguntava. Quem visse a tela não tinha como
+                    // saber por quê. O estado agora aparece como ele é.
+                    Picker("Visual analysis", selection: $preferenciaVisual) {
+                        Text("Ask me the first time").tag(PreferenciaDaAnaliseVisual.perguntar)
+                        Text("Always use the cloud").tag(PreferenciaDaAnaliseVisual.nuvem)
+                        Text("Always on this iPhone").tag(PreferenciaDaAnaliseVisual.aparelho)
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                    .disabled(!carregouPreferenciaVisual)
+                    Text(explicacaoDaPreferencia)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -287,16 +308,12 @@ private struct AjustesDoMenu: View {
         .scrollContentBackground(.hidden)
         .task {
             quantidade = await PecasSalvas.shared.todas().count
-            let preferencia = await PreferenciasDaAnaliseVisual.shared.preferencia()
-            usarAnaliseNaNuvem = preferencia != .aparelho
+            preferenciaVisual = await PreferenciasDaAnaliseVisual.shared.preferencia()
             carregouPreferenciaVisual = true
         }
-        .onChange(of: usarAnaliseNaNuvem) { _, nova in
+        .onChange(of: preferenciaVisual) { _, nova in
             guard carregouPreferenciaVisual else { return }
-            Task {
-                await PreferenciasDaAnaliseVisual.shared.definir(
-                    nova ? .nuvem : .aparelho)
-            }
+            Task { await PreferenciasDaAnaliseVisual.shared.definir(nova) }
         }
         .alert("Delete the entire Closet?", isPresented: $confirmarExclusao) {
             Button("Cancel", role: .cancel) {}

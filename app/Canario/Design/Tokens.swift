@@ -43,8 +43,8 @@ enum Tokens {
         /// Uma cor por tema, resolvida pelo sistema no momento de desenhar --
         /// e não uma vez na inicialização. Isso é o que faz a tela responder a
         /// quem troca de tema com o app aberto.
-        private static func adaptativa(claro: (Double, Double, Double),
-                                       escuro: (Double, Double, Double)) -> Color {
+        static func adaptativa(claro: (Double, Double, Double),
+                               escuro: (Double, Double, Double)) -> Color {
             Color(UIColor { tracos in
                 let (r, g, b) = tracos.userInterfaceStyle == .dark ? escuro : claro
                 return UIColor(red: r / 255, green: g / 255, blue: b / 255,
