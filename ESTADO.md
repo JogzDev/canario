@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 26/08/2026, 15:40 em São Paulo
+**Última atualização:** 26/08/2026, 15:20 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -21,14 +21,14 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **14.678 produtos candidatos** |
-| Banco | plano gratuito; inchaço recuperado em 26/08 | **388 MB / 500 MB (81,5%)** · 92,7 MB livres |
+| Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **17.760 produtos candidatos** |
+| Banco | plano gratuito; inchaço recuperado em 26/08 | **407.342.227 / 500.000.000 bytes (81,5%)** · 92.657.773 bytes livres |
 | Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
-| Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
+| Autenticação no aparelho | **Apple, Google nativo e e-mail validados no iPhone** | cliente iOS, callbacks, Keychain e Supabase configurados; relogin Google aprovado |
 | Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
-| Testes | **257 Swift** · **31 suítes Python** · **8 UI** | Auth, Keychain, sync, compartilhamento, filtros e fluxo final de confirmação |
+| Testes | **257 Swift** · **30 portões Python** · **8 UI** | 31 suítes Python no repositório; uma é sonda manual |
 
 ## 0. Trabalho ativo — conta, capacidade, privacidade declarada e 1.2
 
@@ -46,9 +46,10 @@ da coleta internacional estava em 397.790.355 bytes (79,6%) e, depois dela e
 do motor, em **404.343.955 bytes (80,9%)**, com 95.656.045 bytes livres.
 
 A 1.2 também já contém compartilhamento e exportação por um único botão,
-Universal Links autocontidos, importação por URL de produto, motivos visuais
-de estampa, couro, similares relaxados com explicação, editorial feminino
+Universal Links autocontidos, motivos visuais de estampa, couro, similares relaxados com explicação, editorial feminino
 reclassificável, detalhe clicável das fontes e busca/filtro local do Closet.
+O RPC de importação por URL foi implementado e provado, mas a porta saiu da
+interface em 26/08; não deve ser apresentado como funcionalidade disponível.
 Em 24/08, o preenchimento da peça deixou de manter Clothing Details dentro da
 sheet: o resultado agora abre em tela cheia, com Add to Closet no canto superior
 esquerdo. A busca do Closet usa o drawer nativo recolhível; o canto que levava
@@ -114,7 +115,10 @@ todas as 28.069 linhas pesa 18 MB, e o resto eram páginas que a recomposição
 editorial deixou vazias (ela apaga e reinsere as pernas inteiras, e o `VACUUM`
 comum libera a tupla mas não devolve a página). Um `VACUUM FULL` nela devolveu
 39 MB. Com `VACUUM` comum em `produtos` e `estado_dos_produtos`, o banco fechou
-em **388 MB (81,5%)**, com 92,7 MB livres e zero tuplas mortas. Nada foi perdido:
+em **407.342.227 / 500.000.000 bytes (81,5%)**, com 92.657.773 bytes livres e
+zero tuplas mortas. `pg_size_pretty` apresenta isso como aproximadamente
+388,5 MiB; não se deve comparar esse valor binário diretamente com o limite
+decimal de 500 MB. Nada foi perdido:
 109.869 produtos, 267.430 ligações, 171.080 artigos e 28.069 pontos de série de
 2009-03-23 a 2026-08-24.
 
@@ -179,11 +183,11 @@ segmento ou ligação alterado na segunda publicação. A medição corrente est
 bloco acima.
 
 O único bloqueio de implementação antes do fechamento da release são as telas
-finais do Figma. Apple, Google e e-mail foram validados no iPhone em 24/08. O
+finais do Figma. Apple, Google e e-mail foram validados no iPhone. O
 Google foi depois migrado do navegador hospedado pela Supabase para o SDK nativo
 oficial: o cliente OAuth iOS, os dois públicos aceitos pelo Supabase e o esquema
-de retorno estão configurados, e o build de simulador passou. Falta apenas
-repetir esse provedor no iPhone para validar o novo caminho físico. O
+de retorno estão configurados; login e relogin no caminho nativo passaram no
+iPhone. Instalação limpa, câmera e fototeca também foram aprovadas em 26/08. O
 SMTP gratuito está resolvido: a Brevo confirmou no pedido
 **#5525910** que o relay transacional já estava habilitado, e um cadastro técnico
 percorreu Supabase → Brevo → Gmail com eventos de envio, entrega e primeira
@@ -437,9 +441,10 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
 * Loja: **1.1 publicada**
-* Repositório: **1.2 build 1 em desenvolvimento** no PR #16
-* TestFlight: upload aceito pela Apple às 09:18 de 21/08; pacote em processamento
-* App Review: **não enviado**
+* Repositório: **1.2 build 1 em desenvolvimento na `main`**; PRs #16 e #17 mesclados
+* TestFlight 1.1: upload aceito pela Apple em 21/08 e versão publicada
+* TestFlight 1.2: **ainda não enviado; Archive ainda não gerado**
+* App Review 1.2: **não enviado**
 * Time: `67AYPRFZH8`
 * Alvo mínimo: iOS 17
 
@@ -456,7 +461,8 @@ já divergiram **três vezes** sem ninguém ver.
 
 **Adicionar uma tela:** crie o `.swift` e rode `python3 app/gerar_projeto.py`.
 
-O manifesto `PrivacyInfo.xcprivacy` declara `NSPrivacyCollectedDataTypePhotosorVideos`.
+O manifesto `PrivacyInfo.xcprivacy` declara fotos/vídeos, interação de produto e
+o identificador de origem usado contra abuso, além dos dados da conta e do Closet.
 Na 1.0 nenhuma foto saía do aparelho; no candidato 1.1 o `Config.xcconfig` local
 liga `REMOTE_ANALYSIS_ENABLED = YES`. Depois de a pessoa confirmar a peça, um
 alerta separado explica que somente a cópia reduzida e sem metadados segue via
@@ -464,7 +470,8 @@ Supabase para OpenAI, que o app não a armazena e que logs de abuso podem durar
 até 30 dias. Recusar mantém o caminho manual. Tela Privacy, alerta, manifesto e
 `FICHA_APP_STORE_1.1.md` dizem a mesma coisa.
 
-O String Catalog contém 145 chaves versionadas. Ainda não há
+O String Catalog contém 145 chaves versionadas e 219 na cópia local ainda não
+commitada. Ainda não há
 tradução PT-BR — a A16 mantém a interface pública em inglês —, mas telas novas
 entram agora por uma infraestrutura única em vez de espalhar mais strings sem
 catálogo.
@@ -472,9 +479,9 @@ catálogo.
 ## 5. Testes
 
 * **257** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
-* **31** suítes Python no CI — rodam a cada push. A 31ª, `teste_30s.py`, é a sonda
-  manual do README e não entra no portão
-* **8** testes de interface no alvo `CanarioUITests`; cinco rotas offline rodam no CI
+* **31** suítes Python no repositório; **30** rodam no CI a cada push. A 31ª,
+  `teste_30s.py`, é a sonda manual do README e não entra no portão
+* **8** testes de interface no alvo `CanarioUITests`; seis rotas offline rodam no CI
 
 > Estes três números aparecem também no resumo de 30 segundos, e em 25/08 os
 > dois blocos discordavam — a tabela dizia 249/8, esta seção dizia 239/7. Um
@@ -491,9 +498,13 @@ transformar o `project.pbxproj` em edição manual recorrente.
 
 ### Só o JP pode fazer
 
-1. Aceite manual em aparelho: instalação limpa, câmera, fototeca, offline,
-   links, modo escuro, Dynamic Type, VoiceOver
-2. Decidir o número que separa "cobertura aceitável" de "dia inútil"
+1. Aceite manual ainda não executado: offline, Universal Links, Dynamic Type e
+   VoiceOver. Instalação limpa, câmera, fototeca e relogin Google nativo já
+   passaram no iPhone em 26/08
+2. Repetir a regressão visual completa depois de aplicar o pacote final do Figma
+3. O app fixa `.preferredColorScheme(.light)` por decisão de produto; modo
+   escuro não é uma variante suportada nem um caso de aceite da 1.2
+4. Decidir o número que separa "cobertura aceitável" de "dia inútil"
 
 ### Decisões de produto, sem prazo
 
@@ -509,15 +520,9 @@ entram na fila quando forem decididos.
    ninguém é avisado. O certo seria um runner independente: medido em 19/08,
    `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
    billing. Sem gastar, a saída é algo fora do GitHub
-2. **Artefato de cor na tela Add** — o feixe do topo deixou de pintar oliva
-   sobre o fundo escuro em 19/08, mas o relato original era de algo **rosa**, e
-   isso eu não consegui reproduzir: só há runtime iOS 26.2 nesta máquina, e o
-   iPhone 15 com 18.7 usa o caminho de compatibilidade. Pode ter sido o mesmo
-   defeito visto noutro renderizador, pode ser outro. Precisa de uma foto
-3. **Loading de ~30 s ao importar peça no iPhone 15** — reduzido o que era
-   reproduzível no Mac (242 → 241 ms), mas **a causa dos 30 s continua sem
-   prova**. Precisa de medição no aparelho, não de mais otimização no escuro
-4. Apagar as branches remotas já mescladas
+2. Nenhum defeito técnico reproduzível permanece aberto antes do Figma. O
+   artefato rosa, a espera de ~30 s e a repetição indevida do consentimento
+   foram revalidados como resolvidos no iPhone em 26/08
 
 ---
 
