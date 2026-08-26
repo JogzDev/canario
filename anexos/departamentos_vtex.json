@@ -284,6 +284,14 @@
    "origem": "busca"
   }
  ],
+ "Malwee": [
+  {
+   "id": 1,
+   "loja_so_feminina": false,
+   "nome": "Feminino",
+   "origem": "busca"
+  }
+ ],
  "Maria Filo": [
   {
    "id": 35,
