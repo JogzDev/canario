@@ -124,9 +124,10 @@ private struct FavoritosDoMenu: View {
     @State private var pecas: [PecaSalva] = []
     @State private var termos: [Termo] = []
 
-    private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
-    }
+    /// Guardado, não computado: a lista lê `rotulos` duas vezes por linha, e
+    /// como propriedade computada cada leitura percorria a taxonomia inteira.
+    /// Mesmo defeito que travava o Closet; ver `ArmarioVisivel.swift`.
+    @State private var rotulos: [String: String] = [:]
 
     var body: some View {
         Group {
@@ -172,6 +173,8 @@ private struct FavoritosDoMenu: View {
     private func carregar() async {
         pecas = await PecasSalvas.shared.todas().filter { $0.favorita ?? false }
         termos = (try? await CatalogoDeTermos.shared.carregar()) ?? []
+        rotulos = Dictionary(uniqueKeysWithValues:
+            termos.map { ($0.id, Traducao.rotuloExibido($0)) })
     }
 
     private func desfavoritar(_ peca: PecaSalva) {

@@ -216,6 +216,24 @@ struct BotaoDoMenu: View {
 struct Carregando: View {
     var mensagem = "Loading…"
     var expectativa: String? = nil
+    /// Substitui `expectativa` quando a espera passa de `segundosParaDemora`.
+    ///
+    /// Existe por causa do relato de "loading de ~30 s" no iPhone 15. O teto de
+    /// tempo da análise remota é literalmente 30 s (`Supabase.analisarPeca`), e
+    /// durante todo esse tempo a tela dizia *"usually takes a few seconds"* — a
+    /// frase certa nos primeiros segundos e uma mentira nos últimos vinte.
+    /// Espera longa sem aviso é indistinguível de travamento, e a pessoa não
+    /// sabe que pode sair.
+    ///
+    /// Isto não acelera nada e não finge acelerar: troca "parece travado" por
+    /// "está demorando, e você pode fechar".
+    var avisoDeDemora: String? = nil
+    var segundosParaDemora: Double = 8
+    @State private var demorou = false
+
+    private var apoio: String? {
+        (demorou ? avisoDeDemora : nil) ?? expectativa
+    }
 
     var body: some View {
         VStack(spacing: Tokens.Espaco.s) {
@@ -224,8 +242,8 @@ struct Carregando: View {
                 Text(mensagem).font(Tokens.Fonte.apoio)
                     .foregroundStyle(Tokens.Cor.tinta)
             }
-            if let expectativa {
-                Text(expectativa)
+            if let apoio {
+                Text(apoio)
                     .font(Tokens.Fonte.miudo)
                     .foregroundStyle(Tokens.Cor.tintaFraca)
                     .multilineTextAlignment(.center)
@@ -233,8 +251,17 @@ struct Carregando: View {
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(Tokens.Espaco.g)
+        // `id: mensagem` reinicia a contagem quando a espera muda de natureza:
+        // separar a peça e analisar na nuvem são duas esperas, não uma longa.
+        .task(id: mensagem) {
+            demorou = false
+            guard avisoDeDemora != nil else { return }
+            try? await Task.sleep(for: .seconds(segundosParaDemora))
+            guard !Task.isCancelled else { return }
+            demorou = true
+        }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel([mensagem, expectativa ?? ""]
+        .accessibilityLabel([mensagem, apoio ?? ""]
             .filter { !$0.isEmpty }.joined(separator: ". "))
     }
 }

@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 25/08/2026 às 22:10 BRT.** Esta lista substitui a triagem de
+**Atualizado em 26/08/2026 às 00:20 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -8,6 +8,24 @@
 1. **Pacote visual do Figma.** Aplicar as novas telas e os assets finais. A
    hierarquia do Market panel e a redução de texto em “Which item” ficam nesta
    etapa para não desenhar duas vezes a mesma interface.
+
+## Depende só de um deploy — não espera o Figma
+
+- **Publicar a Edge Function `excluir-conta` corrigida.** A versão em produção
+  ainda apaga o usuário sem purgar `closet-thumbnails`, então miniatura
+  sobrevive à exclusão da conta. O código já está no repositório e o portão
+  `teste_privacidade_declarada.py` cobre a regressão; falta o
+  `supabase functions deploy excluir-conta`, pelo mesmo caminho do
+  [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md). Depois do deploy,
+  criar uma conta técnica, salvar uma peça com foto, excluir a conta e conferir
+  que o bucket ficou sem objeto daquele `auth.uid`.
+
+## Trabalho local do JP ainda não commitado
+
+- `app/Canario/Localizable.xcstrings` tem **212 chaves** na cópia local e **145**
+  no repositório. `FICHA_APP_STORE_1.1.md`, `POLITICA_PUBLICA_1.1.md`,
+  `SONDA_CANDIDATAS.md` e `capturas_1.1/` também estão só na máquina. Nenhum
+  deles entrou em commit de agente, de propósito; decidir o que versionar é seu.
 
 ## Fechamento de release — depois do Figma
 
@@ -77,9 +95,20 @@
 - Painel `direcao_intl` isolado com Doen, Rouje, Staud, Faithfull the Brand e
   With Jean: 4.956 itens visitados, 3.768 produtos elegíveis e zero produto das
   cinco marcas fora do segmento, comprovados pelo portão de produção.
-- 249 testes Swift, portões Python e oito fluxos de UI (incluindo o filtro do
+- 257 testes Swift, 31 portões Python e oito fluxos de UI (incluindo o filtro do
   Closet e a confirmação final) verdes no ambiente local; build de simulador
   verde.
+- Travamento do Closet resolvido na causa: rótulos e filtro saíram do `body`
+  para `CanarioLogica`. Medido em 200 peças e 212 termos, vinte passagens do
+  `body` caíram de **3,215 s para 0,023 s** (142×), e o orçamento virou portão.
+  Weekly Trends e a lista de favoritos tinham o mesmo padrão e foram corrigidos
+  junto. A espera da análise remota avisa depois de 8 s em vez de repetir
+  "usually takes a few seconds" até o teto de 30 s.
+- Botão Add centralizado por geometria: quadro, manequim, disco e `+` em
+  x = 50,000, conferido a cada push por `teste_experiencia_app.py`.
+- Privacidade declarada reconciliada com o binário e coberta por portão novo
+  (`teste_privacidade_declarada.py`); `excluir-conta` passa a purgar as
+  miniaturas antes de apagar o usuário.
 - Pacote de 26 reclamações e quatro ressalvas fechado no código: consentimento
   de visão persistente, teclado e Add alinhado, sete badges, cards do Closet,
   evidência editorial da janela, comparação com cobertura real, tradução

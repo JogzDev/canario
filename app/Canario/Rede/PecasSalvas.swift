@@ -184,14 +184,20 @@ enum NomeCompartilhavel {
         return escrito
     }
 
-    static func resolver(_ peca: PecaSalva, termos: [Termo]) -> String {
+    /// A forma barata: o catálogo já está montado e a resolução é uma busca.
+    static func resolver(_ peca: PecaSalva, catalogo: CatalogoDoArmario) -> String {
         if let escrito = apelidoValido(peca.apelido) { return escrito }
-        let porId = Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
-        if let categoria = peca.termoIds.compactMap({ porId[$0] })
-            .first(where: { $0.dimensao == "categoria" }) {
-            return Traducao.rotuloExibido(categoria)
-        }
+        if let categoria = catalogo.categoria(de: peca) { return categoria }
         return "Clothing item"
+    }
+
+    /// Conveniência para quem tem só a lista de termos em mãos. **Monta o
+    /// catálogo inteiro a cada chamada** — nunca use dentro de um laço de
+    /// interface: em 25/08 esta sobrecarga era chamada uma vez por linha da
+    /// lista de compartilhamento, refazendo um dicionário de 212 termos por
+    /// peça a cada passagem do `body`.
+    static func resolver(_ peca: PecaSalva, termos: [Termo]) -> String {
+        resolver(peca, catalogo: CatalogoDoArmario(termos: termos))
     }
 }
 

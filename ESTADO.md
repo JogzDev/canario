@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 25/08/2026, 22:10 em São Paulo
+**Última atualização:** 26/08/2026, 00:20 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -28,9 +28,9 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
 | Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
-| Testes | **249 Swift** · portões Python ativos · 8 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxo final de confirmação |
+| Testes | **257 Swift** · **31 suítes Python** · **8 UI** | Auth, Keychain, sync, compartilhamento, filtros e fluxo final de confirmação |
 
-## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
+## 0. Trabalho ativo — conta, capacidade, privacidade declarada e 1.2
 
 A 1.2 revoga somente a antiga regra de ausência de conta. A conta continua
 opcional: Apple, Google ou e-mail; o app permanece utilizável como convidado.
@@ -87,6 +87,48 @@ banco em álbum de originais. A45 tornou a resolução de URL exata e indexada n
 segmentos brasileiro e candidato. O produto oficial “Vestido Pontas Estampado
 Tomates” da Farm resolve com imagem, preço e termos `vestido` + `tomate_print`;
 esses termos já devolvem similares de outras marcas sem chamada à Luna.
+
+Em 26/08 fechou-se o que a A44 tinha deixado em aberto, e eram duas coisas da
+mesma família. A primeira: `excluir-conta` apagava o usuário sem tocar no bucket,
+porque a função ainda carregava o aviso escrito quando o Storage não existia
+(“se Storage for ligado no futuro, seus objetos precisam ser removidos antes
+desta linha”). Ele foi ligado e ninguém voltou nela — a miniatura sobrevivia à
+exclusão da conta, inalcançável e ainda assim armazenada. A purga do prefixo do
+usuário agora roda **antes** do `deleteUser`, e a exclusão falha aberta se a
+purga falhar. A segunda: `POLITICA_PUBLICA_1.2.md` e `FICHA_APP_STORE_1.2.md`
+continuavam afirmando que nenhuma imagem do Closet subia, contra o próprio
+`PrivacyInfo.xcprivacy`, que já declarava `Photos or Videos` como vinculado.
+Os dois textos foram corrigidos e `coletor/teste_privacidade_declarada.py`
+passou a reprovar o push quando código, manifesto, ficha, política e
+`excluir-conta` discordarem. A Edge Function corrigida **ainda precisa ser
+publicada** — está em `PENDENCIAS.md`.
+
+Em 26/08 também caiu a reclamação de lentidão, e ela tinha causa medível. O
+Closet montava a tabela de rótulos como **propriedade computada** dentro do
+`body`, lida de dentro do laço de filtragem e três vezes por card; o mesmo
+padrão estava em Weekly Trends e na lista de favoritos do menu. Com 200 peças e
+212 termos, vinte passagens do `body` — vinte teclas na busca — construíam
+84.000 dicionários em **3,215 s**; com o catálogo montado uma vez, **0,023 s**.
+O filtro saiu da View para `CanarioLogica` como `CatalogoDoArmario` e
+`FiltroDoArmario`, com testes de comportamento e um orçamento de interação que
+reprova o push se a forma quadrática voltar. A espera da análise remota passa a
+avisar depois de 8 s que está demorando, em vez de repetir "usually takes a few
+seconds" até o teto de 30 s. O `+` do botão Add ficou exatamente no centro:
+quadro, manequim, disco e glifo em x = 50,000, conferidos por geometria a cada
+push.
+
+No mesmo dia apareceu um portão que mentia. O CI listava cinco fluxos de UI
+offline, e um deles — `testFillInfoAbreClothingDetailsForaDaSheet` — **nunca
+existiu**. `-only-testing` com nome errado não falha: o `xcodebuild` roda zero
+testes e devolve `TEST SUCCEEDED`. O fluxo Fill Info → Clothing Details, que foi
+pedido explicitamente, estava sem cobertura executada desde que entrou na lista.
+O nome certo é `testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails`, ele
+passa em 6,2 s, e `teste_workflows.py` agora reprova qualquer `-only-testing`
+que aponte para um teste inexistente.
+
+Isso é o que era **provável por leitura de código e mensurável aqui**. Se ainda
+sobrar lentidão no aparelho, ela precisa de medição no iPhone — não de mais
+otimização no escuro, que é a regra que já vale para o cold launch.
 
 O pacote de QA de 25/08 também unificou o nome exibido no Closet, card social,
 link e CSV, ignorando placeholders legados como “Replacing”; colocou a foto no
@@ -399,16 +441,22 @@ Supabase para OpenAI, que o app não a armazena e que logs de abuso podem durar
 até 30 dias. Recusar mantém o caminho manual. Tela Privacy, alerta, manifesto e
 `FICHA_APP_STORE_1.1.md` dizem a mesma coisa.
 
-O String Catalog inicial contém 150 chaves extraídas do app. Ainda não há
+O String Catalog contém 145 chaves versionadas. Ainda não há
 tradução PT-BR — a A16 mantém a interface pública em inglês —, mas telas novas
 entram agora por uma infraestrutura única em vez de espalhar mais strings sem
 catálogo.
 
 ## 5. Testes
 
-* **239** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
-* **27** suítes Python — rodam a cada push
-* **7** testes de interface no alvo `CanarioUITests`; cinco rotas offline rodam no CI
+* **257** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **31** suítes Python no CI — rodam a cada push. A 31ª, `teste_30s.py`, é a sonda
+  manual do README e não entra no portão
+* **8** testes de interface no alvo `CanarioUITests`; cinco rotas offline rodam no CI
+
+> Estes três números aparecem também no resumo de 30 segundos, e em 25/08 os
+> dois blocos discordavam — a tabela dizia 249/8, esta seção dizia 239/7. Um
+> documento que existe para nenhum outro contradizê-lo não pode contradizer a si
+> mesmo: quando um deles mudar, o outro muda no mesmo commit.
 
 O gerador é dono do alvo de UI test e o CI o executa num iPhone 17 simulado.
 Isso protege os caminhos estruturais enquanto as telas novas chegam sem

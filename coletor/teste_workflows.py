@@ -304,6 +304,33 @@ def checar_orquestracao(workflows):
         falhar("testes.yml",
                "alvo CanarioUITests existe, mas nao roda uma vez no CI")
 
+    # `-only-testing` com nome ERRADO nao falha: o xcodebuild roda zero testes e
+    # devolve `** TEST SUCCEEDED **`. Foi assim que
+    # `testFillInfoAbreClothingDetailsForaDaSheet` -- um nome que nunca existiu
+    # -- ficou listado como um dos cinco fluxos offline protegidos e nunca
+    # rodou, com o CI verde o tempo todo. Verde por ausencia e pior que
+    # vermelho: ele afirma cobertura que nao existe.
+    if ui:
+        fonte_ui = os.path.join(RAIZ, "app", "CanarioUITests",
+                                "CanarioUITests.swift")
+        try:
+            texto_ui = open(fonte_ui, encoding="utf-8").read()
+        except OSError as ex:
+            falhar("testes.yml", "CanarioUITests.swift ilegivel: {}".format(ex))
+        else:
+            existentes = set(re.findall(r"func (test[A-Za-z0-9_]*)", texto_ui))
+            pedidos = set(re.findall(
+                r"-only-testing:CanarioUITests/CanarioUITests/([A-Za-z0-9_]+)",
+                ui[0]))
+            if not pedidos:
+                falhar("testes.yml",
+                       "o passo de UI nao seleciona nenhum teste por nome")
+            for nome in sorted(pedidos - existentes):
+                falhar("testes.yml",
+                       "-only-testing pede {} , que nao existe em "
+                       "CanarioUITests.swift: o CI passa rodando zero testes"
+                       .format(nome))
+
     sonda = workflows.get("sonda.yml", {}).get("jobs", {}).get("sondar", {})
     passos_sonda = sonda.get("steps", [])
     publicadores = [p for p in passos_sonda

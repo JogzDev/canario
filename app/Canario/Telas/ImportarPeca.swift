@@ -70,6 +70,19 @@ struct ImportarPeca: View {
                 return "The visual analysis runs on the server and usually takes a few seconds."
             }
         }
+
+        /// O que dizer quando os "poucos segundos" já passaram. O limite do
+        /// pedido é 30 s; até lá a tela precisa continuar dizendo a verdade e
+        /// lembrar que Close existe. `nil` onde a espera é curta por natureza.
+        var avisoDeDemora: String? {
+            switch self {
+            case .lendoArquivo, .lendoLink, .analisandoLocal: return nil
+            case .separandoPeca:
+                return "Still separating the garment on this iPhone. You can close and try a tighter photo."
+            case .analisandoNaNuvem:
+                return "This is taking longer than usual. It stops on its own after 30 seconds — you can close and read the garment on this iPhone instead."
+            }
+        }
     }
     @State private var erro: String?
     @State private var detectados: Set<String> = []
@@ -162,7 +175,8 @@ struct ImportarPeca: View {
             Group {
                 if lendo {
                     Carregando(mensagem: esperaAtual.mensagem,
-                               expectativa: esperaAtual.expectativa)
+                               expectativa: esperaAtual.expectativa,
+                               avisoDeDemora: esperaAtual.avisoDeDemora)
                 } else {
                     switch etapa {
                     case .entrada:       telaDeEntrada

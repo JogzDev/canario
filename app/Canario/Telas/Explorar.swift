@@ -40,12 +40,17 @@ struct Explorar: View {
 
     private let diasMaximosDoDigest = 42
 
-    private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
-    }
+    // Estes dois eram propriedades COMPUTADAS e eram lidos de dentro de
+    // closures de `filter` e de laços de cartões: cada leitura percorria a
+    // taxonomia inteira. Guardados, custam uma passada por carregamento.
+    // Mesmo defeito que travava o Closet; ver `ArmarioVisivel.swift`.
+    @State private var rotulos: [String: String] = [:]
+    @State private var termosPorId: [String: Termo] = [:]
 
-    private var termosPorId: [String: Termo] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
+    private func indexarTermos() {
+        rotulos = Dictionary(uniqueKeysWithValues:
+            termos.map { ($0.id, Traducao.rotuloExibido($0)) })
+        termosPorId = Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
     }
 
     /// Um termo por linha, com a mudança MAIS RECENTE dele.
@@ -86,6 +91,13 @@ struct Explorar: View {
                 }
             }
             .navigationTitle("Weekly Trends")
+            // Uma reindexação por chegada de taxonomia, venha ela da rede
+            // (`carregar`) ou do snapshot em disco. Ficar preso a um dos dois
+            // caminhos deixaria a tela sem rótulo no outro.
+            .onChange(of: termos) { _, novos in
+                _ = novos
+                indexarTermos()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let alternarMenu {
