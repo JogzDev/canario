@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 26/08/2026 às 00:20 BRT.** Esta lista substitui a triagem de
+**Atualizado em 26/08/2026 às 15:40 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -8,17 +8,6 @@
 1. **Pacote visual do Figma.** Aplicar as novas telas e os assets finais. A
    hierarquia do Market panel e a redução de texto em “Which item” ficam nesta
    etapa para não desenhar duas vezes a mesma interface.
-
-## Depende só de um deploy — não espera o Figma
-
-- **Publicar a Edge Function `excluir-conta` corrigida.** A versão em produção
-  ainda apaga o usuário sem purgar `closet-thumbnails`, então miniatura
-  sobrevive à exclusão da conta. O código já está no repositório e o portão
-  `teste_privacidade_declarada.py` cobre a regressão; falta o
-  `supabase functions deploy excluir-conta`, pelo mesmo caminho do
-  [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md). Depois do deploy,
-  criar uma conta técnica, salvar uma peça com foto, excluir a conta e conferir
-  que o bucket ficou sem objeto daquele `auth.uid`.
 
 ## Trabalho local do JP ainda não commitado
 
@@ -50,11 +39,27 @@
   de `feminino_casual_br`. Isso é divergência entre a regra escrita e o código,
   medida em 26/08, e vale independentemente de qualquer marca nova.
   **Não corrigir agora:** o conserto muda todo share histórico, que é operação
-  de virada com recomputação, e o banco está em 90,9% do teto gratuito.
+  de virada com recomputação.
 - **Promover as 13 candidatas ao painel medido.** Elas já entregam o benefício
   visível (similares com foto, preço e marca) de dentro de
   `catalogo_candidato_br`, sem tocar em índice, raridade ou z-score. Promovê-las
   exige virada explícita, recomputação e folga de banco — nesta ordem.
+- **Suéter/quarter zip cai em duas categorias diferentes.** Medido em 26/08:
+  1.281 títulos dizem suéter/pullover e eles se dividem em **819 dentro de
+  `casaco_jaqueta` e 361 dentro de `blusa_top`** — a mesma peça em duas
+  categorias conforme a palavra que a loja usou. A causa é o vocabulário:
+  `casaco_jaqueta` casa `cardigan` mas não casa `suéter`, `pullover` nem
+  `blusão`. Categoria isolada para quarter zip **não se sustenta** — existem 2
+  no painel inteiro, contra o mínimo de 30 do §8. O conserto é acrescentar essas
+  palavras a `casaco_jaqueta` e renomear o rótulo para algo como
+  "Coats, jackets & knitwear". **Não antes da 1.2:** move ~500 produtos entre
+  categorias e exige republicação do motor.
+- **Categoria não está sendo exclusiva, e o §11 diz que deveria.** Medido em
+  26/08: **7,85% do painel (5.884 produtos) carrega duas ou três categorias** ao
+  mesmo tempo, e cada um conta nos dois shares. Isso existe hoje,
+  independentemente do suéter — e é por isso que a correção acima não pode ir
+  sozinha: adicionar vocabulário sem regra de precedência aumentaria a marcação
+  dupla em vez de reduzi-la. As duas coisas viram um passe só na virada.
 - **Corrigir o viés de composição antes de crescer.** C&A é ~53% do painel, e
   hoje o share é calculado por SKU, então a maior marca domina por volume. Média
   entre marcas com peso por papel resolve isso melhor do que adicionar marcas.
@@ -78,8 +83,9 @@
   com cerca de 14.450 produtos brutos e `robots.txt` respeitado. O recorte
   elegível fechou em 3.082 visitados = 3.082 declarados; o retry alterou somente
   duas linhas. Ela está em `catalogo_candidato_br`, portanto amplia similares
-  sem mudar a coorte medida. O banco ficou em 90,9%, ainda gratuito, e o portão
-  continua bloqueando qualquer expansão que leve a margem a uma zona insegura.
+  sem mudar a coorte medida. Depois da recuperação de 26/08 o banco está em
+  81,5%, e o portão continua bloqueando expansão que leve a margem a zona
+  insegura.
 
 ## Entregue na 1.2 antes do Figma
 
@@ -141,5 +147,8 @@
   109.543 produtos e 266.623 ligações.
 - Catálogo candidato brasileiro com as 12 marcas anteriores mais 3.082 produtos
   elegíveis da Malwee; a prova de isolamento em produção fecha esta entrega.
-- Banco no plano gratuito em 454.364.307 / 500.000.000 bytes (90,9%), com
-  retenção permanente de 21 dias no cru e séries históricas preservadas.
+- Banco no plano gratuito em **388 MB / 500 MB (81,5%)**, com 92,7 MB livres,
+  zero tuplas mortas e séries históricas preservadas (28.069 pontos, 2009–2026).
+- `excluir-conta` publicada (versão 2) e provada em produção com conta técnica
+  descartável: a função respondeu `miniaturas_removidas: 1` e o banco confirmou
+  usuário, identidade e objeto zerados, sem tocar nos dados reais.

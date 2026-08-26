@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 26/08/2026, 00:20 em São Paulo
+**Última atualização:** 26/08/2026, 15:40 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -22,7 +22,7 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Frente | Estado | Número que importa |
 |---|---|---|
 | Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **14.678 produtos candidatos** |
-| Banco | plano gratuito; retenção crua no piso seguro de 21 dias | **454.364.307 bytes / 500 MB (90,9%)** após Malwee e motor |
+| Banco | plano gratuito; inchaço recuperado em 26/08 | **388 MB / 500 MB (81,5%)** · 92,7 MB livres |
 | Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
@@ -100,8 +100,31 @@ continuavam afirmando que nenhuma imagem do Closet subia, contra o próprio
 `PrivacyInfo.xcprivacy`, que já declarava `Photos or Videos` como vinculado.
 Os dois textos foram corrigidos e `coletor/teste_privacidade_declarada.py`
 passou a reprovar o push quando código, manifesto, ficha, política e
-`excluir-conta` discordarem. A Edge Function corrigida **ainda precisa ser
-publicada** — está em `PENDENCIAS.md`.
+`excluir-conta` discordarem. A Edge Function corrigida foi publicada na mesma
+tarde e provada em produção; ver o parágrafo seguinte.
+
+Ainda em 26/08, a capacidade saiu da zona de risco. A medição da tarde deu
+**93,5%** (467.602.579 bytes), com 12,4 MB até o portão de 96% bloquear toda
+coleta. Medindo objeto por objeto apareceram duas coisas. A primeira: os índices
+`produtos_url_lookup` e `produtos_url_lookup_segmentos` ocupavam **18,5 MB para
+20 varreduras na vida inteira** — existiam só para a entrada por link, que saiu
+do app no mesmo dia. A A47 os removeu e o banco caiu para 89,6%. A segunda:
+`series_semanais` tinha **68 MB de heap para ~21 MB de dado real** — o `meta` de
+todas as 28.069 linhas pesa 18 MB, e o resto eram páginas que a recomposição
+editorial deixou vazias (ela apaga e reinsere as pernas inteiras, e o `VACUUM`
+comum libera a tupla mas não devolve a página). Um `VACUUM FULL` nela devolveu
+39 MB. Com `VACUUM` comum em `produtos` e `estado_dos_produtos`, o banco fechou
+em **388 MB (81,5%)**, com 92,7 MB livres e zero tuplas mortas. Nada foi perdido:
+109.869 produtos, 267.430 ligações, 171.080 artigos e 28.069 pontos de série de
+2009-03-23 a 2026-08-24.
+
+A `excluir-conta` corrigida foi publicada e **provada em produção**. Estava na
+versão 1, o código antigo. A prova foi ponta a ponta com conta técnica
+descartável: login, upload de miniatura, chamada da função — que respondeu
+`{"deleted":true,"miniaturas_removidas":1}` — e conferência no banco: usuário
+zero, objeto zero, identidade zero, e o bucket de volta aos 2 objetos legítimos.
+Antes disso o bucket tinha **zero órfãos**: ninguém havia excluído conta desde a
+A44, então a correção chegou antes do primeiro caso real.
 
 Em 26/08 também caiu a reclamação de lentidão, e ela tinha causa medível. O
 Closet montava a tabela de rótulos como **propriedade computada** dentro do
