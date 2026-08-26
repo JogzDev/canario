@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 26/08/2026 às 15:40 BRT.** Esta lista substitui a triagem de
+**Atualizado em 26/08/2026 às 13:40 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -11,20 +11,42 @@
 
 ## Operacional — aberto agora
 
-- **Runner `sempre-ligado` (i7) não aceita job.** Em 26/08 ele apareceu
-  `status=offline` com `busy=true`, voltou a `online` e mesmo assim a fila não
-  andou. Doze workflows dependem desse rótulo: pipeline diário, motor, coletas,
-  sondas e o job Python do CI. Sintoma descrito em [`RUNNER.md`](RUNNER.md):
-  `cd actions-runner && ./svc.sh status`. **Exige mão na máquina.**
-- **Amaro e PatBô em zero há 2 dias, causa NÃO determinada.** Medido em 26/08,
-  da mesma rede do runner: `robots.txt` 200, `products.json` 200 com produto
-  real, e 10 páginas seguidas a 1 req/s sem nenhum 429. Portanto **não é IP nem
-  ritmo** — as hipóteses anteriores caíram. As 13 marcas VTEX coletam bem da
-  mesma máquina na mesma execução. A coincidência com o travamento do runner
-  sugere máquina degradada, mas isso não está provado. O experimento que decide
-  é uma execução de `coleta-shopify.yml` no i7 depois de ele voltar.
-- No 3º dia consecutivo de zero o portão vira crítico e o motor não publica
-  (`DIAS_DE_ZERO_PARA_BLOQUEAR = 3`). Com o runner parado, nem a contagem avança.
+- **Amaro e PatBô em zero há 2 dias, causa NÃO determinada.** No 3º dia
+  consecutivo o portão vira crítico e o motor não publica
+  (`DIAS_DE_ZERO_PARA_BLOQUEAR = 3`); a coleta de 26/08 já contou o 2º. Medido
+  em 26/08, da mesma rede do runner: `robots.txt` 200, `products.json` 200 com
+  produto real, e 10 páginas seguidas a 1 req/s sem nenhum 429. **Não é IP e não
+  é ritmo** — as duas hipóteses anteriores caíram por medição. As 13 marcas VTEX
+  coletam bem da mesma máquina na mesma execução. Uma coleta manual bem-sucedida
+  grava o dado do próprio dia e zera o contador.
+- **O grupo de concorrência `canario-dados` já travou uma vez.** Em 26/08 três
+  execuções de coleta ficaram presas atrás de um run que o GitHub listava como
+  `queued` e recusava cancelar dizendo ora "completed", ora "não enfileirado".
+  Dez workflows compartilham esse grupo — coletas, motor, centroides e as duas
+  de Luna; `testes.yml` não, e por isso o CI passava enquanto nada coletava.
+  Destravou sozinho. Se repetir, a saída conhecida é cancelar pela interface web.
+
+## Acabamento adiado conscientemente
+
+- **O card social renderiza 1080×1350 na main thread.** `CartaoCompartilhavel.imagem`
+  é `@MainActor`. Dá para tirar de lá, mas o ganho são 1–3 quadros numa ação que
+  já mostra "Preparing export…", e mover desenho de texto para fora da main
+  thread traz risco pequeno de crash. Adiado para depois da submissão, não
+  esquecido.
+- **"Continua perguntando toda vez" (análise na nuvem) não foi reproduzido.** A
+  persistência funciona isolada — grava, relê numa instância nova e devolve o
+  valor certo — e só existe um ponto no app que dispara a pergunta, e ele
+  consulta a preferência antes. O que foi corrigido é o defeito **provável de
+  causar o relato**: os Ajustes tinham um interruptor de dois estados que
+  mapeava `perguntar` para "nuvem ligada", então a tela afirmava uma coisa e o
+  fluxo fazia outra. Agora são três opções explícitas. **Se voltar a acontecer**,
+  olhar o que os Ajustes mostram: "Always use the cloud" e mesmo assim
+  perguntando é bug reproduzível; "Ask me the first time" significa que a escolha
+  não está sendo gravada.
+- **Strings novas ainda não estão no String Catalog.** `SWIFT_EMIT_LOC_STRINGS`
+  está ligado, então elas entram sozinhas no próximo build feito pelo Xcode
+  (não pelo `xcodebuild` em DerivedData temporário). Acontece naturalmente ao
+  gerar o Archive.
 
 ## Trabalho local do JP ainda não commitado
 
