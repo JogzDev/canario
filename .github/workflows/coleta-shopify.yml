@@ -31,6 +31,11 @@ on:
         required: false
         type: boolean
         default: true
+      rotulo_do_runner:
+        description: 'Maquina que executa: sempre-ligado (i7) ou xcode (Mac do JP)'
+        required: false
+        type: string
+        default: 'sempre-ligado'
     secrets:
       SUPABASE_URL:
         required: true
@@ -59,6 +64,14 @@ on:
         required: false
         type: boolean
         default: true
+      rotulo_do_runner:
+        description: 'Maquina que executa'
+        required: false
+        type: choice
+        options:
+          - sempre-ligado
+          - xcode
+        default: sempre-ligado
 
 permissions:
   contents: read
@@ -69,7 +82,12 @@ concurrency:
 
 jobs:
   coletar:
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    # O cabecalho deste arquivo diz que a perna Shopify existe por causa do IP:
+    # Amaro e PatBo devolvem 429 do datacenter e 200 do residencial. O rotulo
+    # virou parametro em 26/08 porque a maquina certa depende da hora -- o i7
+    # fica ligado de madrugada, o Mac do JP fica ligado no horario comercial --
+    # e porque um runner sozinho e ponto unico de falha para a coleta inteira.
+    runs-on: [self-hosted, macOS, "${{ inputs.rotulo_do_runner || 'sempre-ligado' }}"]
     timeout-minutes: 300
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
