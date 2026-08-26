@@ -94,10 +94,7 @@ struct Explorar: View {
             // Uma reindexação por chegada de taxonomia, venha ela da rede
             // (`carregar`) ou do snapshot em disco. Ficar preso a um dos dois
             // caminhos deixaria a tela sem rótulo no outro.
-            .onChange(of: termos) { _, novos in
-                _ = novos
-                indexarTermos()
-            }
+            .onChange(of: termos) { _, _ in indexarTermos() }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let alternarMenu {
