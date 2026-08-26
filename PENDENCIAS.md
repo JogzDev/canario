@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 26/08/2026 às 13:40 BRT.** Esta lista substitui a triagem de
+**Atualizado em 26/08/2026 às 15:20 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -27,7 +27,10 @@
   `queued` e recusava cancelar dizendo ora "completed", ora "não enfileirado".
   Dez workflows compartilham esse grupo — coletas, motor, centroides e as duas
   de Luna; `testes.yml` não, e por isso o CI passava enquanto nada coletava.
-  Destravou sozinho. Se repetir, a saída conhecida é cancelar pela interface web.
+  Destravou sozinho. Dois runs antigos continuam aparecendo como `queued` pela
+  API, embora a própria API recuse cancelá-los como `completed`; runs posteriores
+  passaram normalmente. São registros fantasmas, não trabalho em execução. Se
+  voltarem a bloquear o grupo, a saída conhecida é cancelar pela interface web.
 
 ## Acabamento adiado conscientemente
 
@@ -53,16 +56,19 @@
 
 ## Trabalho local do JP ainda não commitado
 
-- `app/Canario/Localizable.xcstrings` tem **212 chaves** na cópia local e **145**
+- `app/Canario/Localizable.xcstrings` tem **219 chaves** na cópia local e **145**
   no repositório. `FICHA_APP_STORE_1.1.md`, `POLITICA_PUBLICA_1.1.md`,
   `SONDA_CANDIDATAS.md` e `capturas_1.1/` também estão só na máquina. Nenhum
   deles entrou em commit de agente, de propósito; decidir o que versionar é seu.
 
 ## Fechamento de release — depois do Figma
 
-- Repetir o login Google no iPhone com o novo SDK nativo. O cliente OAuth iOS,
-  os IDs aceitos no Supabase, o callback e o build já estão verdes; esta prova
-  confirma que o usuário vê Google/DataDrobe sem o domínio interno da Supabase.
+- **Já validados fisicamente em 26/08:** instalação limpa, login e relogin com o
+  SDK Google nativo, câmera e fototeca. O artefato rosa, a demora de ~30 s e a
+  repetição indevida do consentimento também não voltaram a ocorrer.
+- Rodar os quatro aceites físicos ainda pendentes: offline, Universal Links,
+  Dynamic Type e VoiceOver. O app é deliberadamente light-only
+  (`.preferredColorScheme(.light)`), portanto modo escuro não é caso suportado.
 - Rodar a regressão visual no iPhone e a suíte completa.
 - Gerar Archive Release 1.2, validar assinatura/entitlements, enviar ao
   TestFlight e repetir os fluxos críticos no binário distribuído.
@@ -113,8 +119,9 @@
   será repetido nem usado para perseguir décimos: cinco casos difíceis ficam
   registrados como erro conhecido. Um futuro holdout usa imagens novas e
   orçamento explícito. Isso não bloqueia o Figma nem os fluxos manuais.
-- **Cold launch e artefato rosa no iOS 18.7.** Exigem o iPhone 15 no qual foram
-  relatados. Build, simulador iOS 26.2 e os fluxos automatizados estão verdes.
+- **Cold launch, artefato rosa, demora e consentimento: RESOLVIDOS.** O JP
+  revalidou no iPhone em 26/08 que o artefato não existe mais, a espera de ~30 s
+  acabou e a autorização de análise não volta a aparecer indevidamente.
 - **Floral recente é zero verdadeiro.** A recomputação leu 170.813 artigos e
   persistiu 16.287 pares de título+resumo. Na semana atual, 28/46 termos BR e
   22/47 internacionais têm cobertura; `floral` não tem matéria que também
@@ -156,15 +163,17 @@
   Compare passou para Weekly Trends.
 - Similares com foto no alto do relatório, polo como camisa, relaxamento declarado
   por cobertura e fallback sem abandonar categoria nem motivo de estampa.
-- Importação por URL de produto; Farm/tomate funciona sem visão quando o produto
-  já está no painel. Motivos visuais de frutas e couro foram adicionados.
+- O backend de importação por URL foi entregue e provado com Farm/tomate, mas a
+  porta saiu da interface em 26/08 a pedido do JP. Portanto **não é uma
+  funcionalidade disponível da 1.2**; recolocá-la exige reconstruir o cartão,
+  embora o RPC continue pronto. Motivos visuais de frutas e couro permanecem.
 - Editorial refiltrado para feminino sem apagar o arquivo, fontes clicáveis,
   contagens cruas e zero honesto no lugar do “−100%” enganoso.
 - Editorial dos atributos acessível a partir da peça salva.
 - Painel `direcao_intl` isolado com Doen, Rouje, Staud, Faithfull the Brand e
   With Jean: 4.956 itens visitados, 3.768 produtos elegíveis e zero produto das
   cinco marcas fora do segmento, comprovados pelo portão de produção.
-- 257 testes Swift, 31 portões Python e oito fluxos de UI (incluindo o filtro do
+- 257 testes Swift, 30 portões Python e oito fluxos de UI (incluindo o filtro do
   Closet e a confirmação final) verdes no ambiente local; build de simulador
   verde.
 - Travamento do Closet resolvido na causa: rótulos e filtro saíram do `body`
@@ -189,8 +198,10 @@
   109.543 produtos e 266.623 ligações.
 - Catálogo candidato brasileiro com as 12 marcas anteriores mais 3.082 produtos
   elegíveis da Malwee; a prova de isolamento em produção fecha esta entrega.
-- Banco no plano gratuito em **388 MB / 500 MB (81,5%)**, com 92,7 MB livres,
-  zero tuplas mortas e séries históricas preservadas (28.069 pontos, 2009–2026).
+- Banco no plano gratuito em **407.342.227 / 500.000.000 bytes (81,5%)**, com
+  92.657.773 bytes livres, zero tuplas mortas e séries históricas preservadas
+  (28.069 pontos, 2009–2026). Isso equivale a aproximadamente 388,5 MiB usados;
+  “388 MB / 500 MB” misturava unidades e foi aposentado.
 - `excluir-conta` publicada (versão 2) e provada em produção com conta técnica
   descartável: a função respondeu `miniaturas_removidas: 1` e o banco confirmou
   usuário, identidade e objeto zerados, sem tocar nos dados reais.
