@@ -28,13 +28,16 @@ identifier and does not track you across apps or websites.
 | Contact Info → Email Address | sim | sim | App Functionality |
 | Identifiers → User ID | sim | sim | App Functionality |
 | User Content → Other User Content | sim | sim | App Functionality |
+| Usage Data → Product Interaction | sim | sim | App Functionality |
 | Photos or Videos | sim | **sim** | App Functionality |
 | Identifiers → Device ID | sim | não | App Functionality |
 | Data Used to Track You | não | — | — |
 
-`Other User Content` cobre nome, atributos, preço-alvo, canal, favorito e
-preferência de similares sincronizados. `Device ID` é o balde adotado na 1.1
-para o hash irreversível de origem usado contra abuso.
+`Other User Content` cobre nome, atributos, preço-alvo e canal sincronizados.
+`Product Interaction` cobre o favorito e a escolha explícita sobre similares.
+`Device ID` é o balde adotado na 1.1 para o hash irreversível de origem usado
+contra abuso. A Apple orienta classificar IP armazenado de acordo com o uso;
+esse hash não é ligado à conta e não é usado para rastreamento.
 
 **Photos or Videos collected:** Yes, **linked to the user**. A 1.1 tinha um uso
 só, anônimo; a 1.2 tem dois, e a Apple pede uma linha por tipo de dado — basta

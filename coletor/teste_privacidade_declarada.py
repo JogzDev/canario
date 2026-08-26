@@ -38,6 +38,7 @@ APP = os.path.join(RAIZ, "app", "Canario")
 MANIFESTO = os.path.join(APP, "PrivacyInfo.xcprivacy")
 SYNC = os.path.join(APP, "Rede", "SincronizacaoDoCloset.swift")
 EXCLUIR = os.path.join(RAIZ, "supabase", "functions", "excluir-conta", "index.ts")
+ANALISE = os.path.join(RAIZ, "supabase", "functions", "analisar-peca", "index.ts")
 BUCKET = "closet-thumbnails"
 
 # Frases que descreviam o binario ANTERIOR a A44. Enquanto o app subir
@@ -93,7 +94,61 @@ def main():
         print("FALHOU: PrivacyInfo.xcprivacy invalido: {}".format(exc))
         return 1
 
-    fotos = [t for t in manifesto.get("NSPrivacyCollectedDataTypes", [])
+    tipos = manifesto.get("NSPrivacyCollectedDataTypes", [])
+
+    def exigir_tipo(nome, ligado):
+        encontrados = [t for t in tipos if t.get("NSPrivacyCollectedDataType") == nome]
+        if len(encontrados) != 1:
+            print("FALHOU: o manifesto precisa declarar {!r} exatamente uma "
+                  "vez; declarou {}".format(nome, len(encontrados)))
+            return False
+        item = encontrados[0]
+        if bool(item.get("NSPrivacyCollectedDataTypeLinked")) != ligado:
+            print("FALHOU: {!r} tem Linked incorreto (esperado {})".format(
+                nome, ligado))
+            return False
+        if bool(item.get("NSPrivacyCollectedDataTypeTracking")):
+            print("FALHOU: {!r} foi marcado como tracking".format(nome))
+            return False
+        if item.get("NSPrivacyCollectedDataTypePurposes") != [
+                "NSPrivacyCollectedDataTypePurposeAppFunctionality"]:
+            print("FALHOU: {!r} precisa ter somente App Functionality como "
+                  "finalidade".format(nome))
+            return False
+        return True
+
+    # O código é novamente o gatilho. Favorito e rejeição de similares são
+    # interações sincronizadas; o hash de origem fica sete dias no servidor.
+    # Se essas coletas saírem do binário, o teste deixa de exigi-las.
+    interacao_sincronizada = (
+        "similaresRejeitados" in sync and "favorita" in sync)
+    analise = ler(ANALISE)
+    if analise is None:
+        return 1
+    identificador_de_origem = (
+        "AI_RATE_LIMIT_SALT" in analise
+        and "_reservar_analise_visual" in analise
+        and "originHash" in analise)
+
+    if interacao_sincronizada:
+        if not exigir_tipo("NSPrivacyCollectedDataTypeProductInteraction", True):
+            return 1
+        ficha_lisa = re.sub(r"[*_`]", "", ficha)
+        if not re.search(r"Usage Data\s*→\s*Product Interaction\s*\|\s*sim\s*\|\s*sim",
+                         ficha_lisa):
+            print("FALHOU: a ficha nao declara Product Interaction vinculado")
+            return 1
+
+    if identificador_de_origem:
+        if not exigir_tipo("NSPrivacyCollectedDataTypeDeviceID", False):
+            return 1
+        ficha_lisa = re.sub(r"[*_`]", "", ficha)
+        if not re.search(r"Identifiers\s*→\s*Device ID\s*\|\s*sim\s*\|\s*não",
+                         ficha_lisa):
+            print("FALHOU: a ficha nao declara Device ID nao vinculado")
+            return 1
+
+    fotos = [t for t in tipos
              if t.get("NSPrivacyCollectedDataType")
              == "NSPrivacyCollectedDataTypePhotosorVideos"]
     if len(fotos) != 1:
