@@ -22,7 +22,14 @@ struct ImportarPeca: View {
     var aoSalvar: (() -> Void)? = nil
 
     // MARK: - Tokens Locais
-    private let corDestaque = Color(red: 187/255, green: 229/255, blue: 237/255) // #BBE5ED
+
+    /// #BBE5ED é o céu da marca, e ele já existe em `Tokens.Cor.ceu` desde a
+    /// A18 -- foi redigitado aqui como literal fixo ao aplicar o Figma. Duas
+    /// cópias do mesmo valor significa que trocar a paleta conserta uma tela e
+    /// esquece a outra, que é exatamente o que o `Tokens.swift` foi escrito
+    /// para impedir. O valor desenhado continua idêntico no modo claro, que é
+    /// o único que o app suporta.
+    private let corDestaque = Tokens.Cor.ceu
 
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
@@ -156,16 +163,43 @@ struct ImportarPeca: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
-                        dismiss()
+                        if etapa == .entrada || lendo {
+                            dismiss()
+                        } else {
+                            voltarUmaEtapa()
+                        }
                     } label: {
-                        Image(systemName: "xmark")
+                        Image(systemName: etapa == .entrada || lendo ? "xmark" : "chevron.left")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(.black)
                             .frame(width: 32, height: 32)
                             .background(Color.black.opacity(0.06))
                             .clipShape(Circle())
                     }
-                    .accessibilityLabel("Close")
+                    .accessibilityLabel(etapa == .entrada || lendo ? "Close" : "Back")
+                }
+                if etapa == .confirmarAlvo, !lendo {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button {
+                                mostrandoEditorDeRecorte = true
+                            } label: {
+                                Label("Adjust photo", systemImage: "crop")
+                            }
+                            if fotoFoiRecortada {
+                                Button {
+                                    guard let original = imagemOriginal else { return }
+                                    let nome = nomePendente ?? "photo"
+                                    Task { await prepararConfirmacao(original, nome: nome) }
+                                } label: {
+                                    Label("Undo crop", systemImage: "arrow.uturn.backward")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
+                        .accessibilityLabel("Photo options")
+                    }
                 }
             }
         }
@@ -264,7 +298,7 @@ struct ImportarPeca: View {
                                                  selecionada: alvoEscolhido == opcao.id,
                                                  corDeFundo: corDestaque,
                                                  raio: 16)
-                                    
+
                                     Text(opcao.tipo == .primeiroPlano ? "No Background" : "Full photo")
                                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                                         .foregroundStyle(.black)
@@ -298,6 +332,15 @@ struct ImportarPeca: View {
                 .padding(.vertical, 14)
                 .background(Color.black.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                // O aviso do teto diário mora aqui, e não na tela de
+                // resultado: este é o botão que gasta a próxima análise, e
+                // aviso depois do gasto não é aviso, é relatório. O visual
+                // novo tirou a linha da tela mas manteve o cálculo, então o
+                // estado continuava sendo lido e ninguém mais o via.
+                if let avisoDeUso {
+                    LinhaInsumo(texto: avisoDeUso)
+                }
 
                 // 4. Botões de Ação Finais
                 VStack(spacing: 12) {
@@ -350,6 +393,7 @@ struct ImportarPeca: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
                 importador
+                precoOpcional
             }
             .padding(Tokens.Espaco.m)
         }
@@ -422,7 +466,7 @@ struct ImportarPeca: View {
                     Image(systemName: "photo.on.rectangle")
                         .font(.system(size: 80, weight: .regular))
                         .foregroundStyle(.black)
-                    
+
                     Text("Choose from Photos")
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundStyle(.black)
@@ -476,6 +520,18 @@ struct ImportarPeca: View {
                 LinhaInsumo(texto: "Loaded: \(nomeDoArquivo)")
                     .padding(.top, 4)
             }
+
+            // Dizer o que acontece com a foto ANTES de a pessoa escolher uma é
+            // obrigação declarada na ficha e na política, não enfeite -- e é a
+            // única linha da tela que diz se a análise na nuvem está ligada
+            // neste build. O visual novo apagou a frase inteira; ela volta no
+            // rodapé, que foi onde a revisão de UX pediu que ela ficasse.
+            Text(Supabase.analiseRemotaHabilitada
+                 ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
+                 : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .padding(.top, 8)
         }
         .padding(.horizontal, 4)
         .padding(.top, 8)
@@ -510,6 +566,20 @@ struct ImportarPeca: View {
                         marcados: $detectados)
                 }
             }
+        }
+    }
+
+    private var precoOpcional: some View {
+        Cartao {
+            Text("Your intended price").font(Tokens.Fonte.secao)
+            Text("Optional. If you add it, I show its position among similar pieces in the panel — a price position, not a judgment.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+            TextField("R$ 0,00", text: $precoDigitado)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(.roundedBorder)
+                .focused($precoEmFoco)
+                .submitLabel(.done)
         }
     }
 
@@ -604,6 +674,10 @@ struct ImportarPeca: View {
             etapa = .atributos
             return
         }
+        guard !termos.isEmpty else {
+            erro = "The item taxonomy is not available yet. Go back and try again; no visual-analysis credit was used."
+            return
+        }
         guard let original = imagemPendente, let escolha = opcaoEscolhida else { return }
         let imagem: CGImage?
         switch escolha.tipo {
@@ -658,6 +732,17 @@ struct ImportarPeca: View {
         case .entrada:       return "Analyze an item"
         case .confirmarAlvo: return "Confirm your item"
         case .atributos:     return "Confirm your item"
+        }
+    }
+
+    private func voltarUmaEtapa() {
+        switch etapa {
+        case .entrada:
+            break
+        case .confirmarAlvo:
+            cancelarConfirmacao()
+        case .atributos:
+            etapa = .confirmarAlvo
         }
     }
 
@@ -777,7 +862,15 @@ struct ImportarPeca: View {
         if let mensagem {
             erro = mensagem
         } else if !reconheceuPeca {
-            erro = "I read what I could from the image, but not the category. Pick it below and the rest stays as read."
+            // Com a rota paga desligada a leitura é só o texto impresso na
+            // imagem, e foto de roupa quase nunca tem texto. A frase antiga
+            // valia para os dois casos e por isso um build de colaborador --
+            // que o SETUP.md manda deixar com REMOTE_ANALYSIS_ENABLED = NO --
+            // parecia defeito de análise. Aqui a tela passa a dizer qual dos
+            // dois aconteceu.
+            erro = Supabase.analiseRemotaHabilitada
+                ? "I read what I could from the image, but not the category. Pick it below and the rest stays as read."
+                : "Cloud visual analysis is off in this build, so I only read text printed on the image — a garment photo usually has none. Pick the attributes below; nothing failed."
         }
     }
 

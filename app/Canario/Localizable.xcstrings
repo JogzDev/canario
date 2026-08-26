@@ -52,6 +52,36 @@
         }
       }
     },
+    "Adjust" : {
+
+    },
+    "Back" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Optional. If you add it, I show its position among similar pieces in the panel — a price position, not a judgment." : {
+
+    },
+    "R$ 0,00" : {
+
+    },
+    "Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from backup." : {
+
+    },
+    "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet." : {
+
+    },
+    "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet." : {
+
+    },
+    "Undo crop" : {
+
+    },
+    "Your intended price" : {
+
+    },
     "•" : {
 
     },
