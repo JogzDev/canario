@@ -405,7 +405,8 @@ private struct CompartilharCloset: View {
                             else { selecionadas.insert(peca.id) }
                         } label: {
                             HStack {
-                                Text(peca.nome(comRotulos: rotulos)).foregroundStyle(.primary)
+                                Text(NomeCompartilhavel.resolver(peca, termos: termos))
+                                    .foregroundStyle(.primary)
                                 Spacer()
                                 Image(systemName: selecionadas.contains(peca.id)
                                       ? "checkmark.circle.fill" : "circle")
@@ -447,16 +448,31 @@ private struct CompartilharCloset: View {
 
     private func compartilharLinks() {
         guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
-        var itens: [Any] = escolhidas.compactMap { peca in
-            PecaCompartilhada(nome: peca.nome(comRotulos: rotulos), termoIds: peca.termoIds).url
+        preparando = true
+        Task { @MainActor in
+            var itens: [Any] = escolhidas.compactMap { peca in
+                PecaCompartilhada(
+                    nome: NomeCompartilhavel.resolver(peca, termos: termos),
+                    termoIds: peca.termoIds).url
+            }
+            if escolhidas.count == 1, let peca = escolhidas.first {
+                let atributos = peca.termoIds.compactMap { rotulos[$0] }
+                let dados = await PecasSalvas.shared.miniatura(de: peca)
+                let miniatura: UIImage?
+                if let dados {
+                    miniatura = await MiniaturaParaTela.imagem(de: dados)
+                } else {
+                    miniatura = nil
+                }
+                itens.insert(CartaoCompartilhavel.imagem(
+                    nome: NomeCompartilhavel.resolver(peca, termos: termos),
+                    atributos: atributos,
+                    miniatura: miniatura), at: 0)
+            }
+            atividade = PacoteDeAtividade(itens: itens)
+            erro = nil
+            preparando = false
         }
-        if escolhidas.count == 1, let peca = escolhidas.first {
-            let atributos = peca.termoIds.compactMap { rotulos[$0] }
-            itens.insert(CartaoCompartilhavel.imagem(
-                nome: peca.nome(comRotulos: rotulos), atributos: atributos), at: 0)
-        }
-        atividade = PacoteDeAtividade(itens: itens)
-        erro = nil
     }
 
     private func exportar(mercado: Bool) {
@@ -546,44 +562,47 @@ private struct CartaoDoArmario: View {
                 }
                 .buttonStyle(.plain)
 
-                HStack(spacing: 0) {
-                    Button(action: aoRenomear) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Tokens.Cor.noite)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel("Edit clothing name")
-
-                    Button(action: aoFavoritar) {
-                        Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
-                            .font(.system(size: 23, weight: .semibold))
-                            .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
-                }
-                .buttonStyle(.plain)
             }
 
-            if !temFoto {
-                Divider().opacity(0.32)
+            Divider().opacity(0.32)
+            HStack(spacing: 4) {
+                Button(action: aoFavoritar) {
+                    Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
+
                 PhotosPicker(selection: $fotoEscolhida, matching: .images) {
                     HStack(spacing: 6) {
                         if processandoFoto {
                             ProgressView().controlSize(.small)
                         } else {
-                            Image(systemName: "photo.badge.plus")
+                            Image(systemName: temFoto ? "photo.on.rectangle" : "photo.badge.plus")
                         }
-                        Text("Add photo").lineLimit(1)
+                        Text(temFoto ? "Edit photo" : "Add photo").lineLimit(1)
                     }
                     .font(Tokens.Fonte.miudo.weight(.semibold))
                     .foregroundStyle(Tokens.Cor.acao)
                     .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .disabled(processandoFoto)
+
+                Menu {
+                    Button(action: aoRenomear) {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                    Button(role: .destructive, action: aoApagar) {
+                        Label("Delete from Closet", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("More item actions")
             }
         }
         .padding(10)

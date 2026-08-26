@@ -212,7 +212,9 @@ enum Perna {
     }
 
     static func frase(_ pernas: [String]?) -> String {
-        guard let pernas, !pernas.isEmpty else { return "no active source" }
+        guard let pernas, !pernas.isEmpty else {
+            return "no qualified combined external reading for this week"
+        }
         return "based on: " + pernas.map(rotulo).joined(separator: " + ")
     }
 }
@@ -508,17 +510,44 @@ struct EventoVarejo: Codable, Identifiable, Hashable {
 /// fosse porcentagem" — e não tinha sido implementada.
 enum Leitura {
 
+    enum Faixa: String, CaseIterable {
+        case muitoAcima, acima, poucoAcima, habitual, poucoAbaixo, abaixo, muitoAbaixo
+
+        var rotulo: String {
+            switch self {
+            case .muitoAcima: return "Far Above the usual range"
+            case .acima: return "Above the usual range"
+            case .poucoAcima: return "Slightly above the usual range"
+            case .habitual: return "Within the usual range"
+            case .poucoAbaixo: return "Slightly under the usual range"
+            case .abaixo: return "Under the usual range"
+            case .muitoAbaixo: return "Far below the usual range"
+            }
+        }
+
+        var icone: String {
+            switch self {
+            case .muitoAcima, .acima, .poucoAcima: return "arrow.up.right"
+            case .habitual: return "equal"
+            case .poucoAbaixo, .abaixo, .muitoAbaixo: return "arrow.down.right"
+            }
+        }
+    }
+
+    static func faixa(_ z: Double) -> Faixa {
+        if z >= 2 { return .muitoAcima }
+        if z >= 1 { return .acima }
+        if z >= 0.35 { return .poucoAcima }
+        if z > -0.35 { return .habitual }
+        if z > -1 { return .poucoAbaixo }
+        if z > -2 { return .abaixo }
+        return .muitoAbaixo
+    }
+
     /// Frase curta para o número principal.
     static func emPalavras(_ z: Double) -> String {
-        switch z {
-        case 2.0...:        return "far above the usual range"
-        case 1.0..<2.0:     return "above the usual range"
-        case 0.35..<1.0:    return "slightly above the usual range"
-        case -0.35..<0.35:  return "within the usual range"
-        case -1.0 ..< -0.35: return "slightly below the usual range"
-        case -2.0 ..< -1.0: return "below the usual range"
-        default:            return "far below the usual range"
-        }
+        let rotulo = faixa(z).rotulo
+        return rotulo.prefix(1).lowercased() + String(rotulo.dropFirst())
     }
 
     /// A mesma leitura quando ela ocupa o lugar de título ou selo. Capitaliza

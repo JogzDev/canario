@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 25/08/2026, 03:00 em São Paulo
+**Última atualização:** 25/08/2026, 22:10 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -27,15 +27,16 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
-| Testes | **242 Swift** · portões Python ativos · 7 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
+| Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
+| Testes | **249 Swift** · portões Python ativos · 8 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxo final de confirmação |
 
 ## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
 
 A 1.2 revoga somente a antiga regra de ausência de conta. A conta continua
 opcional: Apple, Google ou e-mail; o app permanece utilizável como convidado.
-Sessões ficam no Keychain, os dados estruturados do Closet sincronizam com RLS
-e as fotos permanecem locais. Há recuperação de senha, logout e exclusão
-integral iniciada dentro do app.
+Sessões ficam no Keychain, os dados estruturados do Closet e miniaturas reduzidas
+sincronizam com RLS em bucket privado; os originais permanecem somente no aparelho.
+Há recuperação de senha, logout e exclusão integral iniciada dentro do app.
 
 A27 moveu `ultimo_avistamento_em`, `ofertavel` e `ultimo_snapshot_em` para
 `estado_dos_produtos`, uma linha estreita, e já está em produção. A42 mantém
@@ -78,6 +79,23 @@ armazenar resumo ou texto integral. A troca atômica publicou 11.179 pontos BR e
 têm artigo qualificado. `floral` permanece zero nas duas pernas porque nenhum
 artigo recente passou simultaneamente pelo matching e pelo contexto de roupa;
 flores pessoais, unhas, casamento e calçados não são convertidos em roupa.
+
+Em 25/08, A44 e A45 entraram em produção. A44 adiciona miniaturas privadas do
+Closet com caminho pertencente ao `auth.uid`, limite de 3 MB e validação por hash;
+isso permite restaurar as fotos reduzidas depois de reinstalar sem transformar o
+banco em álbum de originais. A45 tornou a resolução de URL exata e indexada nos
+segmentos brasileiro e candidato. O produto oficial “Vestido Pontas Estampado
+Tomates” da Farm resolve com imagem, preço e termos `vestido` + `tomate_print`;
+esses termos já devolvem similares de outras marcas sem chamada à Luna.
+
+O pacote de QA de 25/08 também unificou o nome exibido no Closet, card social,
+link e CSV, ignorando placeholders legados como “Replacing”; colocou a foto no
+card social; preservou o estado ao voltar no fluxo de Add; terminou o fluxo na
+confirmação com os atributos e Add to Closet; corrigiu teclado, alinhamento,
+badges, texto de consentimento, cards do Closet, tradução residual de `camisa`,
+comparação e evidência editorial na janela inteira. A Malwee foi recuperada no
+endpoint VTEX público oficial e está pronta para a coleta isolada como catálogo
+candidato, sem alterar a coorte medida.
 
 A expansão e a primeira recomputação levaram o banco temporariamente a 97,15%.
 A retenção no piso seguro removeu 93.587 snapshots fora da janela, compactou a

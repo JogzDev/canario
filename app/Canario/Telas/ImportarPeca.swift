@@ -19,8 +19,20 @@ import UIKit
 /// sem metadados, pode ser persistida e é apagada com a peça.
 struct ImportarPeca: View {
     let termos: [Termo]
-    var mostrarDetalhes: (_ selecionados: Set<String>, _ precoAlvo: Double?,
-                          _ miniaturaJPEG: Data?, _ descricaoAmigavel: String?) -> Void
+    var aoSalvar: (() -> Void)? = nil
+
+    /// A imagem da loja é acessória: os atributos já chegaram pelo painel. Um
+    /// CDN lento não pode manter a tela inteira em espera pelo timeout padrão
+    /// de um minuto da `URLSession.shared`.
+    private static let sessaoDaImagemDoProduto: URLSession = {
+        let configuracao = URLSessionConfiguration.ephemeral
+        configuracao.timeoutIntervalForRequest = 10
+        configuracao.waitsForConnectivity = false
+        configuracao.requestCachePolicy = .returnCacheDataElseLoad
+        configuracao.urlCache = URLCache(memoryCapacity: 4 << 20,
+                                         diskCapacity: 24 << 20)
+        return URLSession(configuration: configuracao)
+    }()
 
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
@@ -62,7 +74,8 @@ struct ImportarPeca: View {
     @State private var erro: String?
     @State private var detectados: Set<String> = []
     /// As três telas do fluxo de preenchimento, nomeadas. O resultado abre
-    /// depois como Clothing Details em tela cheia, fora desta sheet.
+    /// e termina aqui mesmo, com nome, atributos e Add to Closet. A antiga
+    /// Clothing Details repetia o mesmo conteúdo e foi removida deste fluxo.
     ///
     /// Antes isto era um encadeado de booleanos -- `lendo`, `imagemPendente`,
     /// `confirmou` -- e a tela de atributos convivia com a de upload no mesmo
@@ -108,6 +121,9 @@ struct ImportarPeca: View {
     @State private var opcoesDeAlvo: [MiniaturaLocal.OpcaoDeAlvo] = []
     @State private var alvoEscolhido: Int?
     @State private var descricaoDoAlvo = ""
+    @State private var nomeDaPeca = ""
+    @State private var salvandoNoCloset = false
+    @State private var analiseConcluidaParaOAlvo = false
     @State private var mostrandoEditorDeRecorte = false
     @State private var pedindoConsentimentoDaNuvem = false
     @State private var imagemConfirmadaPendente: CGImage?
@@ -117,6 +133,7 @@ struct ImportarPeca: View {
     @FocusState private var precoEmFoco: Bool
     @FocusState private var linkEmFoco: Bool
     @FocusState private var dicaDoAlvoEmFoco: Bool
+    @FocusState private var nomeDaPecaEmFoco: Bool
 
     /// §29.5 — contexto condicional. Opcional de propósito: sem ele o relatório
     /// funciona igual, e com ele entra o percentil de preço que a §5 autoriza
@@ -212,14 +229,20 @@ struct ImportarPeca: View {
         }
         .alert("Use cloud visual analysis?",
                isPresented: $pedindoConsentimentoDaNuvem) {
-            Button("On-device only", role: .cancel) {
-                Task { await analisarPendente(usandoNuvem: false) }
+            Button("Analyze on this iPhone", role: .cancel) {
+                Task {
+                    await PreferenciasDaAnaliseVisual.shared.definir(.aparelho)
+                    await analisarPendente(usandoNuvem: false)
+                }
             }
-            Button("Continue") {
-                Task { await analisarPendente(usandoNuvem: true) }
+            Button("Continue with visual analysis") {
+                Task {
+                    await PreferenciasDaAnaliseVisual.shared.definir(.nuvem)
+                    await analisarPendente(usandoNuvem: true)
+                }
             }
         } message: {
-            Text("To identify this garment, the app will send only the reduced, metadata-free image you just confirmed to OpenAI through its Supabase service. The app does not store the submitted image. OpenAI may keep abuse-monitoring logs for up to 30 days. You will review every suggested attribute before saving.")
+            Text("Recommended for more complete suggestions. DataDrobe analyzes only the reduced, metadata-free image you confirmed. The original is not uploaded, and you will review every attribute before saving. You can change this later in Settings; on-device analysis does not use the cloud-analysis limit.")
         }
     }
 
@@ -264,6 +287,9 @@ struct ImportarPeca: View {
                         .focused($dicaDoAlvoEmFoco)
                         .submitLabel(.done)
                         .onSubmit { dicaDoAlvoEmFoco = false }
+                        .onChange(of: descricaoDoAlvo) { _, _ in
+                            analiseConcluidaParaOAlvo = false
+                        }
                     Text("Use this only when the photo contains more than one item. Visible pixels always take precedence.")
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -316,6 +342,9 @@ struct ImportarPeca: View {
                             HStack(spacing: Tokens.Espaco.s) {
                                 ForEach(opcoesDeAlvo) { opcao in
                                     Button {
+                                        if alvoEscolhido != opcao.id {
+                                            analiseConcluidaParaOAlvo = false
+                                        }
                                         alvoEscolhido = opcao.id
                                     } label: {
                                         VStack(spacing: Tokens.Espaco.xs) {
@@ -390,6 +419,8 @@ struct ImportarPeca: View {
                 Button("Done") {
                     precoEmFoco = false
                     linkEmFoco = false
+                    dicaDoAlvoEmFoco = false
+                    nomeDaPecaEmFoco = false
                 }
             }
         }
@@ -423,17 +454,29 @@ struct ImportarPeca: View {
                         oQueTem: "You can select the attributes below and continue.")
                 }
                 if !procedencia.isEmpty { oQueLi }
+                Cartao {
+                    Text("Name this item").font(Tokens.Fonte.secao)
+                    TextField("Clothing name (optional)", text: $nomeDaPeca)
+                        .textInputAutocapitalization(.sentences)
+                        .submitLabel(.done)
+                        .focused($nomeDaPecaEmFoco)
+                        .onSubmit { nomeDaPecaEmFoco = false }
+                    LinhaInsumo(texto: "If left blank, Closet, links and spreadsheets use the confirmed category.")
+                }
                 atributos
                 if !detectados.isEmpty {
                     Button {
-                        mostrarDetalhes(detectados, precoAlvo, miniaturaJPEG,
-                                        descricaoDoAlvoNormalizada)
+                        Task { await salvarNoCloset() }
                     } label: {
-                        Label("Open Clothing Details", systemImage: "tshirt")
-                            .frame(maxWidth: .infinity)
-                            .frame(minHeight: 44)
+                        Group {
+                            if salvandoNoCloset { ProgressView() }
+                            else { Label("Add to Closet", systemImage: "archivebox") }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(salvandoNoCloset)
                 }
             }
             .padding(Tokens.Espaco.m)
@@ -545,7 +588,7 @@ struct ImportarPeca: View {
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                     FluxoDeChips(
                         termos: termosVisiveis(na: dimensao),
-                        todos: termos,
+                        todos: termosDoFormulario,
                         marcados: $detectados)
                 }
             }
@@ -568,12 +611,12 @@ struct ImportarPeca: View {
     }
 
     private var dimensoes: [String] {
-        let categorias = Set(termos.lazy
+        let categorias = Set(termosDoFormulario.lazy
             .filter { $0.dimensao == "categoria" && detectados.contains($0.id) }
             .map(\.id))
         let permitidas = FormularioDaPeca.dimensoesPermitidas(categorias: categorias)
         var vistas: [String] = []
-        for t in termos where permitidas.contains(t.dimensao) {
+        for t in termosDoFormulario where permitidas.contains(t.dimensao) {
             let visivel = t.dimensao == "motivo_estampa" ? "estampa" : t.dimensao
             if !vistas.contains(visivel) { vistas.append(visivel) }
         }
@@ -581,10 +624,10 @@ struct ImportarPeca: View {
     }
 
     private func termosVisiveis(na dimensao: String) -> [Termo] {
-        let encontrados = termos.filter {
+        let encontrados = termosDoFormulario.filter {
             $0.dimensao == dimensao
                 || (dimensao == "estampa" && $0.dimensao == "motivo_estampa")
-        }
+        }.filter { $0.id != "trico_croche" }
         guard dimensao == "estampa" else { return encontrados }
         // Animal print é uma linguagem central da moda feminina, não um item
         // residual depois de padrões com mais títulos catalogados. A ordem da
@@ -598,6 +641,21 @@ struct ImportarPeca: View {
             (prioridade.firstIndex(of: $0.id) ?? 99)
                 < (prioridade.firstIndex(of: $1.id) ?? 99)
         }
+    }
+
+    private var termosDoFormulario: [Termo] {
+        if !termos.isEmpty { return termos }
+        guard ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") else {
+            return []
+        }
+        return [
+            Termo(id: "vestido", rotulo: "Dress", dimensao: "categoria",
+                  exclusiva: true, sinonimos: nil, semPernaBusca: nil,
+                  palavrasPt: nil, palavrasEn: nil),
+            Termo(id: "preto", rotulo: "Black", dimensao: "cor",
+                  exclusiva: false, sinonimos: nil, semPernaBusca: nil,
+                  palavrasPt: nil, palavrasEn: nil),
+        ]
     }
 
     // MARK: Leitura
@@ -654,15 +712,19 @@ struct ImportarPeca: View {
                 "Matched \(produto.brand) · \(produto.title ?? "product") in the market panel.",
                 "Attributes came from the store title and the panel taxonomy. No visual-analysis credit was used."
             ]
+            // O resultado textual já está completo. A tela abre agora e a
+            // foto entra quando o CDN responder; imagem acessória nunca segura
+            // a navegação nem dá aparência de travamento.
+            etapa = .atributos
+            lendo = false
             if let imagem = produto.imageURL.flatMap(URL.init(string:)),
                imagem.scheme == "https",
-               let (dados, resposta) = try? await URLSession.shared.data(from: imagem),
+               let (dados, resposta) = try? await Self.sessaoDaImagemDoProduto.data(from: imagem),
                (resposta as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) == true,
                dados.count <= 8_000_000,
                let cg = MiniaturaLocal.imagem(de: dados) {
                 miniaturaJPEG = await MiniaturaLocal.dados(de: cg)
             }
-            etapa = .atributos
         } catch {
             erro = "I couldn't check this product link right now. You can still add a photo or file."
         }
@@ -681,6 +743,7 @@ struct ImportarPeca: View {
         erro = nil
         procedencia = []
         detectados = []
+        analiseConcluidaParaOAlvo = false
         let opcoes = await MiniaturaLocal.opcoesDeAlvo(de: imagem)
         guard !opcoes.isEmpty else {
             erro = "I could not prepare this image. Choose another photo or file."
@@ -698,6 +761,10 @@ struct ImportarPeca: View {
     }
 
     private func confirmarAlvo() async {
+        if analiseConcluidaParaOAlvo {
+            etapa = .atributos
+            return
+        }
         guard let original = imagemPendente, let escolha = opcaoEscolhida else { return }
         let imagem: CGImage?
         switch escolha.tipo {
@@ -712,17 +779,20 @@ struct ImportarPeca: View {
         }
 
         let nome = nomePendente ?? "selected image"
-        imagemPendente = nil
-        nomePendente = nil
-        opcoesDeAlvo = []
-        alvoEscolhido = nil
         miniaturaJPEG = escolha.dados
         if Supabase.analiseRemotaHabilitada {
             imagemConfirmadaPendente = imagem
             dadosConfirmadosPendentes = await MiniaturaLocal.opacaParaAnalise(de: escolha.dados)
             nomeConfirmadoPendente = nome
             descricaoConfirmadaPendente = descricaoDoAlvoNormalizada
-            pedindoConsentimentoDaNuvem = true
+            switch await PreferenciasDaAnaliseVisual.shared.preferencia() {
+            case .nuvem:
+                await analisarPendente(usandoNuvem: true)
+            case .aparelho:
+                await analisarPendente(usandoNuvem: false)
+            case .perguntar:
+                pedindoConsentimentoDaNuvem = true
+            }
         } else {
             await analisarImagemConfirmada(imagem, nome: nome,
                                             dadosParaNuvem: nil,
@@ -750,18 +820,16 @@ struct ImportarPeca: View {
         switch etapa {
         case .entrada:       return "Analyze an item"
         case .confirmarAlvo: return "Which item"
-        case .atributos:     return "Check what I read"
+        case .atributos:     return "Confirm your item"
         }
     }
 
-    /// Voltar um passo, preservando o que ainda faz sentido. Da tela de
-    /// atributos NÃO se volta para a confirmação de alvo: aquela leitura já foi
-    /// paga, e refazê-la exige escolher outra foto de propósito.
+    /// Voltar um passo preserva foto, recorte e a leitura já paga.
     private func voltarUmaEtapa() {
         switch etapa {
         case .entrada:       break
         case .confirmarAlvo: cancelarConfirmacao()
-        case .atributos:     etapa = .entrada
+        case .atributos:     etapa = .confirmarAlvo
         }
     }
 
@@ -774,6 +842,7 @@ struct ImportarPeca: View {
         alvoEscolhido = nil
         daFototeca = nil
         descricaoDoAlvo = ""
+        analiseConcluidaParaOAlvo = false
     }
 
     private var descricaoDoAlvoNormalizada: String? {
@@ -781,6 +850,26 @@ struct ImportarPeca: View {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !limpa.isEmpty else { return nil }
         return String(limpa.prefix(160))
+    }
+
+    @MainActor
+    private func salvarNoCloset() async {
+        guard !detectados.isEmpty else { return }
+        salvandoNoCloset = true
+        nomeDaPecaEmFoco = false
+        let nova = PecaSalva(
+            apelido: nomeDaPeca.trimmingCharacters(in: .whitespacesAndNewlines),
+            termoIds: Array(detectados).sorted(),
+            precoAlvo: precoAlvo)
+        let salvou = await PecasSalvas.shared.salvar(
+            nova, miniaturaDados: miniaturaJPEG)
+        salvandoNoCloset = false
+        if salvou {
+            aoSalvar?()
+            dismiss()
+        } else {
+            erro = "Your Closet is full (\(PecasSalvas.teto))."
+        }
     }
 
     /// Só a peça confirmada termina no leitor compartilhado.
@@ -860,6 +949,7 @@ struct ImportarPeca: View {
             procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
         }
         etapa = .atributos
+        analiseConcluidaParaOAlvo = true
         lendo = false
     }
 

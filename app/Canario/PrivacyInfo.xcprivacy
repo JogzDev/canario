@@ -14,7 +14,9 @@
 
 	  * A26 oferece conta opcional. Quando usada, Supabase recebe identificador,
 	    e-mail disponível e o conteúdo estruturado do Closet para sincronização.
-	    Esses campos são vinculados à identidade por necessidade funcional.
+	    A44 acrescenta somente a miniatura reduzida e sem metadados, em bucket
+	    privado do usuário; nunca a foto original. Esses dados são vinculados à
+	    identidade por necessidade funcional.
 
 	  * NÃO rastreamos. Não há SDK de terceiro, nem analytics, nem identificador
 	    de publicidade.
@@ -48,7 +50,7 @@
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
-			<false/>
+			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
 			<false/>
 			<key>NSPrivacyCollectedDataTypePurposes</key>

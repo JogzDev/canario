@@ -559,7 +559,8 @@ struct RelatorioDaPeca: View {
                     "Combined history across \(s.pontos.count) weeks")
                 if let r = SerieDoCluster.ressalva(s) { LinhaInsumo(texto: r) }
                 if let c = s.categoriaUsada, c != "(todas)" {
-                    LinhaInsumo(texto: "Rarity measured within \(c).")
+                    let categoria = Traducao.rotuloExibido(id: c).lowercased()
+                    LinhaInsumo(texto: "Compared with other \(categoria) items in the current panel.")
                 }
             }
         }

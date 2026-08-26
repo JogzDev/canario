@@ -101,6 +101,7 @@ def main():
     crua = defaultdict(set)
     denominador = defaultdict(set)
     exemplos = defaultdict(list)
+    veiculos_por_celula = defaultdict(lambda: defaultdict(int))
     classificacoes = []
     totais = defaultdict(int)
     termos_persistidos = carregar_termos_persistidos()
@@ -134,6 +135,7 @@ def main():
         for termo in achados:
             chave = (termo, fonte, semana)
             crua[chave].add(artigo["url"])
+            veiculos_por_celula[chave][artigo["veiculo"]] += 1
             if len(exemplos[chave]) < 3:
                 exemplos[chave].append({"veiculo": artigo["veiculo"],
                                         "titulo": titulo[:160], "url": artigo["url"]})
@@ -168,6 +170,18 @@ def main():
                 contagens = [len(crua.get((termo, fonte, semana - timedelta(weeks=w)), ()))
                              for w in range(JANELA_SEMANAS)]
                 n = sum(contagens)
+                exemplos_da_janela = []
+                urls_de_exemplo = set()
+                veiculos_da_janela = defaultdict(int)
+                for w in range(JANELA_SEMANAS):
+                    chave_janela = (termo, fonte, semana - timedelta(weeks=w))
+                    for veiculo, quantidade in veiculos_por_celula[chave_janela].items():
+                        veiculos_da_janela[veiculo] += quantidade
+                    for exemplo in exemplos[chave_janela]:
+                        if (exemplo["url"] not in urls_de_exemplo
+                                and len(exemplos_da_janela) < 3):
+                            urls_de_exemplo.add(exemplo["url"])
+                            exemplos_da_janela.append(exemplo)
                 linhas.append({
                     "termo_id": termo, "segmento": SEGMENTO, "fonte": fonte,
                     "semana": semana.isoformat(),
@@ -179,7 +193,10 @@ def main():
                              "unidade": "materias por mil da perna, em janela de 4 semanas",
                              "recorte_genero": "masculino acima de 50% excluido",
                              "classificacao": "titulo persistido; regra uniforme no historico e futuro",
-                             "exemplos": exemplos.get((termo, fonte, semana), [])},
+                             "veiculos": dict(sorted(
+                                 veiculos_da_janela.items(),
+                                 key=lambda kv: (-kv[1], kv[0]))),
+                             "exemplos": exemplos_da_janela},
                 })
         if len(linhas) < len(termos) * 6:
             raise RuntimeError("{} produziu série curta; carga preservada".format(fonte))

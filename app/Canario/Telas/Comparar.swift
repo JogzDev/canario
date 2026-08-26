@@ -106,9 +106,9 @@ struct Comparar: View {
                                     .foregroundStyle(Tokens.Cor.tinta)
                                 Spacer()
                                 if indices[termo.id]?.indice == nil {
-                                    Text("Panel only")
+                                    Text("Panel data")
                                         .font(Tokens.Fonte.miudo)
-                                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                                        .foregroundStyle(Tokens.Cor.acao)
                                 }
                             }
                         }
@@ -240,7 +240,13 @@ struct LinhaComparada: View {
             HStack {
                 Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                 Spacer()
-                SeloEstado(estado: indice?.estado, leitura: indice?.indice)
+                if indice?.indice != nil {
+                    SeloEstado(estado: indice?.estado, leitura: indice?.indice)
+                } else {
+                    Label("Panel data", systemImage: "building.2")
+                        .font(Tokens.Fonte.miudo.weight(.semibold))
+                        .foregroundStyle(Tokens.Cor.acao)
+                }
             }
 
             HStack(alignment: .top, spacing: Tokens.Espaco.g) {
@@ -253,7 +259,10 @@ struct LinhaComparada: View {
                      valor: Explicacao.numeroComUnidade(indice?.indice),
                      detalhe: indice?.indice == nil ? "—" : "statistical scale")
             }
-            LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")). Signal: \(Perna.frase(indice?.pernasAtivas)).")
+            LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")).")
+            if let pernas = indice?.pernasAtivas, !pernas.isEmpty {
+                LinhaInsumo(texto: "External signal \(Perna.frase(pernas)).")
+            }
             if indice?.indice == nil {
                 LinhaInsumo(texto: cobertura.map {
                     "The panel measurement exists. The combined external signal is withheld: \($0.oQueFalta)."

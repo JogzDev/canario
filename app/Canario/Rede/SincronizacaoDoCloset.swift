@@ -1,8 +1,10 @@
 import Foundation
+import CryptoKit
 
-/// Sincroniza somente os campos digitados no Closet. Miniaturas nunca entram
-/// nesta camada. O merge acontece duas vezes: localmente para resposta rápida
-/// e no RPC atômico para uma requisição antiga nunca vencer uma edição nova.
+/// Sincroniza os campos digitados e, numa rota privada separada, somente a
+/// miniatura já reduzida e sem metadados. A foto original nunca entra aqui.
+/// O merge acontece duas vezes: localmente para resposta rápida e no RPC
+/// atômico para uma requisição antiga nunca vencer uma edição nova.
 actor SincronizacaoDoCloset {
     static let shared = SincronizacaoDoCloset()
 
@@ -34,6 +36,8 @@ actor SincronizacaoDoCloset {
         let criadaEm: Date?
         let favorita: Bool?
         let similaresRejeitados: Bool?
+        let miniaturaHash: String?
+        let miniaturaExtensao: String?
         let atualizadoEm: Date
         let removidoEm: Date?
 
@@ -43,6 +47,8 @@ actor SincronizacaoDoCloset {
             case precoAlvo = "preco_alvo"
             case criadaEm = "criada_em"
             case similaresRejeitados = "similares_rejeitados"
+            case miniaturaHash = "miniatura_hash"
+            case miniaturaExtensao = "miniatura_extensao"
             case atualizadoEm = "atualizado_em"
             case removidoEm = "removido_em"
         }
@@ -51,7 +57,10 @@ actor SincronizacaoDoCloset {
             guard removidoEm == nil, let apelido, let termoIds, let criadaEm else { return nil }
             return PecaSalva(id: id, apelido: apelido, termoIds: termoIds,
                              precoAlvo: precoAlvo, canal: canal, criadaEm: criadaEm,
-                             miniaturaArquivo: nil, favorita: favorita,
+                             miniaturaArquivo: nil,
+                             miniaturaHashRemoto: miniaturaHash,
+                             miniaturaExtensaoRemota: miniaturaExtensao,
+                             favorita: favorita,
                              similaresRejeitados: similaresRejeitados,
                              atualizadaEm: atualizadoEm)
         }
@@ -94,6 +103,10 @@ actor SincronizacaoDoCloset {
         let primeiraLeitura = try await buscar(contexto)
         await aplicar(primeiraLeitura)
 
+        // Falha de uma imagem não bloqueia atributos nem o uso offline. Hash
+        // ausente faz a próxima sincronização tentar novamente.
+        await sincronizarMiniaturas(contexto)
+
         let estado = await loja.estadoParaSincronizar()
         try await enviar(estado, contexto: contexto)
 
@@ -111,7 +124,7 @@ actor SincronizacaoDoCloset {
             resolvingAgainstBaseURL: false)
         componentes?.queryItems = [URLQueryItem(
             name: "select",
-            value: "id,apelido,termo_ids,preco_alvo,canal,criada_em,favorita,similares_rejeitados,atualizado_em,removido_em")]
+            value: "id,apelido,termo_ids,preco_alvo,canal,criada_em,favorita,similares_rejeitados,miniatura_hash,miniatura_extensao,atualizado_em,removido_em")]
         guard let url = componentes?.url else { throw Falha.dadosInvalidos }
         var req = URLRequest(url: url)
         autenticar(&req, contexto)
@@ -137,6 +150,8 @@ actor SincronizacaoDoCloset {
             if let valor = peca.canal { linha["canal"] = valor }
             if let valor = peca.favorita { linha["favorita"] = valor }
             if let valor = peca.similaresRejeitados { linha["similares_rejeitados"] = valor }
+            if let valor = peca.miniaturaHashRemoto { linha["miniatura_hash"] = valor }
+            if let valor = peca.miniaturaExtensaoRemota { linha["miniatura_extensao"] = valor }
             return linha
         }
         mudancas += estado.exclusoes.map { id, data in
@@ -153,6 +168,103 @@ actor SincronizacaoDoCloset {
         autenticar(&req, contexto)
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: ["p_mudancas": mudancas])
+        _ = try await executar(req)
+    }
+
+    private func sincronizarMiniaturas(_ contexto: ContextoAutenticado) async {
+        let estado = await loja.estadoParaSincronizar()
+        let usuario = contexto.sessao.usuario.id.uuidString.lowercased()
+
+        for peca in estado.itens {
+            let local = await loja.miniaturaParaSincronizar(de: peca)
+            if peca.miniaturaHashRemoto == nil, let local {
+                let hash = Self.hash(local.dados)
+                do {
+                    let extensaoAnterior = peca.miniaturaExtensaoRemota
+                    try await enviarMiniatura(local.dados, id: peca.id,
+                                              extensao: local.extensao,
+                                              usuario: usuario, contexto: contexto)
+                    await loja.registrarMiniaturaSincronizada(
+                        id: peca.id, hash: hash, extensao: local.extensao)
+                    if let extensaoAnterior, extensaoAnterior != local.extensao {
+                        try? await apagarMiniaturas(
+                            id: peca.id, extensoes: [extensaoAnterior],
+                            usuario: usuario, contexto: contexto)
+                    }
+                } catch {
+                    continue
+                }
+            } else if let hashRemoto = peca.miniaturaHashRemoto,
+                      let extensao = Self.extensaoValida(peca.miniaturaExtensaoRemota),
+                      local.map({ Self.hash($0.dados) }) != hashRemoto {
+                do {
+                    let dados = try await baixarMiniatura(
+                        id: peca.id, extensao: extensao,
+                        usuario: usuario, contexto: contexto)
+                    guard Self.hash(dados) == hashRemoto else { continue }
+                    _ = await loja.restaurarMiniaturaSincronizada(
+                        id: peca.id, dados: dados, hash: hashRemoto, extensao: extensao)
+                } catch {
+                    continue
+                }
+            }
+        }
+
+        if !estado.exclusoes.isEmpty {
+            for id in estado.exclusoes.keys {
+                try? await apagarMiniaturas(
+                    id: id, extensoes: ["jpg", "png"],
+                    usuario: usuario, contexto: contexto)
+            }
+        }
+    }
+
+    private func enviarMiniatura(_ dados: Data, id: UUID, extensao: String,
+                                 usuario: String,
+                                 contexto: ContextoAutenticado) async throws {
+        guard dados.count <= 3_000_000,
+              let extensao = Self.extensaoValida(extensao) else {
+            throw Falha.dadosInvalidos
+        }
+        let caminho = "\(usuario)/\(id.uuidString.lowercased()).\(extensao)"
+        let url = contexto.url.appendingPathComponent(
+            "storage/v1/object/closet-thumbnails/\(caminho)")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        autenticar(&req, contexto)
+        req.setValue(extensao == "png" ? "image/png" : "image/jpeg",
+                     forHTTPHeaderField: "Content-Type")
+        req.setValue("true", forHTTPHeaderField: "x-upsert")
+        req.httpBody = dados
+        _ = try await executar(req)
+    }
+
+    private func baixarMiniatura(id: UUID, extensao: String, usuario: String,
+                                 contexto: ContextoAutenticado) async throws -> Data {
+        let caminho = "\(usuario)/\(id.uuidString.lowercased()).\(extensao)"
+        let url = contexto.url.appendingPathComponent(
+            "storage/v1/object/authenticated/closet-thumbnails/\(caminho)")
+        var req = URLRequest(url: url)
+        autenticar(&req, contexto)
+        req.setValue("image/*", forHTTPHeaderField: "Accept")
+        let dados = try await executar(req)
+        guard !dados.isEmpty, dados.count <= 3_000_000 else { throw Falha.dadosInvalidos }
+        return dados
+    }
+
+    private func apagarMiniaturas(id: UUID, extensoes: [String], usuario: String,
+                                  contexto: ContextoAutenticado) async throws {
+        let caminhos = extensoes.compactMap(Self.extensaoValida).map {
+            "\(usuario)/\(id.uuidString.lowercased()).\($0)"
+        }
+        guard !caminhos.isEmpty else { return }
+        let url = contexto.url.appendingPathComponent(
+            "storage/v1/object/closet-thumbnails")
+        var req = URLRequest(url: url)
+        req.httpMethod = "DELETE"
+        autenticar(&req, contexto)
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["prefixes": caminhos])
         _ = try await executar(req)
     }
 
@@ -190,6 +302,16 @@ actor SincronizacaoDoCloset {
     }()
 
     private static func data(_ data: Date) -> String { formatter.string(from: data) }
+
+    private static func hash(_ dados: Data) -> String {
+        SHA256.hash(data: dados).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func extensaoValida(_ valor: String?) -> String? {
+        guard let valor else { return nil }
+        let normalizada = valor.lowercased()
+        return ["jpg", "png"].contains(normalizada) ? normalizada : nil
+    }
 
     private static var decoder: JSONDecoder {
         let decoder = JSONDecoder()

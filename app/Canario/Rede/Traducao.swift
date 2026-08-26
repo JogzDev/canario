@@ -27,7 +27,7 @@ enum Traducao {
         "abacaxi_print": "Pineapple print", "melancia_print": "Watermelon print",
         // Material
         "algodao": "Cotton", "linho": "Linen", "jeans": "Denim", "couro": "Leather",
-        "malha": "Knit", "trico_croche": "Knitwear & crochet",
+        "malha": "Knit & crochet", "trico_croche": "Knit & crochet",
         "viscose_fluido": "Viscose & fluid fabrics",
         // Length, silhouette and waist
         "curto": "Short", "midi": "Midi", "longo": "Long",
@@ -53,6 +53,17 @@ enum Traducao {
     /// completo (por exemplo, `categoria_usada` no cálculo do cluster).
     static func rotuloExibido(id: String, fallback: String? = nil) -> String {
         rotulosCorrigidos[id] ?? fallback ?? id
+    }
+
+    /// `trico_croche` era uma segunda opção visual para a mesma família que o
+    /// formulário já chamava de Knit. O motor histórico pode continuar lendo o
+    /// alias, mas escolhas novas e peças sincronizadas usam um id canônico.
+    static func idsCanonicos(_ ids: [String]) -> [String] {
+        var vistos: Set<String> = []
+        return ids.compactMap {
+            let canonico = $0 == "trico_croche" ? "malha" : $0
+            return vistos.insert(canonico).inserted ? canonico : nil
+        }
     }
 
     /// Dimensões cujo rótulo pede JULGAMENTO em vez de observação.
@@ -273,7 +284,9 @@ enum FormularioDaPeca {
         let permitidas = dimensoesPermitidas(categorias: categorias)
         let porId = Dictionary(termos.map { ($0.id, $0) },
                                uniquingKeysWith: { primeiro, _ in primeiro })
-        return marcados.filter { id in
+        var canonicos = marcados
+        if canonicos.remove("trico_croche") != nil { canonicos.insert("malha") }
+        return canonicos.filter { id in
             // Id fora da taxonomia carregada não é podado: pode ser termo novo
             // que este app ainda não conhece, e apagar seria perder escolha.
             guard let termo = porId[id] else { return true }

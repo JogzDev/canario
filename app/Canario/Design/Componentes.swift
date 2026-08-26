@@ -15,7 +15,17 @@ struct SeloEstado: View {
     var leitura: Double? = nil
 
     var body: some View {
-        if let bruto = estado, let e = Estado(rawValue: bruto) {
+        if let leitura {
+            let faixa = Leitura.faixa(leitura)
+            Label(faixa.rotulo, systemImage: faixa.icone)
+                .font(Tokens.Fonte.miudo.weight(.semibold))
+                .padding(.horizontal, 12)
+                .frame(minHeight: 28)
+                .background(cores(faixa).fundo)
+                .foregroundStyle(cores(faixa).frente)
+                .clipShape(Capsule())
+                .accessibilityLabel("Current signal: \(faixa.rotulo).")
+        } else if let bruto = estado, let e = Estado(rawValue: bruto) {
             Label(e.rotulo, systemImage: e.icone)
                 .font(Tokens.Fonte.miudo.weight(.semibold))
                 .padding(.horizontal, Tokens.Espaco.s)
@@ -24,15 +34,32 @@ struct SeloEstado: View {
                 .foregroundStyle(cor(e))
                 .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
                 .accessibilityLabel("Status: \(e.rotulo)")
-        } else if let leitura {
-            Label(Leitura.comoTitulo(leitura), systemImage: "waveform.path.ecg")
-                .font(Tokens.Fonte.corpo.weight(.semibold))
-                .padding(.horizontal, Tokens.Espaco.s)
-                .padding(.vertical, Tokens.Espaco.xs)
-                .background(Tokens.Cor.acao.opacity(0.14))
-                .foregroundStyle(Tokens.Cor.acao)
-                .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
-                .accessibilityLabel("Current signal: \(Leitura.comoTitulo(leitura)).")
+        }
+    }
+
+    private func cores(_ faixa: Leitura.Faixa) -> (fundo: Color, frente: Color) {
+        switch faixa {
+        case .muitoAcima:
+            return (Color(red: 130/255, green: 218/255, blue: 77/255),
+                    Color(red: 57/255, green: 106/255, blue: 27/255))
+        case .acima:
+            return (Color(red: 0, green: 136/255, blue: 1).opacity(0.56),
+                    Color(red: 180/255, green: 208/255, blue: 1))
+        case .poucoAcima:
+            return (Color(red: 31/255, green: 73/255, blue: 105/255),
+                    Color(red: 167/255, green: 208/255, blue: 238/255))
+        case .habitual:
+            return (Color(red: 144/255, green: 160/255, blue: 173/255).opacity(0.56),
+                    Color(red: 55/255, green: 70/255, blue: 82/255))
+        case .poucoAbaixo:
+            return (Color(red: 174/255, green: 75/255, blue: 36/255).opacity(0.56),
+                    Color(red: 255/255, green: 192/255, blue: 167/255))
+        case .abaixo:
+            return (Color(red: 254/255, green: 72/255, blue: 0).opacity(0.56),
+                    Color(red: 255/255, green: 196/255, blue: 172/255))
+        case .muitoAbaixo:
+            return (Color(red: 1, green: 50/255, blue: 50/255).opacity(0.56),
+                    Color(red: 57/255, green: 0, blue: 0))
         }
     }
 

@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 25/08/2026 às 03:00 BRT.** Esta lista substitui a triagem de
+**Atualizado em 25/08/2026 às 22:10 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -35,10 +35,11 @@
   declare contexto de roupa. Flores pessoais, unhas, casamento e calçados
   continuam excluídos. A próxima expansão de fonte deve ser guiada por recall
   feminino medido, nunca pela necessidade de fabricar um número para essa tela.
-- **Malwee permanece inativa.** As outras 12 candidatas já entregam 14.678
-  produtos elegíveis sem contaminar o painel. Malwee só entra depois de medir o
-  espaço marginal do catálogo completo; não bloqueia a 1.2 nem a expansão já
-  entregue.
+- **Malwee foi recuperada e aguarda apenas a coleta candidata.** O domínio
+  oficial abriu no VTEX público, com cerca de 14.450 produtos e `robots.txt`
+  respeitado. Ela entra em `catalogo_candidato_br`, portanto amplia similares
+  sem mudar a coorte medida; o portão de capacidade continua tendo autoridade
+  para interromper a publicação se a margem gratuita ficar insegura.
 
 ## Entregue na 1.2 antes do Figma
 
@@ -50,15 +51,19 @@
   **#5525910** recebeu a confirmação e foi respondido como resolvido; usuários
   técnicos de teste foram apagados.
 - Login opcional com Apple, Google e e-mail/senha; recuperação, logout, exclusão,
-  Keychain, RLS e sincronização offline-first do Closet.
+  Keychain, RLS e sincronização offline-first do Closet. Miniaturas reduzidas
+  sincronizam em bucket privado com hash; a foto original permanece local.
 - Banco estabilizado no plano gratuito: estado volátil em tabela estreita,
   retenção segura de snapshots e recuperação do inchaço sem apagar séries.
 - Um botão de compartilhar com bottom sheet, links autocontidos, Universal Link,
   fallback da App Store, card social e CSV de uma peça, seleção ou Closet inteiro,
-  com opção de incluir leitura de mercado e sua data.
+  com opção de incluir leitura de mercado e sua data. Card social inclui a foto;
+  card, link e planilha usam o mesmo nome canônico e não expõem placeholders
+  legados como “Replacing”.
 - Nome visível/editável, busca e filtro local do Closet por favorito e atributos.
-- Depois de Fill the Info, Clothing Details abre em tela cheia; Add to Closet
-  fica no canto superior esquerdo com instrução explícita. A busca do Closet é
+- Depois de Fill the Info, a confirmação final abre como página, reúne nome,
+  atributos e Add to Closet, sem repetir Clothing Details. Voltar preserva foto
+  e análise, sem nova chamada à visão quando nada mudou. A busca do Closet é
   o drawer recolhível nativo, o canto esquerdo virou menu de três pontos e o
   Compare passou para Weekly Trends.
 - Similares com foto no alto do relatório, polo como camisa, relaxamento declarado
@@ -71,8 +76,14 @@
 - Painel `direcao_intl` isolado com Doen, Rouje, Staud, Faithfull the Brand e
   With Jean: 4.956 itens visitados, 3.768 produtos elegíveis e zero produto das
   cinco marcas fora do segmento, comprovados pelo portão de produção.
-- 242 testes Swift, portões Python e sete fluxos de UI (incluindo o filtro do
-  Closet) verdes no ambiente local.
+- 249 testes Swift, portões Python e oito fluxos de UI (incluindo o filtro do
+  Closet e a confirmação final) verdes no ambiente local; build de simulador
+  verde.
+- Pacote de 26 reclamações e quatro ressalvas fechado no código: consentimento
+  de visão persistente, teclado e Add alinhado, sete badges, cards do Closet,
+  evidência editorial da janela, comparação com cobertura real, tradução
+  residual, taxonomia sem duplicidade de knit, animal print destacado e URL de
+  produto com imagem carregada sem bloquear a interface.
 - Editorial recomposto em produção: 11.179 pontos BR, 5.764 internacionais,
   16.287 pares artigo/termo e filtro masculino aplicado ao arquivo inteiro.
 - Catálogo candidato brasileiro com 12 marcas, 14.678 produtos elegíveis,
