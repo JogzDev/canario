@@ -22,7 +22,7 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Frente | Estado | Número que importa |
 |---|---|---|
 | Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **14.678 produtos candidatos** |
-| Banco | plano gratuito; retenção crua no piso seguro de 21 dias | **422.145.171 bytes / 500 MB (84,4%)** após toda a expansão |
+| Banco | plano gratuito; retenção crua no piso seguro de 21 dias | **454.364.307 bytes / 500 MB (90,9%)** após Malwee e motor |
 | Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
@@ -94,15 +94,24 @@ card social; preservou o estado ao voltar no fluxo de Add; terminou o fluxo na
 confirmação com os atributos e Add to Closet; corrigiu teclado, alinhamento,
 badges, texto de consentimento, cards do Closet, tradução residual de `camisa`,
 comparação e evidência editorial na janela inteira. A Malwee foi recuperada no
-endpoint VTEX público oficial e está pronta para a coleta isolada como catálogo
-candidato, sem alterar a coorte medida.
+endpoint VTEX público oficial e coletada isoladamente como catálogo candidato,
+sem alterar a coorte medida: **3.082 visitados = 3.082 declarados**. Uma segunda
+passagem alterou somente duas linhas e confirmou a completude do conjunto.
+
+A recomputação editorial final de 25/08 publicou 11.184 pontos BR e 5.955
+internacionais, classificando 86.095 artigos femininos, 50.755 neutros e 33.976
+masculinos. O motor incorporou a Malwee e fechou com 109.543 produtos, 266.623
+ligações, 9.155 inserções, zero remoção e 3.075 produtos cujo segmento realmente
+mudou. Depois da publicação e do retry idempotente, o banco mediu
+**454.364.307 / 500.000.000 bytes (90,9%)**, com 45.635.693 bytes livres.
 
 A expansão e a primeira recomputação levaram o banco temporariamente a 97,15%.
 A retenção no piso seguro removeu 93.587 snapshots fora da janela, compactou a
-tabela e preservou todas as séries. Depois dos pares editoriais e do motor final,
-o banco fechou em **422.145.171 bytes (84,4%)**, com 77.854.829 bytes livres.
-O motor final provou idempotência: 106.298 produtos, 257.070 ligações e zero
-produto, segmento ou ligação alterado na segunda publicação.
+tabela e preservou todas as séries. Na medição anterior à Malwee, o banco havia
+fechado em **422.145.171 bytes (84,4%)**, com 77.854.829 bytes livres. Aquele
+motor provou idempotência: 106.298 produtos, 257.070 ligações e zero produto,
+segmento ou ligação alterado na segunda publicação. A medição corrente está no
+bloco acima.
 
 O único bloqueio de implementação antes do fechamento da release são as telas
 finais do Figma. Apple, Google e e-mail foram validados no iPhone em 24/08. O

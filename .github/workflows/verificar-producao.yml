@@ -13,12 +13,14 @@ permissions:
 
 jobs:
   verificar:
-    runs-on: ubuntu-latest
+    # Usa o mesmo runner gratuito da coleta quando configurado. Assim a prova
+    # read-only nao depende de minutos/ disponibilidade de runner hospedado.
+    runs-on: ${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/python-linux
+      - uses: ./.github/actions/python-mac
 
       - name: Medir capacidade
         env:

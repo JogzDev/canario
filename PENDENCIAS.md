@@ -35,11 +35,12 @@
   declare contexto de roupa. Flores pessoais, unhas, casamento e calçados
   continuam excluídos. A próxima expansão de fonte deve ser guiada por recall
   feminino medido, nunca pela necessidade de fabricar um número para essa tela.
-- **Malwee foi recuperada e aguarda apenas a coleta candidata.** O domínio
-  oficial abriu no VTEX público, com cerca de 14.450 produtos e `robots.txt`
-  respeitado. Ela entra em `catalogo_candidato_br`, portanto amplia similares
-  sem mudar a coorte medida; o portão de capacidade continua tendo autoridade
-  para interromper a publicação se a margem gratuita ficar insegura.
+- **Malwee recuperada e coletada.** O domínio oficial abriu no VTEX público,
+  com cerca de 14.450 produtos brutos e `robots.txt` respeitado. O recorte
+  elegível fechou em 3.082 visitados = 3.082 declarados; o retry alterou somente
+  duas linhas. Ela está em `catalogo_candidato_br`, portanto amplia similares
+  sem mudar a coorte medida. O banco ficou em 90,9%, ainda gratuito, e o portão
+  continua bloqueando qualquer expansão que leve a margem a uma zona insegura.
 
 ## Entregue na 1.2 antes do Figma
 
@@ -84,9 +85,11 @@
   evidência editorial da janela, comparação com cobertura real, tradução
   residual, taxonomia sem duplicidade de knit, animal print destacado e URL de
   produto com imagem carregada sem bloquear a interface.
-- Editorial recomposto em produção: 11.179 pontos BR, 5.764 internacionais,
-  16.287 pares artigo/termo e filtro masculino aplicado ao arquivo inteiro.
-- Catálogo candidato brasileiro com 12 marcas, 14.678 produtos elegíveis,
-  1.698 exclusões de população e zero vazamento para outro segmento.
-- Banco no plano gratuito em 422.145.171 / 500.000.000 bytes (84,4%), com
+- Editorial recomposto em produção: 11.184 pontos BR e 5.955 internacionais;
+  filtro masculino aplicado ao arquivo inteiro. Foram classificados 86.095
+  artigos femininos, 50.755 neutros e 33.976 masculinos. Motor publicado com
+  109.543 produtos e 266.623 ligações.
+- Catálogo candidato brasileiro com as 12 marcas anteriores mais 3.082 produtos
+  elegíveis da Malwee; a prova de isolamento em produção fecha esta entrega.
+- Banco no plano gratuito em 454.364.307 / 500.000.000 bytes (90,9%), com
   retenção permanente de 21 dias no cru e séries históricas preservadas.
