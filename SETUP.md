@@ -71,6 +71,19 @@ reais, que o JP fornece. Mais rápido ainda: peça o arquivo pronto por AirDrop.
 
 Deixe `REMOTE_ANALYSIS_ENABLED = NO`, que é o padrão.
 
+**E saiba o que isso faz com a tela de adicionar peça.** Com o interruptor em
+`NO`, o app não chama a Luna: ele lê apenas o **texto impresso na imagem**, no
+próprio aparelho. Foto de roupa quase nunca tem texto, então o fluxo chega em
+"Confirm your item" com o cartão **"No attributes were read"** e nenhum
+atributo marcado. **Isso é o comportamento correto do build desligado, não
+defeito da tela nem da análise.** Foi exatamente o que aconteceu no primeiro
+teste da `BranchFadul`, em 26/08/2026, e custou uma investigação inteira.
+
+Para testar a análise de verdade, peça ao JP o `Config.xcconfig` com
+`REMOTE_ANALYSIS_ENABLED = YES` — cada análise consome crédito da API, então
+combine antes. Ligar sozinho sem a chave certa não adianta: a chamada falha e a
+tela cai na mesma leitura local.
+
 A chave desse arquivo é a **publishable**, pública por desenho — ela já vai
 embutida no `.ipa` e qualquer um a extrai. Passá-la a um colega não é
 vazamento. A chave `sb_secret_...` nunca entra aqui: vive só nos GitHub Secrets.
