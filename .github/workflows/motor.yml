@@ -10,6 +10,11 @@ on:
         required: false
         type: boolean
         default: false
+      reclassificar_editorial:
+        description: 'Recomputar o editorial usando o arquivo ja armazenado'
+        required: false
+        type: boolean
+        default: false
     secrets:
       SUPABASE_URL:
         required: true
@@ -19,6 +24,11 @@ on:
     inputs:
       backfill_editorial:
         description: 'Refazer o backfill editorial de 5 anos (demorado)'
+        type: boolean
+        required: false
+        default: false
+      reclassificar_editorial:
+        description: 'Recomputar o editorial sem baixar o arquivo novamente'
         type: boolean
         required: false
         default: false
@@ -54,7 +64,7 @@ jobs:
         run: "$PY coletor/backfill_editorial.py"
 
       - name: Reclassificar e trocar as duas pernas editoriais atomicamente
-        if: inputs.backfill_editorial
+        if: inputs.backfill_editorial || inputs.reclassificar_editorial
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
