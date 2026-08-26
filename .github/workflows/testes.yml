@@ -70,6 +70,11 @@ jobs:
       # duas o sintoma so apareceu na hora de assinar para a loja.
       - name: Identidade do app e uma so
         run: "$PY coletor/teste_identidade_do_app.py"
+      # A44 sincronizou miniatura e dois documentos publicos ficaram dizendo o
+      # contrario -- inclusive a etiqueta de privacidade enviada a Apple. Este
+      # confere codigo, manifesto, ficha, politica e exclusao de conta juntos.
+      - name: Privacidade declarada bate com o binario
+        run: "$PY coletor/teste_privacidade_declarada.py"
       - name: Regressões da experiência em aparelho
         run: "$PY coletor/teste_experiencia_app.py"
       - name: Contrato do avaliador Luna (sem rede)
@@ -164,5 +169,5 @@ jobs:
             -only-testing:CanarioUITests/CanarioUITests/testClosetContinuaAcessivelSemRede \
             -only-testing:CanarioUITests/CanarioUITests/testPrivacyAbrePeloCaminhoDeterministico \
             -only-testing:CanarioUITests/CanarioUITests/testImportacaoAbreSemRedeComAsEntradasPrincipais \
-            -only-testing:CanarioUITests/CanarioUITests/testFillInfoAbreClothingDetailsForaDaSheet \
+            -only-testing:CanarioUITests/CanarioUITests/testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails \
             CODE_SIGNING_ALLOWED=NO | tail -20

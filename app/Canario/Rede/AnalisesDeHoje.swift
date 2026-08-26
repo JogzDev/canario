@@ -135,3 +135,50 @@ public actor RegistroDeAnalises {
         ContadorDeAnalises.aviso(carregado(), agora: agora)
     }
 }
+
+/// Escolha persistente para a leitura visual. O primeiro uso continua sendo
+/// consentimento informado; depois disso o app respeita a escolha até a pessoa
+/// alterá-la em Settings. Arquivo próprio mantém a mesma política de não usar
+/// `UserDefaults` adotada pelo contador acima.
+public enum PreferenciaDaAnaliseVisual: String, Codable, Sendable {
+    case perguntar
+    case nuvem
+    case aparelho
+}
+
+public actor PreferenciasDaAnaliseVisual {
+    public static let shared = PreferenciasDaAnaliseVisual()
+
+    private let arquivo: URL?
+    private var memoria: PreferenciaDaAnaliseVisual?
+
+    public init(arquivo: URL? = nil) {
+        if let arquivo {
+            self.arquivo = arquivo
+        } else {
+            let base = try? FileManager.default.url(
+                for: .applicationSupportDirectory, in: .userDomainMask,
+                appropriateFor: nil, create: true)
+            self.arquivo = base?.appendingPathComponent(
+                "preferencia_analise_visual.json")
+        }
+    }
+
+    public func preferencia() -> PreferenciaDaAnaliseVisual {
+        if let memoria { return memoria }
+        guard let arquivo, let dados = try? Data(contentsOf: arquivo),
+              let valor = try? JSONDecoder().decode(
+                PreferenciaDaAnaliseVisual.self, from: dados) else {
+            memoria = .perguntar
+            return .perguntar
+        }
+        memoria = valor
+        return valor
+    }
+
+    public func definir(_ valor: PreferenciaDaAnaliseVisual) {
+        memoria = valor
+        guard let arquivo, let dados = try? JSONEncoder().encode(valor) else { return }
+        try? dados.write(to: arquivo, options: .atomic)
+    }
+}

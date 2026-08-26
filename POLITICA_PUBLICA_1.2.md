@@ -1,8 +1,15 @@
 # Texto público para a 1.2 — conta opcional e sincronização
 
 Substituir a política da 1.1 antes de enviar o build. O texto descreve o
-binário implementado: conta opcional, fotos locais, atributos do Closet
-sincronizados e exclusão iniciada dentro do app.
+binário implementado: conta opcional, atributos do Closet sincronizados,
+miniatura reduzida em área privada da conta (A44), foto original somente no
+aparelho e exclusão iniciada dentro do app.
+
+> **Por que este arquivo mudou em 26/08.** Até esta revisão ele dizia que
+> nenhuma imagem do Closet subia. A A44 entrou em produção em 25/08 e passou a
+> sincronizar a miniatura reduzida; o `PrivacyInfo.xcprivacy` foi atualizado na
+> mesma leva e este texto não. Documento público que descreve um binário
+> diferente do publicado não é imprecisão: é declaração de privacidade errada.
 
 ```text
 Privacy Policy
@@ -14,8 +21,9 @@ Summary
 
 DataDrobe has no advertising and does not track you across apps or websites.
 You can use the app without an account. If you choose to sign in, DataDrobe
-syncs the structured details of your Closet so you can restore them on another
-device. Closet photos remain on the iPhone in this version.
+syncs the structured details of your Closet, plus a reduced, metadata-free
+thumbnail of each garment, so you can restore them on another device. The
+original photo you took or picked never leaves this iPhone.
 
 Optional account
 
@@ -37,14 +45,24 @@ your account so they can be restored. Row-level security restricts every record
 to its owner. The app keeps working from its local copy when offline and merges
 changes when a connection returns.
 
-Closet thumbnails and original photos are not uploaded as part of account sync
-in version 1.2. A signed-out, local Closet remains confined to that iPhone.
+Closet thumbnails
+
+When signed in, DataDrobe also uploads one reduced, metadata-free thumbnail per
+garment, at most 720 pixels on its longest side, so your Closet still shows the
+right picture after you reinstall the app or sign in on another iPhone. Each
+file is stored in a private area addressed by your account identifier;
+row-level security allows only your account to read, replace or delete it. The
+app verifies a checksum before it accepts a downloaded thumbnail.
+
+The original photo is never uploaded. Deleting a garment deletes its thumbnail.
+Deleting your account deletes every thumbnail it stored. A signed-out, local
+Closet remains confined to that iPhone: nothing about it leaves the device.
 
 Account deletion
 
-Account settings includes Delete account. Confirming it permanently deletes
-the account and its synchronized Closet data and removes the signed-in Closet
-and session from that iPhone. If you used Sign in with Apple and no Apple token
+Account settings includes Delete account. Confirming it permanently deletes the
+account, its synchronized Closet records and every thumbnail stored for it, and
+removes the signed-in Closet and session from that iPhone. If you used Sign in with Apple and no Apple token
 is available to revoke programmatically, the app directs you to Apple Account
 settings after deletion so you can remove the remaining authorization.
 
@@ -76,7 +94,8 @@ What DataDrobe does not do
 - No advertising identifier, advertising SDK, data broker or cross-app tracking.
 - No sale of personal data.
 - No collection of contacts, precise location, health or payment data.
-- No Closet-photo sync in version 1.2.
+- No upload of your original Closet photos, in any version.
+- No Closet data of any kind leaves the iPhone while you are signed out.
 
 Your choices
 

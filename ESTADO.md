@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 25/08/2026, 03:00 em São Paulo
+**Última atualização:** 26/08/2026, 00:20 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -22,20 +22,21 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Frente | Estado | Número que importa |
 |---|---|---|
 | Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **14.678 produtos candidatos** |
-| Banco | plano gratuito; retenção crua no piso seguro de 21 dias | **422.145.171 bytes / 500 MB (84,4%)** após toda a expansão |
+| Banco | plano gratuito; retenção crua no piso seguro de 21 dias | **454.364.307 bytes / 500 MB (90,9%)** após Malwee e motor |
 | Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
 | App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google e e-mail validados**; Google nativo integrado | cliente iOS criado, Supabase configurado e build verde; falta repetir Google nativo no iPhone |
-| Testes | **242 Swift** · portões Python ativos · 7 UI | Auth, Keychain, sync, compartilhamento, filtros e fluxos existentes |
+| Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
+| Testes | **257 Swift** · **31 suítes Python** · **8 UI** | Auth, Keychain, sync, compartilhamento, filtros e fluxo final de confirmação |
 
-## 0. Trabalho ativo de 24/08 — conta, capacidade e 1.2
+## 0. Trabalho ativo — conta, capacidade, privacidade declarada e 1.2
 
 A 1.2 revoga somente a antiga regra de ausência de conta. A conta continua
 opcional: Apple, Google ou e-mail; o app permanece utilizável como convidado.
-Sessões ficam no Keychain, os dados estruturados do Closet sincronizam com RLS
-e as fotos permanecem locais. Há recuperação de senha, logout e exclusão
-integral iniciada dentro do app.
+Sessões ficam no Keychain, os dados estruturados do Closet e miniaturas reduzidas
+sincronizam com RLS em bucket privado; os originais permanecem somente no aparelho.
+Há recuperação de senha, logout e exclusão integral iniciada dentro do app.
 
 A27 moveu `ultimo_avistamento_em`, `ofertavel` e `ultimo_snapshot_em` para
 `estado_dos_produtos`, uma linha estreita, e já está em produção. A42 mantém
@@ -79,12 +80,80 @@ têm artigo qualificado. `floral` permanece zero nas duas pernas porque nenhum
 artigo recente passou simultaneamente pelo matching e pelo contexto de roupa;
 flores pessoais, unhas, casamento e calçados não são convertidos em roupa.
 
+Em 25/08, A44 e A45 entraram em produção. A44 adiciona miniaturas privadas do
+Closet com caminho pertencente ao `auth.uid`, limite de 3 MB e validação por hash;
+isso permite restaurar as fotos reduzidas depois de reinstalar sem transformar o
+banco em álbum de originais. A45 tornou a resolução de URL exata e indexada nos
+segmentos brasileiro e candidato. O produto oficial “Vestido Pontas Estampado
+Tomates” da Farm resolve com imagem, preço e termos `vestido` + `tomate_print`;
+esses termos já devolvem similares de outras marcas sem chamada à Luna.
+
+Em 26/08 fechou-se o que a A44 tinha deixado em aberto, e eram duas coisas da
+mesma família. A primeira: `excluir-conta` apagava o usuário sem tocar no bucket,
+porque a função ainda carregava o aviso escrito quando o Storage não existia
+(“se Storage for ligado no futuro, seus objetos precisam ser removidos antes
+desta linha”). Ele foi ligado e ninguém voltou nela — a miniatura sobrevivia à
+exclusão da conta, inalcançável e ainda assim armazenada. A purga do prefixo do
+usuário agora roda **antes** do `deleteUser`, e a exclusão falha aberta se a
+purga falhar. A segunda: `POLITICA_PUBLICA_1.2.md` e `FICHA_APP_STORE_1.2.md`
+continuavam afirmando que nenhuma imagem do Closet subia, contra o próprio
+`PrivacyInfo.xcprivacy`, que já declarava `Photos or Videos` como vinculado.
+Os dois textos foram corrigidos e `coletor/teste_privacidade_declarada.py`
+passou a reprovar o push quando código, manifesto, ficha, política e
+`excluir-conta` discordarem. A Edge Function corrigida **ainda precisa ser
+publicada** — está em `PENDENCIAS.md`.
+
+Em 26/08 também caiu a reclamação de lentidão, e ela tinha causa medível. O
+Closet montava a tabela de rótulos como **propriedade computada** dentro do
+`body`, lida de dentro do laço de filtragem e três vezes por card; o mesmo
+padrão estava em Weekly Trends e na lista de favoritos do menu. Com 200 peças e
+212 termos, vinte passagens do `body` — vinte teclas na busca — construíam
+84.000 dicionários em **3,215 s**; com o catálogo montado uma vez, **0,023 s**.
+O filtro saiu da View para `CanarioLogica` como `CatalogoDoArmario` e
+`FiltroDoArmario`, com testes de comportamento e um orçamento de interação que
+reprova o push se a forma quadrática voltar. A espera da análise remota passa a
+avisar depois de 8 s que está demorando, em vez de repetir "usually takes a few
+seconds" até o teto de 30 s. O `+` do botão Add ficou exatamente no centro:
+quadro, manequim, disco e glifo em x = 50,000, conferidos por geometria a cada
+push.
+
+No mesmo dia apareceu um portão que mentia. O CI listava cinco fluxos de UI
+offline, e um deles — `testFillInfoAbreClothingDetailsForaDaSheet` — **nunca
+existiu**. `-only-testing` com nome errado não falha: o `xcodebuild` roda zero
+testes e devolve `TEST SUCCEEDED`. O fluxo Fill Info → Clothing Details, que foi
+pedido explicitamente, estava sem cobertura executada desde que entrou na lista.
+O nome certo é `testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails`, ele
+passa em 6,2 s, e `teste_workflows.py` agora reprova qualquer `-only-testing`
+que aponte para um teste inexistente.
+
+Isso é o que era **provável por leitura de código e mensurável aqui**. Se ainda
+sobrar lentidão no aparelho, ela precisa de medição no iPhone — não de mais
+otimização no escuro, que é a regra que já vale para o cold launch.
+
+O pacote de QA de 25/08 também unificou o nome exibido no Closet, card social,
+link e CSV, ignorando placeholders legados como “Replacing”; colocou a foto no
+card social; preservou o estado ao voltar no fluxo de Add; terminou o fluxo na
+confirmação com os atributos e Add to Closet; corrigiu teclado, alinhamento,
+badges, texto de consentimento, cards do Closet, tradução residual de `camisa`,
+comparação e evidência editorial na janela inteira. A Malwee foi recuperada no
+endpoint VTEX público oficial e coletada isoladamente como catálogo candidato,
+sem alterar a coorte medida: **3.082 visitados = 3.082 declarados**. Uma segunda
+passagem alterou somente duas linhas e confirmou a completude do conjunto.
+
+A recomputação editorial final de 25/08 publicou 11.184 pontos BR e 5.955
+internacionais, classificando 86.095 artigos femininos, 50.755 neutros e 33.976
+masculinos. O motor incorporou a Malwee e fechou com 109.543 produtos, 266.623
+ligações, 9.155 inserções, zero remoção e 3.075 produtos cujo segmento realmente
+mudou. Depois da publicação e do retry idempotente, o banco mediu
+**454.364.307 / 500.000.000 bytes (90,9%)**, com 45.635.693 bytes livres.
+
 A expansão e a primeira recomputação levaram o banco temporariamente a 97,15%.
 A retenção no piso seguro removeu 93.587 snapshots fora da janela, compactou a
-tabela e preservou todas as séries. Depois dos pares editoriais e do motor final,
-o banco fechou em **422.145.171 bytes (84,4%)**, com 77.854.829 bytes livres.
-O motor final provou idempotência: 106.298 produtos, 257.070 ligações e zero
-produto, segmento ou ligação alterado na segunda publicação.
+tabela e preservou todas as séries. Na medição anterior à Malwee, o banco havia
+fechado em **422.145.171 bytes (84,4%)**, com 77.854.829 bytes livres. Aquele
+motor provou idempotência: 106.298 produtos, 257.070 ligações e zero produto,
+segmento ou ligação alterado na segunda publicação. A medição corrente está no
+bloco acima.
 
 O único bloqueio de implementação antes do fechamento da release são as telas
 finais do Figma. Apple, Google e e-mail foram validados no iPhone em 24/08. O
@@ -372,16 +441,22 @@ Supabase para OpenAI, que o app não a armazena e que logs de abuso podem durar
 até 30 dias. Recusar mantém o caminho manual. Tela Privacy, alerta, manifesto e
 `FICHA_APP_STORE_1.1.md` dizem a mesma coisa.
 
-O String Catalog inicial contém 150 chaves extraídas do app. Ainda não há
+O String Catalog contém 145 chaves versionadas. Ainda não há
 tradução PT-BR — a A16 mantém a interface pública em inglês —, mas telas novas
 entram agora por uma infraestrutura única em vez de espalhar mais strings sem
 catálogo.
 
 ## 5. Testes
 
-* **239** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
-* **27** suítes Python — rodam a cada push
-* **7** testes de interface no alvo `CanarioUITests`; cinco rotas offline rodam no CI
+* **257** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **31** suítes Python no CI — rodam a cada push. A 31ª, `teste_30s.py`, é a sonda
+  manual do README e não entra no portão
+* **8** testes de interface no alvo `CanarioUITests`; cinco rotas offline rodam no CI
+
+> Estes três números aparecem também no resumo de 30 segundos, e em 25/08 os
+> dois blocos discordavam — a tabela dizia 249/8, esta seção dizia 239/7. Um
+> documento que existe para nenhum outro contradizê-lo não pode contradizer a si
+> mesmo: quando um deles mudar, o outro muda no mesmo commit.
 
 O gerador é dono do alvo de UI test e o CI o executa num iPhone 17 simulado.
 Isso protege os caminhos estruturais enquanto as telas novas chegam sem

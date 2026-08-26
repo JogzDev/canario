@@ -363,4 +363,41 @@ final class PecasSalvasTests: XCTestCase {
         XCTAssertTrue(depois.isEmpty)
         XCTAssertFalse(FileManager.default.fileExists(atPath: caminho.path))
     }
+
+    func testNomeCompartilhavelEIdenticoNoLinkENoFallbackDaCategoria() throws {
+        let camisa = Termo(id: "camisa", rotulo: "Camisa", dimensao: "categoria",
+                           exclusiva: true, sinonimos: nil, semPernaBusca: nil,
+                           palavrasPt: nil, palavrasEn: nil)
+        let verde = Termo(id: "verde", rotulo: "Verde", dimensao: "cor",
+                          exclusiva: false, sinonimos: nil, semPernaBusca: nil,
+                          palavrasPt: nil, palavrasEn: nil)
+        let semNome = PecaSalva(termoIds: ["camisa", "verde"])
+        let nome = NomeCompartilhavel.resolver(semNome, termos: [camisa, verde])
+        XCTAssertEqual(nome, "Shirt")
+
+        let url = try XCTUnwrap(PecaCompartilhada(
+            nome: nome, termoIds: semNome.termoIds).url)
+        XCTAssertEqual(PecaCompartilhada(url: url)?.nome, nome)
+
+        let nomeada = PecaSalva(apelido: "  Rugby shirt  ", termoIds: ["camisa"])
+        XCTAssertEqual(NomeCompartilhavel.resolver(nomeada, termos: [camisa]),
+                       "Rugby shirt")
+    }
+
+    func testPlaceholderLegadoNaoVazaParaClosetLinkCartaoOuPlanilha() {
+        let camisa = Termo(id: "camisa", rotulo: "Camisa", dimensao: "categoria",
+                           exclusiva: true, sinonimos: nil, semPernaBusca: nil,
+                           palavrasPt: nil, palavrasEn: nil)
+        let peca = PecaSalva(apelido: "Replacing", termoIds: ["camisa"])
+
+        XCTAssertFalse(peca.temApelido)
+        XCTAssertEqual(peca.nome(comRotulos: ["camisa": "Shirt"]), "Shirt")
+        XCTAssertEqual(NomeCompartilhavel.resolver(peca, termos: [camisa]), "Shirt")
+    }
+
+    func testTricoECrocheConvergeParaOMesmoIdDoKnit() {
+        let peca = PecaSalva(termoIds: ["camisa", "trico_croche", "malha"])
+        XCTAssertEqual(peca.termoIds.filter { $0 == "malha" }.count, 1)
+        XCTAssertFalse(peca.termoIds.contains("trico_croche"))
+    }
 }

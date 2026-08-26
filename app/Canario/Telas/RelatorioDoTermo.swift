@@ -319,36 +319,67 @@ private struct DetalheDaFonteEditorial: View {
                             }
                         }
                         .frame(height: 210)
-                        LinhaInsumo(texto: "This is the source's measured value, not a forecast. Tap examples below to inspect the editorial evidence.")
+                        LinhaInsumo(texto: fonte.hasPrefix("editorial")
+                            ? "This is the source's measured value, not a forecast. Article evidence appears below."
+                            : "This is the source's measured value, not a forecast. Its inputs and sample appear below.")
                     }
                 }
 
-                if let meta = recente?.meta {
-                    Cartao {
-                        Text("What contributed").font(Tokens.Fonte.secao)
-                        if let veiculos = meta.veiculosEmTexto {
-                            LinhaInsumo(texto: veiculos)
-                        }
-                        ForEach(Array((meta.exemplos ?? []).enumerated()), id: \.offset) { _, exemplo in
-                            if let texto = exemplo.url, let url = URL(string: texto) {
-                                Link(destination: url) {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(exemplo.titulo).font(Tokens.Fonte.apoio)
-                                        Text(exemplo.veiculo).font(Tokens.Fonte.miudo)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                        }
-                        if (meta.exemplos ?? []).isEmpty {
-                            LinhaInsumo(texto: "No article matched this attribute in the latest measured window.")
-                        }
-                    }
-                }
+                evidenciaDaFonte
             }
             .padding(Tokens.Espaco.m)
         }
         .navigationTitle(Traducao.rotuloExibido(termo))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private var evidenciaDaFonte: some View {
+        Cartao {
+            Text("How this was measured").font(Tokens.Fonte.secao)
+            switch fonte {
+            case "busca":
+                Text("Google search interest")
+                    .font(Tokens.Fonte.apoio)
+                if let valor = recente?.valorBruto {
+                    LinhaInsumo(texto: "Latest closed week: \(Leitura.numero(valor, casas: 0)) out of 100 for this monitored search set.")
+                }
+                let consultas = Array(termo.termosDeBusca.prefix(5))
+                LinhaInsumo(texto: "Monitored expressions: \(consultas.joined(separator: " · ")).")
+            case "varejo":
+                Text("Observed panel assortment")
+                    .font(Tokens.Fonte.apoio)
+                let itens = recente?.nAmostra.map(String.init) ?? "—"
+                let total = recente?.meta?.nTotalSortimento.map {
+                    Leitura.numero($0, casas: 0)
+                } ?? "—"
+                LinhaInsumo(texto: "\(itens) matching items among \(total) currently observed panel offers.")
+                if let valor = recente?.valorBruto {
+                    LinhaInsumo(texto: "Measured share: \(Leitura.numero(valor, casas: 2))%.")
+                }
+            default:
+                let meta = recente?.meta
+                if let veiculos = meta?.veiculosEmTexto {
+                    LinhaInsumo(texto: veiculos)
+                }
+                ForEach(Array((meta?.exemplos ?? []).enumerated()), id: \.offset) { _, exemplo in
+                    if let texto = exemplo.url, let url = URL(string: texto) {
+                        Link(destination: url) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(exemplo.titulo).font(Tokens.Fonte.apoio)
+                                Text(exemplo.veiculo).font(Tokens.Fonte.miudo)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                if (meta?.exemplos ?? []).isEmpty {
+                    let n = recente?.nAmostra ?? 0
+                    LinhaInsumo(texto: n == 0
+                        ? "No qualifying fashion article matched this attribute in the latest 4-week window."
+                        : "\(n) qualifying article\(n == 1 ? "" : "s") formed this 4-week reading; the evidence list is being refreshed.")
+                }
+            }
+        }
     }
 }

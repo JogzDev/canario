@@ -48,17 +48,19 @@ final class CanarioUITests: XCTestCase {
         }
     }
 
-    func testFillInfoAbreClothingDetailsForaDaSheet() {
+    func testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails() {
         let app = aplicativo(argumentos: ["-CanarioUITestDetalhes"])
         app.launch()
 
-        XCTAssertTrue(app.navigationBars["Check what I read"]
-            .waitForExistence(timeout: 5))
-        app.buttons["Open Clothing Details"].tap()
-        XCTAssertTrue(app.navigationBars["Clothing Details"]
+        XCTAssertTrue(app.navigationBars["Confirm your item"]
             .waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Add to Closet"].exists)
-        XCTAssertTrue(app.buttons["Close"].exists)
+        XCTAssertTrue(app.textFields["Clothing name (optional)"].exists)
+        XCTAssertTrue(app.buttons["Dress"].exists)
+        XCTAssertTrue(app.buttons["Black"].exists)
+        XCTAssertTrue(app.buttons["Back"].exists)
+        XCTAssertFalse(app.buttons["Open Clothing Details"].exists)
+        XCTAssertFalse(app.staticTexts["Keep this item"].exists)
     }
 
     func testPrivacyAbrePeloCaminhoDeterministico() {

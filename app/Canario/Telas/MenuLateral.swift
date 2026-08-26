@@ -124,9 +124,10 @@ private struct FavoritosDoMenu: View {
     @State private var pecas: [PecaSalva] = []
     @State private var termos: [Termo] = []
 
-    private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
-    }
+    /// Guardado, não computado: a lista lê `rotulos` duas vezes por linha, e
+    /// como propriedade computada cada leitura percorria a taxonomia inteira.
+    /// Mesmo defeito que travava o Closet; ver `ArmarioVisivel.swift`.
+    @State private var rotulos: [String: String] = [:]
 
     var body: some View {
         Group {
@@ -172,6 +173,8 @@ private struct FavoritosDoMenu: View {
     private func carregar() async {
         pecas = await PecasSalvas.shared.todas().filter { $0.favorita ?? false }
         termos = (try? await CatalogoDeTermos.shared.carregar()) ?? []
+        rotulos = Dictionary(uniqueKeysWithValues:
+            termos.map { ($0.id, Traducao.rotuloExibido($0)) })
     }
 
     private func desfavoritar(_ peca: PecaSalva) {
@@ -228,7 +231,7 @@ private struct TermosDoMenu: View {
                     texto: "Prices, stock, product images and links come from the named stores and can change after collection. Purchases happen on the store website under that store's terms; this app is not the seller.")
                 TextoComTitulo(
                     titulo: "Your Closet",
-                    texto: "You control the items you save. Without an account they stay on this iPhone. After you sign in, item details can sync across your devices; photos remain local. Removing an item also removes its synchronized record.")
+                    texto: "You control the items you save. Without an account they stay on this iPhone. After you sign in, item details and private reduced thumbnails can sync across your devices; original photos remain local. Removing an item also removes its synchronized record.")
                 TextoComTitulo(
                     titulo: "Fair use of the service",
                     texto: "Do not use the app to overload source websites, bypass access controls, copy third-party catalogs or misrepresent its readings as facts about future demand.")
@@ -243,10 +246,24 @@ private struct TermosDoMenu: View {
 private struct AjustesDoMenu: View {
     @State private var quantidade = 0
     @State private var confirmarExclusao = false
+    @State private var usarAnaliseNaNuvem = true
+    @State private var carregouPreferenciaVisual = false
     @Environment(\.accessibilityReduceMotion) private var reduzirMovimento
 
     var body: some View {
         List {
+            if Supabase.analiseRemotaHabilitada {
+                Section("Visual analysis") {
+                    Toggle("Use cloud visual analysis", isOn: $usarAnaliseNaNuvem)
+                        .disabled(!carregouPreferenciaVisual)
+                    Text(usarAnaliseNaNuvem
+                         ? "Recommended for more complete attribute suggestions. Only the reduced, metadata-free image you confirm is analyzed."
+                         : "Analysis stays on this iPhone and does not use the shared cloud-analysis limit.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Accessibility") {
                 LabeledContent("Reduce Motion") {
                     Text(reduzirMovimento ? "On" : "Off")
@@ -258,7 +275,7 @@ private struct AjustesDoMenu: View {
 
             Section("Local storage") {
                 LabeledContent("Closet items", value: String(quantidade))
-                Text("Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from backup.")
+                Text("Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from device backup. Signed-in accounts also keep a private copy of reduced thumbnails for restore.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Button("Delete local Closet", systemImage: "trash", role: .destructive) {
@@ -268,7 +285,19 @@ private struct AjustesDoMenu: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .task { quantidade = await PecasSalvas.shared.todas().count }
+        .task {
+            quantidade = await PecasSalvas.shared.todas().count
+            let preferencia = await PreferenciasDaAnaliseVisual.shared.preferencia()
+            usarAnaliseNaNuvem = preferencia != .aparelho
+            carregouPreferenciaVisual = true
+        }
+        .onChange(of: usarAnaliseNaNuvem) { _, nova in
+            guard carregouPreferenciaVisual else { return }
+            Task {
+                await PreferenciasDaAnaliseVisual.shared.definir(
+                    nova ? .nuvem : .aparelho)
+            }
+        }
         .alert("Delete the entire Closet?", isPresented: $confirmarExclusao) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
@@ -303,7 +332,7 @@ private struct PrivacidadeDoMenu: View {
                 BlocoInformativo(
                     icone: "internaldrive",
                     titulo: "A small local thumbnail",
-                    texto: "When you save an item, the app can keep a resized thumbnail without photo metadata. The original is not copied. Deleting the item deletes its thumbnail.")
+                    texto: "When you save an item, the app can keep a resized thumbnail without photo metadata. The original is not copied. Signed-in accounts can synchronize that reduced thumbnail privately; deleting the item deletes its thumbnail.")
                 BlocoInformativo(
                     icone: "network",
                     titulo: "Store images and links",
@@ -315,7 +344,7 @@ private struct PrivacidadeDoMenu: View {
                 BlocoInformativo(
                     icone: "arrow.triangle.2.circlepath.icloud",
                     titulo: "What syncs",
-                    texto: "Item names, confirmed attribute ids, optional target price and channel, favorites and explicit similar-item choices can sync. Photos, thumbnails and calculated market readings do not leave the iPhone through account sync. A separately authorized cloud photo analysis is not attached to the account.")
+                    texto: "Item names, confirmed attribute ids, optional target price and channel, favorites, explicit similar-item choices and reduced metadata-free thumbnails can sync. Original photos and calculated market readings do not. A separately authorized cloud photo analysis is not attached to the account.")
             }
         }
     }

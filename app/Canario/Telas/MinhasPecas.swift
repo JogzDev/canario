@@ -29,39 +29,21 @@ struct MinhasPecas: View {
         GridItem(.flexible(), spacing: 18),
     ]
 
-    private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
+    /// Construído UMA vez por carregamento da taxonomia, nunca dentro do
+    /// `body`. Era uma propriedade computada acessada de dentro do laço de
+    /// filtragem e três vezes por card; ver `ArmarioVisivel.swift`.
+    @State private var catalogo = CatalogoDoArmario(termos: [])
+
+    private var filtro: FiltroDoArmario {
+        FiltroDoArmario(somenteFavoritas: somenteFavoritas,
+                        atributos: atributosFiltrados,
+                        busca: busca)
     }
 
-    private var categorias: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.filter { $0.dimensao == "categoria" }
-            .map { ($0.id, Traducao.rotuloExibido($0)) })
-    }
-
-    private var temFiltro: Bool {
-        somenteFavoritas || !atributosFiltrados.isEmpty || !busca.isEmpty
-    }
+    private var temFiltro: Bool { filtro.ativo }
 
     private var pecasVisiveis: [PecaSalva] {
-        let consulta = Traducao.normalizar(busca)
-        let filtrosPorDimensao = Dictionary(grouping: termos.filter {
-            atributosFiltrados.contains($0.id)
-        }, by: { $0.dimensao == "motivo_estampa" ? "estampa" : $0.dimensao })
-            .mapValues { Set($0.map(\.id)) }
-        return pecas.filter { peca in
-            if somenteFavoritas && !(peca.favorita ?? false) { return false }
-            let idsDaPeca = Set(peca.termoIds)
-            // AND entre dimensões, OR dentro da mesma dimensão: Green +
-            // Stripes exige os dois; Green + Blue aceita qualquer das cores.
-            if !filtrosPorDimensao.values.allSatisfy({ !idsDaPeca.isDisjoint(with: $0) }) {
-                return false
-            }
-            guard !consulta.isEmpty else { return true }
-            let texto = ([peca.nome(comRotulos: rotulos)]
-                         + peca.termoIds.compactMap { rotulos[$0] })
-                .joined(separator: " ")
-            return Traducao.normalizar(texto).contains(consulta)
-        }
+        filtro.aplicar(a: pecas, catalogo: catalogo)
     }
 
     var body: some View {
@@ -143,7 +125,11 @@ struct MinhasPecas: View {
     }
 
     private var grade: some View {
-        ScrollView {
+        // Uma avaliação por passagem do `body`. Antes `pecasVisiveis` era lido
+        // três vezes aqui (isEmpty, ForEach e a contagem do rodapé), e cada
+        // leitura refazia a filtragem inteira.
+        let visiveis = pecasVisiveis
+        return ScrollView {
             VStack(spacing: Tokens.Espaco.m) {
                 if let erro {
                     Text(erro)
@@ -152,7 +138,7 @@ struct MinhasPecas: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                if pecasVisiveis.isEmpty {
+                if visiveis.isEmpty {
                     ContentUnavailableView(
                         "No matching clothes",
                         systemImage: "line.3.horizontal.decrease.circle",
@@ -161,13 +147,13 @@ struct MinhasPecas: View {
                         .frame(minHeight: 360)
                 } else {
                     LazyVGrid(columns: colunas, spacing: 20) {
-                        ForEach(pecasVisiveis) { peca in
+                        ForEach(visiveis) { peca in
                             CartaoDoArmario(
                                 peca: peca,
                                 termos: termos,
-                                rotulos: rotulos,
-                                categoria: peca.termoIds.compactMap { categorias[$0] }.first,
-                                idsDeCategoria: Set(categorias.keys),
+                                rotulos: catalogo.rotulos,
+                                categoria: catalogo.categoria(de: peca),
+                                idsDeCategoria: catalogo.idsDeCategoria,
                                 processandoFoto: processandoFotos.contains(peca.id),
                                 aoEscolherFoto: { item in
                                     await substituirFoto(de: peca, por: item)
@@ -179,7 +165,7 @@ struct MinhasPecas: View {
                     }
                 }
 
-                Text("\(pecasVisiveis.count) shown · \(pecas.count) saved of \(PecasSalvas.teto) · Market readings are recalculated whenever you open an item.")
+                Text("\(visiveis.count) shown · \(pecas.count) saved of \(PecasSalvas.teto) · Market readings are recalculated whenever you open an item.")
                     .font(Tokens.Fonte.miudo)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -217,6 +203,7 @@ struct MinhasPecas: View {
         carregando = false
         do {
             termos = try await CatalogoDeTermos.shared.carregar()
+            catalogo = CatalogoDoArmario(termos: termos)
         } catch {
             erro = "The taxonomy is unavailable right now. Your clothes and photos are still on this iPhone."
         }
@@ -387,13 +374,14 @@ private struct CompartilharCloset: View {
     init(pecas: [PecaSalva], termos: [Termo]) {
         self.pecas = pecas
         self.termos = termos
+        self.catalogo = CatalogoDoArmario(termos: termos)
         _selecionadas = State(initialValue: Set(pecas.map(\.id)))
     }
 
     private var escolhidas: [PecaSalva] { pecas.filter { selecionadas.contains($0.id) } }
-    private var rotulos: [String: String] {
-        Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })
-    }
+    /// Montado uma vez na inicialização da folha, não a cada linha da lista.
+    private let catalogo: CatalogoDoArmario
+    private var rotulos: [String: String] { catalogo.rotulos }
 
     var body: some View {
         NavigationStack {
@@ -405,7 +393,8 @@ private struct CompartilharCloset: View {
                             else { selecionadas.insert(peca.id) }
                         } label: {
                             HStack {
-                                Text(peca.nome(comRotulos: rotulos)).foregroundStyle(.primary)
+                                Text(NomeCompartilhavel.resolver(peca, catalogo: catalogo))
+                                    .foregroundStyle(.primary)
                                 Spacer()
                                 Image(systemName: selecionadas.contains(peca.id)
                                       ? "checkmark.circle.fill" : "circle")
@@ -447,16 +436,31 @@ private struct CompartilharCloset: View {
 
     private func compartilharLinks() {
         guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
-        var itens: [Any] = escolhidas.compactMap { peca in
-            PecaCompartilhada(nome: peca.nome(comRotulos: rotulos), termoIds: peca.termoIds).url
+        preparando = true
+        Task { @MainActor in
+            var itens: [Any] = escolhidas.compactMap { peca in
+                PecaCompartilhada(
+                    nome: NomeCompartilhavel.resolver(peca, catalogo: catalogo),
+                    termoIds: peca.termoIds).url
+            }
+            if escolhidas.count == 1, let peca = escolhidas.first {
+                let atributos = peca.termoIds.compactMap { rotulos[$0] }
+                let dados = await PecasSalvas.shared.miniatura(de: peca)
+                let miniatura: UIImage?
+                if let dados {
+                    miniatura = await MiniaturaParaTela.imagem(de: dados)
+                } else {
+                    miniatura = nil
+                }
+                itens.insert(CartaoCompartilhavel.imagem(
+                    nome: NomeCompartilhavel.resolver(peca, catalogo: catalogo),
+                    atributos: atributos,
+                    miniatura: miniatura), at: 0)
+            }
+            atividade = PacoteDeAtividade(itens: itens)
+            erro = nil
+            preparando = false
         }
-        if escolhidas.count == 1, let peca = escolhidas.first {
-            let atributos = peca.termoIds.compactMap { rotulos[$0] }
-            itens.insert(CartaoCompartilhavel.imagem(
-                nome: peca.nome(comRotulos: rotulos), atributos: atributos), at: 0)
-        }
-        atividade = PacoteDeAtividade(itens: itens)
-        erro = nil
     }
 
     private func exportar(mercado: Bool) {
@@ -546,44 +550,47 @@ private struct CartaoDoArmario: View {
                 }
                 .buttonStyle(.plain)
 
-                HStack(spacing: 0) {
-                    Button(action: aoRenomear) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Tokens.Cor.noite)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel("Edit clothing name")
-
-                    Button(action: aoFavoritar) {
-                        Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
-                            .font(.system(size: 23, weight: .semibold))
-                            .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
-                }
-                .buttonStyle(.plain)
             }
 
-            if !temFoto {
-                Divider().opacity(0.32)
+            Divider().opacity(0.32)
+            HStack(spacing: 4) {
+                Button(action: aoFavoritar) {
+                    Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel((peca.favorita ?? false) ? "Remove from Favorites" : "Add to Favorites")
+
                 PhotosPicker(selection: $fotoEscolhida, matching: .images) {
                     HStack(spacing: 6) {
                         if processandoFoto {
                             ProgressView().controlSize(.small)
                         } else {
-                            Image(systemName: "photo.badge.plus")
+                            Image(systemName: temFoto ? "photo.on.rectangle" : "photo.badge.plus")
                         }
-                        Text("Add photo").lineLimit(1)
+                        Text(temFoto ? "Edit photo" : "Add photo").lineLimit(1)
                     }
                     .font(Tokens.Fonte.miudo.weight(.semibold))
                     .foregroundStyle(Tokens.Cor.acao)
                     .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .disabled(processandoFoto)
+
+                Menu {
+                    Button(action: aoRenomear) {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                    Button(role: .destructive, action: aoApagar) {
+                        Label("Delete from Closet", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("More item actions")
             }
         }
         .padding(10)

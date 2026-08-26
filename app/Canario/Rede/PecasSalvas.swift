@@ -30,13 +30,14 @@ import Foundation
 /// para índice, estado, z nem data de leitura, e o teste correspondente falha
 /// se alguém acrescentar um.
 ///
-/// ## Fica no aparelho
+/// ## Foto original nunca sai do aparelho
 ///
 /// A §34 não tem sincronização na v1. Grava em Application Support, excluído
 /// de backup. Desde A18, uma peça pode apontar para uma **miniatura local**:
 /// PNG transparente quando o recorte local é confiável, ou JPEG reamostrado
-/// quando não é; ambos sem metadados e apagados junto com a peça. A foto
-/// original continua não sendo copiada para o app.
+/// quando não é; ambos sem metadados e apagados junto com a peça. Para uma
+/// conta conectada, só essa miniatura reduzida pode ser sincronizada no bucket
+/// privado do usuário. A foto original continua não sendo copiada para o app.
 struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
 
     /// Estável entre execuções: é ele que a aba Comparar usa para escolher.
@@ -57,6 +58,10 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
     /// Nome opaco da miniatura local. Nunca contém caminho, URL de origem ou imagem
     /// em base64; `PecasSalvas` valida o nome antes de abrir.
     var miniaturaArquivo: String?
+    /// Impressão e formato da cópia privada já aceita pelo servidor. Ausentes
+    /// significam que uma miniatura local ainda precisa ser enviada.
+    var miniaturaHashRemoto: String?
+    var miniaturaExtensaoRemota: String?
     /// Escolha explícita do usuário. `nil` mantém compatibilidade com peças
     /// criadas antes de Favorites existir e não ocupa o JSON até ser usada.
     var favorita: Bool?
@@ -67,16 +72,20 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
     init(id: UUID = UUID(), apelido: String = "", termoIds: [String],
          precoAlvo: Double? = nil, canal: String? = nil,
          criadaEm: Date = Date(), miniaturaArquivo: String? = nil,
+         miniaturaHashRemoto: String? = nil,
+         miniaturaExtensaoRemota: String? = nil,
          favorita: Bool? = nil, similaresRejeitados: Bool? = nil,
          atualizadaEm: Date? = nil) {
         self.id = id
         self.apelido = apelido
-        self.termoIds = termoIds
+        self.termoIds = Traducao.idsCanonicos(termoIds)
         self.precoAlvo = precoAlvo
         self.canal = canal
         self.criadaEm = criadaEm
         self.atualizadaEm = atualizadaEm
         self.miniaturaArquivo = miniaturaArquivo
+        self.miniaturaHashRemoto = miniaturaHashRemoto
+        self.miniaturaExtensaoRemota = miniaturaExtensaoRemota
         self.favorita = favorita
         self.similaresRejeitados = similaresRejeitados
     }
@@ -84,7 +93,7 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
     /// Nome para a lista quando o usuário não deu um. Usa os rótulos vindos do
     /// servidor, e cai nos ids só se a taxonomia não estiver carregada.
     func nome(comRotulos rotulos: [String: String]) -> String {
-        if !apelido.trimmingCharacters(in: .whitespaces).isEmpty { return apelido }
+        if let apelido = NomeCompartilhavel.apelidoValido(apelido) { return apelido }
         let partes = termoIds.compactMap { rotulos[$0] ?? $0 }
         return partes.isEmpty ? "Item without attributes" : partes.joined(separator: " · ")
     }
@@ -109,7 +118,86 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
 
     /// Se a pessoa deu um nome à peça, ele manda no card.
     var temApelido: Bool {
-        !apelido.trimmingCharacters(in: .whitespaces).isEmpty
+        NomeCompartilhavel.apelidoValido(apelido) != nil
+    }
+}
+
+/// Contrato público e autocontido de uma peça compartilhada.
+///
+/// Não leva foto, leitura de mercado, identificador de usuário nem id interno
+/// do Closet. Quem recebe ganha uma nova peça local com os atributos que a
+/// outra pessoa decidiu compartilhar.
+struct PecaCompartilhada: Identifiable, Equatable, Sendable {
+    let id = UUID()
+    let nome: String
+    let termoIds: [String]
+
+    var url: URL? {
+        var componentes = URLComponents(string: "https://jogzdev.github.io/item/")
+        componentes?.queryItems = [
+            URLQueryItem(name: "v", value: "1"),
+            URLQueryItem(name: "name", value: nome),
+            URLQueryItem(name: "terms", value: termoIds.joined(separator: ",")),
+        ]
+        return componentes?.url
+    }
+
+    init(nome: String, termoIds: [String]) {
+        self.nome = String(nome.prefix(120))
+        self.termoIds = Array(Set(termoIds.filter(Self.idValido))).sorted()
+    }
+
+    init?(url: URL) {
+        guard url.scheme == "https", url.host == "jogzdev.github.io",
+              url.path == "/item" || url.path.hasPrefix("/item/") else { return nil }
+        let itens = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let valores = Dictionary(uniqueKeysWithValues: itens.map { ($0.name, $0.value ?? "") })
+        guard valores["v"] == "1",
+              let ids = valores["terms"]?.split(separator: ",").map(String.init),
+              !ids.isEmpty else { return nil }
+        self.init(nome: valores["name"] ?? "", termoIds: ids)
+        guard !termoIds.isEmpty else { return nil }
+    }
+
+    private static func idValido(_ id: String) -> Bool {
+        !id.isEmpty && id.count <= 80 && id.unicodeScalars.allSatisfy {
+            CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-")).contains($0)
+        }
+    }
+}
+
+/// Única fonte de verdade para o título que sai do Closet. Link, cartão e CSV
+/// não podem divergir nem promover todos os atributos a um nome gigantesco.
+enum NomeCompartilhavel {
+    /// Valores que já apareceram como instrução provisória de interface em
+    /// builds de desenvolvimento não podem virar o nome público da peça. O
+    /// dado local é preservado para que a pessoa ainda possa corrigi-lo em
+    /// Rename; somente Closet, link, cartão e CSV deixam de promovê-lo.
+    private static let placeholdersLegados: Set<String> = [
+        "replacing", "clothing name", "project name",
+    ]
+
+    static func apelidoValido(_ valor: String) -> String? {
+        let escrito = valor.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !escrito.isEmpty,
+              !placeholdersLegados.contains(escrito.lowercased()) else { return nil }
+        return escrito
+    }
+
+    /// A forma barata: o catálogo já está montado e a resolução é uma busca.
+    static func resolver(_ peca: PecaSalva, catalogo: CatalogoDoArmario) -> String {
+        if let escrito = apelidoValido(peca.apelido) { return escrito }
+        if let categoria = catalogo.categoria(de: peca) { return categoria }
+        return "Clothing item"
+    }
+
+    /// Conveniência para quem tem só a lista de termos em mãos. **Monta o
+    /// catálogo inteiro a cada chamada** — nunca use dentro de um laço de
+    /// interface: em 25/08 esta sobrecarga era chamada uma vez por linha da
+    /// lista de compartilhamento, refazendo um dicionário de 212 termos por
+    /// peça a cada passagem do `body`.
+    static func resolver(_ peca: PecaSalva, termos: [Termo]) -> String {
+        resolver(peca, catalogo: CatalogoDoArmario(termos: termos))
     }
 }
 
@@ -120,6 +208,11 @@ actor PecasSalvas {
     struct EstadoParaSincronizar: Sendable {
         let itens: [PecaSalva]
         let exclusoes: [UUID: Date]
+    }
+
+    struct MiniaturaParaSincronizar: Sendable {
+        let dados: Data
+        let extensao: String
     }
 
     /// Teto deliberado. O relatório da revisão imaginou 5000 peças; 5000 peças
@@ -212,6 +305,7 @@ actor PecasSalvas {
         guard existente != nil || itens.count < Self.teto else { return false }
 
         var salva = peca
+        salva.termoIds = Traducao.idsCanonicos(salva.termoIds)
         salva.atualizadaEm = Date()
         if salva.miniaturaArquivo == nil {
             salva.miniaturaArquivo = existente?.miniaturaArquivo
@@ -222,6 +316,12 @@ actor PecasSalvas {
                 apagarMiniatura(anterior)
             }
             salva.miniaturaArquivo = nome
+            // A imagem mudou. O hash anterior não pode declarar que a nova já
+            // chegou ao bucket; a extensão antiga fica para limpeza posterior.
+            salva.miniaturaHashRemoto = nil
+            if salva.miniaturaExtensaoRemota == nil {
+                salva.miniaturaExtensaoRemota = existente?.miniaturaExtensaoRemota
+            }
         }
         if let i = itens.firstIndex(where: { $0.id == peca.id }) {
             itens[i] = salva
@@ -238,6 +338,42 @@ actor PecasSalvas {
         carregarSeNecessario()
         guard let url = urlDaMiniatura(peca.miniaturaArquivo) else { return nil }
         return try? Data(contentsOf: url, options: .mappedIfSafe)
+    }
+
+    func miniaturaParaSincronizar(de peca: PecaSalva) -> MiniaturaParaSincronizar? {
+        carregarSeNecessario()
+        guard let url = urlDaMiniatura(peca.miniaturaArquivo),
+              let dados = try? Data(contentsOf: url, options: .mappedIfSafe),
+              !dados.isEmpty else { return nil }
+        let extensao = url.pathExtension.lowercased() == "png" ? "png" : "jpg"
+        return MiniaturaParaSincronizar(dados: dados, extensao: extensao)
+    }
+
+    /// Registra transporte concluído sem fabricar uma edição do usuário nem
+    /// disparar uma nova sincronização recursiva.
+    func registrarMiniaturaSincronizada(id: UUID, hash: String, extensao: String) {
+        carregarSeNecessario()
+        guard let indice = itens.firstIndex(where: { $0.id == id }) else { return }
+        itens[indice].miniaturaHashRemoto = hash
+        itens[indice].miniaturaExtensaoRemota = extensao
+        gravar()
+    }
+
+    /// Restaura a miniatura reduzida de uma conta sem alterar o relógio de
+    /// conflito dos atributos da peça.
+    func restaurarMiniaturaSincronizada(id: UUID, dados: Data,
+                                        hash: String, extensao: String) -> Bool {
+        carregarSeNecessario()
+        guard let indice = itens.firstIndex(where: { $0.id == id }),
+              let nome = gravarMiniatura(dados, id: id) else { return false }
+        if let anterior = itens[indice].miniaturaArquivo, anterior != nome {
+            apagarMiniatura(anterior)
+        }
+        itens[indice].miniaturaArquivo = nome
+        itens[indice].miniaturaHashRemoto = hash
+        itens[indice].miniaturaExtensaoRemota = extensao
+        gravar()
+        return true
     }
 
     func apagar(_ id: UUID) {
@@ -281,8 +417,8 @@ actor PecasSalvas {
             if let exclusaoLocal, exclusaoLocal >= dataRemota { continue }
             if dataLocal == nil || dataRemota > dataLocal! {
                 var mesclado = remoto
-                // Foto nunca vem da nuvem. Uma edição estrutural remota não
-                // pode apagar a referência da miniatura que este aparelho tem.
+                // A miniatura chega por uma rota privada separada. Uma edição
+                // estrutural não apaga o arquivo que este aparelho já tem.
                 mesclado.miniaturaArquivo = local?.miniaturaArquivo
                 porId[remoto.id] = mesclado
                 if exclusaoLocal != nil { exclusoes.removeValue(forKey: remoto.id) }
@@ -309,7 +445,12 @@ actor PecasSalvas {
         if let arquivo, let dados = try? Data(contentsOf: arquivo) {
             // Arquivo corrompido não derruba o app nem apaga o que sobrou:
             // começa vazio e a próxima gravação reescreve.
-            itens = (try? JSONDecoder().decode([PecaSalva].self, from: dados)) ?? []
+            itens = ((try? JSONDecoder().decode([PecaSalva].self, from: dados)) ?? [])
+                .map { peca in
+                    var normalizada = peca
+                    normalizada.termoIds = Traducao.idsCanonicos(peca.termoIds)
+                    return normalizada
+                }
         }
         if let arquivoDeExclusoes,
            let dados = try? Data(contentsOf: arquivoDeExclusoes),

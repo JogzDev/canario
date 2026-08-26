@@ -1,49 +1,6 @@
 import SwiftUI
 import UIKit
 
-/// Contrato público e autocontido de uma peça compartilhada.
-///
-/// Não leva foto, leitura de mercado, identificador de usuário nem id interno
-/// do Closet. Quem recebe ganha uma nova peça local com os atributos que a
-/// outra pessoa decidiu compartilhar.
-struct PecaCompartilhada: Identifiable, Equatable, Sendable {
-    let id = UUID()
-    let nome: String
-    let termoIds: [String]
-
-    var url: URL? {
-        var c = URLComponents(string: "https://jogzdev.github.io/item/")
-        c?.queryItems = [
-            URLQueryItem(name: "v", value: "1"),
-            URLQueryItem(name: "name", value: nome),
-            URLQueryItem(name: "terms", value: termoIds.joined(separator: ",")),
-        ]
-        return c?.url
-    }
-
-    init(nome: String, termoIds: [String]) {
-        self.nome = String(nome.prefix(120))
-        self.termoIds = Array(Set(termoIds.filter(Self.idValido))).sorted()
-    }
-
-    init?(url: URL) {
-        guard url.scheme == "https", url.host == "jogzdev.github.io",
-              url.path == "/item" || url.path.hasPrefix("/item/") else { return nil }
-        let itens = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        let valores = Dictionary(uniqueKeysWithValues: itens.map { ($0.name, $0.value ?? "") })
-        guard valores["v"] == "1", let ids = valores["terms"]?.split(separator: ",").map(String.init),
-              !ids.isEmpty else { return nil }
-        self.init(nome: valores["name"] ?? "", termoIds: ids)
-        guard !termoIds.isEmpty else { return nil }
-    }
-
-    private static func idValido(_ id: String) -> Bool {
-        !id.isEmpty && id.count <= 80 && id.unicodeScalars.allSatisfy {
-            CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-")).contains($0)
-        }
-    }
-}
-
 @MainActor
 final class CentralDeLinksCompartilhados: ObservableObject {
     static let shared = CentralDeLinksCompartilhados()
@@ -72,7 +29,7 @@ enum ExportadorDoCloset {
         for peca in pecas {
             let atributos = peca.termoIds.compactMap { porId[$0].map(Traducao.rotuloExibido) }
             var linha = [
-                peca.nome(comRotulos: Dictionary(uniqueKeysWithValues: termos.map { ($0.id, Traducao.rotuloExibido($0)) })),
+                NomeCompartilhavel.resolver(peca, termos: termos),
                 atributos.joined(separator: " · "),
                 peca.termoIds.joined(separator: "|"),
                 (peca.favorita ?? false) ? "yes" : "no",
@@ -107,24 +64,41 @@ enum ExportadorDoCloset {
 
 enum CartaoCompartilhavel {
     @MainActor
-    static func imagem(nome: String, atributos: [String]) -> UIImage {
+    static func imagem(nome: String, atributos: [String], miniatura: UIImage? = nil) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1080, height: 1350))
         return renderer.image { contexto in
             UIColor(red: 0.96, green: 0.94, blue: 0.91, alpha: 1).setFill()
             contexto.fill(CGRect(x: 0, y: 0, width: 1080, height: 1350))
+            let temFoto = miniatura != nil
+            if let miniatura {
+                let destino = retanguloAspectFit(
+                    tamanho: miniatura.size,
+                    dentroDe: CGRect(x: 90, y: 80, width: 900, height: 650))
+                miniatura.draw(in: destino)
+            }
             let titulo = NSAttributedString(string: nome.isEmpty ? "A piece from my Closet" : nome,
                 attributes: [.font: UIFont.systemFont(ofSize: 72, weight: .bold),
                              .foregroundColor: UIColor.black])
-            titulo.draw(in: CGRect(x: 90, y: 210, width: 900, height: 250))
+            titulo.draw(in: CGRect(x: 90, y: temFoto ? 760 : 210, width: 900, height: 190))
             let detalhe = NSAttributedString(string: atributos.joined(separator: "  ·  "),
                 attributes: [.font: UIFont.systemFont(ofSize: 40, weight: .regular),
                              .foregroundColor: UIColor.darkGray])
-            detalhe.draw(in: CGRect(x: 90, y: 510, width: 900, height: 430))
+            detalhe.draw(in: CGRect(x: 90, y: temFoto ? 930 : 510, width: 900,
+                                    height: temFoto ? 180 : 430))
             NSAttributedString(string: "DATADROBE", attributes: [
                 .font: UIFont.systemFont(ofSize: 34, weight: .semibold),
                 .foregroundColor: UIColor.black,
             ]).draw(at: CGPoint(x: 90, y: 1160))
         }
+    }
+
+    private static func retanguloAspectFit(tamanho: CGSize, dentroDe limite: CGRect) -> CGRect {
+        guard tamanho.width > 0, tamanho.height > 0 else { return limite }
+        let escala = min(limite.width / tamanho.width, limite.height / tamanho.height)
+        let novo = CGSize(width: tamanho.width * escala, height: tamanho.height * escala)
+        return CGRect(x: limite.midX - novo.width / 2,
+                      y: limite.midY - novo.height / 2,
+                      width: novo.width, height: novo.height)
     }
 }
 

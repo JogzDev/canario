@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 25/08/2026 às 03:00 BRT.** Esta lista substitui a triagem de
+**Atualizado em 26/08/2026 às 00:20 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Bloqueio externo — depende do Figma
@@ -8,6 +8,24 @@
 1. **Pacote visual do Figma.** Aplicar as novas telas e os assets finais. A
    hierarquia do Market panel e a redução de texto em “Which item” ficam nesta
    etapa para não desenhar duas vezes a mesma interface.
+
+## Depende só de um deploy — não espera o Figma
+
+- **Publicar a Edge Function `excluir-conta` corrigida.** A versão em produção
+  ainda apaga o usuário sem purgar `closet-thumbnails`, então miniatura
+  sobrevive à exclusão da conta. O código já está no repositório e o portão
+  `teste_privacidade_declarada.py` cobre a regressão; falta o
+  `supabase functions deploy excluir-conta`, pelo mesmo caminho do
+  [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md). Depois do deploy,
+  criar uma conta técnica, salvar uma peça com foto, excluir a conta e conferir
+  que o bucket ficou sem objeto daquele `auth.uid`.
+
+## Trabalho local do JP ainda não commitado
+
+- `app/Canario/Localizable.xcstrings` tem **212 chaves** na cópia local e **145**
+  no repositório. `FICHA_APP_STORE_1.1.md`, `POLITICA_PUBLICA_1.1.md`,
+  `SONDA_CANDIDATAS.md` e `capturas_1.1/` também estão só na máquina. Nenhum
+  deles entrou em commit de agente, de propósito; decidir o que versionar é seu.
 
 ## Fechamento de release — depois do Figma
 
@@ -19,6 +37,27 @@
   TestFlight e repetir os fluxos críticos no binário distribuído.
 - Atualizar capturas e metadata da App Store com as telas finais; só então
   submeter a 1.2 para revisão.
+
+## Para a virada de temporada — não mexer antes da 1.2
+
+- **`papel = grupo` conta como mercado externo, e não deveria.** A
+  [`CANARIO.md`](CANARIO.md) diz, na linha 145, que Farm, Animale, Maria Filó e
+  NV são autobenchmark e *"nunca contam como 'mercado externo' nos índices"*.
+  Mas `computar_serie_varejo` monta a população só com
+  `where p.segmento is not null` — não há join com `marcas` nem filtro por
+  `papel`. Só a **contagem** de marcas do portão de cobertura exclui o grupo.
+  Então os produtos dessas quatro marcas entram no denominador e em todo share
+  de `feminino_casual_br`. Isso é divergência entre a regra escrita e o código,
+  medida em 26/08, e vale independentemente de qualquer marca nova.
+  **Não corrigir agora:** o conserto muda todo share histórico, que é operação
+  de virada com recomputação, e o banco está em 90,9% do teto gratuito.
+- **Promover as 13 candidatas ao painel medido.** Elas já entregam o benefício
+  visível (similares com foto, preço e marca) de dentro de
+  `catalogo_candidato_br`, sem tocar em índice, raridade ou z-score. Promovê-las
+  exige virada explícita, recomputação e folga de banco — nesta ordem.
+- **Corrigir o viés de composição antes de crescer.** C&A é ~53% do painel, e
+  hoje o share é calculado por SKU, então a maior marca domina por volume. Média
+  entre marcas com peso por papel resolve isso melhor do que adicionar marcas.
 
 ## Validações posteriores, não bloqueadoras da implementação
 
@@ -35,10 +74,12 @@
   declare contexto de roupa. Flores pessoais, unhas, casamento e calçados
   continuam excluídos. A próxima expansão de fonte deve ser guiada por recall
   feminino medido, nunca pela necessidade de fabricar um número para essa tela.
-- **Malwee permanece inativa.** As outras 12 candidatas já entregam 14.678
-  produtos elegíveis sem contaminar o painel. Malwee só entra depois de medir o
-  espaço marginal do catálogo completo; não bloqueia a 1.2 nem a expansão já
-  entregue.
+- **Malwee recuperada e coletada.** O domínio oficial abriu no VTEX público,
+  com cerca de 14.450 produtos brutos e `robots.txt` respeitado. O recorte
+  elegível fechou em 3.082 visitados = 3.082 declarados; o retry alterou somente
+  duas linhas. Ela está em `catalogo_candidato_br`, portanto amplia similares
+  sem mudar a coorte medida. O banco ficou em 90,9%, ainda gratuito, e o portão
+  continua bloqueando qualquer expansão que leve a margem a uma zona insegura.
 
 ## Entregue na 1.2 antes do Figma
 
@@ -50,15 +91,19 @@
   **#5525910** recebeu a confirmação e foi respondido como resolvido; usuários
   técnicos de teste foram apagados.
 - Login opcional com Apple, Google e e-mail/senha; recuperação, logout, exclusão,
-  Keychain, RLS e sincronização offline-first do Closet.
+  Keychain, RLS e sincronização offline-first do Closet. Miniaturas reduzidas
+  sincronizam em bucket privado com hash; a foto original permanece local.
 - Banco estabilizado no plano gratuito: estado volátil em tabela estreita,
   retenção segura de snapshots e recuperação do inchaço sem apagar séries.
 - Um botão de compartilhar com bottom sheet, links autocontidos, Universal Link,
   fallback da App Store, card social e CSV de uma peça, seleção ou Closet inteiro,
-  com opção de incluir leitura de mercado e sua data.
+  com opção de incluir leitura de mercado e sua data. Card social inclui a foto;
+  card, link e planilha usam o mesmo nome canônico e não expõem placeholders
+  legados como “Replacing”.
 - Nome visível/editável, busca e filtro local do Closet por favorito e atributos.
-- Depois de Fill the Info, Clothing Details abre em tela cheia; Add to Closet
-  fica no canto superior esquerdo com instrução explícita. A busca do Closet é
+- Depois de Fill the Info, a confirmação final abre como página, reúne nome,
+  atributos e Add to Closet, sem repetir Clothing Details. Voltar preserva foto
+  e análise, sem nova chamada à visão quando nada mudou. A busca do Closet é
   o drawer recolhível nativo, o canto esquerdo virou menu de três pontos e o
   Compare passou para Weekly Trends.
 - Similares com foto no alto do relatório, polo como camisa, relaxamento declarado
@@ -71,11 +116,30 @@
 - Painel `direcao_intl` isolado com Doen, Rouje, Staud, Faithfull the Brand e
   With Jean: 4.956 itens visitados, 3.768 produtos elegíveis e zero produto das
   cinco marcas fora do segmento, comprovados pelo portão de produção.
-- 242 testes Swift, portões Python e sete fluxos de UI (incluindo o filtro do
-  Closet) verdes no ambiente local.
-- Editorial recomposto em produção: 11.179 pontos BR, 5.764 internacionais,
-  16.287 pares artigo/termo e filtro masculino aplicado ao arquivo inteiro.
-- Catálogo candidato brasileiro com 12 marcas, 14.678 produtos elegíveis,
-  1.698 exclusões de população e zero vazamento para outro segmento.
-- Banco no plano gratuito em 422.145.171 / 500.000.000 bytes (84,4%), com
+- 257 testes Swift, 31 portões Python e oito fluxos de UI (incluindo o filtro do
+  Closet e a confirmação final) verdes no ambiente local; build de simulador
+  verde.
+- Travamento do Closet resolvido na causa: rótulos e filtro saíram do `body`
+  para `CanarioLogica`. Medido em 200 peças e 212 termos, vinte passagens do
+  `body` caíram de **3,215 s para 0,023 s** (142×), e o orçamento virou portão.
+  Weekly Trends e a lista de favoritos tinham o mesmo padrão e foram corrigidos
+  junto. A espera da análise remota avisa depois de 8 s em vez de repetir
+  "usually takes a few seconds" até o teto de 30 s.
+- Botão Add centralizado por geometria: quadro, manequim, disco e `+` em
+  x = 50,000, conferido a cada push por `teste_experiencia_app.py`.
+- Privacidade declarada reconciliada com o binário e coberta por portão novo
+  (`teste_privacidade_declarada.py`); `excluir-conta` passa a purgar as
+  miniaturas antes de apagar o usuário.
+- Pacote de 26 reclamações e quatro ressalvas fechado no código: consentimento
+  de visão persistente, teclado e Add alinhado, sete badges, cards do Closet,
+  evidência editorial da janela, comparação com cobertura real, tradução
+  residual, taxonomia sem duplicidade de knit, animal print destacado e URL de
+  produto com imagem carregada sem bloquear a interface.
+- Editorial recomposto em produção: 11.184 pontos BR e 5.955 internacionais;
+  filtro masculino aplicado ao arquivo inteiro. Foram classificados 86.095
+  artigos femininos, 50.755 neutros e 33.976 masculinos. Motor publicado com
+  109.543 produtos e 266.623 ligações.
+- Catálogo candidato brasileiro com as 12 marcas anteriores mais 3.082 produtos
+  elegíveis da Malwee; a prova de isolamento em produção fecha esta entrega.
+- Banco no plano gratuito em 454.364.307 / 500.000.000 bytes (90,9%), com
   retenção permanente de 21 dias no cru e séries históricas preservadas.

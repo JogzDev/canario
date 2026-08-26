@@ -196,6 +196,17 @@ def main():
     print("Marcas a testar: {} (as de papel `direcao` sao `nao_se_aplica` e ficam fora)".format(
         len(pendentes)), file=sys.stderr)
 
+    # Este arquivo tambem e descoberto pelos portoes locais pelo prefixo
+    # `teste_`. Sem candidatas pendentes, nao ha trabalho operacional e,
+    # sobretudo, nao devemos reescrever o CSV inteiro apenas para trocar seus
+    # finais de linha. Isso mantem uma rodada de testes estritamente read-only.
+    if not pendentes:
+        print(json.dumps({
+            "executado_em": datetime.now(timezone.utc).isoformat(),
+            "resultados": [],
+        }, ensure_ascii=False, indent=2))
+        return
+
     with ThreadPoolExecutor(max_workers=8) as pool:
         resultados = list(pool.map(lambda l: testar_marca(l["marca"]), pendentes))
 
@@ -217,7 +228,12 @@ def main():
     campos = ["marca", "dominio", "segmento", "papel", "justificativa",
               "status_teste", "data_teste", "detalhe_teste"]
     with open(PAINEL, "w", newline="", encoding="utf-8") as f:
-        escritor = csv.DictWriter(f, fieldnames=campos, extrasaction="ignore")
+        escritor = csv.DictWriter(
+            f,
+            fieldnames=campos,
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         escritor.writeheader()
         escritor.writerows(linhas)
 

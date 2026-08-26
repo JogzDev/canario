@@ -196,8 +196,10 @@ final class EstadoTests: XCTestCase {
         // §8: a interface declara quais pernas sustentam o número.
         XCTAssertEqual(Perna.frase(["busca", "editorial_br"]),
                        "based on: search + Brazilian editorial")
-        XCTAssertEqual(Perna.frase([]), "no active source")
-        XCTAssertEqual(Perna.frase(nil), "no active source")
+        XCTAssertEqual(Perna.frase([]),
+                       "no qualified combined external reading for this week")
+        XCTAssertEqual(Perna.frase(nil),
+                       "no qualified combined external reading for this week")
     }
 }
 

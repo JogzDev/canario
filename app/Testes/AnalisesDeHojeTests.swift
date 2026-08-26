@@ -102,4 +102,22 @@ final class AnalisesDeHojeTests: XCTestCase {
         XCTAssertLessThan(ContadorDeAnalises.avisarAPartirDe,
                           ContadorDeAnalises.tetoPorRede)
     }
+
+    func testConsentimentoVisualComecaPerguntandoEPersisteAEscolha() async {
+        let arquivo = FileManager.default.temporaryDirectory
+            .appendingPathComponent("visual-pref-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: arquivo) }
+
+        let primeira = PreferenciasDaAnaliseVisual(arquivo: arquivo)
+        let preferenciaInicial = await primeira.preferencia()
+        XCTAssertEqual(preferenciaInicial, .perguntar)
+        await primeira.definir(.nuvem)
+
+        let reaberta = PreferenciasDaAnaliseVisual(arquivo: arquivo)
+        let preferenciaReaberta = await reaberta.preferencia()
+        XCTAssertEqual(preferenciaReaberta, .nuvem)
+        await reaberta.definir(.aparelho)
+        let preferenciaFinal = await reaberta.preferencia()
+        XCTAssertEqual(preferenciaFinal, .aparelho)
+    }
 }

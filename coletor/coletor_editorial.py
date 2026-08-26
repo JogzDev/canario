@@ -390,6 +390,17 @@ def main():
         janela = [crua.get((termo_id, fonte, semana - timedelta(weeks=w)), 0)
                   for w in range(JANELA_SEMANAS)]
         contagem_crua = crua.get((termo_id, fonte, semana), 0)
+        veiculos_da_janela = defaultdict(int)
+        exemplos_da_janela = []
+        urls_de_exemplo = set()
+        for w in range(JANELA_SEMANAS):
+            celula_janela = (termo_id, fonte, semana - timedelta(weeks=w))
+            for veiculo, quantidade in veiculos_por_celula[celula_janela].items():
+                veiculos_da_janela[veiculo] += quantidade
+            for exemplo in exemplos[celula_janela]:
+                if exemplo["url"] not in urls_de_exemplo and len(exemplos_da_janela) < 3:
+                    urls_de_exemplo.add(exemplo["url"])
+                    exemplos_da_janela.append(exemplo)
         linhas.append({
             "termo_id": termo_id, "segmento": SEGMENTO, "fonte": fonte,
             "semana": semana.isoformat(),
@@ -419,9 +430,9 @@ def main():
                      "contagem_semana_crua": contagem_crua,
                      "unidade": "materias que citaram o termo",
                      "veiculos": dict(sorted(
-                         veiculos_por_celula[(termo_id, fonte, semana)].items(),
+                         veiculos_da_janela.items(),
                          key=lambda kv: (-kv[1], kv[0]))),
-                     "exemplos": exemplos[(termo_id, fonte, semana)],
+                     "exemplos": exemplos_da_janela,
                      "contexto_editorial": "moda_declarada_no_titulo",
                      "obs": "valor_bruto e a media da janela de 4 semanas (§18); "
                             "a semana crua serve ao estado `pico` (C4)",

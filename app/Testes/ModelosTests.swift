@@ -32,4 +32,15 @@ final class ModelosTests: XCTestCase {
         XCTAssertEqual(Perna.frase(["editorial_br", "varejo"]),
                        "based on: Brazilian editorial + retail")
     }
+
+    func testSeteFaixasVisuaisCobremOsLimiaresSemBuracos() {
+        XCTAssertEqual(Leitura.faixa(2), .muitoAcima)
+        XCTAssertEqual(Leitura.faixa(1), .acima)
+        XCTAssertEqual(Leitura.faixa(0.35), .poucoAcima)
+        XCTAssertEqual(Leitura.faixa(0), .habitual)
+        XCTAssertEqual(Leitura.faixa(-0.35), .poucoAbaixo)
+        XCTAssertEqual(Leitura.faixa(-1), .abaixo)
+        XCTAssertEqual(Leitura.faixa(-2), .muitoAbaixo)
+        XCTAssertEqual(Set(Leitura.Faixa.allCases.map(\.rotulo)).count, 7)
+    }
 }

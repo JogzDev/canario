@@ -294,7 +294,7 @@ struct ContaDoMenu: View {
                 .foregroundStyle(Tokens.Cor.azulMarca)
             Text("Take your Closet with you")
                 .font(.title2.bold())
-            Text("Sign in to restore item details and keep them in sync. Photos stay on this iPhone.")
+            Text("Sign in to restore item details and their private, metadata-free thumbnails. Original photos stay on this iPhone.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
@@ -349,7 +349,7 @@ struct ContaDoMenu: View {
             BlocoInformativo(
                 icone: "arrow.triangle.2.circlepath.icloud",
                 titulo: "Offline-first sync",
-                texto: "Item details are kept on this iPhone first and synchronized when a connection is available. Photos remain local in this version.")
+                texto: "Item details stay on this iPhone first and synchronize when a connection is available. Only reduced, metadata-free thumbnails use your private cloud space; original photos remain local.")
 
             if let ultima = conta.ultimaSincronizacao {
                 Label("Last synced \(ultima.formatted(date: .abbreviated, time: .shortened))",
@@ -417,6 +417,9 @@ private struct EntradaPorEmail: View {
     @State private var modo: Modo = .entrar
     @State private var email = ""
     @State private var senha = ""
+    @FocusState private var campoEmFoco: Campo?
+
+    private enum Campo { case email, senha }
 
     var body: some View {
         NavigationStack {
@@ -432,19 +435,21 @@ private struct EntradaPorEmail: View {
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .submitLabel(.next)
+                        .focused($campoEmFoco, equals: .email)
+                        .onSubmit { campoEmFoco = .senha }
                     SecureField("Password", text: $senha)
                         .textContentType(modo == .criar ? .newPassword : .password)
+                        .submitLabel(.go)
+                        .focused($campoEmFoco, equals: .senha)
+                        .onSubmit { enviar() }
                 } footer: {
                     Text("Use at least 10 characters. DataDrobe never stores your password itself.")
                 }
 
                 Section {
                     Button(modo.rawValue) {
-                        if modo == .entrar {
-                            conta.entrar(email: email, senha: senha)
-                        } else {
-                            conta.cadastrar(email: email, senha: senha)
-                        }
+                        enviar()
                     }
                     .disabled(email.isEmpty || senha.isEmpty || conta.trabalhando)
 
@@ -460,10 +465,24 @@ private struct EntradaPorEmail: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { campoEmFoco = nil }
+                }
             }
             .onChange(of: conta.sessao) { _, nova in
                 if nova != nil { dismiss() }
             }
+        }
+    }
+
+    private func enviar() {
+        guard !email.isEmpty, !senha.isEmpty, !conta.trabalhando else { return }
+        campoEmFoco = nil
+        if modo == .entrar {
+            conta.entrar(email: email, senha: senha)
+        } else {
+            conta.cadastrar(email: email, senha: senha)
         }
     }
 }
