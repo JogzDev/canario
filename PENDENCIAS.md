@@ -38,6 +38,27 @@
 - Atualizar capturas e metadata da App Store com as telas finais; só então
   submeter a 1.2 para revisão.
 
+## Para a virada de temporada — não mexer antes da 1.2
+
+- **`papel = grupo` conta como mercado externo, e não deveria.** A
+  [`CANARIO.md`](CANARIO.md) diz, na linha 145, que Farm, Animale, Maria Filó e
+  NV são autobenchmark e *"nunca contam como 'mercado externo' nos índices"*.
+  Mas `computar_serie_varejo` monta a população só com
+  `where p.segmento is not null` — não há join com `marcas` nem filtro por
+  `papel`. Só a **contagem** de marcas do portão de cobertura exclui o grupo.
+  Então os produtos dessas quatro marcas entram no denominador e em todo share
+  de `feminino_casual_br`. Isso é divergência entre a regra escrita e o código,
+  medida em 26/08, e vale independentemente de qualquer marca nova.
+  **Não corrigir agora:** o conserto muda todo share histórico, que é operação
+  de virada com recomputação, e o banco está em 90,9% do teto gratuito.
+- **Promover as 13 candidatas ao painel medido.** Elas já entregam o benefício
+  visível (similares com foto, preço e marca) de dentro de
+  `catalogo_candidato_br`, sem tocar em índice, raridade ou z-score. Promovê-las
+  exige virada explícita, recomputação e folga de banco — nesta ordem.
+- **Corrigir o viés de composição antes de crescer.** C&A é ~53% do painel, e
+  hoje o share é calculado por SKU, então a maior marca domina por volume. Média
+  entre marcas com peso por papel resolve isso melhor do que adicionar marcas.
+
 ## Validações posteriores, não bloqueadoras da implementação
 
 - **Calibração Luna somente com amostra nova.** A taxonomia expandida da 1.2
