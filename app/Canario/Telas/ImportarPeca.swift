@@ -437,6 +437,14 @@ struct ImportarPeca: View {
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
+        // A tela cabe inteira desde que o card da foto encolheu, mas a
+        // `ScrollView` continuava aceitando o puxão e mostrando uma faixa
+        // branca embaixo -- parecia conteúdo cortado que não existe.
+        // `.basedOnSize` desliga o repique **só quando o conteúdo cabe**: com
+        // Dynamic Type grande, quando ele deixa de caber, a rolagem volta
+        // sozinha. Tirar a `ScrollView` daria a mesma tela estática e deixaria
+        // o botão inalcançável em texto grande, que é caso de aceite da 1.2.
+        .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -482,21 +490,32 @@ struct ImportarPeca: View {
                 .frame(maxWidth: .infinity, minHeight: area.size.height)
             }
         }
-        .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    precoEmFoco = false
-                    dicaDoAlvoEmFoco = false
-                    nomeDaPecaEmFoco = false
-                }
-            }
-        }
+        // Sem barra de teclado: esta tela tem três botões e nenhum campo
+        // desde que o preço desceu para a tela de atributos.
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     /// Tela 3: o que o app leu, já marcado, para a pessoa corrigir.
     private var telaDeAtributos: some View {
+        telaDeAtributosSemTeclado
+            // O `intended price` desceu para esta tela em 26/08 e o teclado
+            // dele veio sem saída: `decimalPad` não tem tecla de retorno, e a
+            // barra de "Done" tinha ficado na tela de entrada, que já não tem
+            // campo nenhum. Sem isto, quem digitasse o preço ficava com meia
+            // tela coberta e nenhum jeito óbvio de fechar.
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        precoEmFoco = false
+                        nomeDaPecaEmFoco = false
+                    }
+                }
+            }
+    }
+
+    private var telaDeAtributosSemTeclado: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
                 if let miniaturaJPEG {
