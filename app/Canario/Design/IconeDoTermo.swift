@@ -70,12 +70,20 @@ private struct AmostraDeCor: View {
 struct BotaoDeAtributo: View {
     let termo: Termo
     let ativo: Bool
+    /// Célula estreita, para caber cinco por linha.
+    ///
+    /// Dez cores em quatro colunas dão três fileiras desiguais (4+4+2) e leem
+    /// como lista; em cinco dão duas fileiras cheias e leem como **paleta**,
+    /// que é o que a pessoa está varrendo. Pedido do Davi, e ele tem razão.
+    var compacto = false
     /// 1, 2 ou 3 quando este termo ocupa uma posição de prioridade. `nil` em
     /// toda dimensão que não é cor.
     var prioridade: Int?
     let acao: () -> Void
 
     private var ehCor: Bool { termo.dimensao == "cor" }
+    private var lado: CGFloat { compacto ? 52 : 60 }
+    private var larguraDoRotulo: CGFloat { compacto ? 62 : 76 }
 
     var body: some View {
         Button(action: acao) {
@@ -83,19 +91,20 @@ struct BotaoDeAtributo: View {
                 ZStack {
                     Circle()
                         .fill(ehCor ? Color.clear : Tokens.Cor.ceu)
-                        .frame(width: 60, height: 60)
-                    IconeDoTermo(termoId: termo.id, lado: ehCor ? 52 : 26)
+                        .frame(width: lado, height: lado)
+                    IconeDoTermo(termoId: termo.id,
+                                 lado: ehCor ? lado * 0.87 : lado * 0.43)
                         .foregroundStyle(Tokens.Cor.noite)
                     if ativo {
                         Circle()
                             .strokeBorder(Tokens.Cor.acao, lineWidth: 3)
-                            .frame(width: 60, height: 60)
+                            .frame(width: lado, height: lado)
                     }
                     if let prioridade {
                         MarcaDePrioridade(posicao: prioridade)
                     }
                 }
-                .frame(width: 60, height: 60)
+                .frame(width: lado, height: lado)
 
                 Text(Traducao.rotuloExibido(termo))
                     .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -107,7 +116,7 @@ struct BotaoDeAtributo: View {
                     // um pouco é menos feio que partir palavra.
                     .minimumScaleFactor(0.78)
                     .multilineTextAlignment(.center)
-                    .frame(width: 76)
+                    .frame(width: larguraDoRotulo)
 
                 // "Romantic" pede gosto; "ruffle · lace · puff sleeve" pede
                 // olhar. A legenda veio dos chips antigos e não podia sumir na
@@ -120,7 +129,7 @@ struct BotaoDeAtributo: View {
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
                         .multilineTextAlignment(.center)
-                        .frame(width: 76)
+                        .frame(width: larguraDoRotulo)
                 }
             }
         }
@@ -161,11 +170,16 @@ private struct MarcaDePrioridade: View {
     let posicao: Int
 
     var body: some View {
+        // Disco cheio, sem contorno próprio. A versão anterior tinha anel, e
+        // com o anel azul da seleção em volta o conjunto virava um alvo de
+        // tiro -- dois círculos concêntricos azuis sobre a cor. Azul sólido
+        // com número branco resolve os dois problemas de uma vez: some o anel
+        // repetido e o contraste passa a funcionar sobre qualquer amostra,
+        // inclusive preto e branco e cru, que eram os dois casos difíceis.
         Text("\(posicao)")
-            .font(.system(size: 22, weight: .bold, design: .rounded))
-            .foregroundStyle(Tokens.Cor.acao)
-            .frame(width: 34, height: 34)
-            .background(Circle().fill(Tokens.Cor.fundo))
-            .overlay(Circle().strokeBorder(Tokens.Cor.acao, lineWidth: 2.5))
+            .font(.system(size: 19, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+            .frame(width: 30, height: 30)
+            .background(Circle().fill(Tokens.Cor.acao))
     }
 }

@@ -114,6 +114,12 @@ struct ImportarPeca: View {
     /// que tem dimensão própria.
     static let tetoDeCores = 3
 
+    /// Neutros, depois cromáticos. Dois blocos de cinco.
+    static let ordemDasCores = [
+        "preto", "cinza", "branco_cru", "terrosos", "outras_cores",
+        "vermelho_rosa", "amarelo_laranja", "verde", "azul", "lilas_roxo",
+    ]
+
     @State private var etapa = Etapa.entrada
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
@@ -311,12 +317,17 @@ struct ImportarPeca: View {
 
     private var confirmacaoDoAlvo: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 14) {
                 // 1. Imagem Principal em Destaque (Fundo Azul Claro, sem borda)
                 if let escolhida = opcaoEscolhida {
+                    // 240, e não 300: com o card maior a tela pedia rolagem
+                    // para chegar no botão que é a razão dela existir, o que o
+                    // Davi apontou no teste de 27/08. A foto continua sendo o
+                    // maior elemento da tela; ela só parou de empurrar a ação
+                    // para fora.
                     PreviaDoAlvo(dados: escolhida.dados,
                                  id: escolhida.id,
-                                 altura: 300,
+                                 altura: 240,
                                  selecionada: false,
                                  corDeFundo: corDestaque,
                                  raio: Tokens.Raio.cartaoGrande)
@@ -503,18 +514,21 @@ struct ImportarPeca: View {
                         explicacao: erro,
                         oQueTem: "You can select the attributes below and continue.")
                 }
-                Cartao {
-                    Text("Name this item").font(Tokens.Fonte.secao)
-                    TextField("Clothing name (optional)", text: $nomeDaPeca)
-                        .textInputAutocapitalization(.sentences)
-                        .submitLabel(.done)
-                        .focused($nomeDaPecaEmFoco)
-                        .onSubmit { nomeDaPecaEmFoco = false }
-                    LinhaInsumo(texto: "If left blank, Closet, links and spreadsheets use the confirmed category.")
-                }
-                if !procedencia.isEmpty { oQueLi }
                 atributos
                 precoOpcional
+                // A procedência desceu para cá, e recolhida.
+                //
+                // Ela ficava entre o nome e a grade, aberta, com quatro
+                // bullets de evidência e o texto da marca -- e no teste em
+                // aparelho de 27/08 o primeiro atributo tocável só apareceu
+                // depois de duas telas de rolagem. O Davi foi direto: "a
+                // pessoa precisa conseguir ir direto pros ajustes".
+                //
+                // A regra 3 continua valendo: saber de onde saiu cada
+                // marcação não é opcional. O que muda é que ela deixa de ser
+                // leitura OBRIGATÓRIA antes da ação e vira leitura disponível
+                // a um toque, depois dela.
+                if !procedencia.isEmpty { oQueLi }
                 // O preenchimento não termina em "guardar": termina em ver.
                 // Guardar passa a ser a decisão tomada na tela seguinte, com a
                 // leitura de mercado à vista -- que é a ordem em que a
@@ -595,9 +609,15 @@ struct ImportarPeca: View {
 
     private var oQueLi: some View {
         Cartao {
-            Text("What I read from this file").font(Tokens.Fonte.secao)
-            ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
-            LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                    ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
+                    LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
+                }
+                .padding(.top, Tokens.Espaco.s)
+            } label: {
+                Text("What I read from this file").font(Tokens.Fonte.secao)
+            }
         }
     }
 
@@ -605,22 +625,50 @@ struct ImportarPeca: View {
         VStack(alignment: .leading, spacing: 24) {
             HStack {
                 Text("Describe your item attributes")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(.headline, design: .rounded))
                 Spacer()
                 if !detectados.isEmpty {
                     Button("Clear") { limparAtributos() }
                         .font(Tokens.Fonte.miudo)
                 }
             }
+
+            // Uma linha no lugar de um relatório. Ela diz as duas coisas que
+            // a pessoa precisa saber para agir: já veio preenchido, e mexer é
+            // esperado. O texto é do Davi, quase palavra por palavra.
+            Text("We've selected what we identified — adjust anything that looks off.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+
+            // O nome fica aqui, entre o convite e a grade, como no Figma: é o
+            // único campo digitado da tela e some se ficar espremido entre
+            // dois cartões.
+            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                HStack(spacing: Tokens.Espaco.s) {
+                    TextField("Clothing name (optional)", text: $nomeDaPeca)
+                        .textInputAutocapitalization(.sentences)
+                        .submitLabel(.done)
+                        .focused($nomeDaPecaEmFoco)
+                        .onSubmit { nomeDaPecaEmFoco = false }
+                    Image(systemName: "pencil")
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .accessibilityHidden(true)
+                }
+                Divider()
+                Text("If left blank, Closet, links and spreadsheets use the confirmed category.")
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+            }
             ForEach(dimensoes, id: \.self) { dimensao in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(Traducao.rotuloDaDimensao(dimensao))
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                     if dimensao == "cor" { legendaDaOrdemDeCor }
-                    FlowLayout(espaco: 12) {
+                    FlowLayout(espaco: dimensao == "cor" ? 8 : 12) {
                         ForEach(termosVisiveis(na: dimensao)) { termo in
                             BotaoDeAtributo(termo: termo,
                                             ativo: detectados.contains(termo.id),
+                                            compacto: dimensao == "cor",
                                             prioridade: prioridade(de: termo),
                                             acao: { alternar(termo) })
                         }
@@ -734,6 +782,16 @@ struct ImportarPeca: View {
         let encontrados = termosDoFormulario
             .filter { $0.dimensao == dimensao }
             .filter { $0.id != "trico_croche" }
+        // Cor não sai na ordem do servidor. Ela chegava Blue, Black, White,
+        // Red / Green, Earth, Gray, Yellow / Purple, Other -- com os neutros
+        // espalhados no meio dos cromáticos, o que obriga a varrer a grade
+        // inteira para achar cinza. Neutros na primeira fileira, cromáticos na
+        // segunda: são exatamente cinco e cinco, e é a arrumação do Figma.
+        if dimensao == "cor" {
+            return Self.ordemDasCores.compactMap { id in
+                encontrados.first { $0.id == id }
+            } + encontrados.filter { !Self.ordemDasCores.contains($0.id) }
+        }
         guard dimensao == "estampa" else { return encontrados }
         let prioridade = [
             "animal_print", "floral", "listra", "xadrez", "geometrica",
@@ -1037,7 +1095,12 @@ struct ImportarPeca: View {
 /// eram escritos duas vezes. Uma view, e a próxima entrada nasce igual às
 /// outras sem ninguém precisar lembrar das medidas.
 private struct BotaoDeEntrada: View {
-    let titulo: String
+    /// `LocalizedStringKey`, e não `String`, por um motivo medido: com
+    /// `String` o Xcode não enxerga o literal do lado de quem chama, e o
+    /// primeiro build depois desta view **podou "Take a photo" e "Choose a
+    /// file or PDF" do String Catalog**. Os botões continuavam funcionando --
+    /// e tinham deixado de ser traduzíveis, sem erro nenhum.
+    let titulo: LocalizedStringKey
     let simbolo: String
     let acao: () -> Void
 

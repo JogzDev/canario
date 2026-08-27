@@ -62,6 +62,7 @@ struct AmostraDeIcones: View {
                                     BotaoDeAtributo(
                                         termo: Self.termo(id),
                                         ativo: ativo(id),
+                                        compacto: titulo == "Color",
                                         prioridade: Self.prioridadeDaAmostra[id],
                                         acao: {})
                                 }

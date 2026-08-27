@@ -55,12 +55,21 @@ struct GlifoDeVestuario: Shape {
             caminho.addLine(to: p(0.94, 0.30))
             caminho.addLine(to: p(0.70, 0.12))
             caminho.closeSubpath()
-            // Colarinho: duas pontas caindo do decote.
-            caminho.move(to: p(0.38, 0.15))
-            caminho.addLine(to: p(0.50, 0.32))
-            caminho.addLine(to: p(0.62, 0.15))
-            // Placket.
-            caminho.move(to: p(0.50, 0.36))
+            // Colarinho aberto, e grande de propósito.
+            //
+            // Na primeira versão ele era um V discreto e o glifo lia igual ao
+            // de macacão a 26 pt -- os dois viravam "tronco com manga". O
+            // colarinho é a única coisa que só camisa tem, então ele ocupa
+            // espaço: duas abas largas caindo até um terço do corpo.
+            caminho.move(to: p(0.34, 0.13))
+            caminho.addLine(to: p(0.50, 0.40))
+            caminho.addLine(to: p(0.66, 0.13))
+            caminho.move(to: p(0.34, 0.13))
+            caminho.addLine(to: p(0.44, 0.26))
+            caminho.move(to: p(0.66, 0.13))
+            caminho.addLine(to: p(0.56, 0.26))
+            // Placket, começando abaixo do decote.
+            caminho.move(to: p(0.50, 0.44))
             caminho.addLine(to: p(0.50, 0.90))
 
         case .vestido:
@@ -107,24 +116,31 @@ struct GlifoDeVestuario: Shape {
             caminho.addPath(Self.pernas(p: p, alturaDaBarra: 0.60, abertura: 0.03))
 
         case .macacao:
-            // Uma peça só: tronco de blusa emendado nas pernas da calça, sem
-            // linha de cintura separando — que é literalmente o que define
-            // macacão.
-            caminho.move(to: p(0.50, 0.16))
-            caminho.addLine(to: p(0.32, 0.09))
-            caminho.addLine(to: p(0.14, 0.24))
-            caminho.addLine(to: p(0.25, 0.35))
-            caminho.addLine(to: p(0.30, 0.30))
-            caminho.addLine(to: p(0.28, 0.92))
-            caminho.addLine(to: p(0.46, 0.92))
+            // Uma peça só, do ombro ao tornozelo.
+            //
+            // A primeira versão tinha manga e barra na altura da calça, e a
+            // 26 pt lia como camisa: os dois eram "tronco com manga". O que
+            // só o macacão tem é **continuidade vertical**, então este desenho
+            // troca a manga por alça e leva as pernas até o fim da caixa. A
+            // silhueta fica alta e estreita, e nenhuma parte de cima compete
+            // com ela.
+            // Corpo do peitilho até a barra, numa peça só.
+            caminho.move(to: p(0.28, 0.28))
+            caminho.addLine(to: p(0.72, 0.28))
+            caminho.addLine(to: p(0.74, 0.94))
+            caminho.addLine(to: p(0.55, 0.94))
             caminho.addLine(to: p(0.50, 0.58))
-            caminho.addLine(to: p(0.54, 0.92))
-            caminho.addLine(to: p(0.72, 0.92))
-            caminho.addLine(to: p(0.70, 0.30))
-            caminho.addLine(to: p(0.75, 0.35))
-            caminho.addLine(to: p(0.86, 0.24))
-            caminho.addLine(to: p(0.68, 0.09))
+            caminho.addLine(to: p(0.45, 0.94))
+            caminho.addLine(to: p(0.26, 0.94))
             caminho.closeSubpath()
+            // As duas alças. São elas que fazem o trabalho: sem alça, o glifo
+            // ficava com a mesma silhueta de calça -- duas pernas e uma barra
+            // no topo --, que foi a colisão que a primeira correção criou ao
+            // resolver a colisão com camisa.
+            caminho.move(to: p(0.34, 0.28))
+            caminho.addLine(to: p(0.38, 0.06))
+            caminho.move(to: p(0.66, 0.28))
+            caminho.addLine(to: p(0.62, 0.06))
 
         // MARK: - Tecido
 
