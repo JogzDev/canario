@@ -42,6 +42,25 @@ interface.
 
 Depois destas três, tela por tela, no ritmo que permitir fazer bem feito.
 
+## Precisa da mão do JP — A48
+
+A migration `20260826230000_a48_motivos_de_estampa_saem_da_taxonomia.sql` e a
+nova versão da Edge Function **ainda não foram aplicadas**. Duas ações, nesta
+ordem, e nenhuma urgente:
+
+1. Aplicar a migration (reprova os seis `motivo_estampa` e simplifica
+   `similares_da_peca_amplo`).
+2. Redeployar `analisar-peca` seguindo o [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md).
+   O prompt subiu para `alvo-estrutura-cintura-v11` e deixou de pedir
+   `print_motifs`.
+
+**A ordem não é crítica e o app aguenta os dois estados.** Ele parou de
+declarar `print_motifs` no modelo, e chave extra no JSON é ignorada pelo
+`Decodable` sintetizado — então o app novo funciona com a função antiga. E se
+a função antiga devolver um motivo depois da migration, o id chega reprovado
+e a interseção com a taxonomia o descarta. Não existe janela quebrada em
+nenhuma das duas ordens.
+
 ## Operacional — aberto agora
 
 - **Amaro e PatBô: RESOLVIDO em 26/08, e a causa era transitória.** As duas

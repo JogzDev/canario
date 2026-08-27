@@ -18,16 +18,10 @@ struct AmostraDeIcones: View {
         ("Color", ["preto", "cinza", "branco_cru", "terrosos", "outras_cores",
                    "vermelho_rosa", "amarelo_laranja", "verde", "azul",
                    "lilas_roxo"]),
-        // Print motif não é mais seção: os seis motivos viraram uma família
-        // só, "Illustrated prints", dentro de Pattern. Os glifos de fruta
-        // continuam existindo porque os termos continuam existindo no dado --
-        // eles é que casam a estampa de tomate da Farm com a de outra marca --,
-        // só não são mais seis botões para a pessoa escolher.
+        // A A48 unificou os seis motivos de fruta em "Illustrated prints".
+        // Print motif deixou de existir como dimensão, não só como seção.
         ("Pattern", ["liso", "listra", "floral", "xadrez", "geometrica",
                      "animal_print", "conversacional"]),
-        ("Print motif · dado, não escolha", ["tomate_print", "cereja_print",
-                         "morango_print", "banana_print", "abacaxi_print",
-                         "melancia_print"]),
         ("Style", ["romantico", "basico", "boho_artesanal", "alfaiataria",
                    "festa_brilho"]),
         ("Material", ["algodao", "jeans", "malha", "couro", "linho",
@@ -86,7 +80,7 @@ struct AmostraDeIcones: View {
     /// Um marcado por grupo, para o anel de seleção aparecer na folha.
     private func ativo(_ id: String) -> Bool {
         Self.prioridadeDaAmostra[id] != nil
-            || ["blusa_top", "listra", "tomate_print", "romantico",
+            || ["blusa_top", "conversacional", "romantico",
                 "jeans", "midi", "flare", "cintura_alta"].contains(id)
     }
 

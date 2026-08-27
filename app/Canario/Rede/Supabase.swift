@@ -11,7 +11,6 @@ struct AnaliseVisualRemota: Decodable, Equatable {
     let category: String
     let decisionEvidence: [String]
     let pattern: String
-    let printMotifs: [String]
     let fabrics: [String]
     let length: String
     let silhouette: String
@@ -26,7 +25,6 @@ struct AnaliseVisualRemota: Decodable, Equatable {
         case category, pattern, fabrics, length, silhouette, waist, aesthetics, colors, model
         case targetClarity = "target_clarity"
         case garmentStructure = "garment_structure"
-        case printMotifs = "print_motifs"
         case decisionEvidence = "decision_evidence"
         case additionalVisualAttributes = "additional_visual_attributes"
         case promptVersion = "prompt_version"
@@ -51,7 +49,7 @@ struct AnaliseVisualRemota: Decodable, Equatable {
     func idsSugeridos(existentes: Set<String>) -> Set<String> {
         let escalares = [category, pattern, length, silhouette, waist]
             .filter { $0 != "not_visible" }
-        return Set(escalares + printMotifs + fabrics + aesthetics + colors)
+        return Set(escalares + fabrics + aesthetics + colors)
             .intersection(existentes)
     }
 

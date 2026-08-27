@@ -91,8 +91,6 @@ struct Comparar: View {
                 Section(Traducao.rotuloDaDimensao(dimensao)) {
                     ForEach(termosComparaveis.filter {
                         $0.dimensao == dimensao
-                            || (dimensao == "estampa"
-                                && $0.dimensao == "motivo_estampa")
                     }) { termo in
                         Button {
                             alternar(termo.id)
@@ -131,9 +129,7 @@ struct Comparar: View {
     private var dimensoesComparaveis: [String] {
         let ordem = ["categoria", "cor", "estampa", "tecido", "comprimento",
                      "silhueta", "cintura", "estetica"]
-        let presentes = Set(termosComparaveis.map {
-            $0.dimensao == "motivo_estampa" ? "estampa" : $0.dimensao
-        })
+        let presentes = Set(termosComparaveis.map(\.dimensao))
         return ordem.filter(presentes.contains)
             + presentes.filter { !ordem.contains($0) }.sorted()
     }

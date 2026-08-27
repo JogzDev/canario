@@ -690,12 +690,6 @@ struct ImportarPeca: View {
         let permitidas = FormularioDaPeca.dimensoesPermitidas(categorias: categorias)
         var vistas: [String] = []
         for t in termosDoFormulario where permitidas.contains(t.dimensao) {
-            // `motivo_estampa` não vira seção: os seis motivos viraram uma
-            // família só na tela, "Illustrated prints". Eles continuam
-            // PERMITIDOS na poda de propósito -- se a Luna reconheceu tomate,
-            // o rótulo segue no que a pessoa salva e alimenta os similares.
-            // Tirá-los da poda apagaria a leitura sem ninguém ver.
-            guard t.dimensao != "motivo_estampa" else { continue }
             if !vistas.contains(t.dimensao) { vistas.append(t.dimensao) }
         }
         return vistas

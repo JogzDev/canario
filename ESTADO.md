@@ -46,7 +46,7 @@ da coleta internacional estava em 397.790.355 bytes (79,6%) e, depois dela e
 do motor, em **404.343.955 bytes (80,9%)**, com 95.656.045 bytes livres.
 
 A 1.2 também já contém compartilhamento e exportação por um único botão,
-Universal Links autocontidos, motivos visuais de estampa, couro, similares relaxados com explicação, editorial feminino
+Universal Links autocontidos, couro, similares relaxados com explicação, editorial feminino
 reclassificável, detalhe clicável das fontes e busca/filtro local do Closet.
 O RPC de importação por URL foi implementado e provado, mas a porta saiu da
 interface em 26/08; não deve ser apresentado como funcionalidade disponível.
@@ -86,8 +86,10 @@ Closet com caminho pertencente ao `auth.uid`, limite de 3 MB e validação por h
 isso permite restaurar as fotos reduzidas depois de reinstalar sem transformar o
 banco em álbum de originais. A45 tornou a resolução de URL exata e indexada nos
 segmentos brasileiro e candidato. O produto oficial “Vestido Pontas Estampado
-Tomates” da Farm resolve com imagem, preço e termos `vestido` + `tomate_print`;
-esses termos já devolvem similares de outras marcas sem chamada à Luna.
+Tomates” da Farm resolve com imagem, preço e termos, sem chamada à Luna. Desde
+a A48 o termo dele é `conversacional` (**Illustrated prints**) e não mais
+`tomate_print`: os seis motivos de fruta foram reprovados por serem amostra
+arbitrária de uma dimensão aberta.
 
 Em 26/08 fechou-se o que a A44 tinha deixado em aberto, e eram duas coisas da
 mesma família. A primeira: `excluir-conta` apagava o usuário sem tocar no bucket,

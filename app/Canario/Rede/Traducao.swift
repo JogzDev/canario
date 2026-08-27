@@ -27,9 +27,6 @@ enum Traducao {
         // diz a coisa em uma palavra e faz a fronteira certa com animal print,
         // que é PELE de bicho e não desenho de bicho.
         "conversacional": "Illustrated prints",
-        "tomate_print": "Tomato print", "cereja_print": "Cherry print",
-        "morango_print": "Strawberry print", "banana_print": "Banana print",
-        "abacaxi_print": "Pineapple print", "melancia_print": "Watermelon print",
         // Material
         "algodao": "Cotton", "linho": "Linen", "jeans": "Denim", "couro": "Leather",
         "malha": "Knit & crochet", "trico_croche": "Knit & crochet",
@@ -146,7 +143,7 @@ enum Traducao {
         [
             "categoria": "Category",
             "cor": "Color",
-            "estampa": "Pattern", "motivo_estampa": "Pattern",
+            "estampa": "Pattern",
             "tecido": "Material",
             "estetica": "Style",
             "comprimento": "Length",
@@ -259,7 +256,7 @@ enum FormularioDaPeca {
         // terão Padrão e Material! O que tem que aparecer condicional é estilo
         // da calça e por aí vai."
         var resultado: Set<String> = [
-            "categoria", "cor", "estampa", "motivo_estampa", "tecido", "estetica"
+            "categoria", "cor", "estampa", "tecido", "estetica"
         ]
         if !categorias.isDisjoint(with: ["vestido", "saia"]) {
             resultado.insert("comprimento")

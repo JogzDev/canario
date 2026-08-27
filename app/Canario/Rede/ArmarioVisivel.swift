@@ -36,8 +36,7 @@ struct CatalogoDoArmario: Sendable {
     /// O mesmo conjunto de chaves de `categorias`, pronto para o card não
     /// repetir a categoria no detalhe.
     let idsDeCategoria: Set<String>
-    /// id do termo → dimensão de FILTRO. `motivo_estampa` colapsa em `estampa`
-    /// porque a A38 decidiu que Pattern é uma dimensão só para o usuário.
+    /// id do termo → dimensão de FILTRO.
     private let dimensaoDeFiltro: [String: String]
 
     init(termos: [Termo]) {
@@ -49,8 +48,7 @@ struct CatalogoDoArmario: Sendable {
         for termo in termos {
             let rotulo = Traducao.rotuloExibido(termo)
             rotulos[termo.id] = rotulo
-            dimensoes[termo.id] = termo.dimensao == "motivo_estampa"
-                ? "estampa" : termo.dimensao
+            dimensoes[termo.id] = termo.dimensao
             if termo.dimensao == "categoria" { categorias[termo.id] = rotulo }
         }
         self.rotulos = rotulos

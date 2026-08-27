@@ -40,7 +40,6 @@ public enum IconeDaTaxonomia: Equatable, Sendable {
         case comprimentoCurto, comprimentoMidi, comprimentoLongo
         case silhuetaFlare, silhuetaReta
         case cinturaAlta, cinturaMedia, cinturaBaixa
-        case tomate, cereja, morango, banana, abacaxi, melancia
         case motivoIlustrado
     }
 
@@ -87,16 +86,6 @@ public enum IconeDaTaxonomia: Equatable, Sendable {
         // estrutura. O balão de fala que estava aqui ilustrava o nome antigo
         // em inglês, não a estampa.
         "conversacional": .desenhado(.motivoIlustrado),
-
-        // MARK: Motivo de estampa
-        // Fruta não existe no SF Symbols, e substituir por um símbolo genérico
-        // apagaria justamente o que distingue um motivo do outro.
-        "tomate_print": .desenhado(.tomate),
-        "cereja_print": .desenhado(.cereja),
-        "morango_print": .desenhado(.morango),
-        "banana_print": .desenhado(.banana),
-        "abacaxi_print": .desenhado(.abacaxi),
-        "melancia_print": .desenhado(.melancia),
 
         // MARK: Estética
         "romantico": .sistema("heart"),
