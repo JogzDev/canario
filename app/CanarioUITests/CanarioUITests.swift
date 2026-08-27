@@ -52,9 +52,12 @@ final class CanarioUITests: XCTestCase {
         let app = aplicativo(argumentos: ["-CanarioUITestDetalhes"])
         app.launch()
 
-        XCTAssertTrue(app.navigationBars["Confirm your item"]
+        XCTAssertTrue(app.navigationBars["Fill the info"]
             .waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Add to Closet"].exists)
+        // Guardar deixou de ser o fim do preenchimento em 27/08: o botão desta
+        // tela leva ao mercado, e o Closet é a decisão da tela seguinte.
+        XCTAssertTrue(app.buttons["Show me the market"].exists)
+        XCTAssertFalse(app.buttons["Add to Closet"].exists)
         XCTAssertTrue(app.textFields["Clothing name (optional)"].exists)
         XCTAssertTrue(app.buttons["Dress"].exists)
         // A cor não se anuncia só como marcada: ela anuncia a POSIÇÃO. Quem

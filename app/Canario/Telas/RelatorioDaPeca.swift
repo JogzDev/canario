@@ -21,6 +21,13 @@ struct RelatorioDaPeca: View {
     var miniaturaJPEG: Data?
     /// Quando aberto pelo Closet, evita salvar uma duplicata da mesma peça.
     var pecaSalva: PecaSalva? = nil
+    /// O nome que a pessoa deu à peça na tela anterior.
+    ///
+    /// Chega vazio quando a tela é aberta pela busca ou pelo Closet, onde não
+    /// há nome a carregar. Existe porque guardar a peça passou a acontecer
+    /// AQUI, e não no preenchimento: sem este campo, o nome digitado uma tela
+    /// atrás seria descartado no momento exato de salvar, sem aviso.
+    var apelido: String = ""
     /// A taxonomia inteira, para os chips de correção no topo. Vazia quando a
     /// tela é aberta de um lugar onde corrigir não faz sentido -- o Closet, por
     /// exemplo, onde a peça já foi salva com os atributos confirmados.
@@ -106,6 +113,7 @@ struct RelatorioDaPeca: View {
             Button {
                 Task {
                     let nova = PecaSalva(
+                        apelido: apelido.trimmingCharacters(in: .whitespacesAndNewlines),
                         termoIds: termos.map(\.id), precoAlvo: precoAlvo,
                         similaresRejeitados: rejeitouSimilares ? true : nil)
                     guardada = await PecasSalvas.shared.salvar(

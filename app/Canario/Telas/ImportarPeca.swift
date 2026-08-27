@@ -92,6 +92,17 @@ struct ImportarPeca: View {
         case confirmarAlvo
         /// O que o app leu, já marcado, para a pessoa corrigir.
         case atributos
+        /// A leitura de mercado da peça confirmada, e o lugar onde ela é
+        /// guardada no Closet.
+        ///
+        /// Esta etapa existiu até 24/08, saiu no `dee5957` junto com a
+        /// reorganização do Add, e volta em 27/08 com o fluxo que o JP
+        /// desenhou: "Show me the market, e no final da tela de show me the
+        /// market o usuário tem a chance de adicionar ao closet ou não".
+        /// Guardar deixa de ser o fim do preenchimento e passa a ser uma
+        /// decisão tomada **depois** de ver o que o mercado diz — que é a
+        /// ordem em que a informação chega para quem está comprando.
+        case painel
     }
 
     /// Ver o comentário na tela de confirmação do alvo.
@@ -129,7 +140,6 @@ struct ImportarPeca: View {
     /// e 3 são as secundárias. A Luna já devolve ranqueado por área visível;
     /// aqui a ordem só é preservada e fica editável.
     @State private var coresPorPrioridade: [String] = []
-    @State private var salvandoNoCloset = false
     @State private var analiseConcluidaParaOAlvo = false
     @State private var mostrandoEditorDeRecorte = false
     @State private var pedindoConsentimentoDaNuvem = false
@@ -168,6 +178,22 @@ struct ImportarPeca: View {
                     case .entrada:       telaDeEntrada
                     case .confirmarAlvo: confirmacaoDoAlvo
                     case .atributos:     telaDeAtributos
+                    case .painel:
+                        RelatorioDaPeca(
+                            termos: termosDoFormulario.filter { detectados.contains($0.id) },
+                            precoAlvo: precoAlvo,
+                            miniaturaJPEG: miniaturaJPEG,
+                            pecaSalva: nil,
+                            apelido: nomeDaPeca,
+                            todosOsTermos: termosDoFormulario,
+                            selecao: $detectados,
+                            aoConcluir: { encerrarFluxo() },
+                            adicionarAoClosetNoCantoEsquerdo: true)
+                            // Corrigir um chip aqui recria a view, e o `.task`
+                            // dela recalcula o painel. NÃO chama a Luna de
+                            // novo: reler a foto é outra ação e custa dinheiro.
+                            // Corrigir o que ela leu é grátis e instantâneo.
+                            .id(detectados)
                     }
                 }
             }
@@ -461,19 +487,25 @@ struct ImportarPeca: View {
                 if !procedencia.isEmpty { oQueLi }
                 atributos
                 precoOpcional
+                // O preenchimento não termina em "guardar": termina em ver.
+                // Guardar passa a ser a decisão tomada na tela seguinte, com a
+                // leitura de mercado à vista -- que é a ordem em que a
+                // informação chega para quem está comprando.
                 if !detectados.isEmpty {
                     Button {
-                        Task { await salvarNoCloset() }
+                        precoEmFoco = false
+                        nomeDaPecaEmFoco = false
+                        etapa = .painel
                     } label: {
-                        Group {
-                            if salvandoNoCloset { ProgressView() }
-                            else { Label("Add to Closet", systemImage: "archivebox") }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: 44)
+                        Text("Show me the market")
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Tokens.Cor.acao)
+                            .clipShape(Capsule())
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(salvandoNoCloset)
+                    .buttonStyle(.plain)
                 }
             }
             .padding(Tokens.Espaco.m)
@@ -828,7 +860,8 @@ struct ImportarPeca: View {
         switch etapa {
         case .entrada:       return "Analyze an item"
         case .confirmarAlvo: return "Confirm your item"
-        case .atributos:     return "Confirm your item"
+        case .atributos:     return "Fill the info"
+        case .painel:        return "Market panel"
         }
     }
 
@@ -840,7 +873,25 @@ struct ImportarPeca: View {
             cancelarConfirmacao()
         case .atributos:
             etapa = .confirmarAlvo
+        case .painel:
+            etapa = .atributos
         }
+    }
+
+    /// A peça foi guardada e o fluxo acabou. Volta ao começo pronto para a
+    /// próxima, em vez de deixar a pessoa desandar as etapas uma a uma.
+    private func encerrarFluxo() {
+        cancelarConfirmacao()
+        detectados = []
+        coresPorPrioridade = []
+        nomeDaPeca = ""
+        precoDigitado = ""
+        procedencia = []
+        nomeDoArquivo = nil
+        miniaturaJPEG = nil
+        erro = nil
+        aoSalvar?()
+        dismiss()
     }
 
     private func cancelarConfirmacao() {
@@ -860,26 +911,6 @@ struct ImportarPeca: View {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !limpa.isEmpty else { return nil }
         return String(limpa.prefix(160))
-    }
-
-    @MainActor
-    private func salvarNoCloset() async {
-        guard !detectados.isEmpty else { return }
-        salvandoNoCloset = true
-        nomeDaPecaEmFoco = false
-        let nova = PecaSalva(
-            apelido: nomeDaPeca.trimmingCharacters(in: .whitespacesAndNewlines),
-            termoIds: Array(detectados).sorted(),
-            precoAlvo: precoAlvo)
-        let salvou = await PecasSalvas.shared.salvar(
-            nova, miniaturaDados: miniaturaJPEG)
-        salvandoNoCloset = false
-        if salvou {
-            aoSalvar?()
-            dismiss()
-        } else {
-            erro = "Your Closet is full (\(PecasSalvas.teto))."
-        }
     }
 
     private func analisarImagemConfirmada(_ imagem: CGImage, nome: String,
