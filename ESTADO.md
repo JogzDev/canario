@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 26/08/2026, 15:20 em São Paulo
+**Última atualização:** 26/08/2026, 18:20 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -24,7 +24,7 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **17.760 produtos candidatos** |
 | Banco | plano gratuito; inchaço recuperado em 26/08 | **407.342.227 / 500.000.000 bytes (81,5%)** · 92.657.773 bytes livres |
 | Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
-| App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | código funcional pronto antes do pacote final do Figma |
+| App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | função e aceites físicos fechados; falta o pacote do Figma, que começou pelas duas telas de importação |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google nativo e e-mail validados no iPhone** | cliente iOS, callbacks, Keychain e Supabase configurados; relogin Google aprovado |
 | Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
@@ -441,7 +441,12 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
 * Loja: **1.1 publicada**
-* Repositório: **1.2 build 1 em desenvolvimento na `main`**; PRs #16 e #17 mesclados
+* Repositório: **1.2 build 1 em desenvolvimento na `main`**; PRs #16, #17 e #18
+  mesclados. O pacote do Figma começou a entrar pelo PR #19, que traz as telas
+  *Analyze an item* e *Confirm your item* implementadas pelo Davi Fadul
+* Processo do Figma: **uma tela por branch, PR revisado, merge só pelo JP**. A
+  `main` está protegida desde 26/08 — PR obrigatório, uma aprovação, `App
+  (Swift)` e `Coletores (Python)` verdes, sem force-push nem deleção
 * TestFlight 1.1: upload aceito pela Apple em 21/08 e versão publicada
 * TestFlight 1.2: **ainda não enviado; Archive ainda não gerado**
 * App Review 1.2: **não enviado**
@@ -470,8 +475,9 @@ Supabase para OpenAI, que o app não a armazena e que logs de abuso podem durar
 até 30 dias. Recusar mantém o caminho manual. Tela Privacy, alerta, manifesto e
 `FICHA_APP_STORE_1.1.md` dizem a mesma coisa.
 
-O String Catalog contém 145 chaves versionadas e 219 na cópia local ainda não
-commitada. Ainda não há
+O String Catalog contém **216 chaves versionadas**, e a cópia local do JP deixou
+de ter conteúdo próprio: as 9 chaves que só existiam nela são textos que o
+visual novo tirou da interface. Ainda não há
 tradução PT-BR — a A16 mantém a interface pública em inglês —, mas telas novas
 entram agora por uma infraestrutura única em vez de espalhar mais strings sem
 catálogo.
@@ -498,12 +504,16 @@ transformar o `project.pbxproj` em edição manual recorrente.
 
 ### Só o JP pode fazer
 
-1. Aceite manual ainda não executado: offline, Universal Links, Dynamic Type e
-   VoiceOver. Instalação limpa, câmera, fototeca e relogin Google nativo já
-   passaram no iPhone em 26/08
+1. **Os quatro aceites físicos passaram em 26/08** — offline, Universal Links,
+   Dynamic Type e VoiceOver, confirmados pelo JP, somando-se a instalação
+   limpa, câmera, fototeca e relogin Google nativo. **Nenhum aceite manual
+   continua pendente antes do Figma**
 2. Repetir a regressão visual completa depois de aplicar o pacote final do Figma
 3. O app fixa `.preferredColorScheme(.light)` por decisão de produto; modo
-   escuro não é uma variante suportada nem um caso de aceite da 1.2
+   escuro não é uma variante suportada nem um caso de aceite da 1.2. As telas
+   de Trends e de relatório de termo do Figma são desenhadas sobre fundo
+   escuro **fixo**, que é superfície, não modo do sistema — implementá-las não
+   reabre a variante
 4. Decidir o número que separa "cobertura aceitável" de "dia inútil"
 
 ### Decisões de produto, sem prazo
