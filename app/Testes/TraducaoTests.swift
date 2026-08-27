@@ -488,14 +488,31 @@ final class PistaDoTermoTests: XCTestCase {
         XCTAssertEqual(pista, "ruffle · lace · puff sleeve")
     }
 
-    /// O sinônimo que só repete o rótulo não ensina nada.
-    func testNaoRepeteOProprioRotulo() {
+    /// O sinônimo que só repete o rótulo não ensina nada — e "repetir" inclui
+    /// a variação da mesma palavra.
+    ///
+    /// A versão anterior aceitava "tailoring · suiting" ao lado do rótulo
+    /// **Tailored**: metade da legenda era o próprio rótulo com outra
+    /// terminação, gastando a linha mais curta da tela para não dizer nada.
+    /// Agora radical de quatro letras em comum já conta como repetição.
+    func testNaoRepeteOProprioRotuloNemAVariacaoDele() {
         let pista = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
             "alfaiataria", "estetica", "Alfaiataria",
             "tailoring|tailored|suiting")))
-        XCTAssertFalse(pista.lowercased().contains("tailored"),
-                       "o rótulo exibido é \"Tailored\": \(pista)")
-        XCTAssertEqual(pista, "tailoring · suiting")
+        XCTAssertEqual(pista, "suiting")
+
+        // O mesmo defeito em boho: "bohemian" não ensina nada a quem acabou de
+        // ler "Boho & artisanal".
+        let boho = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
+            "boho_artesanal", "estetica", "Boho e artesanal",
+            "boho|bohemian|fringe|embroidered|macrame")))
+        XCTAssertEqual(boho, "fringe · embroidered · macrame")
+
+        // E o corte não pode ser guloso a ponto de comer palavra útil:
+        // "basic" e "Essential" não têm radical em comum, e as duas ficam.
+        let basico = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
+            "basico", "estetica", "Basico", "basic|essential|minimal")))
+        XCTAssertEqual(basico, "basic · minimal")
     }
 
     /// Quem responde olhando não precisa de dica, e a dica ocuparia espaço.

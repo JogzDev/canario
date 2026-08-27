@@ -108,6 +108,20 @@ struct BotaoDeAtributo: View {
                     .minimumScaleFactor(0.78)
                     .multilineTextAlignment(.center)
                     .frame(width: 76)
+
+                // "Romantic" pede gosto; "ruffle · lace · puff sleeve" pede
+                // olhar. A legenda veio dos chips antigos e não podia sumir na
+                // troca para grade: ela é o que permite responder a dimensão
+                // mais subjetiva da tela sem conhecer a taxonomia.
+                if let pista = Traducao.pistaDoTermo(termo) {
+                    Text(pista)
+                        .font(.system(size: 9, design: .rounded))
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                        .multilineTextAlignment(.center)
+                        .frame(width: 76)
+                }
             }
         }
         .buttonStyle(.plain)
@@ -122,10 +136,18 @@ struct BotaoDeAtributo: View {
     /// cor" e "terceira cor" são informações diferentes, e quem não vê o
     /// número dentro do círculo não tem outro jeito de saber.
     private var rotuloFalado: String {
-        let nome = Traducao.rotuloExibido(termo)
-        guard let prioridade else { return nome }
-        let posicao = ["", "primary", "secondary", "third"][min(prioridade, 3)]
-        return "\(nome), \(posicao) color"
+        var partes = [Traducao.rotuloExibido(termo)]
+        if let prioridade {
+            partes.append(["", "primary", "secondary", "third"][min(prioridade, 3)]
+                          + " color")
+        }
+        // A legenda entra na fala pelo mesmo motivo que entra na tela: quem
+        // não conhece a taxonomia precisa dela para responder, e quem usa
+        // VoiceOver precisa mais, não menos.
+        if let pista = Traducao.pistaDoTermo(termo) {
+            partes.append(pista.replacingOccurrences(of: " · ", with: ", "))
+        }
+        return partes.joined(separator: ", ")
     }
 }
 

@@ -140,18 +140,74 @@ struct GlifoDeVestuario: Shape {
             caminho.move(to: p(0.26, 0.36))
             caminho.addLine(to: p(0.74, 0.36))
 
-        case .couro:
-            // Silhueta de pele curtida: assimétrica de propósito, porque
-            // couro não vem em retângulo.
-            caminho.move(to: p(0.22, 0.16))
-            caminho.addCurve(to: p(0.80, 0.22),
-                             control1: p(0.46, 0.06), control2: p(0.66, 0.10))
-            caminho.addCurve(to: p(0.84, 0.72),
-                             control1: p(0.94, 0.36), control2: p(0.72, 0.52))
-            caminho.addCurve(to: p(0.30, 0.84),
-                             control1: p(0.94, 0.90), control2: p(0.50, 0.94))
-            caminho.addCurve(to: p(0.22, 0.16),
-                             control1: p(0.10, 0.74), control2: p(0.06, 0.34))
+        case .vaca:
+            // Cabeça de vaca: chifres, orelhas abertas e focinho. Uma pele
+            // curtida é o desenho tecnicamente correto de couro e não diz nada
+            // a quem está escolhendo roupa -- o bicho diz.
+            // Chifres.
+            caminho.move(to: p(0.24, 0.26))
+            caminho.addCurve(to: p(0.30, 0.10),
+                             control1: p(0.18, 0.18), control2: p(0.22, 0.10))
+            caminho.move(to: p(0.76, 0.26))
+            caminho.addCurve(to: p(0.70, 0.10),
+                             control1: p(0.82, 0.18), control2: p(0.78, 0.10))
+            // Orelhas.
+            caminho.move(to: p(0.24, 0.34))
+            caminho.addCurve(to: p(0.05, 0.42),
+                             control1: p(0.14, 0.30), control2: p(0.05, 0.32))
+            caminho.addCurve(to: p(0.25, 0.50),
+                             control1: p(0.05, 0.52), control2: p(0.16, 0.52))
+            caminho.move(to: p(0.76, 0.34))
+            caminho.addCurve(to: p(0.95, 0.42),
+                             control1: p(0.86, 0.30), control2: p(0.95, 0.32))
+            caminho.addCurve(to: p(0.75, 0.50),
+                             control1: p(0.95, 0.52), control2: p(0.84, 0.52))
+            // Testa e maçãs do rosto.
+            caminho.move(to: p(0.24, 0.30))
+            caminho.addCurve(to: p(0.76, 0.30),
+                             control1: p(0.34, 0.20), control2: p(0.66, 0.20))
+            caminho.addCurve(to: p(0.68, 0.62),
+                             control1: p(0.80, 0.46), control2: p(0.76, 0.56))
+            // Focinho.
+            caminho.addCurve(to: p(0.32, 0.62),
+                             control1: p(0.62, 0.92), control2: p(0.38, 0.92))
+            caminho.addCurve(to: p(0.24, 0.30),
+                             control1: p(0.24, 0.56), control2: p(0.20, 0.46))
+            caminho.closeSubpath()
+            // Narinas.
+            caminho.move(to: p(0.42, 0.72))
+            caminho.addLine(to: p(0.42, 0.76))
+            caminho.move(to: p(0.58, 0.72))
+            caminho.addLine(to: p(0.58, 0.76))
+
+        case .motivoIlustrado:
+            // Três motivos pequenos espalhados: fruta, folha e peixe. É o
+            // desenho da estampa em si -- coisinhas repetidas no tecido --, e
+            // é a única forma honesta de um símbolo só cobrir fruta, legume,
+            // sardinha e bicho desenhado ao mesmo tempo. Escolher uma cereja
+            // faria a família inteira parecer ser sobre cereja.
+            // Fruta, no alto à esquerda.
+            caminho.addEllipse(in: Self.caixa(p: p, x: 0.06, y: 0.20,
+                                              largura: 0.30, altura: 0.30))
+            caminho.move(to: p(0.21, 0.20))
+            caminho.addLine(to: p(0.21, 0.08))
+            // Folha, no alto à direita.
+            caminho.move(to: p(0.62, 0.30))
+            caminho.addCurve(to: p(0.94, 0.14),
+                             control1: p(0.62, 0.16), control2: p(0.78, 0.12))
+            caminho.addCurve(to: p(0.62, 0.30),
+                             control1: p(0.96, 0.30), control2: p(0.78, 0.34))
+            caminho.closeSubpath()
+            // Peixe, embaixo ao centro.
+            caminho.move(to: p(0.30, 0.74))
+            caminho.addCurve(to: p(0.74, 0.74),
+                             control1: p(0.44, 0.56), control2: p(0.62, 0.56))
+            caminho.addCurve(to: p(0.30, 0.74),
+                             control1: p(0.62, 0.92), control2: p(0.44, 0.92))
+            caminho.closeSubpath()
+            caminho.move(to: p(0.74, 0.74))
+            caminho.addLine(to: p(0.92, 0.62))
+            caminho.addLine(to: p(0.92, 0.86))
             caminho.closeSubpath()
 
         case .malha:

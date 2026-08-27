@@ -36,11 +36,12 @@ public enum IconeDaTaxonomia: Equatable, Sendable {
     /// Os glifos que desenhamos, no mesmo peso de traço do SF Symbols.
     public enum Glifo: String, CaseIterable, Sendable {
         case camisa, vestido, saia, calca, short, macacao
-        case jeans, couro, malha
+        case jeans, vaca, malha
         case comprimentoCurto, comprimentoMidi, comprimentoLongo
         case silhuetaFlare, silhuetaReta
         case cinturaAlta, cinturaMedia, cinturaBaixa
         case tomate, cereja, morango, banana, abacaxi, melancia
+        case motivoIlustrado
     }
 
     /// O ícone de um termo, ou `nil` se ele ainda não tem um.
@@ -79,9 +80,13 @@ public enum IconeDaTaxonomia: Equatable, Sendable {
         "xadrez": .sistema("square.grid.3x3"),
         "geometrica": .sistema("circle.hexagongrid"),
         "animal_print": .sistema("pawprint"),
-        // Estampa conversacional é a que "conta" alguma coisa — objeto, fruta,
-        // bicho. O balão é a metáfora do próprio nome.
-        "conversacional": .sistema("text.bubble"),
+        // A família guarda-chuva: fruta, legume, sardinha, azeitona, bicho
+        // desenhado. O glifo mostra três motivos pequenos espalhados, que é
+        // literalmente o que a estampa é -- e é o único desenho da fileira que
+        // fala de CONTEÚDO, enquanto Solid, Stripes, Checks e Graphic falam de
+        // estrutura. O balão de fala que estava aqui ilustrava o nome antigo
+        // em inglês, não a estampa.
+        "conversacional": .desenhado(.motivoIlustrado),
 
         // MARK: Motivo de estampa
         // Fruta não existe no SF Symbols, e substituir por um símbolo genérico
@@ -112,7 +117,10 @@ public enum IconeDaTaxonomia: Equatable, Sendable {
         "linho": .sistema("wind"),
         "viscose_fluido": .sistema("water.waves"),
         "jeans": .desenhado(.jeans),
-        "couro": .desenhado(.couro),
+        // Vaca, a pedido do JP. Silhueta de pele curtida é desenho técnico
+        // de couro e não diz nada a quem está escolhendo roupa; a cabeça do
+        // bicho diz na hora de onde o material vem.
+        "couro": .desenhado(.vaca),
         "malha": .desenhado(.malha),
 
         // MARK: Comprimento, silhueta e cintura
