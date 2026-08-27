@@ -140,6 +140,31 @@ nenhuma das duas ordens.
 - Atualizar capturas e metadata da App Store com as telas finais; só então
   submeter a 1.2 para revisão.
 
+## Fila do depois — decidido, sem prazo
+
+- **Calibrar o motor de similares.** Pedido do JP em 27/08. O que já está
+  medido e aponta para onde mexer:
+  - **A cobertura por dimensão é o gargalo, não a regra.** Medido em 26/08:
+    categoria 97,4%, cor 38,5%, tecido 33,6% — e depois disso despenca, com
+    estampa em 5,4% e cintura em 4,6%. Exigir 70% dos atributos quando duas
+    das cinco dimensões quase não existem no painel é zero garantido.
+  - **A escada de relaxamento vale mais que qualquer ajuste de peso.** Na
+    medição da polo: 4 de 5 atributos devolveu **0** similares; tirar um
+    único atributo da dimensão mais rala devolveu **13 peças em 4 marcas**.
+  - **Duas cores da mesma dimensão colapsam o conjunto.** `vestido + preto`
+    dá 202, `vestido + branco&cru` dá 153, e as três juntas dão **12** —
+    porque título de produto quase nunca lista duas cores. Dentro da mesma
+    dimensão os termos deveriam competir (OR), não se exigir (AND).
+  - **A A49 abre um caminho novo, e assimétrico.** A peça do usuário agora
+    sabe qual é a cor principal; o produto do painel não sabe, porque a cor
+    dele sai do título e título não diz proporção. Dá para exigir que a cor
+    **principal** da peça case, em vez de aceitar qualquer coincidência de
+    cor — é o que evita uma busca por verde devolver uma peça 80% rosa com um
+    detalhe verde.
+  - **O maior buraco isolado:** 4.509 produtos dizem "estampado" no título e
+    só 1.100 receberam algum termo de `estampa`. São ~3.400 peças que o
+    painel declara estampadas e o motor não consegue casar.
+
 ## Para a virada de temporada — não mexer antes da 1.2
 
 - **`papel = grupo` conta como mercado externo, e não deveria.** A

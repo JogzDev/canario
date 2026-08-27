@@ -319,14 +319,16 @@ struct ImportarPeca: View {
                                  altura: 300,
                                  selecionada: false,
                                  corDeFundo: corDestaque,
-                                 raio: 32)
+                                 raio: Tokens.Raio.cartaoGrande)
+                        .sombraDeCartao()
+                        .accessibilityLabel("Selected photo of your item")
                 }
 
                 // 2. Seletor de Foto (No Background vs Full Photo)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Choose a photo")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black)
+                        .font(.system(.headline, design: .rounded))
+                        .foregroundStyle(Tokens.Cor.tinta)
 
                     HStack(spacing: 14) {
                         ForEach(opcoesDeAlvo) { opcao in
@@ -339,14 +341,15 @@ struct ImportarPeca: View {
                                 VStack(spacing: 6) {
                                     PreviaDoAlvo(dados: opcao.dados,
                                                  id: opcao.id,
-                                                 altura: 88,
+                                                 altura: 96,
                                                  selecionada: alvoEscolhido == opcao.id,
                                                  corDeFundo: corDestaque,
-                                                 raio: 16)
+                                                 raio: Tokens.Raio.cartao)
+                                        .sombraDeCartao()
 
                                     Text(opcao.tipo == .primeiroPlano ? "No Background" : "Full photo")
-                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(.black)
+                                        .font(.system(.footnote, design: .rounded).weight(.semibold))
+                                        .foregroundStyle(Tokens.Cor.tinta)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -357,12 +360,11 @@ struct ImportarPeca: View {
 
                 // 3. Campo de Dica Opcional com Card Arredondado Neutro
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("If there is more than 1 item in the photo,\nspecify the target")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black)
+                    Text("If there is more than 1 item in the photo, specify the target")
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
+                        .foregroundStyle(Tokens.Cor.tinta)
 
                     Divider()
-                        .background(Color.black.opacity(0.12))
 
                     TextField("Ex: Black Tank Top", text: $descricaoDoAlvo)
                         .font(.system(size: 15, design: .rounded))
@@ -373,9 +375,12 @@ struct ImportarPeca: View {
                             analiseConcluidaParaOAlvo = false
                         }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, Tokens.Espaco.m)
                 .padding(.vertical, 14)
-                .background(Color.black.opacity(0.05))
+                // Cinza do sistema, e não um preto a 5%: o cinza do sistema
+                // acompanha o aparelho e o contraste, e o preto translúcido
+                // fica sujo sobre qualquer fundo que não seja branco puro.
+                .background(Tokens.Cor.superficie)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 // O aviso do teto diário mora aqui, e não na tela de
@@ -396,9 +401,10 @@ struct ImportarPeca: View {
                             .font(.system(size: 17, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Color.blue)
+                            .frame(minHeight: 52)
+                            .background(Tokens.Cor.acao)
                             .clipShape(Capsule())
+                            .sombraDeCartao()
                     }
                     .buttonStyle(.plain)
                     .disabled(opcaoEscolhida == nil)
@@ -408,9 +414,9 @@ struct ImportarPeca: View {
                     } label: {
                         Text("Choose another photo")
                             .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.blue)
+                            .foregroundStyle(Tokens.Cor.acao)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 38)
+                            .frame(minHeight: 44)
                     }
                     .buttonStyle(.plain)
                 }
@@ -434,15 +440,36 @@ struct ImportarPeca: View {
     }
 
     /// Tela 1: a foto e as opções de entrada simplificadas.
+    /// Tela 1: três entradas, centralizadas, e nada mais.
+    ///
+    /// O preço desceu para o fim da tela de atributos em 26/08 -- pedir um
+    /// número antes de a pessoa ter visto a peça reconhecida era pedir cedo.
+    /// Sobrou pouca coisa, e o JP foi direto: *"não precisa ser um slider que
+    /// sobe tudo, só o necessário pra dar ao usuário as 3 opções"*.
+    ///
+    /// A `ScrollView` fica, e não por teimosia: em Dynamic Type grande o grupo
+    /// passa da tela, e sem ela o último botão sairia cortado -- o que
+    /// reprovaria justamente o aceite de acessibilidade que já passou. O
+    /// `minHeight` resolve os dois pedidos ao mesmo tempo: com o texto no
+    /// tamanho normal o conteúdo é alto como a tela e os `Spacer` o
+    /// centralizam, sem nada para rolar; quando ele cresce, o scroll aparece
+    /// sozinho porque passou a ser necessário.
     private var telaDeEntrada: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
-                // O preço desceu para o fim da tela de atributos em 26/08.
-                // Esta tela tem três botões e nada mais; pedir um número antes
-                // de a pessoa ter visto a peça reconhecida era pedir cedo.
-                importador
+        GeometryReader { area in
+            ScrollView {
+                VStack(spacing: Tokens.Espaco.g) {
+                    Spacer(minLength: 0)
+                    importador
+                    Spacer(minLength: 0)
+                    if let nomeDoArquivo {
+                        LinhaInsumo(texto: "Loaded: \(nomeDoArquivo)")
+                    }
+                    avisoDePrivacidade
+                }
+                .padding(.horizontal, Tokens.Espaco.g)
+                .padding(.vertical, Tokens.Espaco.m)
+                .frame(maxWidth: .infinity, minHeight: area.size.height)
             }
-            .padding(Tokens.Espaco.m)
         }
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
@@ -514,81 +541,56 @@ struct ImportarPeca: View {
     }
 
     private var importador: some View {
-        VStack(spacing: 16) {
-            PhotosPicker(selection: $daFototeca, matching: .images, photoLibrary: .shared()) {
-                VStack(spacing: 20) {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 80, weight: .regular))
-                        .foregroundStyle(.black)
-
+        VStack(spacing: Tokens.Espaco.m) {
+            PhotosPicker(selection: $daFototeca, matching: .images,
+                         photoLibrary: .shared()) {
+                VStack(spacing: Tokens.Espaco.g) {
+                    // Variante preenchida, como no Figma: o cartão é a ação
+                    // principal da tela e o desenho vazado do contorno some
+                    // dentro de 300 pt de superfície colorida.
+                    Image(systemName: "photo.fill.on.rectangle.fill")
+                        .font(.system(size: 76))
+                        .foregroundStyle(Tokens.Cor.noite)
                     Text("Choose from Photos")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black)
+                        .font(.system(.headline, design: .rounded))
+                        .foregroundStyle(Tokens.Cor.noite)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 280)
-                .background(corDestaque)
-                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .frame(height: 300)
+                .background(Tokens.Cor.ceu)
+                .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartaoGrande,
+                                            style: .continuous))
+                .sombraDeCartao()
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Choose from Photos")
 
+            // Some no simulador e em aparelho sem câmera, em vez de abrir nada.
             if CapturaDeCamera.disponivel {
-                Button {
+                BotaoDeEntrada(titulo: "Take a photo", simbolo: "camera") {
                     erro = nil
                     mostrandoCamera = true
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "camera")
-                            .font(.system(size: 18, weight: .semibold))
-                        Text("Take a photo")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                    }
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(corDestaque)
-                    .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
             }
-
-            Button {
+            BotaoDeEntrada(titulo: "Choose a file or PDF", simbolo: "doc.badge.plus") {
                 erro = nil
                 mostrandoSeletor = true
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 18, weight: .semibold))
-                    Text("Choose a file or PDF")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                }
-                .foregroundStyle(.black)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(corDestaque)
-                .clipShape(Capsule())
             }
-            .buttonStyle(.plain)
-
-            if let nomeDoArquivo {
-                LinhaInsumo(texto: "Loaded: \(nomeDoArquivo)")
-                    .padding(.top, 4)
-            }
-
-            // Dizer o que acontece com a foto ANTES de a pessoa escolher uma é
-            // obrigação declarada na ficha e na política, não enfeite -- e é a
-            // única linha da tela que diz se a análise na nuvem está ligada
-            // neste build. O visual novo apagou a frase inteira; ela volta no
-            // rodapé, que foi onde a revisão de UX pediu que ela ficasse.
-            Text(Supabase.analiseRemotaHabilitada
-                 ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
-                 : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-                .padding(.top, 8)
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 8)
+    }
+
+    /// Dizer o que acontece com a foto ANTES de a pessoa escolher uma é
+    /// obrigação declarada na ficha e na política, não enfeite -- e é a única
+    /// linha da tela que diz se a análise na nuvem está ligada neste build. O
+    /// visual novo apagou a frase inteira; ela vive no rodapé, que foi onde a
+    /// revisão de UX pediu que ficasse.
+    private var avisoDePrivacidade: some View {
+        Text(Supabase.analiseRemotaHabilitada
+             ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
+             : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
+            .font(Tokens.Fonte.miudo)
+            .foregroundStyle(Tokens.Cor.tintaFraca)
+            .multilineTextAlignment(.center)
     }
 
     private var oQueLi: some View {
@@ -1025,6 +1027,39 @@ struct ImportarPeca: View {
             return
         }
         await prepararConfirmacao(imagem, nome: url.lastPathComponent)
+    }
+}
+
+/// As duas entradas secundárias da tela de análise.
+///
+/// Nasceram como dois blocos idênticos copiados um do outro, e a cópia já
+/// tinha começado a divergir -- altura, peso da fonte e espaçamento do ícone
+/// eram escritos duas vezes. Uma view, e a próxima entrada nasce igual às
+/// outras sem ninguém precisar lembrar das medidas.
+private struct BotaoDeEntrada: View {
+    let titulo: String
+    let simbolo: String
+    let acao: () -> Void
+
+    var body: some View {
+        Button(action: acao) {
+            HStack(spacing: Tokens.Espaco.s) {
+                Image(systemName: simbolo)
+                    .font(.system(size: 18, weight: .semibold))
+                Text(titulo)
+                    .font(.system(.callout, design: .rounded).weight(.bold))
+            }
+            .foregroundStyle(Tokens.Cor.noite)
+            .frame(maxWidth: .infinity)
+            // 54 é confortável e passa dos 44 pt mínimos da HIG; `minHeight`
+            // em vez de `height` para o botão crescer com Dynamic Type em vez
+            // de cortar o rótulo.
+            .frame(minHeight: 54)
+            .background(Tokens.Cor.ceu)
+            .clipShape(Capsule())
+            .sombraDeCartao()
+        }
+        .buttonStyle(.plain)
     }
 }
 

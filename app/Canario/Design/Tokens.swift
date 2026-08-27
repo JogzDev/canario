@@ -91,6 +91,25 @@ enum Tokens {
     enum Raio {
         static let cartao: CGFloat = 12
         static let etiqueta: CGFloat = 6
+        /// Cartão grande de escolha -- a foto, o seletor. O raio maior é o que
+        /// separa "superfície tocável" de "caixa de conteúdo" no desenho novo.
+        static let cartaoGrande: CGFloat = 28
+    }
+
+    // MARK: - Sombra
+
+    /// A sombra de cartão do idioma da Apple: difusa, deslocamento pequeno,
+    /// opacidade baixa. Ela não desenha uma borda -- desenha a **distância**
+    /// entre o cartão e o fundo, que é o que faz um retângulo parecer tocável
+    /// em vez de pintado.
+    ///
+    /// O tom não é preto: puxa para o cinza frio do céu da marca, que foi o
+    /// pedido do JP em 27/08 ("sombra meio acinzentada/gelo atrás"). Preto
+    /// puro sobre fundo branco suja; cinza frio afasta.
+    enum Sombra {
+        static let cor = Color(red: 0.36, green: 0.47, blue: 0.53).opacity(0.20)
+        static let raio: CGFloat = 14
+        static let deslocamentoY: CGFloat = 6
     }
 
     // MARK: - Tipografia
@@ -118,5 +137,15 @@ enum Tokens {
         /// Números que o usuário compara entre si: largura fixa evita o texto
         /// "pular" quando o valor muda.
         static let numero = Font.title3.monospacedDigit().weight(.semibold)
+    }
+}
+
+extension View {
+    /// Levanta um cartão do fundo. Uma linha só, para os cartões da mesma tela
+    /// não divergirem em raio, cor e deslocamento -- que foi como a paleta
+    /// acabou redigitada em literal na primeira aplicação do Figma.
+    func sombraDeCartao() -> some View {
+        shadow(color: Tokens.Sombra.cor, radius: Tokens.Sombra.raio,
+               x: 0, y: Tokens.Sombra.deslocamentoY)
     }
 }
