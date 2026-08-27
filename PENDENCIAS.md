@@ -68,17 +68,29 @@ até a A47 — sinal de que as intermediárias foram aplicadas pelo editor SQL, 
 não registra. O registro não é fonte confiável de estado neste projeto; o schema
 é. A48 e A49 ficaram registradas.
 
-## O redeploy da `analisar-peca` está PARADO — decisão do JP
+## A Luna subiu para a v11 em 27/08
 
-Ver a seção "Rota paga de visão" da [`ESTADO.md`](ESTADO.md). Resumo do
-impasse: produção roda `alvo-estrutura-motivos-v9`, o repositório está na v10
-(que **nunca foi implantada, de propósito**) e a minha mudança faz v11 em cima
-da v10. O vocabulário ampliado da v10 mediu **57/72 = 79,2%** em categoria e
-cor — **abaixo do portão de 80%** que a v7 tinha passado com 81,9% e 83,3%.
-Subir o arquivo do repositório implantaria justamente o que foi retido.
+Decisão do JP, depois de reabrir o caso: ele aceita os 79,2% do vocabulário
+ampliado (*"0,8% é muito pouco pra reprovar algo que claramente funciona, e é a
+minha escolha final"*) e exigiu que as melhorias da v9, da v10 e da v11
+estivessem **todas** na versão final. Isso descartou a saída cirúrgica de
+implantar só a remoção sobre a v9.
 
-Não bloqueia nada da 1.2: a ordenação de cor por área visível, de que a A49
-depende, **já está na v9 em produção**.
+O que a produção ganhou, além da remoção do `print_motifs`:
+
+- o termo **`conversacional`** — sem ele, a Luna nunca conseguiria pré-marcar
+  *Illustrated prints*, e a A48 ficaria pela metade para sempre;
+- **cintura média e baixa** — a v9 só sabia devolver `cintura_alta`, ou seja,
+  dois dos três valores eram letra morta.
+
+Antes de subir, cada comportamento da v9 foi conferido no código implantado:
+modelo, `max_output_tokens`, `reasoning.effort`, limite de imagem, rate limit
+por origem e global, consentimento, `verify_jwt = false` e a ordenação de cor
+por área visível. Nenhum se perdeu. Sonda de contrato depois do deploy:
+`invalid_image` / HTTP 400.
+
+**Nada mais depende do JP nesta frente.** As três coisas que estavam na mão
+dele — A48, A49 e o redeploy — estão feitas.
 
 ## Operacional — aberto agora
 

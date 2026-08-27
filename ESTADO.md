@@ -428,9 +428,28 @@ para o uso real. Regra vigente: essas cinco imagens difíceis permanecem como
 erro conhecido; não se compra outra rodada nesse conjunto. Qualquer calibração
 futura usa imagens novas/holdout e orçamento explícito.
 
-A Edge Function e o avaliador usam essa mesma v7. Os testes de contrato,
-consolidação e hash passaram em 21/08, e a sonda diária confirma que credenciais
-e rota continuam disponíveis. A análise remota permanece habilitada na 1.1,
+**Isso mudou em 27/08.** A produção rodava `alvo-estrutura-motivos-v9` — não a
+v7, como este documento afirmava — e o repositório estava na v10, retida desde
+24/08 por causa dos 79,2%. O JP reabriu a decisão e a fechou: *"eu aceitei e
+aceitaria de novo sempre. Acho 0,8% muito pouco pra reprovar algo que claramente
+funciona, e é a minha escolha final."* Junto disso, exigiu que as melhorias da
+v9, da v10 e da v11 estivessem todas na versão final.
+
+A **v11 está no ar** desde 27/08: v10 mais a remoção do `print_motifs`, que a
+A48 tornou inválido. Ela acrescenta à produção duas coisas que faltavam — o
+termo `conversacional` (Illustrated prints) e as cinturas média e baixa, que a
+v9 não sabia devolver. Tudo o que a v9 tinha foi conferido item a item antes de
+subir: modelo, orçamento de tokens, `reasoning.effort`, limite de imagem, rate
+limit por origem, consentimento e a ordenação de cor por área visível.
+
+Sonda de contrato depois do deploy: `invalid_image` / HTTP 400, que é o
+"sobe e tem os secrets". Os testes de contrato, consolidação e hash passaram em
+21/08, e a sonda diária confirma que credenciais e rota continuam disponíveis.
+
+**O portão de 80% continua sendo o portão.** O que mudou não foi o número: foi
+o dono do projeto exercer a decisão que só ele pode tomar, com o resultado
+medido à vista e registrado aqui. Calibração futura continua exigindo imagens
+novas ou holdout, com orçamento explícito. A análise remota permanece habilitada na 1.1,
 sempre depois do consentimento separado e com correção humana obrigatória.
 
 ### Meta de produto ≠ portão técnico
