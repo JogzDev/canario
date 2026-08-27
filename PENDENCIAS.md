@@ -50,7 +50,13 @@ ordem, e nenhuma urgente:
 
 1. Aplicar a migration (reprova os seis `motivo_estampa` e simplifica
    `similares_da_peca_amplo`).
-2. Redeployar `analisar-peca` seguindo o [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md).
+2. Aplicar a `20260827010000_a49_ordem_das_cores_do_closet.sql`, que acrescenta
+   `cores_prioridade text[]` ao Closet sincronizado. **Enquanto ela não for
+   aplicada, a ordem das cores vale só no aparelho** — a leitura do Closet cai
+   sozinha na lista de colunas antiga e continua funcionando, e o envio ignora
+   o campo. Não há ordem obrigatória entre aplicar a migration e instalar o
+   app novo.
+3. Redeployar `analisar-peca` seguindo o [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md).
    O prompt subiu para `alvo-estrutura-cintura-v11` e deixou de pedir
    `print_motifs`.
 

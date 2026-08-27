@@ -184,6 +184,7 @@ struct ImportarPeca: View {
                             precoAlvo: precoAlvo,
                             miniaturaJPEG: miniaturaJPEG,
                             pecaSalva: nil,
+                            coresPorPrioridade: coresPorPrioridade,
                             apelido: nomeDaPeca,
                             todosOsTermos: termosDoFormulario,
                             selecao: $detectados,

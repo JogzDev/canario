@@ -21,6 +21,11 @@ struct RelatorioDaPeca: View {
     var miniaturaJPEG: Data?
     /// Quando aberto pelo Closet, evita salvar uma duplicata da mesma peça.
     var pecaSalva: PecaSalva? = nil
+    /// As cores em ordem de prioridade, vindas da tela de atributos. Vazio
+    /// quando a tela é aberta de um lugar que não tem essa informação — e aí a
+    /// peça é guardada sem ordem, que é diferente de guardada com a ordem
+    /// errada.
+    var coresPorPrioridade: [String] = []
     /// O nome que a pessoa deu à peça na tela anterior.
     ///
     /// Chega vazio quando a tela é aberta pela busca ou pelo Closet, onde não
@@ -115,7 +120,9 @@ struct RelatorioDaPeca: View {
                     let nova = PecaSalva(
                         apelido: apelido.trimmingCharacters(in: .whitespacesAndNewlines),
                         termoIds: termos.map(\.id), precoAlvo: precoAlvo,
-                        similaresRejeitados: rejeitouSimilares ? true : nil)
+                        similaresRejeitados: rejeitouSimilares ? true : nil,
+                        coresPorPrioridade: coresPorPrioridade.isEmpty
+                            ? nil : coresPorPrioridade)
                     guardada = await PecasSalvas.shared.salvar(
                         nova, miniaturaDados: miniaturaJPEG)
                     if guardada == true { pecaGuardadaNestaTela = nova }
