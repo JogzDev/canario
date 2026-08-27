@@ -77,6 +77,11 @@ jobs:
         run: "$PY coletor/teste_privacidade_declarada.py"
       - name: Regressões da experiência em aparelho
         run: "$PY coletor/teste_experiencia_app.py"
+      # Icone faltando nao quebra nada: o termo aparece com um circulo
+      # pontilhado e segue selecionavel. Este portao e o unico jeito de a
+      # falta aparecer antes de alguem abrir a tela.
+      - name: Todo termo da taxonomia tem icone
+        run: "$PY coletor/teste_icones_da_taxonomia.py"
       - name: Contrato do avaliador Luna (sem rede)
         run: "$PY coletor/teste_avaliar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)

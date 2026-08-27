@@ -9,6 +9,8 @@
 		0B4F1AFF779F42A33002C3BA /* CanarioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */; };
 		5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */; };
 		E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1ACCCE153B6FA384A39863 /* Formato.swift */; };
+		32ACEB21D089139092062D91 /* GlifosDeVestuario.swift in Sources */ = {isa = PBXBuildFile; fileRef = B659AA577D3A331CF4310B48 /* GlifosDeVestuario.swift */; };
+		B8DC71B90B4F61DE87FDD414 /* IconeDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */; };
 		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
 		B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */; };
 		66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */; };
@@ -20,6 +22,7 @@
 		26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */; };
 		531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */; };
 		D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C677A09E80A10C666280510 /* Explicacao.swift */; };
+		2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */; };
 		BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */; };
 		D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
@@ -33,6 +36,7 @@
 		B7C6B605D7DB135603AAF51A /* SincronizacaoDoCloset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693354123BBAEE5AE11D8D55 /* SincronizacaoDoCloset.swift */; };
 		4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCED70ADF52E633975D5BF1 /* Supabase.swift */; };
 		C72E0F744301265B0597C210 /* Traducao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CF3CC6A070433478308663E /* Traducao.swift */; };
+		312C6C6A4E153FBAA96F9B83 /* AmostraDeIcones.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A203D17B06AE01B872120F1 /* AmostraDeIcones.swift */; };
 		E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907420D533A7734E5A3F0DE7 /* Analisar.swift */; };
 		77202A27761230EA126556D7 /* BarraPrincipal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B17890751C0ECA369DC4445 /* BarraPrincipal.swift */; };
 		BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2112E929103203C6F4819581 /* BlocoDeSimilares.swift */; };
@@ -60,6 +64,8 @@
 		014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CanarioApp.swift"; sourceTree = "<group>"; };
 		D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Componentes.swift"; sourceTree = "<group>"; };
 		CD1ACCCE153B6FA384A39863 /* Formato.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Formato.swift"; sourceTree = "<group>"; };
+		B659AA577D3A331CF4310B48 /* GlifosDeVestuario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GlifosDeVestuario.swift"; sourceTree = "<group>"; };
+		CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconeDoTermo.swift"; sourceTree = "<group>"; };
 		7D66F3CA4E705669DD73EF9B /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tokens.swift"; sourceTree = "<group>"; };
 		8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AbasDoApp.swift"; sourceTree = "<group>"; };
 		98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnalisesDeHoje.swift"; sourceTree = "<group>"; };
@@ -71,6 +77,7 @@
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhos.swift"; sourceTree = "<group>"; };
 		DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntradasDoMenu.swift"; sourceTree = "<group>"; };
 		3C677A09E80A10C666280510 /* Explicacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explicacao.swift"; sourceTree = "<group>"; };
+		A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconesDaTaxonomia.swift"; sourceTree = "<group>"; };
 		F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Importacao.swift"; sourceTree = "<group>"; };
 		14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IntencaoDoToque.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
@@ -84,6 +91,7 @@
 		693354123BBAEE5AE11D8D55 /* SincronizacaoDoCloset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SincronizacaoDoCloset.swift"; sourceTree = "<group>"; };
 		5DCED70ADF52E633975D5BF1 /* Supabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Supabase.swift"; sourceTree = "<group>"; };
 		1CF3CC6A070433478308663E /* Traducao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Traducao.swift"; sourceTree = "<group>"; };
+		8A203D17B06AE01B872120F1 /* AmostraDeIcones.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AmostraDeIcones.swift"; sourceTree = "<group>"; };
 		907420D533A7734E5A3F0DE7 /* Analisar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Analisar.swift"; sourceTree = "<group>"; };
 		3B17890751C0ECA369DC4445 /* BarraPrincipal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BarraPrincipal.swift"; sourceTree = "<group>"; };
 		2112E929103203C6F4819581 /* BlocoDeSimilares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BlocoDeSimilares.swift"; sourceTree = "<group>"; };
@@ -181,6 +189,8 @@
 			children = (
 				D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */,
 				CD1ACCCE153B6FA384A39863 /* Formato.swift */,
+				B659AA577D3A331CF4310B48 /* GlifosDeVestuario.swift */,
+				CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */,
 				7D66F3CA4E705669DD73EF9B /* Tokens.swift */,
 			);
 			path = "Design";
@@ -199,6 +209,7 @@
 				94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */,
 				DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */,
 				3C677A09E80A10C666280510 /* Explicacao.swift */,
+				A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */,
 				F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */,
 				14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
@@ -219,6 +230,7 @@
 		3292BE3A6EAD8B36569AC07C /* Telas */ = {
 			isa = PBXGroup;
 			children = (
+				8A203D17B06AE01B872120F1 /* AmostraDeIcones.swift */,
 				907420D533A7734E5A3F0DE7 /* Analisar.swift */,
 				3B17890751C0ECA369DC4445 /* BarraPrincipal.swift */,
 				2112E929103203C6F4819581 /* BlocoDeSimilares.swift */,
@@ -327,6 +339,8 @@
 				0B4F1AFF779F42A33002C3BA /* CanarioApp.swift in Sources */,
 				5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */,
 				E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */,
+				32ACEB21D089139092062D91 /* GlifosDeVestuario.swift in Sources */,
+				B8DC71B90B4F61DE87FDD414 /* IconeDoTermo.swift in Sources */,
 				90BBD61C629F5B7911560245 /* Tokens.swift in Sources */,
 				B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */,
 				66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */,
@@ -338,6 +352,7 @@
 				26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */,
 				531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */,
 				D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */,
+				2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */,
 				BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */,
 				D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
@@ -351,6 +366,7 @@
 				B7C6B605D7DB135603AAF51A /* SincronizacaoDoCloset.swift in Sources */,
 				4EE6FBB85D4897F5FA7AF760 /* Supabase.swift in Sources */,
 				C72E0F744301265B0597C210 /* Traducao.swift in Sources */,
+				312C6C6A4E153FBAA96F9B83 /* AmostraDeIcones.swift in Sources */,
 				E076F6DA9EC9190CACF02B82 /* Analisar.swift in Sources */,
 				77202A27761230EA126556D7 /* BarraPrincipal.swift in Sources */,
 				BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */,

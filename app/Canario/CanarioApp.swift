@@ -12,7 +12,10 @@ struct CanarioApp: App {
         // houver telas escuras desenhadas e validadas, este bloqueio sai daqui.
         WindowGroup {
             Group {
-                if ProcessInfo.processInfo.arguments.contains("-CanarioUITestCompare") {
+                if ProcessInfo.processInfo.arguments.contains("-CanarioAmostraDeIcones") {
+                    // Folha de referência do desenho, não tela de produto.
+                    AmostraDeIcones()
+                } else if ProcessInfo.processInfo.arguments.contains("-CanarioUITestCompare") {
                     NavigationStack { Comparar() }
                 } else if ProcessInfo.processInfo.arguments.contains("-CanarioUITestSizesStripes") {
                     NavigationStack {
