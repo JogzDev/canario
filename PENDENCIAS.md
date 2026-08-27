@@ -42,30 +42,43 @@ interface.
 
 Depois destas três, tela por tela, no ritmo que permitir fazer bem feito.
 
-## Precisa da mão do JP — A48
+## Migrations aplicadas em 27/08 — conferidas em produção
 
-A migration `20260826230000_a48_motivos_de_estampa_saem_da_taxonomia.sql` e a
-nova versão da Edge Function **ainda não foram aplicadas**. Duas ações, nesta
-ordem, e nenhuma urgente:
+**A48 e A49 estão no banco.** Aplicadas pelo conector do Supabase no projeto
+`tbluoqpnjqsflfoclmms`, com verificação depois de cada uma:
 
-1. Aplicar a migration (reprova os seis `motivo_estampa` e simplifica
-   `similares_da_peca_amplo`).
-2. Aplicar a `20260827010000_a49_ordem_das_cores_do_closet.sql`, que acrescenta
-   `cores_prioridade text[]` ao Closet sincronizado. **Enquanto ela não for
-   aplicada, a ordem das cores vale só no aparelho** — a leitura do Closet cai
-   sozinha na lista de colunas antiga e continua funcionando, e o envio ignora
-   o campo. Não há ordem obrigatória entre aplicar a migration e instalar o
-   app novo.
-3. Redeployar `analisar-peca` seguindo o [`DEPLOY_ANALISE_VISUAL.md`](DEPLOY_ANALISE_VISUAL.md).
-   O prompt subiu para `alvo-estrutura-cintura-v11` e deixou de pedir
-   `print_motifs`.
+| Conferido | Antes | Depois |
+|---|---:|---:|
+| `motivo_estampa` aprovados | 6 | **0** (6 reprovados) |
+| `conversacional` aprovado | 1 | 1 |
+| termos aprovados no total | 51 | 45 |
+| ligações em `produto_termos` dos motivos | 212 | **212** (nada destruído) |
+| coluna `cores_prioridade` | ausente | presente, com 2 `check` |
+| `aplicar_mudancas_closet` carrega a ordem | não | **sim** |
+| `similares_da_peca_amplo` cita `motivo_estampa` | sim | **não** |
 
-**A ordem não é crítica e o app aguenta os dois estados.** Ele parou de
-declarar `print_motifs` no modelo, e chave extra no JSON é ignorada pelo
-`Decodable` sintetizado — então o app novo funciona com a função antiga. E se
-a função antiga devolver um motivo depois da migration, o id chega reprovado
-e a interseção com a taxonomia o descarta. Não existe janela quebrada em
-nenhuma das duas ordens.
+E o motor continua de pé: `conversacional` devolve 24 peças (igual a antes),
+`tomate_print` devolve 0 (aposentado, como planejado), o caso do vídeo
+(`casaco_jaqueta` + `cinza`) devolve 24 e o motor amplo devolve 12 para
+`vestido` + `floral`.
+
+**Nota sobre o registro de migrations.** `supabase_migrations.schema_migrations`
+tinha 72 linhas e parava na A34, enquanto o schema já continha o efeito da A35
+até a A47 — sinal de que as intermediárias foram aplicadas pelo editor SQL, que
+não registra. O registro não é fonte confiável de estado neste projeto; o schema
+é. A48 e A49 ficaram registradas.
+
+## O redeploy da `analisar-peca` está PARADO — decisão do JP
+
+Ver a seção "Rota paga de visão" da [`ESTADO.md`](ESTADO.md). Resumo do
+impasse: produção roda `alvo-estrutura-motivos-v9`, o repositório está na v10
+(que **nunca foi implantada, de propósito**) e a minha mudança faz v11 em cima
+da v10. O vocabulário ampliado da v10 mediu **57/72 = 79,2%** em categoria e
+cor — **abaixo do portão de 80%** que a v7 tinha passado com 81,9% e 83,3%.
+Subir o arquivo do repositório implantaria justamente o que foi retido.
+
+Não bloqueia nada da 1.2: a ordenação de cor por área visível, de que a A49
+depende, **já está na v9 em produção**.
 
 ## Operacional — aberto agora
 
