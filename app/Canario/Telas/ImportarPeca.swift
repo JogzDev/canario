@@ -97,6 +97,12 @@ struct ImportarPeca: View {
     /// Ver o comentário na tela de confirmação do alvo.
     static let mostraAlternativasDeAlvo = false
 
+    /// Teto de cores por peça, fixado pelo JP em 26/08. Não é número
+    /// arbitrário: bate com o `maxItems: 3` que o prompt da Luna já impõe, e
+    /// a quarta cor deixaria de descrever a peça para descrever a estampa —
+    /// que tem dimensão própria.
+    static let tetoDeCores = 3
+
     @State private var etapa = Etapa.entrada
     @State private var nomeDoArquivo: String?
     @State private var procedencia: [String] = []
@@ -116,6 +122,13 @@ struct ImportarPeca: View {
     @State private var alvoEscolhido: Int?
     @State private var descricaoDoAlvo = ""
     @State private var nomeDaPeca = ""
+    /// As cores **na ordem de prioridade**: índice 0 é a cor principal.
+    ///
+    /// Existe separado de `detectados` porque `Set` não tem ordem, e ordem é
+    /// justamente o que esta dimensão carrega: 1 é a cor que domina a peça, 2
+    /// e 3 são as secundárias. A Luna já devolve ranqueado por área visível;
+    /// aqui a ordem só é preservada e fica editável.
+    @State private var coresPorPrioridade: [String] = []
     @State private var salvandoNoCloset = false
     @State private var analiseConcluidaParaOAlvo = false
     @State private var mostrandoEditorDeRecorte = false
@@ -207,6 +220,11 @@ struct ImportarPeca: View {
             avisoDeUso = await RegistroDeAnalises.shared.aviso()
             if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
                 detectados = Set(["vestido", "preto"])
+                // A rota determinística preenche o conjunto na mão, então
+                // precisa preencher a ordem também -- senão a tela mostraria
+                // preto marcado e sem número, que é um estado que a interação
+                // real nunca produz.
+                ordenarCoresPelaTaxonomia()
                 procedencia = ["Offline interface test."]
                 etapa = .atributos
             }
@@ -392,8 +410,10 @@ struct ImportarPeca: View {
     private var telaDeEntrada: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+                // O preço desceu para o fim da tela de atributos em 26/08.
+                // Esta tela tem três botões e nada mais; pedir um número antes
+                // de a pessoa ter visto a peça reconhecida era pedir cedo.
                 importador
-                precoOpcional
             }
             .padding(Tokens.Espaco.m)
         }
@@ -440,6 +460,7 @@ struct ImportarPeca: View {
                 }
                 if !procedencia.isEmpty { oQueLi }
                 atributos
+                precoOpcional
                 if !detectados.isEmpty {
                     Button {
                         Task { await salvarNoCloset() }
@@ -546,26 +567,105 @@ struct ImportarPeca: View {
     }
 
     private var atributos: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
+        VStack(alignment: .leading, spacing: 24) {
             HStack {
-                Text("Item attributes").font(Tokens.Fonte.secao)
+                Text("Describe your item attributes")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
                 Spacer()
                 if !detectados.isEmpty {
-                    Button("Clear") { detectados.removeAll() }
+                    Button("Clear") { limparAtributos() }
                         .font(Tokens.Fonte.miudo)
                 }
             }
             ForEach(dimensoes, id: \.self) { dimensao in
-                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text(Traducao.rotuloDaDimensao(dimensao))
-                        .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                    FluxoDeChips(
-                        termos: termosVisiveis(na: dimensao),
-                        todos: termosDoFormulario,
-                        marcados: $detectados)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    if dimensao == "cor" { legendaDaOrdemDeCor }
+                    FlowLayout(espaco: 12) {
+                        ForEach(termosVisiveis(na: dimensao)) { termo in
+                            BotaoDeAtributo(termo: termo,
+                                            ativo: detectados.contains(termo.id),
+                                            prioridade: prioridade(de: termo),
+                                            acao: { alternar(termo) })
+                        }
+                    }
+                    Divider()
                 }
             }
+        }
+    }
+
+    /// A tela precisa dizer o que os números significam, e dizer de onde eles
+    /// vieram. "1" sobre um círculo não se explica sozinho, e apresentar uma
+    /// ordem calculada pela Luna como se fosse escolha da pessoa seria o tipo
+    /// de silêncio que a §2 proíbe.
+    private var legendaDaOrdemDeCor: some View {
+        Text(coresPorPrioridade.isEmpty
+             ? "Pick up to \(Self.tetoDeCores), in order — the first one is the main color."
+             : "1 is the main color, 2 and 3 are secondary. Tap a color again to remove it.")
+            .font(Tokens.Fonte.miudo)
+            .foregroundStyle(Tokens.Cor.tintaFraca)
+    }
+
+    private func prioridade(de termo: Termo) -> Int? {
+        guard termo.dimensao == "cor",
+              let posicao = coresPorPrioridade.firstIndex(of: termo.id)
+        else { return nil }
+        return posicao + 1
+    }
+
+    /// Marcar e desmarcar. Cor tem regra própria porque é a única dimensão em
+    /// que a ORDEM é informação: as outras respondem "é isto?", e cor responde
+    /// "nesta ordem".
+    private func alternar(_ termo: Termo) {
+        guard termo.dimensao == "cor" else {
+            detectados = FormularioDaPeca.alternar(termo, em: detectados,
+                                                   termos: termosDoFormulario)
+            sincronizarCores()
+            return
+        }
+        if let posicao = coresPorPrioridade.firstIndex(of: termo.id) {
+            coresPorPrioridade.remove(at: posicao)
+            detectados.remove(termo.id)
+            return
+        }
+        // No teto, o toque não faz nada em silêncio -- e silêncio numa tela de
+        // toque é indistinguível de defeito. A legenda acima já diz o teto
+        // antes do toque, que é o momento em que a informação serve.
+        guard coresPorPrioridade.count < Self.tetoDeCores else { return }
+        coresPorPrioridade.append(termo.id)
+        detectados = FormularioDaPeca.podar(detectados.union([termo.id]),
+                                            termos: termosDoFormulario)
+    }
+
+    private func limparAtributos() {
+        detectados.removeAll()
+        coresPorPrioridade.removeAll()
+    }
+
+    /// A ordem e o conjunto têm que dizer a mesma coisa. Sem isto, uma cor
+    /// removida pela poda continuaria com número na tela — e número na tela
+    /// que não corresponde a nada salvo é exatamente o que este projeto foi
+    /// construído para não fazer.
+    private func sincronizarCores() {
+        coresPorPrioridade.removeAll { !detectados.contains($0) }
+    }
+
+    /// Ordem de recurso, para quando a leitura não ranqueia.
+    ///
+    /// A leitura local sai do texto do arquivo, e texto não diz proporção:
+    /// "vestido preto e branco" não informa qual das duas domina. Então a
+    /// ordem aqui é a da taxonomia e a pessoa reordena tocando. Só a Luna
+    /// ranqueia por área visível, e é por isso que o caminho dela usa
+    /// `coresSugeridas` em vez desta função.
+    private func ordenarCoresPelaTaxonomia() {
+        let cores = termosDoFormulario
+            .filter { $0.dimensao == "cor" && detectados.contains($0.id) }
+            .map(\.id)
+        coresPorPrioridade = Array(cores.prefix(Self.tetoDeCores))
+        for excedente in cores.dropFirst(Self.tetoDeCores) {
+            detectados.remove(excedente)
         }
     }
 
@@ -590,22 +690,25 @@ struct ImportarPeca: View {
         let permitidas = FormularioDaPeca.dimensoesPermitidas(categorias: categorias)
         var vistas: [String] = []
         for t in termosDoFormulario where permitidas.contains(t.dimensao) {
-            let visivel = t.dimensao == "motivo_estampa" ? "estampa" : t.dimensao
-            if !vistas.contains(visivel) { vistas.append(visivel) }
+            // `motivo_estampa` não vira seção: os seis motivos viraram uma
+            // família só na tela, "Illustrated prints". Eles continuam
+            // PERMITIDOS na poda de propósito -- se a Luna reconheceu tomate,
+            // o rótulo segue no que a pessoa salva e alimenta os similares.
+            // Tirá-los da poda apagaria a leitura sem ninguém ver.
+            guard t.dimensao != "motivo_estampa" else { continue }
+            if !vistas.contains(t.dimensao) { vistas.append(t.dimensao) }
         }
         return vistas
     }
 
     private func termosVisiveis(na dimensao: String) -> [Termo] {
-        let encontrados = termosDoFormulario.filter {
-            $0.dimensao == dimensao
-                || (dimensao == "estampa" && $0.dimensao == "motivo_estampa")
-        }.filter { $0.id != "trico_croche" }
+        let encontrados = termosDoFormulario
+            .filter { $0.dimensao == dimensao }
+            .filter { $0.id != "trico_croche" }
         guard dimensao == "estampa" else { return encontrados }
         let prioridade = [
             "animal_print", "floral", "listra", "xadrez", "geometrica",
-            "conversacional", "tomate_print", "cereja_print", "morango_print",
-            "banana_print", "abacaxi_print", "melancia_print", "liso",
+            "conversacional", "liso",
         ]
         return encontrados.sorted {
             (prioridade.firstIndex(of: $0.id) ?? 99)
@@ -804,6 +907,7 @@ struct ImportarPeca: View {
                     dadosParaNuvem, alvo: descricaoDoAlvo)
                 if analise.alvoAmbiguo {
                     detectados = []
+                    coresPorPrioridade = []
                     procedencia = analise.decisionEvidence.map {
                         "Why the target was ambiguous: \($0)"
                     }
@@ -813,6 +917,13 @@ struct ImportarPeca: View {
                     detectados = FormularioDaPeca.podar(
                         analise.idsSugeridos(existentes: existentes),
                         termos: termos)
+                    // A ordem vem da Luna, que ranqueia por área visível. É a
+                    // única fonte de ranqueamento que existe no sistema.
+                    coresPorPrioridade = analise
+                        .coresSugeridas(existentes: existentes)
+                        .filter { detectados.contains($0) }
+                        .prefix(Self.tetoDeCores)
+                        .map { $0 }
                     let porId = Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
                     let lidos = detectados.compactMap { porId[$0] }
                         .sorted { ($0.dimensao, $0.id) < ($1.dimensao, $1.id) }
@@ -834,6 +945,7 @@ struct ImportarPeca: View {
                     }
                     if !FormularioDaPeca.temCategoria(detectados, termos: termos) {
                         detectados = []
+                        coresPorPrioridade = []
                         erro = "The analysis returned an invalid category. Choose the attributes manually."
                     }
                 }
@@ -858,6 +970,7 @@ struct ImportarPeca: View {
         let achado = Importacao.atributos(de: leitura, em: termos)
         let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
         detectados = reconheceuPeca ? achado.marcados : []
+        ordenarCoresPelaTaxonomia()
         procedencia = achado.procedencia
         if let mensagem {
             erro = mensagem

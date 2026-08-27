@@ -57,7 +57,15 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Add to Closet"].exists)
         XCTAssertTrue(app.textFields["Clothing name (optional)"].exists)
         XCTAssertTrue(app.buttons["Dress"].exists)
-        XCTAssertTrue(app.buttons["Black"].exists)
+        // A cor não se anuncia só como marcada: ela anuncia a POSIÇÃO. Quem
+        // usa VoiceOver não vê o número dentro do círculo, e "preta" e
+        // "preta, cor principal" são informações diferentes.
+        XCTAssertTrue(app.buttons["Black, primary color"].exists)
+        XCTAssertFalse(app.buttons["Black"].exists,
+                       "sem a posição, o número na tela não teria equivalente falado")
+        // O preço mudou de tela em 26/08: saiu da entrada e desceu para o fim
+        // desta, depois dos atributos.
+        XCTAssertTrue(app.staticTexts["Your intended price"].exists)
         XCTAssertTrue(app.buttons["Back"].exists)
         XCTAssertFalse(app.buttons["Open Clothing Details"].exists)
         XCTAssertFalse(app.staticTexts["Keep this item"].exists)
@@ -68,7 +76,8 @@ final class CanarioUITests: XCTestCase {
 
         app.buttons["Back"].tap()
         XCTAssertTrue(app.buttons["Choose from Photos"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts["Your intended price"].exists)
+        XCTAssertFalse(app.staticTexts["Your intended price"].exists,
+                       "o preço não mora mais na tela de entrada")
     }
 
     func testPrivacyAbrePeloCaminhoDeterministico() {
@@ -88,7 +97,8 @@ final class CanarioUITests: XCTestCase {
             .waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Choose from Photos"].exists)
         XCTAssertTrue(app.buttons["Choose a file or PDF"].exists)
-        XCTAssertTrue(app.staticTexts["Your intended price"].exists)
+        // Três entradas e nada mais. O preço desceu para a tela de atributos.
+        XCTAssertFalse(app.staticTexts["Your intended price"].exists)
         XCTAssertTrue(app.buttons["Close"].exists)
     }
 
