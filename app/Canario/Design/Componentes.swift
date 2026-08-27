@@ -315,3 +315,34 @@ struct FalhaDeRede: View {
         .padding(Tokens.Espaco.g)
     }
 }
+
+/// A barra de uma proporção, fina e sem número próprio.
+///
+/// Ela nunca aparece sozinha: mora colada à frase que diz a porcentagem, e é
+/// essa vizinhança que a define. Uma barra com número próprio ao lado de um
+/// segundo número vira adivinhação sobre qual dos dois ela mede — foi o que
+/// aconteceu no primeiro desenho da procedência do cluster, onde ela dividia a
+/// linha com o valor do atributo.
+///
+/// Fica escondida do VoiceOver de propósito: o texto ao lado já diz a
+/// porcentagem, e uma barra falada como "56 por cento" logo antes de alguém
+/// ouvir "56% of the weight" é a mesma informação duas vezes.
+struct BarraDePeso: View {
+    /// 0 a 1. Valor fora da faixa é preso na faixa em vez de estourar o
+    /// desenho: peso vem do servidor, e desenho não é lugar de confiar.
+    let fracao: Double
+
+    var body: some View {
+        GeometryReader { area in
+            let cheia = max(0, min(1, fracao))
+            ZStack(alignment: .leading) {
+                Capsule().fill(Tokens.Cor.superficie)
+                Capsule()
+                    .fill(Tokens.Cor.azulMarca.opacity(0.55))
+                    .frame(width: max(2, area.size.width * cheia))
+            }
+        }
+        .frame(height: 5)
+        .accessibilityHidden(true)
+    }
+}
