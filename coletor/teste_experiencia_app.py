@@ -65,6 +65,23 @@ def main():
     assert '.focused($dicaDoAlvoEmFoco)' in importar
     assert 'Button("Done") { dicaDoAlvoEmFoco = false }' in importar
     assert '.scrollDismissesKeyboard(.interactively)' in importar
+    assert 'guard !termos.isEmpty else {' in importar
+    assert 'no visual-analysis credit was used' in importar
+    assert '.accessibilityLabel("Photo options")' in importar
+    assert 'private func voltarUmaEtapa()' in importar
+    assert 'precoOpcional' in importar
+
+    # O visual novo da BranchFadul manteve o calculo do teto diario e apagou a
+    # linha que o mostrava, e apagou a frase de privacidade inteira. As duas
+    # voltaram; estes portoes existem para elas nao sairem de novo sem que
+    # alguem note.
+    assert 'if let avisoDeUso {' in importar
+    assert 'LinhaInsumo(texto: avisoDeUso)' in importar
+    assert 'The app prepares the image on this iPhone and asks before sending' in importar
+    assert 'The app reads the file on this iPhone.' in importar
+    # Build de colaborador (REMOTE_ANALYSIS_ENABLED = NO) precisa dizer que a
+    # analise esta desligada, em vez de parecer que ela falhou.
+    assert 'Cloud visual analysis is off in this build' in importar
 
     # O card do manequim já é centralizado na tela pela VStack; o que sobrava
     # era o desenho estar torto DENTRO do card. Meia unidade de tolerância é

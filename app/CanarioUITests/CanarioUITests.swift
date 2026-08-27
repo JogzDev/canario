@@ -61,6 +61,14 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Back"].exists)
         XCTAssertFalse(app.buttons["Open Clothing Details"].exists)
         XCTAssertFalse(app.staticTexts["Keep this item"].exists)
+
+        app.buttons["Back"].tap()
+        XCTAssertTrue(app.buttons["Photo options"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["Back"].exists)
+
+        app.buttons["Back"].tap()
+        XCTAssertTrue(app.buttons["Choose from Photos"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Your intended price"].exists)
     }
 
     func testPrivacyAbrePeloCaminhoDeterministico() {

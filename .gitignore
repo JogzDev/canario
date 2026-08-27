@@ -39,5 +39,10 @@ anexos/auditoria_links_app.jsonl
 # SwiftPM
 .build/
 
+# O Xcode recria este arquivo sozinho ao abrir o .xcodeproj: ele nao descreve o
+# projeto, so o estado do workspace implicito. Entrou por engano no commit do
+# visual novo em 26/08 e reaparece em toda maquina que abre o projeto.
+app/Canario.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+
 # Estado local da CLI Supabase (referencia do projeto e versoes remotas)
 supabase/.temp/

@@ -1,13 +1,46 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 26/08/2026 às 15:20 BRT.** Esta lista substitui a triagem de
+**Atualizado em 26/08/2026 às 18:20 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
-## Bloqueio externo — depende do Figma
+## Pacote visual do Figma — a frente ativa
 
-1. **Pacote visual do Figma.** Aplicar as novas telas e os assets finais. A
-   hierarquia do Market panel e a redução de texto em “Which item” ficam nesta
-   etapa para não desenhar duas vezes a mesma interface.
+Arquivo `EZ58SkSJRlcTLOC6NDgdGR`, uma página só. **Uma tela por branch, PR
+revisado, merge só pelo JP.** A hierarquia do Market panel e a redução de texto
+em "Which item" ficam nesta etapa para não desenhar duas vezes a mesma
+interface.
+
+**Regras de desenho combinadas em 26/08, válidas para todas as telas:**
+
+- **Human Interface Guidelines da Apple** são o padrão, não uma referência
+  solta. Ícone sai do **SF Symbols**; onde ele não existe, improvisar mantendo
+  a métrica e o peso da família.
+- Molduras e cartões usam a sombra suave cinza-gelo do padrão Apple, e não
+  retângulo chapado.
+- O texto de privacidade do importador **fica**.
+- O desenho do Davi é a base: melhorar formatação e conformidade sem
+  descaracterizar o que ele fez.
+- Imagens de peça nas telas do Figma são **exemplo** — o casaco de bandeiras
+  não vai para o app. Todo campo de imagem mostra a peça que o usuário enviou.
+
+**Fila desta rodada — as três telas do fluxo de importar:**
+
+1. *Analyze an item* — entregue como **provisória** pelo Davi. Refazer a
+   formatação no padrão Apple. Ela tem pouca informação: **não deve ser um
+   scroll que sobe a tela inteira**, só o necessário para oferecer as três
+   entradas.
+2. *Confirm your item* — já chega mais perto do padrão; falta o mesmo
+   acabamento.
+3. *Fill the info* — **ainda não implementada**, e é a que muda comportamento:
+   - **Cor passa a ter ordem de prioridade.** Os números 1, 2 e 3 sobre os
+     círculos são posição, não contagem: 1 é a cor principal, 2 a secundária, 3
+     a terciária. Nem toda peça chega a três. **Teto de 2 ou 3 — o JP decide o
+     número.** É o **único** campo com ordem; categoria, estampa, estilo e o
+     resto seguem seleção simples, como hoje.
+   - **É uma tela de scroll longo**, e o `intended price` desce para o fim
+     dela. Ele sai da tela de entrada — decisão de produto tomada em 26/08.
+
+Depois destas três, tela por tela, no ritmo que permitir fazer bem feito.
 
 ## Operacional — aberto agora
 
@@ -49,27 +82,34 @@
   olhar o que os Ajustes mostram: "Always use the cloud" e mesmo assim
   perguntando é bug reproduzível; "Ask me the first time" significa que a escolha
   não está sendo gravada.
-- **Strings novas ainda não estão no String Catalog.** `SWIFT_EMIT_LOC_STRINGS`
-  está ligado, então elas entram sozinhas no próximo build feito pelo Xcode
-  (não pelo `xcodebuild` em DerivedData temporário). Acontece naturalmente ao
-  gerar o Archive.
+- **Strings novas fora do String Catalog — resolvido.** O catálogo versionado
+  passou de 145 para **216 chaves** ao entrar o visual novo. Cuidado que
+  permanece: o Xcode **poda** do catálogo toda string que a interface deixa de
+  citar, e num redesenho isso apaga também as que voltarão. Foram 25 podadas de
+  uma vez em 26/08, das quais 10 o código ainda usava. Ao aplicar cada tela do
+  Figma, conferir o diff do `Localizable.xcstrings` além do `.swift`.
 
 ## Trabalho local do JP ainda não commitado
 
-- `app/Canario/Localizable.xcstrings` tem **219 chaves** na cópia local e **145**
-  no repositório. `FICHA_APP_STORE_1.1.md`, `POLITICA_PUBLICA_1.1.md`,
-  `SONDA_CANDIDATAS.md` e `capturas_1.1/` também estão só na máquina. Nenhum
-  deles entrou em commit de agente, de propósito; decidir o que versionar é seu.
+- `app/Canario/Localizable.xcstrings` **deixou de ter conteúdo próprio**: as 9
+  chaves que só existiam na cópia local são textos que o visual novo tirou da
+  interface. Depois do merge do PR #19, `git checkout --
+  app/Canario/Localizable.xcstrings` descarta a cópia sem perder nada.
+- `FICHA_APP_STORE_1.1.md`, `POLITICA_PUBLICA_1.1.md`, `SONDA_CANDIDATAS.md` e
+  `capturas_1.1/` continuam só na máquina. Nenhum entrou em commit de agente, de
+  propósito; decidir o que versionar é seu.
 
 ## Fechamento de release — depois do Figma
 
 - **Já validados fisicamente em 26/08:** instalação limpa, login e relogin com o
-  SDK Google nativo, câmera e fototeca. O artefato rosa, a demora de ~30 s e a
-  repetição indevida do consentimento também não voltaram a ocorrer.
-- Rodar os quatro aceites físicos ainda pendentes: offline, Universal Links,
-  Dynamic Type e VoiceOver. O app é deliberadamente light-only
-  (`.preferredColorScheme(.light)`), portanto modo escuro não é caso suportado.
-- Rodar a regressão visual no iPhone e a suíte completa.
+  SDK Google nativo, câmera e fototeca — e também **offline, Universal Links,
+  Dynamic Type e VoiceOver**, os quatro que faltavam, confirmados pelo JP. O
+  artefato rosa, a demora de ~30 s e a repetição indevida do consentimento
+  também não voltaram a ocorrer. **Nenhum aceite físico segue pendente.** O app
+  é deliberadamente light-only (`.preferredColorScheme(.light)`), portanto modo
+  escuro não é caso suportado.
+- Rodar a regressão visual no iPhone e a suíte completa **depois** do pacote do
+  Figma — é o único aceite que precisa ser repetido, porque as telas mudam.
 - Gerar Archive Release 1.2, validar assinatura/entitlements, enviar ao
   TestFlight e repetir os fluxos críticos no binário distribuído.
 - Atualizar capturas e metadata da App Store com as telas finais; só então
