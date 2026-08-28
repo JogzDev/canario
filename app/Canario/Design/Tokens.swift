@@ -40,6 +40,50 @@ enum Tokens {
         static let azulMarca = adaptativa(claro: (55, 74, 103),
                                           escuro: (150, 180, 215))
 
+        // MARK: - O território escuro (27/08)
+        //
+        // O app passa a ter dois territórios, e a divisa é o ASSUNTO, não a
+        // tela: **claro é a sua roupa, escuro é o mercado**. Add, Closet e o
+        // painel de uma peça sua continuam claros; Trends, o relatório de um
+        // termo e as listas de mercado ficam escuros.
+        //
+        // Isso saiu do Figma da Bianca, onde a divisão já estava feita sem
+        // estar nomeada: todas as telas de mercado que ela desenhou são
+        // escuras e todas as do armário são claras.
+        //
+        // **`#0A0B1A` é a terceira cor oficial da marca**, ao lado de `ceu`
+        // (#BBE5ED) e `azulMarca` (#374A67) — e era a única das três que nunca
+        // tinha entrado no código. Cuidado com o nome: `noite`, logo acima, é
+        // outro quase-preto (#0E1116) e serve de TINTA sobre o céu. São coisas
+        // diferentes e não devem ser trocadas uma pela outra.
+        //
+        // Os quatro tons derivados abaixo não são escolha de gosto: cada um é
+        // uma mistura medida entre `noturno` e `azulMarca` (ou o branco frio da
+        // tinta). É isso que faz o escuro parecer da mesma marca que o claro,
+        // em vez de um cinza genérico de sistema.
+
+        /// Fundo do território de mercado. A terceira cor oficial.
+        static let noturno = fixa(10, 11, 26)
+        /// Cartão sobre o fundo noturno: `noturno` 22% na direção do azul.
+        static let superficieNoturna = fixa(20, 25, 43)
+        /// Borda e divisor no escuro: 40% na mesma direção.
+        static let bordaNoturna = fixa(28, 36, 57)
+        /// Tinta sobre o escuro. Branco frio, não branco puro: puro vibra
+        /// sobre fundo azulado e cansa em tela de leitura.
+        static let tintaNoturna = fixa(234, 242, 245)
+        /// Tinta de apoio no escuro, a 62% do caminho entre fundo e tinta.
+        static let tintaFracaNoturna = fixa(149, 154, 162)
+
+        /// Cor que NÃO se adapta ao tema do sistema.
+        ///
+        /// O território escuro é escuro por decisão de produto, e não porque o
+        /// iPhone está no modo escuro. Se estes tons fossem adaptativos, a tela
+        /// de mercado clarearia junto com o resto no modo claro — que é
+        /// exatamente o contrário do que ela existe para fazer.
+        static func fixa(_ r: Double, _ g: Double, _ b: Double) -> Color {
+            Color(red: r / 255, green: g / 255, blue: b / 255)
+        }
+
         /// Uma cor por tema, resolvida pelo sistema no momento de desenhar --
         /// e não uma vez na inicialização. Isso é o que faz a tela responder a
         /// quem troca de tema com o app aberto.
