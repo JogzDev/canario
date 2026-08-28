@@ -193,3 +193,72 @@ extension View {
                x: 0, y: Tokens.Sombra.deslocamentoY)
     }
 }
+
+// MARK: - Território
+
+/// Em que metade do app a tela está.
+///
+/// A divisa é o **assunto**, não a tela: `armario` é a roupa da pessoa,
+/// `mercado` é o painel. Uma tela declara o seu território uma vez, na raiz, e
+/// todo componente compartilhado abaixo dela se adapta sozinho — que é o que
+/// impede a alternativa cara, passar uma cor por parâmetro em cada chamada e
+/// descobrir os esquecidos um por um, olhando.
+enum Territorio {
+    case armario
+    case mercado
+}
+
+private struct ChaveDoTerritorio: EnvironmentKey {
+    /// Claro por padrão: o app nasceu no armário, e uma tela que esquecer de
+    /// declarar continua parecendo com ela mesma em vez de escurecer sozinha.
+    static let defaultValue = Territorio.armario
+}
+
+extension EnvironmentValues {
+    var territorio: Territorio {
+        get { self[ChaveDoTerritorio.self] }
+        set { self[ChaveDoTerritorio.self] = newValue }
+    }
+}
+
+extension View {
+    /// Declara o território e já pinta o fundo dele.
+    ///
+    /// As duas coisas juntas de propósito: declarar sem pintar deixaria os
+    /// cartões escuros sobre um fundo branco, que é pior que não ter feito
+    /// nada. `ignoresSafeArea` porque o fundo do mercado tem de alcançar a
+    /// barra de status — metade escura com uma faixa branca em cima parece
+    /// defeito, não desenho.
+    func territorio(_ valor: Territorio) -> some View {
+        environment(\.territorio, valor)
+            .background(Tokens.Cor.fundoDo(valor).ignoresSafeArea())
+            // A tinta padrão da subárvore. Sem isto, todo `Text` fora de um
+            // cartão herda `.label` -- que é escuro -- e some no fundo. Na
+            // primeira montagem da Trends, "Supply moves" e os carimbos de
+            // data ficaram invisíveis exatamente assim.
+            .foregroundStyle(Tokens.Cor.tintaDo(valor))
+            // O esquema do sistema NÃO é decidido aqui, e a tentativa de
+            // decidir foi instrutiva: `preferredColorScheme` se propaga até a
+            // cena, e o da raiz do app ganha do de dentro. A hora no topo
+            // continuava preta sobre #0A0B1A. Quem manda nisso é `Raiz`, pela
+            // aba visível -- ver `CanarioApp.swift`.
+    }
+}
+
+extension Tokens.Cor {
+    static func fundoDo(_ t: Territorio) -> Color {
+        t == .mercado ? noturno : fundo
+    }
+    static func superficieDo(_ t: Territorio) -> Color {
+        t == .mercado ? superficieNoturna : superficie
+    }
+    static func bordaDo(_ t: Territorio) -> Color {
+        t == .mercado ? bordaNoturna : borda
+    }
+    static func tintaDo(_ t: Territorio) -> Color {
+        t == .mercado ? tintaNoturna : tinta
+    }
+    static func tintaFracaDo(_ t: Territorio) -> Color {
+        t == .mercado ? tintaFracaNoturna : tintaFraca
+    }
+}

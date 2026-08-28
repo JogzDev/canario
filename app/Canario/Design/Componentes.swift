@@ -13,6 +13,7 @@ import SwiftUI
 struct SeloEstado: View {
     let estado: String?
     var leitura: Double? = nil
+    @Environment(\.territorio) private var territorio
 
     /// Padding e raio crescem junto com a fonte do sistema. Com valores fixos,
     /// aumentar o texto nos ajustes de acessibilidade fazia a frase encostar na
@@ -65,29 +66,46 @@ struct SeloEstado: View {
     /// escolhido por tema e **medido**: os 14 pares passam de 4,5:1 em contraste
     /// WCAG AA (o menor é 6,19:1). `Tokens.Cor.adaptativa` resolve no momento de
     /// desenhar, então trocar de tema com o app aberto repinta o selo.
+    /// **Escolhido pelo TERRITÓRIO, não pelo tema do sistema (27/08).**
+    ///
+    /// Os quatorze pares já existiam e já estavam medidos; o que estava errado
+    /// era o critério. `adaptativa` pergunta ao iPhone se ele está no modo
+    /// escuro — e o app inteiro é `preferredColorScheme(.light)`, então a
+    /// resposta é sempre "claro". Numa tela de mercado, que é escura por
+    /// decisão de produto e não por tema, o selo escolhia o par CLARO e ficava
+    /// texto escuro sobre fundo escuro.
+    ///
+    /// Não é hipótese: era o que aconteceria na primeira tela do território
+    /// novo, em todos os sete estados de uma vez. Trocar `adaptativa` por
+    /// `fixa` escolhida pelo território preserva os pares medidos e resolve.
     private func cores(_ faixa: Leitura.Faixa) -> (fundo: Color, frente: Color) {
+        func par(_ claro: (Double, Double, Double),
+                 _ escuro: (Double, Double, Double)) -> Color {
+            let c = territorio == .mercado ? escuro : claro
+            return Tokens.Cor.fixa(c.0, c.1, c.2)
+        }
         switch faixa {
         case .muitoAcima:
-            return (Tokens.Cor.adaptativa(claro: (222, 246, 214), escuro: (24, 58, 30)),
-                    Tokens.Cor.adaptativa(claro: (24, 80, 30), escuro: (168, 230, 160)))
+            return (par((222, 246, 214), (24, 58, 30)),
+                    par((24, 80, 30), (168, 230, 160)))
         case .acima:
-            return (Tokens.Cor.adaptativa(claro: (219, 234, 254), escuro: (26, 48, 84)),
-                    Tokens.Cor.adaptativa(claro: (26, 58, 120), escuro: (168, 200, 250)))
+            return (par((219, 234, 254), (26, 48, 84)),
+                    par((26, 58, 120), (168, 200, 250)))
         case .poucoAcima:
-            return (Tokens.Cor.adaptativa(claro: (226, 236, 246), escuro: (30, 52, 72)),
-                    Tokens.Cor.adaptativa(claro: (32, 66, 102), escuro: (168, 205, 235)))
+            return (par((226, 236, 246), (30, 52, 72)),
+                    par((32, 66, 102), (168, 205, 235)))
         case .habitual:
-            return (Tokens.Cor.adaptativa(claro: (233, 236, 239), escuro: (48, 54, 60)),
-                    Tokens.Cor.adaptativa(claro: (55, 65, 74), escuro: (202, 210, 217)))
+            return (par((233, 236, 239), (48, 54, 60)),
+                    par((55, 65, 74), (202, 210, 217)))
         case .poucoAbaixo:
-            return (Tokens.Cor.adaptativa(claro: (255, 236, 222), escuro: (74, 45, 26)),
-                    Tokens.Cor.adaptativa(claro: (140, 62, 20), escuro: (250, 200, 165)))
+            return (par((255, 236, 222), (74, 45, 26)),
+                    par((140, 62, 20), (250, 200, 165)))
         case .abaixo:
-            return (Tokens.Cor.adaptativa(claro: (255, 226, 209), escuro: (82, 40, 20)),
-                    Tokens.Cor.adaptativa(claro: (150, 50, 8), escuro: (255, 190, 150)))
+            return (par((255, 226, 209), (82, 40, 20)),
+                    par((150, 50, 8), (255, 190, 150)))
         case .muitoAbaixo:
-            return (Tokens.Cor.adaptativa(claro: (255, 224, 224), escuro: (84, 28, 28)),
-                    Tokens.Cor.adaptativa(claro: (140, 26, 26), escuro: (255, 180, 180)))
+            return (par((255, 224, 224), (84, 28, 28)),
+                    par((140, 26, 26), (255, 180, 180)))
         }
     }
 
@@ -188,11 +206,12 @@ struct BotaoDeAjuda: View {
 
 struct LinhaInsumo: View {
     let texto: String
+    @Environment(\.territorio) private var territorio
 
     var body: some View {
         Text(texto)
             .font(Tokens.Fonte.miudo)
-            .foregroundStyle(Tokens.Cor.tintaFraca)
+            .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -201,6 +220,7 @@ struct LinhaInsumo: View {
 
 struct Cartao<Conteudo: View>: View {
     @ViewBuilder var conteudo: Conteudo
+    @Environment(\.territorio) private var territorio
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
@@ -208,8 +228,12 @@ struct Cartao<Conteudo: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Tokens.Espaco.m)
-        .background(Tokens.Cor.superficie)
+        .background(Tokens.Cor.superficieDo(territorio))
         .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartao))
+        // A tinta desce por herança: quem escreve dentro do cartão não precisa
+        // saber onde está. Só quem pede uma cor explícita passa por cima --
+        // e aí é escolha, não esquecimento.
+        .foregroundStyle(Tokens.Cor.tintaDo(territorio))
     }
 }
 

@@ -34,6 +34,10 @@ struct Explorar: View {
     @State private var carregandoPulso = true
     @State private var carregandoEditorial = true
     @State private var carregandoEventos = true
+    /// Qual metade do cartão de Supply moves está à vista. Reposição primeiro
+    /// porque é a que responde "a marca voltou a ter", que é a pergunta mais
+    /// comum de quem está comprando.
+    @State private var movimentoVisivel = "reposicao"
     @State private var erro: String?
     @State private var avisoDeCache: String?
     @State private var avisosParciais: [String] = []
@@ -90,6 +94,14 @@ struct Explorar: View {
                     conteudo
                 }
             }
+            // Território de mercado: esta tela e tudo que ela abre são
+            // escuros por decisão de produto, não por tema do sistema. Os
+            // componentes compartilhados leem isto do ambiente e se adaptam
+            // sozinhos -- cartão, linha de apoio e selo de estado.
+            .territorio(.mercado)
+            .toolbarBackground(Tokens.Cor.noturno, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .navigationTitle("Weekly Trends")
             // Uma reindexação por chegada de taxonomia, venha ela da rede
             // (`carregar`) ou do snapshot em disco. Ficar preso a um dos dois
@@ -121,15 +133,16 @@ struct Explorar: View {
                             .foregroundStyle(Tokens.Cor.tintaFraca)
                     }
                 }
-                atalhoDeComparacao
+                // Ordem de 27/08, do desenho da Bianca. A pergunta que a
+                // pessoa traz para esta tela é "o que mudou no mercado", e a
+                // resposta mais concreta é tamanho quebrando e marca mexendo
+                // no estoque -- não o atalho de comparar, que é ferramenta.
+                curvaDoPainel
+                movimentos
+                digest
                 radarDeBusca
                 radarEditorial
-                digest
-                curvaDoPainel
-                movimento(titulo: "Restocks", tipo: "reposicao",
-                          vazio: "No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available.")
-                movimento(titulo: "Markdowns", tipo: "remarcacao",
-                          vazio: "No price reduction of 5% or more was confirmed in this window.")
+                atalhoDeComparacao
             }
             .padding(Tokens.Espaco.m)
             .padding(.bottom, 20)
@@ -169,7 +182,38 @@ struct Explorar: View {
     // MARK: Movimento das marcas
 
     /// Uma linha por marca, com o total; a lista de peças abre no toque.
-    private func movimento(titulo: String, tipo: String, vazio: String) -> some View {
+    /// Reposições e remarcações num cartão só, com segmento.
+    ///
+    /// Elas eram duas seções longas, empilhadas, com a mesma forma e a mesma
+    /// altura -- e a pessoa rolava a segunda inteira sem perceber que já tinha
+    /// lido aquela estrutura. Juntar corta metade da rolagem sem tirar nada:
+    /// as duas continuam completas, uma de cada vez. Ideia da Bianca, e o JP
+    /// assinou embaixo.
+    private func rotuloDoMovimento(_ tipo: String) -> String {
+        tipo == "reposicao" ? "Restocks" : "Markdowns"
+    }
+
+    private var movimentos: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            Text("Supply moves").font(Tokens.Fonte.secao)
+            Picker("Supply moves", selection: $movimentoVisivel) {
+                Text("Restocks").tag("reposicao")
+                Text("Markdowns").tag("remarcacao")
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Which supply move to show")
+
+            if movimentoVisivel == "reposicao" {
+                movimento(titulo: nil, tipo: "reposicao",
+                          vazio: "No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available.")
+            } else {
+                movimento(titulo: nil, tipo: "remarcacao",
+                          vazio: "No price reduction of 5% or more was confirmed in this window.")
+            }
+        }
+    }
+
+    private func movimento(titulo: String?, tipo: String, vazio: String) -> some View {
         let doTipo = eventos.filter { $0.tipo == tipo }
         let porMarca = Dictionary(grouping: doTipo, by: \.marca)
             .sorted { ($0.value.count, $1.key) > ($1.value.count, $0.key) }
@@ -177,7 +221,7 @@ struct Explorar: View {
 
         return VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack(alignment: .firstTextBaseline) {
-                Text(titulo).font(Tokens.Fonte.secao)
+                if let titulo { Text(titulo).font(Tokens.Fonte.secao) }
                 Spacer()
                 if let maisRecente {
                     // O carimbo que faltava: o usuário vê a data do dado sem
@@ -195,7 +239,13 @@ struct Explorar: View {
             } else {
                 ForEach(porMarca, id: \.key) { marca, lista in
                     NavigationLink {
-                        ListaDeEventos(marca: marca, titulo: titulo, eventos: lista,
+                        // O título saiu do cabeçalho quando as duas seções
+                        // viraram um cartão com segmento, mas a tela de
+                        // destino ainda precisa dizer de qual movimento ela
+                        // é -- lá não há segmento nenhum à vista.
+                        ListaDeEventos(marca: marca,
+                                       titulo: titulo ?? rotuloDoMovimento(tipo),
+                                       eventos: lista,
                                        inicioDaColeta: inicioDaColeta)
                     } label: {
                         LinhaDeMarca(marca: marca, eventos: lista)
@@ -372,7 +422,10 @@ struct Explorar: View {
     private var digest: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Confirmed movements").font(Tokens.Fonte.secao)
+                // "Confirmed movements" era o nome do dado; "What changed?"
+                // é a pergunta que a pessoa tem. Trocar o rótulo técnico pela
+                // pergunta foi pedido do Davi e o JP assinou embaixo.
+                Text("What changed?").font(Tokens.Fonte.secao)
                 Spacer()
                 if let semana = mudaram.map(\.semana).max() {
                     Text("updated \(Formato.data(semana))")
@@ -664,7 +717,9 @@ struct LinhaDeMarca: View {
     private var resumo: String {
         let repetidas = eventos.filter { ($0.ordinal ?? 1) > 1 }.count
         var partes: [String] = []
-        if let d = eventos.map(\.data).max() { partes.append("mais recente em \(Formato.data(d))") }
+        // Estava em português numa interface inteiramente em inglês, e só
+        // apareceu quando o fundo escuro parou de esconder o texto de apoio.
+        if let d = eventos.map(\.data).max() { partes.append("most recent on \(Formato.data(d))") }
         if repetidas > 0 { partes.append("\(repetidas) had happened before") }
         return partes.joined(separator: " · ")
     }
