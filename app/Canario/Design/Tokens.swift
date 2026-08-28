@@ -262,3 +262,17 @@ extension Tokens.Cor {
         t == .mercado ? tintaFracaNoturna : tintaFraca
     }
 }
+
+extension Tokens.Cor {
+    /// O acento de cada território.
+    ///
+    /// No armário é o azul de ação do sistema, que já era. No mercado é o
+    /// **céu da marca** — pedido do JP em 27/08, e ele tem razão pelo motivo
+    /// certo: sobre `#0A0B1A` o `azulMarca` (#374A67) quase não se separa do
+    /// fundo, e o azul de sistema puxa a tela para fora da identidade. O céu
+    /// resolve as duas coisas ao mesmo tempo: contraste alto e a cor que a
+    /// pessoa já associa ao app do outro lado da divisa.
+    static func acentoDo(_ t: Territorio) -> Color {
+        t == .mercado ? ceu : acao
+    }
+}

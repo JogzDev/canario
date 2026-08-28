@@ -38,6 +38,7 @@ struct Explorar: View {
     /// porque é a que responde "a marca voltou a ter", que é a pergunta mais
     /// comum de quem está comprando.
     @State private var movimentoVisivel = "reposicao"
+    @Environment(\.territorio) private var territorio
     @State private var erro: String?
     @State private var avisoDeCache: String?
     @State private var avisosParciais: [String] = []
@@ -264,7 +265,11 @@ struct Explorar: View {
     /// de abrir o app.
     private var curvaDoPainel: some View {
         NavigationLink {
-            CurvaDeTamanhosView(termo: nil)
+            // O destino declara o próprio território: `NavigationLink` herda o
+            // AMBIENTE, mas não o fundo -- ele foi pintado na tela de trás. Sem
+            // esta linha a tela de tamanhos abria com cartões escuros sobre
+            // branco, que foi o que o JP viu.
+            CurvaDeTamanhosView(termo: nil).territorio(.mercado)
         } label: {
             Cartao {
                 HStack(alignment: .firstTextBaseline) {
@@ -272,7 +277,7 @@ struct Explorar: View {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
                 }
                 Text("Where size availability is breaking across the panel.")
                     .font(Tokens.Fonte.apoio)
@@ -325,14 +330,18 @@ struct Explorar: View {
                             .padding(.top, Tokens.Espaco.xs)
                         ForEach(grupo.pontos.prefix(5)) { ponto in
                             if let termo = termosPorId[ponto.termoId] {
-                                NavigationLink { RelatorioDoTermo(termo: termo) } label: {
+                                NavigationLink { RelatorioDoTermo(termo: termo).territorio(.mercado) } label: {
                                     Cartao {
                                         HStack(alignment: .firstTextBaseline) {
                                             Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                                             Spacer()
-                                            Text(ponto.z.map(Leitura.emPalavras) ?? "—")
-                                                .font(Tokens.Fonte.miudo.weight(.semibold))
-                                                .foregroundStyle(Tokens.Cor.acao)
+                                            // O mesmo selo do "What
+                                            // changed?", em vez de uma frase
+                                            // solta em azul. Duas listas com
+                                            // a mesma pergunta e dois jeitos
+                                            // de responder obrigam a pessoa a
+                                            // aprender o app duas vezes.
+                                            SeloEstado(estado: nil, leitura: ponto.z)
                                             Image(systemName: "chevron.right")
                                                 .font(Tokens.Fonte.miudo)
                                                 .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -445,7 +454,7 @@ struct Explorar: View {
                             .padding(.top, Tokens.Espaco.xs)
                         ForEach(grupo.indices) { i in
                             NavigationLink {
-                                if let termo = termoDe(i) { RelatorioDoTermo(termo: termo) }
+                                if let termo = termoDe(i) { RelatorioDoTermo(termo: termo).territorio(.mercado) }
                             } label: {
                                 CartaoDeMudanca(indice: i,
                                                 rotulo: rotulos[i.termoId] ?? i.termoId,
@@ -794,6 +803,7 @@ struct CartaoDeMudanca: View {
     let indice: IndiceSemanal
     let rotulo: String
     let series: [PontoSerie]
+    @Environment(\.territorio) private var territorio
 
     var body: some View {
         Cartao {
@@ -803,39 +813,53 @@ struct CartaoDeMudanca: View {
                 SeloEstado(estado: indice.estado, leitura: indice.indice)
             }
 
-            // O número com a unidade colada. Antes saía "+1.15" sozinho.
-            if let v = indice.indice {
-                Text(Leitura.emPalavras(v))
-                    .font(Tokens.Fonte.numero)
-            }
-            LinhaInsumo(texto: "Compared with this attribute's usual behavior over the previous 12 weeks.")
-
-            // Por que este estado, e não outro.
+            // O selo já diz a faixa em palavras. A linha grande logo abaixo
+            // dizia exatamente a mesma coisa -- "Under the usual range" no
+            // selo e "under the usual range" no texto --, e repetição é o
+            // tipo de ruído que faz a pessoa parar de ler o cartão inteiro.
+            //
+            // Por que este estado, e não outro: essa frase FICA. É ela que
+            // diferencia "duas semanas seguidas com duas fontes concordando"
+            // de "uma semana fraca", e é a única linha do cartão que a pessoa
+            // não consegue deduzir sozinha.
             Text(Explicacao.porQue(estado: indice.estado, indice: indice, series: series))
                 .font(Tokens.Fonte.apoio)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Divider()
+            // A trilha de auditoria desce e recolhe, como no painel da peça e
+            // na tela de atributos. A regra 3 exige que ela EXISTA e possa ser
+            // aberta; não exige que ela ocupe três quartos do cartão de quem
+            // veio só saber o que mudou esta semana.
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                    LinhaInsumo(texto: "Compared with this attribute's usual behavior over the previous 12 weeks.")
+                    ForEach(Explicacao.origens(series), id: \.self) { LinhaInsumo(texto: $0) }
+                    LinhaInsumo(texto: "Reading updated: \(Formato.data(indice.semana)).")
 
-            // De onde veio, com nome de veículo.
-            ForEach(Explicacao.origens(series), id: \.self) { LinhaInsumo(texto: $0) }
-            LinhaInsumo(texto: "Reading updated: \(Formato.data(indice.semana)).")
-
-            let manchetes = Explicacao.manchetes(series)
-            if !manchetes.isEmpty {
-                Text("Related articles").font(Tokens.Fonte.miudo.weight(.semibold))
-                ForEach(manchetes, id: \.titulo) { m in
-                    if let u = m.url, let link = URL(string: u) {
-                        Link(destination: link) {
-                            Text("\(m.veiculo): \(m.titulo)")
-                                .font(Tokens.Fonte.miudo)
-                                .multilineTextAlignment(.leading)
+                    let manchetes = Explicacao.manchetes(series)
+                    if !manchetes.isEmpty {
+                        Text("Related articles")
+                            .font(Tokens.Fonte.miudo.weight(.semibold))
+                            .padding(.top, Tokens.Espaco.xs)
+                        ForEach(manchetes, id: \.titulo) { m in
+                            if let u = m.url, let link = URL(string: u) {
+                                Link(destination: link) {
+                                    Text("\(m.veiculo): \(m.titulo)")
+                                        .font(Tokens.Fonte.miudo)
+                                        .multilineTextAlignment(.leading)
+                                }
+                            } else {
+                                LinhaInsumo(texto: "\(m.veiculo): \(m.titulo)")
+                            }
                         }
-                    } else {
-                        LinhaInsumo(texto: "\(m.veiculo): \(m.titulo)")
                     }
                 }
+                .padding(.top, Tokens.Espaco.xs)
+            } label: {
+                Text("Where this reading comes from")
+                    .font(Tokens.Fonte.miudo.weight(.medium))
             }
+            .tint(Tokens.Cor.tintaFracaDo(territorio))
         }
     }
 }
