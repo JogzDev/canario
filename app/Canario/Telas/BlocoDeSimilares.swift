@@ -2,47 +2,20 @@ import SwiftUI
 import ImageIO
 import UIKit
 
-/// O bloco de similares da §29, e os cartões que a A6 exige.
+/// Os cartões de similar da §29 e a representação gerada que a A6 exige.
 ///
-/// **Por que o cartão não tem foto do produto.** A A6 decidiu, quando a
-/// publicação na App Store virou requisito, que o binário submetido **não
-/// republica foto de produto de terceiro**. Cada cartão é representação gerada
-/// dos atributos — bloco na família de cor, glifo de silhueta — mais marca em
-/// texto, preço, remarcação e estado da grade. O toque abre a página original,
-/// que é o que cumpre a rastreabilidade da regra 3.
+/// **Por que o cartão não tem foto do produto no binário.** A A6 decidiu, quando
+/// a publicação na App Store virou requisito, que o binário submetido **não
+/// republica foto de produto de terceiro**. A foto que aparece vem por hotlink
+/// do CDN da própria loja (A13); quando ela não existe ou cai, o cartão desce
+/// para a representação gerada — bloco na família de cor, glifo de silhueta —
+/// mais marca em texto, preço, remarcação e estado da grade. O toque abre a
+/// página original, que é o que cumpre a rastreabilidade da regra 3.
 ///
-/// O desenho definitivo é tarefa da Bianca. O que está aqui usa só os tokens
-/// neutros e existe para a função rodar antes do design — trocar depois é mexer
-/// em `MarcaVisual`, não na tela.
-struct BlocoDeSimilares: View {
-    let resumo: Similares.Resumo
-    let pecas: [Similares.Peca]
-    let atributos: [Termo]
-    var precoAlvo: Double?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            Text("Similar pieces in the panel").font(Tokens.Fonte.secao)
-            LinhaInsumo(texto: Similares.criterio(resumo))
-
-            if let leitura = Similares.leituraDoPreco(resumo, alvo: precoAlvo) {
-                Cartao {
-                    Text("Where your price falls").font(Tokens.Fonte.miudo.weight(.semibold))
-                    Text(leitura).font(Tokens.Fonte.apoio)
-                }
-            }
-
-            ForEach(pecas.filter(Similares.podeExibir)) { peca in
-                CartaoDeSimilar(peca: peca, pedidos: atributos)
-            }
-
-            if resumo.nSimilares > pecas.count {
-                LinhaInsumo(texto: "Showing \(pecas.count) of \(resumo.nSimilares), "
-                          + "including one of the closest matches per brand. Percentages above use all \(resumo.nSimilares) matches.")
-            }
-        }
-    }
-}
+/// A lista vertical que morava aqui saiu em 27/08: o painel passou a mostrar
+/// uma fileira compacta no alto e a lista inteira ganhou tela própria, em
+/// `TodosOsSimilares`. O que sobrou neste arquivo são as peças que as duas
+/// usam.
 
 /// Quanto a peça casa com o que foi marcado, e no que ela difere.
 ///

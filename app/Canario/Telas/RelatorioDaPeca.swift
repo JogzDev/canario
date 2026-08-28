@@ -570,34 +570,7 @@ struct RelatorioDaPeca: View {
 
     /// §29.4 — o bloco de insumos de varejo: similares com preço, remarcação e
     /// estado da grade, sempre.
-    @ViewBuilder
-    private var blocoDeSimilares: some View {
-        if carregandoSimilares {
-            secaoCarregando("Similar pieces")
-        } else if let erroDosSimilares {
-            falhaLocal(titulo: "Similar pieces", mensagem: erroDosSimilares)
-        } else if let s = similares, let r = s.resumo,
-                  !s.pecas.filter(Similares.podeExibir).isEmpty {
-            if rejeitouSimilares {
-                // Pedido em 26/08: a resposta ao feedback agradece em vez de
-                // só repetir de volta o que a pessoa marcou.
-                LinhaInsumo(texto: "Thanks for the feedback! We'll keep working to bring you better suggestions.")
-                Button("Review similar pieces again") { rejeitarSimilares(false) }
-                    .buttonStyle(.bordered)
-            } else {
-                BlocoDeSimilares(resumo: r,
-                                 pecas: s.pecas.filter(Similares.podeExibir),
-                                 atributos: termos, precoAlvo: precoAlvo)
-                Button("None of these looks like my item") { rejeitarSimilares(true) }
-                    .buttonStyle(.bordered)
-                    .frame(minHeight: 44)
-            }
-        } else {
-            LinhaInsumo(texto: "No panel item matched all selected attributes.")
-        }
-    }
-
-    private func secaoCarregando(_ titulo: String) -> some View {
+        private func secaoCarregando(_ titulo: String) -> some View {
         Cartao {
             HStack {
                 Text(titulo).font(Tokens.Fonte.secao)
