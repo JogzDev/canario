@@ -98,7 +98,11 @@ enum Cluster {
     /// perigoso possível, que é o número que resume a peça.
     static func explicacao(_ r: Resposta) -> String? {
         guard let indice = r.indice, r.nAtributos > 0 else { return nil }
-        var partes = ["\(Leitura.numero(indice, casas: 2, sinal: true)) standard deviations, "
+        // Sinal só quando ele significa alguma coisa. Um índice que arredonda
+        // para zero saía como "-0.00 standard deviations" -- um menos na frente
+        // de zero, anunciando uma direção que a própria frase abaixo diz não
+        // existir. Zero não tem lado.
+        var partes = ["\(Leitura.numero(indice, casas: 2, sinal: abs(indice) >= 0.005)) standard deviations, "
                     + "an average of \(r.nAtributos) attribute\(r.nAtributos == 1 ? "" : "s") "
                     + "weighted by how uncommon each one is in the panel"]
         if !r.haDirecao, let d = r.dispersao {
