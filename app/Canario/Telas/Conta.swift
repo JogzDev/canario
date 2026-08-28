@@ -245,7 +245,7 @@ struct ContaDoMenu: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        Image(systemName: "person")
+                        Image(systemName: "person.crop.circle")
                             .resizable()
                             .scaledToFit()
                             .frame(width: proxy.size.width * 0.75, height: proxy.size.width * 0.75)
@@ -257,6 +257,10 @@ struct ContaDoMenu: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
+                cabecalho
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {

@@ -5,7 +5,6 @@ struct MenuLateral: View {
     let fechar: () -> Void
     let escolher: (String) -> Void
 
-
     /// A aresta esquerda do botão de busca, contada a partir da borda direita.
     ///
     /// Ele mora no rodapé à direita: 62 pt de diâmetro a 20 pt da borda. O
@@ -108,14 +107,8 @@ struct TelaDoMenu: View {
                 default: PerguntasDoMenu()
                 }
             }
-            .background(Tokens.Cor.ceu.opacity(0.28).ignoresSafeArea())
-            .navigationTitle(nome)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Close", systemImage: "xmark") { dismiss() }
-                }
-            }
+            .navigationBarBackButtonHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
@@ -249,6 +242,11 @@ private struct AjustesDoMenu: View {
     @State private var preferenciaVisual = PreferenciaDaAnaliseVisual.perguntar
     @State private var carregouPreferenciaVisual = false
     @Environment(\.accessibilityReduceMotion) private var reduzirMovimento
+    @Environment(\.dismiss) private var dismiss
+
+    // Cor HEX #BBE5ED exata do Figma
+    private let corFundo = Color(red: 187/255, green: 229/255, blue: 237/255)
+    private let corLinha = Color.white.opacity(0.65)
 
     private var explicacaoDaPreferencia: String {
         switch preferenciaVisual {
@@ -262,50 +260,51 @@ private struct AjustesDoMenu: View {
     }
 
     var body: some View {
-        List {
-            if Supabase.analiseRemotaHabilitada {
-                Section("Visual analysis") {
-                    // Três estados, não dois. O interruptor anterior só sabia
-                    // dizer nuvem/aparelho e mapeava `perguntar` para "nuvem
-                    // ligada" -- então, enquanto a escolha ainda não tinha sido
-                    // feita, os Ajustes afirmavam uma coisa e o fluxo de Add
-                    // fazia outra: perguntava. Quem visse a tela não tinha como
-                    // saber por quê. O estado agora aparece como ele é.
-                    Picker("Visual analysis", selection: $preferenciaVisual) {
-                        Text("Ask me the first time").tag(PreferenciaDaAnaliseVisual.perguntar)
-                        Text("Always use the cloud").tag(PreferenciaDaAnaliseVisual.nuvem)
-                        Text("Always on this iPhone").tag(PreferenciaDaAnaliseVisual.aparelho)
+        ZStack {
+            corFundo
+                .ignoresSafeArea()
+
+            // Marca d'água decorativa no fundo (engrenagem de Settings)
+            GeometryReader { proxy in
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Image(systemName: "gearshape")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: proxy.size.width * 0.75, height: proxy.size.width * 0.75)
+                            .foregroundStyle(Color.white.opacity(0.32))
+                            .offset(x: proxy.size.width * 0.14, y: proxy.size.width * 0.18)
                     }
-                    .pickerStyle(.inline)
-                    .labelsHidden()
-                    .disabled(!carregouPreferenciaVisual)
-                    Text(explicacaoDaPreferencia)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
                 }
             }
+            .ignoresSafeArea()
 
-            Section("Accessibility") {
-                LabeledContent("Reduce Motion") {
-                    Text(reduzirMovimento ? "On" : "Off")
-                }
-                Text("The app follows the iPhone accessibility setting for motion and text size.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            VStack(spacing: 0) {
+                cabecalho
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
 
-            Section("Local storage") {
-                LabeledContent("Closet items", value: String(quantidade))
-                Text("Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from device backup. Signed-in accounts also keep a private copy of reduced thumbnails for restore.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Button("Delete local Closet", systemImage: "trash", role: .destructive) {
-                    confirmarExclusao = true
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if Supabase.analiseRemotaHabilitada {
+                            secaoAnaliseVisual
+                        }
+
+                        secaoAcessibilidade
+
+                        secaoArmazenamentoLocal
+
+                        botaoExcluirArmario
+                            .padding(.top, 4)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 36)
                 }
-                .disabled(quantidade == 0)
             }
         }
-        .scrollContentBackground(.hidden)
         .task {
             quantidade = await PecasSalvas.shared.todas().count
             preferenciaVisual = await PreferenciasDaAnaliseVisual.shared.preferencia()
@@ -326,6 +325,178 @@ private struct AjustesDoMenu: View {
         } message: {
             Text("This removes every saved item and thumbnail from this iPhone. It cannot be undone.")
         }
+    }
+
+    private var cabecalho: some View {
+        ZStack {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.55), in: Circle())
+                }
+                Spacer()
+            }
+
+            Text("Settings")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(.primary)
+        }
+    }
+
+    private var secaoAnaliseVisual: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Visual analysis")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 0) {
+                opcaoAnaliseVisual(titulo: "Ask me the first time", opcao: .perguntar)
+                divisorCard
+                opcaoAnaliseVisual(titulo: "Always use the cloud", opcao: .nuvem)
+                divisorCard
+                opcaoAnaliseVisual(titulo: "Always on this iPhone", opcao: .aparelho)
+                divisorCard
+
+                Text(explicacaoDaPreferencia)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.primary.opacity(0.85))
+                    .lineSpacing(2)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+            }
+            .background(cardBackground)
+            .disabled(!carregouPreferenciaVisual)
+        }
+    }
+
+    private func opcaoAnaliseVisual(titulo: String, opcao: PreferenciaDaAnaliseVisual) -> some View {
+        Button {
+            preferenciaVisual = opcao
+        } label: {
+            HStack {
+                Text(titulo)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                if preferenciaVisual == opcao {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var secaoAcessibilidade: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Accessibility")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Reduce motion")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text(reduzirMovimento ? "On" : "Off")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+
+                divisorCard
+
+                Text("The app follows the iPhone accessibility setting for motion and text size.")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.primary.opacity(0.85))
+                    .lineSpacing(2)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+            }
+            .background(cardBackground)
+        }
+    }
+
+    private var secaoArmazenamentoLocal: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Local storage")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Closet items")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text(String(quantidade))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+
+                divisorCard
+
+                Text("Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from backup.")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.primary.opacity(0.85))
+                    .lineSpacing(2)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+            }
+            .background(cardBackground)
+        }
+    }
+
+    private var botaoExcluirArmario: some View {
+        Button {
+            confirmarExclusao = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "trash")
+                    .font(.system(size: 15, weight: .semibold))
+                Text("Delete local closet")
+                    .font(.system(size: 15, weight: .bold))
+            }
+            .foregroundStyle(Color.red.opacity(0.85))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(0.7), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(quantidade == 0)
+        .opacity(quantidade == 0 ? 0.5 : 1.0)
+    }
+
+    private var divisorCard: some View {
+        Rectangle()
+            .fill(corLinha)
+            .frame(height: 1)
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [Color.white.opacity(0.85), Color.white.opacity(0.5)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
     }
 }
 
