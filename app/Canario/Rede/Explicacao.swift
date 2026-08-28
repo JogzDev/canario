@@ -134,7 +134,36 @@ enum Explicacao {
             return "Two consecutive weeks below the usual range, with \(abaixo) sources agreeing. "
                  + "The same safeguard applies: one weak week alone is not a decline."
         case "estavel":
-            return "Within this attribute's usual range for the last two weeks. Stable is a measured result, not missing data."
+            // AQUI MORAVA UMA CONTRADIÇÃO, e ela aparecia em todo cartão.
+            //
+            // O selo e esta frase liam campos DIFERENTES: o selo mostra a
+            // faixa do z desta semana, e a frase lia `estado`, que é a
+            // classificação de movimento CONFIRMADO -- duas semanas seguidas,
+            // duas fontes concordando, §22. As duas podem divergir sem que
+            // nenhuma esteja errada: um termo pode estar abaixo da faixa nesta
+            // semana e ainda não ser uma queda confirmada.
+            //
+            // Só que o cartão as apresentava como uma afirmação só, e o
+            // resultado era "Under the usual range" no selo com "Within this
+            // attribute's usual range" logo abaixo. O JP viu de outro ângulo:
+            // "não vejo valor em tudo ter o mesmo texto". Não era falta de
+            // variedade; era a frase respondendo a uma pergunta que o selo não
+            // fez.
+            //
+            // Agora ela diz as duas coisas na ordem certa: onde o termo está
+            // ESTA semana, com o número, e por que isso ainda não é um
+            // movimento. É a única leitura do cartão que a pessoa não deduz
+            // sozinha, e é diferente para cada termo.
+            guard let z = indice.indice, Leitura.faixa(z) != .habitual else {
+                return "Within this attribute's usual range for the last two weeks. "
+                     + "Stable is a measured result, not missing data."
+            }
+            let fontes = indice.nPernas ?? 0
+            let quantas = fontes == 1 ? "1 source" : "\(fontes) sources"
+            return "This week it reads \(Leitura.numero(z, casas: 1, sinal: true)) "
+                 + "on the statistical scale, \(Leitura.emPalavras(z)) — but one week "
+                 + "is not a movement. Confirming one takes two consecutive weeks with "
+                 + "two sources agreeing, and this reading has \(quantas)."
         default:
             return estado
         }
