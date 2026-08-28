@@ -226,20 +226,50 @@ extension GestorDaConta: ASWebAuthenticationPresentationContextProviding {
 
 struct ContaDoMenu: View {
     @EnvironmentObject private var conta: GestorDaConta
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var abrirURL
     @State private var mostrarEmail = false
     @State private var confirmarExclusao = false
 
+    private let corFundo = Color(red: 187/255, green: 229/255, blue: 237/255)
+    private let corLinha = Color.white.opacity(0.65)
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                if let sessao = conta.sessao {
-                    contaConectada(sessao)
-                } else {
-                    entrada
+        ZStack {
+            corFundo
+                .ignoresSafeArea()
+
+            // Marca d'água decorativa no fundo
+            GeometryReader { proxy in
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Image(systemName: "person")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: proxy.size.width * 0.75, height: proxy.size.width * 0.75)
+                            .foregroundStyle(Color.white.opacity(0.32))
+                            .offset(x: proxy.size.width * 0.12, y: proxy.size.width * 0.18)
+                    }
                 }
             }
-            .padding(20)
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if let sessao = conta.sessao {
+                            contaConectada(sessao)
+                        } else {
+                            entrada
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 32)
+                }
+            }
         }
         .disabled(conta.trabalhando)
         .overlay {
@@ -287,6 +317,27 @@ struct ContaDoMenu: View {
         }
     }
 
+    private var cabecalho: some View {
+        ZStack {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.55), in: Circle())
+                }
+                Spacer()
+            }
+
+            Text("Profile")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(.primary)
+        }
+    }
+
     private var entrada: some View {
         VStack(spacing: 16) {
             Image(systemName: "person.crop.circle.badge.plus")
@@ -330,52 +381,105 @@ struct ContaDoMenu: View {
                 .padding(.top, 6)
         }
         .padding(22)
-        .background(.background, in: RoundedRectangle(cornerRadius: 26))
+        .background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 26))
     }
 
     private func contaConectada(_ sessao: SessaoDaConta) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 14) {
-                Image(systemName: "person.crop.circle.fill.badge.checkmark")
-                    .font(.system(size: 46))
-                    .foregroundStyle(Tokens.Cor.azulMarca)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Account connected").font(.headline)
+        VStack(alignment: .leading, spacing: 20) {
+            // Seção Account Connected
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Account connected")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 14) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 38))
+                        .foregroundStyle(Color(white: 0.15))
+
                     Text(sessao.usuario.email ?? "Private Apple relay")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    Spacer()
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.85), Color.white.opacity(0.5)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+
+                Button {
+                    conta.sair()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 17, weight: .semibold))
+                        Text("Sign out")
+                            .font(.system(size: 16, weight: .bold))
+                    }
+                    .foregroundStyle(.primary)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
             }
 
-            BlocoInformativo(
-                icone: "arrow.triangle.2.circlepath.icloud",
-                titulo: "Offline-first sync",
-                texto: "Item details stay on this iPhone first and synchronize when a connection is available. Only reduced, metadata-free thumbnails use your private cloud space; original photos remain local.")
+            // Seção Offline-first sync com divisores
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Offline-first sync")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.primary)
 
-            if let ultima = conta.ultimaSincronizacao {
-                Label("Last synced \(ultima.formatted(date: .abbreviated, time: .shortened))",
-                      systemImage: "checkmark.icloud")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else {
-                Label("Waiting to sync", systemImage: "icloud.slash")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                Rectangle()
+                    .fill(corLinha)
+                    .frame(height: 1)
+
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: "arrow.triangle.2.circlepath.icloud")
+                        .font(.system(size: 32, weight: .regular))
+                        .foregroundStyle(.primary)
+                        .frame(width: 40)
+
+                    Text("Item details are kept on this iPhone first and synchronized when a connection is available. Photos remain local in this version.")
+                        .font(.system(size: 13, weight: .regular))
+                        .lineSpacing(3)
+                        .foregroundStyle(.primary.opacity(0.85))
+                }
+                .padding(.vertical, 4)
+
+                Rectangle()
+                    .fill(corLinha)
+                    .frame(height: 1)
             }
+            .padding(.top, 8)
 
-            Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right") {
-                conta.sair()
-            }
-            .buttonStyle(.bordered)
-
-            Divider().padding(.vertical, 4)
-
-            Button("Delete account", systemImage: "trash", role: .destructive) {
+            // Botão Delete Account em formato de pílula
+            Button {
                 confirmarExclusao = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("Delete account")
+                        .font(.system(size: 15, weight: .bold))
+                }
+                .foregroundStyle(Color.red.opacity(0.85))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .background(Color.white.opacity(0.7), in: Capsule())
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
-        .padding(22)
-        .background(.background, in: RoundedRectangle(cornerRadius: 26))
     }
 }
 
