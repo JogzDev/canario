@@ -39,6 +39,15 @@ struct Explorar: View {
     /// comum de quem está comprando.
     @State private var movimentoVisivel = "reposicao"
     @Environment(\.territorio) private var territorio
+
+    /// Quantas linhas cada seção mostra na Trends.
+    ///
+    /// A tela virou painel de bordo em 27/08: cada seção responde a pergunta
+    /// dela com as primeiras linhas e leva o resto para tela própria. Três é o
+    /// que cabe sem empurrar a seção seguinte para fora da vista -- e "o que
+    /// mudou esta semana" quase sempre tem resposta nas três primeiras. Quem
+    /// quiser tudo tem o chevron.
+    private static let noPainel = 3
     @State private var erro: String?
     @State private var avisoDeCache: String?
     @State private var avisosParciais: [String] = []
@@ -194,9 +203,22 @@ struct Explorar: View {
         tipo == "reposicao" ? "Restocks" : "Markdowns"
     }
 
-    private var movimentos: some View {
+    private var movimentos: some View { movimentos(limite: Self.noPainel) }
+
+    private var movimentosCompletos: some View {
+        ScrollView {
+            movimentos(limite: nil).padding(Tokens.Espaco.m)
+        }
+        .territorio(.mercado)
+        .navigationTitle("Supply moves")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func movimentos(limite: Int?) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            Text("Supply moves").font(Tokens.Fonte.secao)
+            cabecalhoDeSecao(
+                "Supply moves", carimbo: nil,
+                porta: limite == nil ? nil : { AnyView(movimentosCompletos) })
             Picker("Supply moves", selection: $movimentoVisivel) {
                 Text("Restocks").tag("reposicao")
                 Text("Markdowns").tag("remarcacao")
@@ -205,16 +227,16 @@ struct Explorar: View {
             .accessibilityLabel("Which supply move to show")
 
             if movimentoVisivel == "reposicao" {
-                movimento(titulo: nil, tipo: "reposicao",
+                movimento(titulo: nil, tipo: "reposicao", limite: limite,
                           vazio: "No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available.")
             } else {
-                movimento(titulo: nil, tipo: "remarcacao",
+                movimento(titulo: nil, tipo: "remarcacao", limite: limite,
                           vazio: "No price reduction of 5% or more was confirmed in this window.")
             }
         }
     }
 
-    private func movimento(titulo: String?, tipo: String, vazio: String) -> some View {
+    private func movimento(titulo: String?, tipo: String, limite: Int?, vazio: String) -> some View {
         let doTipo = eventos.filter { $0.tipo == tipo }
         let porMarca = Dictionary(grouping: doTipo, by: \.marca)
             .sorted { ($0.value.count, $1.key) > ($1.value.count, $0.key) }
@@ -238,7 +260,8 @@ struct Explorar: View {
                 CoberturaInsuficiente(titulo: "No record in this window",
                                       explicacao: vazio, oQueTem: nil)
             } else {
-                ForEach(porMarca, id: \.key) { marca, lista in
+                ForEach(limite.map { Array(porMarca.prefix($0)) } ?? porMarca,
+                        id: \.key) { marca, lista in
                     NavigationLink {
                         // O título saiu do cabeçalho quando as duas seções
                         // viraram um cartão com segmento, mas a tela de
@@ -287,6 +310,39 @@ struct Explorar: View {
         .buttonStyle(.plain)
     }
 
+    /// O cabeçalho de uma seção do painel: título, carimbo e a porta.
+    ///
+    /// A porta é `nil` quando não há para onde ir — na própria tela cheia da
+    /// seção, ou quando ela está vazia. Chevron que não leva a lugar nenhum é
+    /// pior que chevron nenhum: promete conteúdo e entrega uma volta.
+    @ViewBuilder
+    private func cabecalhoDeSecao(_ titulo: String, carimbo: String?,
+                                  porta: (() -> AnyView)?) -> some View {
+        let miolo = HStack(alignment: .firstTextBaseline) {
+            Text(titulo).font(Tokens.Fonte.secao)
+            Spacer()
+            if let carimbo {
+                Text(carimbo)
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+            }
+            if porta != nil {
+                Image(systemName: "chevron.right")
+                    .font(Tokens.Fonte.miudo.weight(.semibold))
+                    .foregroundStyle(Tokens.Cor.acentoDo(territorio))
+            }
+        }
+        .contentShape(Rectangle())
+
+        if let porta {
+            NavigationLink { porta() } label: { miolo }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(titulo), see all")
+        } else {
+            miolo
+        }
+    }
+
     /// A data do dado, sempre explícita.
     ///
     /// A §6 barra as frases de cultivo do tipo "está fresquinho", e com razão:
@@ -302,17 +358,24 @@ struct Explorar: View {
     /// Google é uma fonte, não um veredito. Mostrá-lo separadamente resolve o
     /// atraso aparente sem enfraquecer a regra que exige duas fontes para
     /// chamar algo de tendência confirmada.
-    private var radarDeBusca: some View {
+    private var radarDeBusca: some View { radarDeBusca(limite: Self.noPainel) }
+
+    private var radarDeBuscaCompleto: some View {
+        ScrollView {
+            radarDeBusca(limite: nil).padding(Tokens.Espaco.m)
+        }
+        .territorio(.mercado)
+        .navigationTitle("Search interest now")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func radarDeBusca(limite: Int?) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Search interest now").font(Tokens.Fonte.secao)
-                Spacer()
-                if let semana = buscaDaSemana.map(\.semana).max() {
-                    Text(Formato.data(semana))
-                        .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                }
-            }
+            cabecalhoDeSecao(
+                "Search interest now",
+                carimbo: buscaDaSemana.map(\.semana).max().map(Formato.data),
+                porta: limite == nil || buscaDaSemana.isEmpty
+                       ? nil : { AnyView(radarDeBuscaCompleto) })
             Text("What people in Brazil searched for on Google, compared with each term's previous 12 weeks.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -328,7 +391,7 @@ struct Explorar: View {
                             .font(Tokens.Fonte.miudo.weight(.semibold))
                             .foregroundStyle(Tokens.Cor.tintaFraca)
                             .padding(.top, Tokens.Espaco.xs)
-                        ForEach(grupo.pontos.prefix(5)) { ponto in
+                        ForEach(grupo.pontos.prefix(limite ?? grupo.pontos.count)) { ponto in
                             if let termo = termosPorId[ponto.termoId] {
                                 NavigationLink { RelatorioDoTermo(termo: termo).territorio(.mercado) } label: {
                                     Cartao {
@@ -379,17 +442,24 @@ struct Explorar: View {
             .prefix(8).map { $0 }
     }
 
-    private var radarEditorial: some View {
+    private var radarEditorial: some View { radarEditorial(limite: Self.noPainel) }
+
+    private var radarEditorialCompleto: some View {
+        ScrollView {
+            radarEditorial(limite: nil).padding(Tokens.Espaco.m)
+        }
+        .territorio(.mercado)
+        .navigationTitle("This week in fashion")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func radarEditorial(limite: Int?) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("This week in fashion").font(Tokens.Fonte.secao)
-                Spacer()
-                if let semana = pulsoEditorial.map(\.semana).max() {
-                    Text(Formato.data(semana))
-                        .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                }
-            }
+            cabecalhoDeSecao(
+                "This week in fashion",
+                carimbo: pulsoEditorial.map(\.semana).max().map(Formato.data),
+                porta: limite == nil || manchetesAtuais.isEmpty
+                       ? nil : { AnyView(radarEditorialCompleto) })
             Text("Current, fashion-specific headlines from the monitored publications. They provide context; one article alone does not establish a trend.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
@@ -399,7 +469,8 @@ struct Explorar: View {
             } else if manchetesAtuais.isEmpty {
                 LinhaInsumo(texto: "No current headline passed the fashion-context check.")
             } else {
-                ForEach(manchetesAtuais, id: \.titulo) { manchete in
+                ForEach(manchetesAtuais.prefix(limite ?? manchetesAtuais.count),
+                        id: \.titulo) { manchete in
                     if let bruto = manchete.url, let url = URL(string: bruto) {
                         Link(destination: url) { linhaEditorial(manchete) }
                             .buttonStyle(.plain)
@@ -428,20 +499,26 @@ struct Explorar: View {
 
     // MARK: Tendência confirmada
 
-    private var digest: some View {
+    private var digest: some View { digest(limite: Self.noPainel) }
+
+    /// A seção inteira, em tela própria.
+    private var digestCompleto: some View {
+        ScrollView {
+            digest(limite: nil).padding(Tokens.Espaco.m)
+        }
+        .territorio(.mercado)
+        .navigationTitle("What changed?")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func digest(limite: Int?) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            HStack(alignment: .firstTextBaseline) {
-                // "Confirmed movements" era o nome do dado; "What changed?"
-                // é a pergunta que a pessoa tem. Trocar o rótulo técnico pela
-                // pergunta foi pedido do Davi e o JP assinou embaixo.
-                Text("What changed?").font(Tokens.Fonte.secao)
-                Spacer()
-                if let semana = mudaram.map(\.semana).max() {
-                    Text("updated \(Formato.data(semana))")
-                        .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                }
-            }
+            // "Confirmed movements" era o nome do dado; "What changed?" é a
+            // pergunta que a pessoa tem. Pedido do Davi, o JP assinou embaixo.
+            cabecalhoDeSecao(
+                "What changed?",
+                carimbo: mudaram.map(\.semana).max().map { "updated \(Formato.data($0))" },
+                porta: limite == nil || mudaram.isEmpty ? nil : { AnyView(digestCompleto) })
             if mudaram.isEmpty {
                 LinhaInsumo(texto: "No movement has been confirmed by two independent sources in the last \(diasMaximosDoDigest) days.")
             } else {
@@ -452,7 +529,8 @@ struct Explorar: View {
                             .foregroundStyle(Tokens.Cor.tintaFraca)
                             .textCase(.uppercase)
                             .padding(.top, Tokens.Espaco.xs)
-                        ForEach(grupo.indices) { i in
+                        ForEach(limite.map { Array(grupo.indices.prefix($0)) }
+                                ?? grupo.indices) { i in
                             NavigationLink {
                                 if let termo = termoDe(i) { RelatorioDoTermo(termo: termo).territorio(.mercado) }
                             } label: {
