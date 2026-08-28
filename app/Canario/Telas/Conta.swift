@@ -225,8 +225,8 @@ extension GestorDaConta: ASWebAuthenticationPresentationContextProviding {
 }
 
 struct ContaDoMenu: View {
+    var aoVoltar: () -> Void = {}
     @EnvironmentObject private var conta: GestorDaConta
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var abrirURL
     @State private var mostrarEmail = false
     @State private var confirmarExclusao = false
@@ -324,9 +324,7 @@ struct ContaDoMenu: View {
     private var cabecalho: some View {
         ZStack {
             HStack {
-                Button {
-                    dismiss()
-                } label: {
+                Button(action: aoVoltar) {
                     Image(systemName: "chevron.backward")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.primary)
