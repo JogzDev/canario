@@ -107,10 +107,31 @@ enum Explicacao {
 
     // MARK: Por que este estado
 
+    /// "1 source", "2 sources" -- nunca "1 sources".
+    private static func fontes(_ n: Int) -> String {
+        n == 1 ? "1 source" : "\(n) sources"
+    }
+
     /// A regra que produziu o estado, dita para quem vai decidir compra.
     ///
     /// Espelha `computar_indice()` linha a linha. A ordem importa: o `pico` é
     /// testado antes de "em alta" no Postgres, e aqui também.
+    ///
+    /// **O QUE SAIU DAQUI EM 28/08, E POR QUÊ**
+    ///
+    /// Esta frase diz o que foi medido para ESTE termo. A regra geral -- que
+    /// confirmar um movimento pede duas semanas seguidas com duas fontes
+    /// concordando -- saiu e foi para o Q&A do menu, onde é procurável.
+    ///
+    /// Ela vinha impressa em todo cartão da lista, sempre com as mesmas
+    /// palavras, e o JP mediu o valor dela com precisão: *"é aquele tipo de
+    /// coisa que é bom que o user saiba mas não vai ser uma vida se ele não
+    /// souber"*. Método repetido em cada linha vira textura e para de ser
+    /// lido; explicado uma vez, num lugar fixo, continua sendo método.
+    ///
+    /// O que fica em cada cartão é o que muda de cartão para cartão: o número
+    /// desta semana, a faixa em que ele caiu e quantas fontes concordaram. A
+    /// trilha completa continua no "Where this reading comes from".
     static func porQue(estado: String?, indice: IndiceSemanal, series: [PontoSerie]) -> String {
         guard let estado else {
             return "Two sources do not yet agree on a direction; this update has \(indice.nPernas ?? 0)."
@@ -125,16 +146,64 @@ enum Explicacao {
             let referencia = editorial?.z.map {
                 " (\(Leitura.numero($0, casas: 1)) on the statistical scale)"
             } ?? ""
-            return "Press attention was \(intensidade)\(referencia) for one week, but no other source followed. "
-                 + "For now this is an isolated editorial spike, not a confirmed trend."
+            // Esta continua dizendo o que é: pico não é alta, e quem lê o
+            // cartão precisa saber disso antes de comprar. Não é regra geral
+            // do motor -- é a classificação DESTE termo nesta semana.
+            return "Press attention was \(intensidade)\(referencia) for one week, "
+                 + "and no other source followed — an isolated editorial spike, "
+                 + "not a confirmed trend."
         case "em alta":
-            return "Two consecutive weeks above the usual range, with \(acima) sources agreeing. "
-                 + "One isolated week does not count; the threshold keeps one-week noise from becoming a trend."
+            return "Two consecutive weeks above the usual range, with \(fontes(acima)) agreeing."
         case "em queda":
-            return "Two consecutive weeks below the usual range, with \(abaixo) sources agreeing. "
-                 + "The same safeguard applies: one weak week alone is not a decline."
+            return "Two consecutive weeks below the usual range, with \(fontes(abaixo)) agreeing."
         case "estavel":
-            return "Within this attribute's usual range for the last two weeks. Stable is a measured result, not missing data."
+            // AQUI MORAVA UMA CONTRADIÇÃO, e ela aparecia em todo cartão.
+            //
+            // O selo e esta frase liam campos DIFERENTES: o selo mostra a
+            // faixa do z desta semana, e a frase lia `estado`, que é a
+            // classificação de movimento CONFIRMADO -- duas semanas seguidas,
+            // duas fontes concordando, §22. As duas podem divergir sem que
+            // nenhuma esteja errada: um termo pode estar abaixo da faixa nesta
+            // semana e ainda não ser uma queda confirmada.
+            //
+            // Só que o cartão as apresentava como uma afirmação só, e o
+            // resultado era "Under the usual range" no selo com "Within this
+            // attribute's usual range" logo abaixo. O JP viu de outro ângulo:
+            // "não vejo valor em tudo ter o mesmo texto". Não era falta de
+            // variedade; era a frase respondendo a uma pergunta que o selo não
+            // fez.
+            //
+            // Agora ela diz as duas coisas na ordem certa: onde o termo está
+            // ESTA semana, com o número, e por que isso ainda não é um
+            // movimento. É a única leitura do cartão que a pessoa não deduz
+            // sozinha, e é diferente para cada termo.
+            //
+            // ATUALIZAÇÃO DE 28/08: a frase de dentro da faixa abria com
+            // "Within this attribute's usual range" a dois dedos de um selo
+            // dizendo "Within the usual range". Não era erro -- era a mesma
+            // medida dita duas vezes, e o JP marcou de novo: *"não gostei da
+            // repetição de within e within"*. A frase é de 14/08 e o selo
+            // chegou depois; ninguém escreveu as duas juntas.
+            //
+            // Agora ela abre pelo que o selo NÃO tem como dizer: o número
+            // desta semana e a semana anterior. Mesma forma do caso de fora
+            // da faixa, e diferente de termo para termo.
+            guard let z = indice.indice, Leitura.faixa(z) != .habitual else {
+                guard let z = indice.indice else {
+                    return "No index for this week. Stable is a measured "
+                         + "result, not missing data."
+                }
+                // "+0,0" é sinal que o número não sustenta; some abaixo de 0,05.
+                let arredondado = (abs(z) * 10).rounded() / 10
+                let n = arredondado == 0
+                    ? "0.0" : Leitura.numero(z, casas: 1, sinal: true)
+                return "This week reads \(n) on the statistical scale, and the "
+                     + "week before stayed in the same place. Stable is a "
+                     + "measured result, not missing data."
+            }
+            return "This week it reads \(Leitura.numero(z, casas: 1, sinal: true)) "
+                 + "on the statistical scale, \(Leitura.emPalavras(z)) — but one week "
+                 + "is not a movement."
         default:
             return estado
         }

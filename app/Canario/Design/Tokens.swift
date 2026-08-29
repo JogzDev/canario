@@ -40,6 +40,50 @@ enum Tokens {
         static let azulMarca = adaptativa(claro: (55, 74, 103),
                                           escuro: (150, 180, 215))
 
+        // MARK: - O território escuro (27/08)
+        //
+        // O app passa a ter dois territórios, e a divisa é o ASSUNTO, não a
+        // tela: **claro é a sua roupa, escuro é o mercado**. Add, Closet e o
+        // painel de uma peça sua continuam claros; Trends, o relatório de um
+        // termo e as listas de mercado ficam escuros.
+        //
+        // Isso saiu do Figma da Bianca, onde a divisão já estava feita sem
+        // estar nomeada: todas as telas de mercado que ela desenhou são
+        // escuras e todas as do armário são claras.
+        //
+        // **`#0A0B1A` é a terceira cor oficial da marca**, ao lado de `ceu`
+        // (#BBE5ED) e `azulMarca` (#374A67) — e era a única das três que nunca
+        // tinha entrado no código. Cuidado com o nome: `noite`, logo acima, é
+        // outro quase-preto (#0E1116) e serve de TINTA sobre o céu. São coisas
+        // diferentes e não devem ser trocadas uma pela outra.
+        //
+        // Os quatro tons derivados abaixo não são escolha de gosto: cada um é
+        // uma mistura medida entre `noturno` e `azulMarca` (ou o branco frio da
+        // tinta). É isso que faz o escuro parecer da mesma marca que o claro,
+        // em vez de um cinza genérico de sistema.
+
+        /// Fundo do território de mercado. A terceira cor oficial.
+        static let noturno = fixa(10, 11, 26)
+        /// Cartão sobre o fundo noturno: `noturno` 22% na direção do azul.
+        static let superficieNoturna = fixa(20, 25, 43)
+        /// Borda e divisor no escuro: 40% na mesma direção.
+        static let bordaNoturna = fixa(28, 36, 57)
+        /// Tinta sobre o escuro. Branco frio, não branco puro: puro vibra
+        /// sobre fundo azulado e cansa em tela de leitura.
+        static let tintaNoturna = fixa(234, 242, 245)
+        /// Tinta de apoio no escuro, a 62% do caminho entre fundo e tinta.
+        static let tintaFracaNoturna = fixa(149, 154, 162)
+
+        /// Cor que NÃO se adapta ao tema do sistema.
+        ///
+        /// O território escuro é escuro por decisão de produto, e não porque o
+        /// iPhone está no modo escuro. Se estes tons fossem adaptativos, a tela
+        /// de mercado clarearia junto com o resto no modo claro — que é
+        /// exatamente o contrário do que ela existe para fazer.
+        static func fixa(_ r: Double, _ g: Double, _ b: Double) -> Color {
+            Color(red: r / 255, green: g / 255, blue: b / 255)
+        }
+
         /// Uma cor por tema, resolvida pelo sistema no momento de desenhar --
         /// e não uma vez na inicialização. Isso é o que faz a tela responder a
         /// quem troca de tema com o app aberto.
@@ -147,5 +191,130 @@ extension View {
     func sombraDeCartao() -> some View {
         shadow(color: Tokens.Sombra.cor, radius: Tokens.Sombra.raio,
                x: 0, y: Tokens.Sombra.deslocamentoY)
+    }
+}
+
+// MARK: - Território
+
+/// Em que metade do app a tela está.
+///
+/// A divisa é o **assunto**, não a tela: `armario` é a roupa da pessoa,
+/// `mercado` é o painel. Uma tela declara o seu território uma vez, na raiz, e
+/// todo componente compartilhado abaixo dela se adapta sozinho — que é o que
+/// impede a alternativa cara, passar uma cor por parâmetro em cada chamada e
+/// descobrir os esquecidos um por um, olhando.
+enum Territorio {
+    case armario
+    case mercado
+}
+
+private struct ChaveDoTerritorio: EnvironmentKey {
+    /// Claro por padrão: o app nasceu no armário, e uma tela que esquecer de
+    /// declarar continua parecendo com ela mesma em vez de escurecer sozinha.
+    static let defaultValue = Territorio.armario
+}
+
+extension EnvironmentValues {
+    var territorio: Territorio {
+        get { self[ChaveDoTerritorio.self] }
+        set { self[ChaveDoTerritorio.self] = newValue }
+    }
+}
+
+extension View {
+    /// Declara o território e já pinta o fundo dele.
+    ///
+    /// As duas coisas juntas de propósito: declarar sem pintar deixaria os
+    /// cartões escuros sobre um fundo branco, que é pior que não ter feito
+    /// nada. `ignoresSafeArea` porque o fundo do mercado tem de alcançar a
+    /// barra de status — metade escura com uma faixa branca em cima parece
+    /// defeito, não desenho.
+    func territorio(_ valor: Territorio) -> some View {
+        environment(\.territorio, valor)
+            .background(Tokens.Cor.fundoDo(valor).ignoresSafeArea())
+            // A tinta padrão da subárvore. Sem isto, todo `Text` fora de um
+            // cartão herda `.label` -- que é escuro -- e some no fundo. Na
+            // primeira montagem da Trends, "Supply moves" e os carimbos de
+            // data ficaram invisíveis exatamente assim.
+            .foregroundStyle(Tokens.Cor.tintaDo(valor))
+            // O esquema do sistema NÃO é decidido aqui, e a tentativa de
+            // decidir foi instrutiva: `preferredColorScheme` se propaga até a
+            // cena, e o da raiz do app ganha do de dentro. A hora no topo
+            // continuava preta sobre #0A0B1A. Quem manda nisso é `Raiz`, pela
+            // aba visível -- ver `CanarioApp.swift`.
+    }
+}
+
+extension Tokens.Cor {
+    static func fundoDo(_ t: Territorio) -> Color {
+        t == .mercado ? noturno : fundo
+    }
+    static func superficieDo(_ t: Territorio) -> Color {
+        t == .mercado ? superficieNoturna : superficie
+    }
+    static func bordaDo(_ t: Territorio) -> Color {
+        t == .mercado ? bordaNoturna : borda
+    }
+    static func tintaDo(_ t: Territorio) -> Color {
+        t == .mercado ? tintaNoturna : tinta
+    }
+    static func tintaFracaDo(_ t: Territorio) -> Color {
+        t == .mercado ? tintaFracaNoturna : tintaFraca
+    }
+
+    // MARK: - O menu lateral inverte as duas cores da marca (28/08)
+    //
+    // O menu pintava o painel com `azulMarca` e escrevia por cima com
+    // `.white`. `azulMarca` é ADAPTATIVO -- clareia no escuro para continuar
+    // legível sobre o céu escurecido --, então na Trends o painel virava
+    // #96B4D7 com letra branca por cima. O JP viu a mistura e disse o que
+    // faltava: *"a fonte do menu lateral tinha que ser aquele azul escuro pra
+    // dar contraste"*.
+    //
+    // A correção não é escolher UM dos dois visuais, e sim inverter o par:
+    // *"quando a tela é mais clara tipo o add, o menu lateral é o azul escuro
+    // do app com a letra azul claro. e quando a tela for escura, o menu
+    // lateral é o azul claro do app com a letra escura"*. São as mesmas duas
+    // cores oficiais trocando de lugar, e as duas combinações estão medidas:
+    // 6,6:1 no texto cheio e 5,3:1 / 4,7:1 no rodapé a 85%.
+    //
+    // Os valores aqui são FIXOS de propósito. Quem decide a inversão é o
+    // território, não o tema do sistema; um par adaptativo desfaria a conta
+    // acima exatamente como desfez a anterior.
+
+    /// #BBE5ED literal, sem adaptação por tema.
+    static let ceuFixo = fixa(187, 229, 237)
+    /// #374A67 literal, sem adaptação por tema.
+    static let azulMarcaFixo = fixa(55, 74, 103)
+
+    static func fundoDoMenu(_ t: Territorio) -> Color {
+        t == .mercado ? ceuFixo : azulMarcaFixo
+    }
+    static func tintaDoMenu(_ t: Territorio) -> Color {
+        t == .mercado ? azulMarcaFixo : ceuFixo
+    }
+}
+
+extension Tokens.Cor {
+    /// O acento de cada território.
+    ///
+    /// No armário é o azul de ação do sistema, que já era. No mercado é o
+    /// **céu da marca** — pedido do JP em 27/08, e ele tem razão pelo motivo
+    /// certo: sobre `#0A0B1A` o `azulMarca` (#374A67) quase não se separa do
+    /// fundo, e o azul de sistema puxa a tela para fora da identidade. O céu
+    /// resolve as duas coisas ao mesmo tempo: contraste alto e a cor que a
+    /// pessoa já associa ao app do outro lado da divisa.
+    ///
+    /// **`ceuFixo`, e não `ceu` (29/08).** `ceu` é adaptativo: no escuro ele
+    /// vira #10262C, quase o próprio fundo. E o território de mercado roda com
+    /// o sistema em escuro, então o acento "azul claro da marca" chegava à
+    /// tela como um teal quase preto -- visível na primeira montagem da curva
+    /// de tamanhos, onde as barras destacadas sumiram dentro do cartão.
+    ///
+    /// É o mesmo erro que o menu lateral tinha com `azulMarca`, e a mesma
+    /// correção: cor de território não pergunta o tema ao sistema, porque
+    /// quem já escolheu foi o território.
+    static func acentoDo(_ t: Territorio) -> Color {
+        t == .mercado ? ceuFixo : acao
     }
 }

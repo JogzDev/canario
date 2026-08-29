@@ -82,6 +82,10 @@ jobs:
       # falta aparecer antes de alguem abrir a tela.
       - name: Todo termo da taxonomia tem icone
         run: "$PY coletor/teste_icones_da_taxonomia.py"
+      # Cor nao quebra teste: um #0A0B1A que vira #0E1116 compila, roda e so
+      # aparece quando o desenho volta do Figma e nao bate.
+      - name: A paleta oficial esta no codigo
+        run: "$PY coletor/teste_paleta.py"
       - name: Contrato do avaliador Luna (sem rede)
         run: "$PY coletor/teste_avaliar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)

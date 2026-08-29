@@ -25,6 +25,47 @@ final class CurvaDeTamanhosTests: XCTestCase {
          faixa("GG", "maiores", emRisco: 8738,  quebrou: 189, taxa: 2.16)]
     }
 
+    // MARK: Quem a barra pode destacar
+
+    /// O painel medido em 24/08/2026, que é onde o defeito apareceu.
+    private var painel24: [CurvaDeTamanhos.Faixa] {
+        [faixa("PP", "menores", emRisco: 11264, quebrou: 475, taxa: 4.217),
+         faixa("P",  "menores", emRisco: 15359, quebrou: 716, taxa: 4.662),
+         faixa("M",  "meio",    emRisco: 14674, quebrou: 734, taxa: 5.002),
+         faixa("G",  "maiores", emRisco: 14978, quebrou: 710, taxa: 4.740),
+         faixa("GG", "maiores", emRisco: 10131, quebrou: 432, taxa: 4.264)]
+    }
+
+    /// A barra pintava só o M enquanto a manchete dizia "M, G e P no mesmo
+    /// passo". As duas leem a mesma medida e não podiam discordar: a manchete
+    /// respeitava a margem de erro e o destaque da barra era `taxa == máximo`.
+    func testDestaqueDaBarraConcordaComAMancheteEIncluiOsEmpatados() {
+        let lideres = CurvaDeTamanhos.lideres(painel24)
+        XCTAssertEqual(lideres, ["M", "G", "P"], "\(lideres)")
+    }
+
+    /// E os que ficam de fora ficam de fora por medida, não por arredondamento:
+    /// PP e GG estão a mais de dois erros-padrão do topo.
+    func testTamanhoLongeDoTopoNaoEntraNoDestaque() {
+        let lideres = CurvaDeTamanhos.lideres(painel24)
+        XCTAssertFalse(lideres.contains("PP"))
+        XCTAssertFalse(lideres.contains("GG"))
+    }
+
+    /// Empate geral não tem líder. Pintar a curva inteira comunica tanto quanto
+    /// não pintar nada, e ainda sugere que houve escolha.
+    func testCurvaInteiraEmpatadaNaoDestacaNinguem() {
+        let chato = [faixa("P", "menores", emRisco: 9000, quebrou: 360, taxa: 4.0),
+                     faixa("M", "meio",    emRisco: 9000, quebrou: 362, taxa: 4.02),
+                     faixa("G", "maiores", emRisco: 9000, quebrou: 358, taxa: 3.98)]
+        XCTAssertTrue(CurvaDeTamanhos.lideres(chato).isEmpty)
+    }
+
+    /// Curva vazia não estoura nem inventa um líder.
+    func testCurvaVaziaNaoTemLider() {
+        XCTAssertTrue(CurvaDeTamanhos.lideres([]).isEmpty)
+    }
+
     // MARK: Consolidação — o defeito que a tela mostrou
 
     func testMesmoRotuloEmFaixasDiferentesViraUmaLinhaSo() {

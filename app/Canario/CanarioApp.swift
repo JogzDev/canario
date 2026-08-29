@@ -30,7 +30,6 @@ struct CanarioApp: App {
             }
             .environmentObject(conta)
             .environmentObject(links)
-            .preferredColorScheme(.light)
             .onOpenURL {
                 conta.receberLink($0)
                 links.receber($0)
@@ -86,6 +85,17 @@ struct Raiz: View {
             }
         }
         .overlay { sobreposicoes }
+        // O esquema do sistema acompanha o território da aba visível.
+        //
+        // Ele mora AQUI, e não no modificador `.territorio`, porque
+        // `preferredColorScheme` se propaga até a cena: o da raiz ganha do de
+        // dentro, e um `.dark` aplicado lá embaixo não conseguia clarear a
+        // hora no topo sobre o fundo #0A0B1A.
+        //
+        // É isto que veste o que token nenhum alcança -- barra de status,
+        // indicador de rolagem, `Picker` segmentado -- e é o que faz o app
+        // continuar claro no resto, que é a decisão de produto de sempre.
+        .preferredColorScheme(aba == .dados ? .dark : .light)
         .animation(.snappy(duration: 0.35), value: menuAberto)
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })
@@ -172,6 +182,10 @@ struct Raiz: View {
                         menuAberto = false
                         itemDoMenu = ItemDoMenu(nome: item)
                     })
+                // Só o VALOR do ambiente, não o modificador `.territorio`:
+                // ele também pinta um fundo de tela cheia, e aqui isso
+                // cobriria a aba que o menu deixa à mostra de propósito.
+                .environment(\.territorio, aba == .dados ? .mercado : .armario)
                 .transition(.move(edge: .leading))
                 .zIndex(10)
             }

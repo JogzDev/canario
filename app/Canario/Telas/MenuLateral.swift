@@ -4,6 +4,10 @@ import UIKit
 struct MenuLateral: View {
     let fechar: () -> Void
     let escolher: (String) -> Void
+    /// O menu é chrome, não conteúdo: ele não tem território próprio, herda o
+    /// da aba de trás e inverte as duas cores da marca em cima disso. Vem por
+    /// ambiente porque `Raiz` é quem sabe a aba visível -- ver `fundoDoMenu`.
+    @Environment(\.territorio) private var territorio
 
 
     /// A aresta esquerda do botão de busca, contada a partir da borda direita.
@@ -39,7 +43,7 @@ struct MenuLateral: View {
                 // na divisa entre painel e faixa. Sem o véu ela é a única coisa
                 // que separa o painel do que está atrás, então fica -- só mais
                 // curta, para caber na folga acima.
-                Tokens.Cor.azulMarca
+                Tokens.Cor.fundoDoMenu(territorio)
                     .frame(width: largura)
                     .ignoresSafeArea()
                     .shadow(color: .black.opacity(0.20), radius: 10, x: 3)
@@ -52,7 +56,7 @@ struct MenuLateral: View {
                         ForEach(EntradaDoMenu.acoes, id: \.self) { entrada in
                             Button(entrada.titulo) { escolher(entrada.titulo) }
                                 .font(.system(size: 29, weight: .semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Tokens.Cor.tintaDoMenu(territorio))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .frame(height: 92)
                         }
@@ -73,7 +77,13 @@ struct MenuLateral: View {
                         ForEach(EntradaDoMenu.leituras, id: \.self) { entrada in
                             Button(entrada.titulo) { escolher(entrada.titulo) }
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.72))
+                                // 0,72 era medida para branco sobre azul
+                                // escuro. Com o par invertido ela cai a 3,5:1
+                                // no painel claro, abaixo do mínimo da Apple
+                                // para 15 pt; 0,85 devolve os dois lados
+                                // acima de 4,5:1 sem igualar o rodapé ao topo.
+                                .foregroundStyle(
+                                    Tokens.Cor.tintaDoMenu(territorio).opacity(0.85))
                                 .frame(minHeight: 44)
                         }
                     }
@@ -369,7 +379,8 @@ private struct PrivacidadeDoMenu: View {
 
 private struct PerguntasDoMenu: View {
     private let perguntas: [(String, String)] = [
-        ("What is a confirmed movement?", "A direction supported by at least two independent evidence legs, such as search interest and relevant fashion coverage. A spike in one source is shown separately instead of being promoted to a trend."),
+        ("What is a confirmed movement?", "Two consecutive weeks outside the usual range, with at least two independent evidence legs agreeing, such as search interest and relevant fashion coverage. One week alone is not a movement, however large the reading looks, and a spike in a single source is shown separately instead of being promoted to a trend."),
+        ("When does a restock count?", "Only after a second visit confirms it: a size has to disappear, come back and stay available. A size that reappears for a single day may be a catalog correction rather than a buying decision, so the newest confirmed restock is usually from the day before."),
         ("Why can two dates be different?", "Google search interest and editorial sources close their weeks on different schedules. The app shows the date attached to each signal and does not silently pretend they are the same observation."),
         ("Are Similar Pieces recommendations?", "No. They are observed products sharing the selected attributes. Price, discount and availability describe the store at collection time; they are not purchase advice."),
         ("Does the app follow my garment over time?", "No. Opening a saved Closet item recalculates today's market reading for its attributes. The app does not claim that your personal garment rose or fell in the market."),
