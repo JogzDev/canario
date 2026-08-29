@@ -72,6 +72,23 @@ struct Explorar: View {
     /// Sem isto o mesmo termo aparecia várias vezes — "Casaco e jaqueta" saía
     /// duas vezes, nas semanas 13/07 e 06/07. Digest é resumo do que mudou, não
     /// histórico: repetir o termo gasta a atenção do usuário sem informar.
+    ///
+    /// **Os subtítulos saíram em 28/08, e a ordem tomou o lugar deles.** A
+    /// lista vinha partida em quatro blocos com cabeçalho -- "TRENDING UP",
+    /// "EDITORIAL HIGHLIGHTS", "NO CONFIRMED MOVEMENT", "TRENDING DOWN" --, e
+    /// o terceiro nunca achou nome que não brigasse com o selo do cartão logo
+    /// abaixo. O JP cortou o nó: *"acho melhor tirar esses mini titulos e
+    /// jogar tudo num bloco só, ordenando pelo que subiu, o que ta estavel e o
+    /// que desceu"*.
+    ///
+    /// É uma lista só, e ela desce como um gradiente: alta, pico, estável,
+    /// queda; e, dentro de cada um, o índice maior primeiro. Quem está no topo
+    /// subiu mais, quem está no fim caiu mais, e ninguém precisa ler um rótulo
+    /// para saber disso. O que cada cartão é continua escrito nele -- o selo
+    /// dá a faixa da semana e a frase diz se aquilo virou movimento.
+    ///
+    /// De quebra, o teto do painel volta a valer: com quatro grupos, `prefix`
+    /// cortava CADA um em três e a seção chegava a doze cartões.
     private var mudaram: [IndiceSemanal] {
         var vistos = Set<String>()
         return todos
@@ -79,7 +96,13 @@ struct Explorar: View {
             .filter { vistos.insert($0.termoId).inserted }
             .sorted {
                 let esquerda = prioridade($0), direita = prioridade($1)
-                return esquerda == direita ? $0.semana > $1.semana : esquerda < direita
+                if esquerda != direita { return esquerda < direita }
+                let zEsquerda = $0.indice, zDireita = $1.indice
+                if zEsquerda != zDireita {
+                    return (zEsquerda ?? -.greatestFiniteMagnitude)
+                         > (zDireita ?? -.greatestFiniteMagnitude)
+                }
+                return $0.semana > $1.semana
             }
     }
 
@@ -424,7 +447,12 @@ struct Explorar: View {
             ("High", ordenados.filter { ($0.z ?? 0) >= 1 }),
             ("Building", ordenados.filter { (0.35..<1).contains($0.z ?? 0) }),
             ("Steady", ordenados.filter { abs($0.z ?? 0) < 0.35 }),
-            ("Cooling", ordenados.filter { ($0.z ?? 0) <= -0.35 }.reversed()),
+            // O `.reversed()` daqui punha "Far below" ACIMA de "Under the
+            // usual range", e o JP leu o que a ordem estava dizendo: *"quanto
+            // mais em queda, mais em baixo deveria ficar"*. Sem ele, a seção
+            // inteira -- High, Building, Steady, Cooling -- desce como um
+            // gradiente só, do índice maior para o menor.
+            ("Cooling", ordenados.filter { ($0.z ?? 0) <= -0.35 }),
         ].map { ($0.0, Array($0.1)) }
     }
 
@@ -519,51 +547,18 @@ struct Explorar: View {
             if mudaram.isEmpty {
                 LinhaInsumo(texto: "No movement has been confirmed by two independent sources in the last \(diasMaximosDoDigest) days.")
             } else {
-                ForEach(gruposDoDigest, id: \.titulo) { grupo in
-                    if !grupo.indices.isEmpty {
-                        Text(grupo.titulo)
-                            .font(Tokens.Fonte.miudo.weight(.semibold))
-                            .foregroundStyle(Tokens.Cor.tintaFraca)
-                            .textCase(.uppercase)
-                            .padding(.top, Tokens.Espaco.xs)
-                        ForEach(limite.map { Array(grupo.indices.prefix($0)) }
-                                ?? grupo.indices) { i in
-                            NavigationLink {
-                                if let termo = termoDe(i) { RelatorioDoTermo(termo: termo).territorio(.mercado) }
-                            } label: {
-                                CartaoDeMudanca(indice: i,
-                                                rotulo: rotulos[i.termoId] ?? i.termoId,
-                                                series: series[i.termoId] ?? [])
-                            }
-                            .buttonStyle(.plain)
-                        }
+                ForEach(limite.map { Array(mudaram.prefix($0)) } ?? mudaram) { i in
+                    NavigationLink {
+                        if let termo = termoDe(i) { RelatorioDoTermo(termo: termo).territorio(.mercado) }
+                    } label: {
+                        CartaoDeMudanca(indice: i,
+                                        rotulo: rotulos[i.termoId] ?? i.termoId,
+                                        series: series[i.termoId] ?? [])
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
-    }
-
-    /// Os grupos falam de CONFIRMAÇÃO; o selo de cada cartão fala da SEMANA.
-    ///
-    /// Eram duas perguntas diferentes ditas com o mesmo vocabulário, e o
-    /// resultado o JP leu no aparelho: o cabeçalho "WITHIN THE USUAL RANGE"
-    /// com um cartão "Under the usual range" logo abaixo. Nenhum dos dois
-    /// estava errado -- o grupo é `estado`, que é movimento confirmado da §22,
-    /// e o selo é a faixa do z desta semana --, mas lado a lado eles pareciam
-    /// um desmentindo o outro.
-    ///
-    /// A saída foi tirar "usual range" do cabeçalho, e não do selo: o selo é
-    /// quem mede faixa. "No confirmed movement" usa a mesma palavra que o Q&A
-    /// define em "What is a confirmed movement?", então quem estranhar tem
-    /// onde procurar. E diz o que o grupo é sem sugerir ausência de dado, que
-    /// era o risco de trocar por algo como "nothing to report".
-    private var gruposDoDigest: [(titulo: String, indices: [IndiceSemanal])] {
-        [
-            ("Trending up", mudaram.filter { $0.estado == "em alta" }),
-            ("Editorial highlights", mudaram.filter { $0.estado == "pico" }),
-            ("No confirmed movement", mudaram.filter { $0.estado == "estavel" }),
-            ("Trending down", mudaram.filter { $0.estado == "em queda" }),
-        ]
     }
 
     private func prioridade(_ indice: IndiceSemanal) -> Int {

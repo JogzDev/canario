@@ -177,9 +177,29 @@ enum Explicacao {
             // ESTA semana, com o número, e por que isso ainda não é um
             // movimento. É a única leitura do cartão que a pessoa não deduz
             // sozinha, e é diferente para cada termo.
+            //
+            // ATUALIZAÇÃO DE 28/08: a frase de dentro da faixa abria com
+            // "Within this attribute's usual range" a dois dedos de um selo
+            // dizendo "Within the usual range". Não era erro -- era a mesma
+            // medida dita duas vezes, e o JP marcou de novo: *"não gostei da
+            // repetição de within e within"*. A frase é de 14/08 e o selo
+            // chegou depois; ninguém escreveu as duas juntas.
+            //
+            // Agora ela abre pelo que o selo NÃO tem como dizer: o número
+            // desta semana e a semana anterior. Mesma forma do caso de fora
+            // da faixa, e diferente de termo para termo.
             guard let z = indice.indice, Leitura.faixa(z) != .habitual else {
-                return "Within this attribute's usual range for the last two weeks. "
-                     + "Stable is a measured result, not missing data."
+                guard let z = indice.indice else {
+                    return "No index for this week. Stable is a measured "
+                         + "result, not missing data."
+                }
+                // "+0,0" é sinal que o número não sustenta; some abaixo de 0,05.
+                let arredondado = (abs(z) * 10).rounded() / 10
+                let n = arredondado == 0
+                    ? "0.0" : Leitura.numero(z, casas: 1, sinal: true)
+                return "This week reads \(n) on the statistical scale, and the "
+                     + "week before stayed in the same place. Stable is a "
+                     + "measured result, not missing data."
             }
             return "This week it reads \(Leitura.numero(z, casas: 1, sinal: true)) "
                  + "on the statistical scale, \(Leitura.emPalavras(z)) — but one week "
