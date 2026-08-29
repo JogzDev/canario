@@ -276,9 +276,6 @@ struct Explorar: View {
                     }
                     .buttonStyle(.plain)
                 }
-                if tipo == "reposicao" {
-                    LinhaInsumo(texto: "A restock appears only after a second visit confirms it. A size that returns for one day may be a catalog correction rather than a buying decision, so the newest confirmed event is usually from yesterday.")
-                }
             }
         }
     }
@@ -546,11 +543,25 @@ struct Explorar: View {
         }
     }
 
+    /// Os grupos falam de CONFIRMAÇÃO; o selo de cada cartão fala da SEMANA.
+    ///
+    /// Eram duas perguntas diferentes ditas com o mesmo vocabulário, e o
+    /// resultado o JP leu no aparelho: o cabeçalho "WITHIN THE USUAL RANGE"
+    /// com um cartão "Under the usual range" logo abaixo. Nenhum dos dois
+    /// estava errado -- o grupo é `estado`, que é movimento confirmado da §22,
+    /// e o selo é a faixa do z desta semana --, mas lado a lado eles pareciam
+    /// um desmentindo o outro.
+    ///
+    /// A saída foi tirar "usual range" do cabeçalho, e não do selo: o selo é
+    /// quem mede faixa. "No confirmed movement" usa a mesma palavra que o Q&A
+    /// define em "What is a confirmed movement?", então quem estranhar tem
+    /// onde procurar. E diz o que o grupo é sem sugerir ausência de dado, que
+    /// era o risco de trocar por algo como "nothing to report".
     private var gruposDoDigest: [(titulo: String, indices: [IndiceSemanal])] {
         [
             ("Trending up", mudaram.filter { $0.estado == "em alta" }),
             ("Editorial highlights", mudaram.filter { $0.estado == "pico" }),
-            ("Within the usual range", mudaram.filter { $0.estado == "estavel" }),
+            ("No confirmed movement", mudaram.filter { $0.estado == "estavel" }),
             ("Trending down", mudaram.filter { $0.estado == "em queda" }),
         ]
     }

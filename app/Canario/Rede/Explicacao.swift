@@ -107,10 +107,31 @@ enum Explicacao {
 
     // MARK: Por que este estado
 
+    /// "1 source", "2 sources" -- nunca "1 sources".
+    private static func fontes(_ n: Int) -> String {
+        n == 1 ? "1 source" : "\(n) sources"
+    }
+
     /// A regra que produziu o estado, dita para quem vai decidir compra.
     ///
     /// Espelha `computar_indice()` linha a linha. A ordem importa: o `pico` é
     /// testado antes de "em alta" no Postgres, e aqui também.
+    ///
+    /// **O QUE SAIU DAQUI EM 28/08, E POR QUÊ**
+    ///
+    /// Esta frase diz o que foi medido para ESTE termo. A regra geral -- que
+    /// confirmar um movimento pede duas semanas seguidas com duas fontes
+    /// concordando -- saiu e foi para o Q&A do menu, onde é procurável.
+    ///
+    /// Ela vinha impressa em todo cartão da lista, sempre com as mesmas
+    /// palavras, e o JP mediu o valor dela com precisão: *"é aquele tipo de
+    /// coisa que é bom que o user saiba mas não vai ser uma vida se ele não
+    /// souber"*. Método repetido em cada linha vira textura e para de ser
+    /// lido; explicado uma vez, num lugar fixo, continua sendo método.
+    ///
+    /// O que fica em cada cartão é o que muda de cartão para cartão: o número
+    /// desta semana, a faixa em que ele caiu e quantas fontes concordaram. A
+    /// trilha completa continua no "Where this reading comes from".
     static func porQue(estado: String?, indice: IndiceSemanal, series: [PontoSerie]) -> String {
         guard let estado else {
             return "Two sources do not yet agree on a direction; this update has \(indice.nPernas ?? 0)."
@@ -125,14 +146,16 @@ enum Explicacao {
             let referencia = editorial?.z.map {
                 " (\(Leitura.numero($0, casas: 1)) on the statistical scale)"
             } ?? ""
-            return "Press attention was \(intensidade)\(referencia) for one week, but no other source followed. "
-                 + "For now this is an isolated editorial spike, not a confirmed trend."
+            // Esta continua dizendo o que é: pico não é alta, e quem lê o
+            // cartão precisa saber disso antes de comprar. Não é regra geral
+            // do motor -- é a classificação DESTE termo nesta semana.
+            return "Press attention was \(intensidade)\(referencia) for one week, "
+                 + "and no other source followed — an isolated editorial spike, "
+                 + "not a confirmed trend."
         case "em alta":
-            return "Two consecutive weeks above the usual range, with \(acima) sources agreeing. "
-                 + "One isolated week does not count; the threshold keeps one-week noise from becoming a trend."
+            return "Two consecutive weeks above the usual range, with \(fontes(acima)) agreeing."
         case "em queda":
-            return "Two consecutive weeks below the usual range, with \(abaixo) sources agreeing. "
-                 + "The same safeguard applies: one weak week alone is not a decline."
+            return "Two consecutive weeks below the usual range, with \(fontes(abaixo)) agreeing."
         case "estavel":
             // AQUI MORAVA UMA CONTRADIÇÃO, e ela aparecia em todo cartão.
             //
@@ -158,12 +181,9 @@ enum Explicacao {
                 return "Within this attribute's usual range for the last two weeks. "
                      + "Stable is a measured result, not missing data."
             }
-            let fontes = indice.nPernas ?? 0
-            let quantas = fontes == 1 ? "1 source" : "\(fontes) sources"
             return "This week it reads \(Leitura.numero(z, casas: 1, sinal: true)) "
                  + "on the statistical scale, \(Leitura.emPalavras(z)) — but one week "
-                 + "is not a movement. Confirming one takes two consecutive weeks with "
-                 + "two sources agreeing, and this reading has \(quantas)."
+                 + "is not a movement."
         default:
             return estado
         }

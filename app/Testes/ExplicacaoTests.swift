@@ -56,14 +56,42 @@ final class ExplicacaoTests: XCTestCase {
         XCTAssertNotEqual(calca, jeans)
     }
 
-    /// Uma fonte só não vira "1 sources".
+    /// Uma fonte só não vira "1 sources". A contagem saiu do cartão de
+    /// estável em 28/08 e hoje só aparece onde ela é a medição do estado --
+    /// nas duas semanas seguidas de alta e de queda --, então é lá que a
+    /// concordância de número passa a ser conferida.
     func testContagemDeFontesConcordaComOSingular() {
-        let frase = Explicacao.porQue(estado: "estavel",
-                                      indice: indice(-1.4, estado: "estavel",
-                                                     pernas: 1),
-                                      series: [])
-        XCTAssertTrue(frase.contains("1 source."), frase)
+        let uma = IndiceSemanal(
+            id: 1, termoId: "calca", segmento: Recorte.segmento,
+            semana: "2026-08-10", indice: 1.4, estado: "em alta",
+            pernasAtivas: ["busca"], nPernas: 1,
+            meta: .init(indiceSemanaAnterior: 1.2, pernasAcimaDe1: 1,
+                        pernasAbaixoDe1: 0),
+            computadoEm: nil)
+        let frase = Explicacao.porQue(estado: "em alta", indice: uma, series: [])
+        XCTAssertTrue(frase.contains("1 source agreeing"), frase)
         XCTAssertFalse(frase.contains("1 sources"))
+    }
+
+    /// O cartão conta o que foi MEDIDO; o método mora no Q&A.
+    ///
+    /// A regra da §22 vinha impressa em toda linha da lista, sempre igual, e
+    /// era isso que o JP tinha em mãos ao pedir para tirá-la: *"é aquele tipo
+    /// de coisa que é bom que o user saiba mas não vai ser uma vida se ele não
+    /// souber"*. Este teste guarda a decisão nos dois sentidos: a leitura
+    /// desta semana continua no cartão, e a receita de como se confirma um
+    /// movimento não volta para ele por descuido.
+    func testCartaoNaoRepeteAReceitaDeComoSeConfirmaUmMovimento() {
+        for z in [-1.4, -0.6, 1.1] {
+            let frase = Explicacao.porQue(estado: "estavel",
+                                          indice: indice(z, estado: "estavel"),
+                                          series: [])
+            XCTAssertFalse(frase.lowercased().contains("two consecutive weeks"),
+                           "a regra geral saiu do cartão e mora no Q&A: \(frase)")
+            XCTAssertFalse(frase.lowercased().contains("takes"), frase)
+            XCTAssertTrue(frase.contains("on the statistical scale"),
+                          "o que fica é a leitura desta semana: \(frase)")
+        }
     }
 
     /// Sem estado, a frase continua sendo a de "duas fontes ainda não
