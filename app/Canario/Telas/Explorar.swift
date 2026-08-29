@@ -29,6 +29,8 @@ struct Explorar: View {
     @State private var pulsoBusca: [PontoSerie] = []
     @State private var pulsoEditorial: [PontoSerie] = []
     @State private var eventos: [EventoVarejo] = []
+    @State private var curva: [CurvaDeTamanhos.Faixa] = []
+    @State private var carregandoCurva = true
     @State private var inicioDaColeta = "2026-07-24"
     @State private var carregando = true
     @State private var carregandoPulso = true
@@ -38,7 +40,18 @@ struct Explorar: View {
     /// porque é a que responde "a marca voltou a ter", que é a pergunta mais
     /// comum de quem está comprando.
     @State private var movimentoVisivel = "reposicao"
-    @Environment(\.territorio) private var territorio
+    /// Constante, e não `@Environment`.
+    ///
+    /// `.territorio(.mercado)` é aplicado ao conteúdo DESTA view, e ambiente
+    /// que a própria view escreve não volta para ela: a propriedade lia o
+    /// valor do PAI, que é o padrão `.armario`. O efeito era discreto e
+    /// errado -- chevrons e carimbos desta tela saíam com a paleta do armário
+    /// enquanto tudo que os rodeia (cartão, selo, barra) lia `.mercado` do
+    /// ambiente e se pintava de mercado.
+    ///
+    /// A aba inteira é mercado, sem condição nenhuma. Declarar isso aqui é
+    /// mais honesto do que ler de volta um ambiente que ela mesma escreveu.
+    private let territorio: Territorio = .mercado
 
     /// Quantas linhas cada seção mostra na Trends.
     ///
@@ -306,28 +319,69 @@ struct Explorar: View {
     /// §24 na abertura da aba: é o bloco de maior valor por esforço zero, e o
     /// único que responde a uma pergunta que o comprador já tem na cabeça antes
     /// de abrir o app.
+    ///
+    /// **A curva desce para cá em 29/08.** Até aqui a seção era um cartão com
+    /// uma frase e uma seta -- "Where size availability is breaking across the
+    /// panel" --, e a frase prometia um lugar onde a quebra estaria, sem
+    /// mostrar nenhuma. É a única seção do painel que ainda pedia um toque
+    /// para dizer qualquer coisa, e era a que estava no topo.
+    ///
+    /// O desenho da Bianca já trazia o gráfico de barras aqui. Ele cabe: são
+    /// cinco linhas de escada, elas não crescem com o tempo como as outras
+    /// seções crescem, e a leitura -- onde a grade quebra primeiro -- é a
+    /// pergunta inteira. O que fica para a tela cheia é o resto do dossiê: a
+    /// contagem por barra, o formato da quebra e as ressalvas de uso.
     private var curvaDoPainel: some View {
-        NavigationLink {
-            // O destino declara o próprio território: `NavigationLink` herda o
-            // AMBIENTE, mas não o fundo -- ele foi pintado na tela de trás. Sem
-            // esta linha a tela de tamanhos abria com cartões escuros sobre
-            // branco, que foi o que o JP viu.
-            CurvaDeTamanhosView(termo: nil).territorio(.mercado)
-        } label: {
-            Cartao {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Size availability").font(Tokens.Fonte.secao)
-                    Spacer()
-                    Image(systemName: "chevron.right")
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            cabecalhoDeSecao(
+                "Size availability",
+                carimbo: tamanhosDoPainel.first.map { Formato.data($0.semana) },
+                // O destino declara o próprio território: `NavigationLink`
+                // herda o AMBIENTE, mas não o fundo -- ele foi pintado na tela
+                // de trás. Sem isso a tela de tamanhos abria com cartões
+                // escuros sobre branco, que foi o que o JP viu.
+                porta: tamanhosDoPainel.isEmpty ? nil : {
+                    AnyView(CurvaDeTamanhosView(termo: nil).territorio(.mercado))
+                })
+
+            if carregandoCurva && tamanhosDoPainel.isEmpty {
+                ProgressView().frame(maxWidth: .infinity, alignment: .center)
+            } else if tamanhosDoPainel.isEmpty {
+                CoberturaInsuficiente(
+                    titulo: "No size curve this week",
+                    explicacao: "The panel needs at least \(CurvaDeTamanhos.minimoEmRisco) "
+                              + "sizes at risk before a curve can be read.",
+                    oQueTem: nil)
+            } else {
+                Cartao {
+                    // A unidade vem junto (§3): sem esta linha, "4,2%" é um
+                    // número sem pergunta.
+                    Text("Of the sizes available when the window opened, how many became unavailable.")
                         .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
+                        .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                    let maximo = tamanhosDoPainel.compactMap(\.taxaQuebra).max() ?? 1
+                    let lideres = CurvaDeTamanhos.lideres(tamanhosDoPainel)
+                    ForEach(tamanhosDoPainel) { linha in
+                        BarraDeTamanho(linha: linha, maximo: maximo,
+                                       destacado: lideres.contains(linha.rotulo ?? ""),
+                                       compacto: true)
+                    }
                 }
-                Text("Where size availability is breaking across the panel.")
-                    .font(Tokens.Fonte.apoio)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
             }
         }
-        .buttonStyle(.plain)
+    }
+
+    /// A escada do painel, já consolidada e na ordem em que a grade existe.
+    ///
+    /// Devolve vazio abaixo do piso de cobertura da §24 -- é o mesmo corte que
+    /// a tela cheia aplica, e ele precisa valer aqui também: curva desenhada
+    /// sobre amostra insuficiente é gráfico bonito afirmando o que não foi
+    /// medido.
+    private var tamanhosDoPainel: [CurvaDeTamanhos.Faixa] {
+        let consolidada = CurvaDeTamanhos.consolidar(curva)
+        let risco = consolidada.reduce(0) { $0 + $1.nEmRisco }
+        guard risco >= CurvaDeTamanhos.minimoEmRisco else { return [] }
+        return CurvaDeTamanhos.emOrdem(consolidada)
     }
 
     /// O cabeçalho de uma seção do painel: título, carimbo e a porta.
@@ -595,6 +649,7 @@ struct Explorar: View {
             carregandoPulso = true
             carregandoEditorial = true
             carregandoEventos = true
+            carregandoCurva = true
         }
 
         do {
@@ -623,12 +678,34 @@ struct Explorar: View {
         async let editorial: Void = carregarPulsoEditorial()
         async let detalhes: Void = carregarDetalhesConfirmados()
         async let movimentos: Void = carregarEventos()
-        _ = await (busca, editorial, detalhes, movimentos)
+        async let tamanhos: Void = carregarCurvaDeTamanhos()
+        _ = await (busca, editorial, detalhes, movimentos, tamanhos)
 
         await CacheDoExplorar.shared.salvar(SnapshotDoExplorar(
             todos: todos, termos: termos, series: series,
             pulsoBusca: pulsoBusca, pulsoEditorial: pulsoEditorial,
-            eventos: eventos, salvoEm: Date()))
+            eventos: eventos, curva: curva, salvoEm: Date()))
+    }
+
+    @MainActor
+    private func carregarCurvaDeTamanhos() async {
+        carregandoCurva = true
+        defer { carregandoCurva = false }
+        do {
+            // Mesma consulta da tela cheia, sem as linhas de faixa: o painel
+            // desenha a escada por rótulo, e o formato da quebra é leitura de
+            // lá. A escada de letra é a única em que dá para NOMEAR o tamanho
+            // sem misturar sentido entre marcas.
+            let linhas: [CurvaDeTamanhos.Faixa] = try await Supabase.shared.buscar(
+                "curva_tamanhos",
+                "select=*&termo_id=is.null&sistema=eq.letra&rotulo=not.is.null"
+                + "&order=semana.desc&limit=60")
+            // A tabela guarda histórico; a curva é a da semana mais recente.
+            let semana = linhas.map(\.semana).max()
+            curva = linhas.filter { $0.semana == semana }
+        } catch {
+            avisar("The size curve could not refresh; the rest of the page is available.")
+        }
     }
 
     @MainActor
@@ -715,9 +792,11 @@ struct Explorar: View {
         pulsoBusca = salvo.pulsoBusca
         pulsoEditorial = salvo.pulsoEditorial
         eventos = salvo.eventos
+        curva = salvo.curva
         carregandoPulso = false
         carregandoEditorial = false
         carregandoEventos = false
+        carregandoCurva = false
     }
 
     private static func dataISO(diasAtras: Int) -> String {
@@ -740,6 +819,7 @@ struct SnapshotDoExplorar: Codable {
     let pulsoBusca: [PontoSerie]
     let pulsoEditorial: [PontoSerie]
     let eventos: [EventoVarejo]
+    let curva: [CurvaDeTamanhos.Faixa]
     let salvoEm: Date
 }
 
@@ -750,7 +830,11 @@ actor CacheDoExplorar {
     private var arquivo: URL {
         FileManager.default.urls(for: .cachesDirectory,
                                  in: .userDomainMask)[0]
-            .appendingPathComponent("canario-explorar-v2.json")
+            // v3: o snapshot passou a carregar a curva de tamanhos. Um cache
+            // v2 não tem o campo e não decodifica -- trocar o nome descarta o
+            // antigo de uma vez, em vez de deixar `carregar()` falhar em
+            // silêncio a cada abertura até alguém sobrescrever o arquivo.
+            .appendingPathComponent("canario-explorar-v3.json")
     }
 
     func carregar() -> SnapshotDoExplorar? {

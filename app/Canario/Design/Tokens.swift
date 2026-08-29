@@ -304,7 +304,17 @@ extension Tokens.Cor {
     /// fundo, e o azul de sistema puxa a tela para fora da identidade. O céu
     /// resolve as duas coisas ao mesmo tempo: contraste alto e a cor que a
     /// pessoa já associa ao app do outro lado da divisa.
+    ///
+    /// **`ceuFixo`, e não `ceu` (29/08).** `ceu` é adaptativo: no escuro ele
+    /// vira #10262C, quase o próprio fundo. E o território de mercado roda com
+    /// o sistema em escuro, então o acento "azul claro da marca" chegava à
+    /// tela como um teal quase preto -- visível na primeira montagem da curva
+    /// de tamanhos, onde as barras destacadas sumiram dentro do cartão.
+    ///
+    /// É o mesmo erro que o menu lateral tinha com `azulMarca`, e a mesma
+    /// correção: cor de território não pergunta o tema ao sistema, porque
+    /// quem já escolheu foi o território.
     static func acentoDo(_ t: Territorio) -> Color {
-        t == .mercado ? ceu : acao
+        t == .mercado ? ceuFixo : acao
     }
 }

@@ -77,13 +77,15 @@ struct CurvaDeTamanhosView: View {
     private var barras: some View {
         let linhas = CurvaDeTamanhos.emOrdem(tamanhos)
         let maximo = linhas.compactMap(\.taxaQuebra).max() ?? 1
+        let lideres = CurvaDeTamanhos.lideres(linhas)
         return Cartao {
             Text("Availability loss by size").font(Tokens.Fonte.secao)
             Text("Of the sizes available when the window opened, how many became unavailable.")
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             ForEach(linhas) { linha in
-                BarraDeTamanho(linha: linha, maximo: maximo)
+                BarraDeTamanho(linha: linha, maximo: maximo,
+                               destacado: lideres.contains(linha.rotulo ?? ""))
             }
         }
     }
@@ -139,9 +141,23 @@ struct CurvaDeTamanhosView: View {
 
 /// Uma barra por tamanho. §32: nunca comunica por cor sozinha — o número vai
 /// junto, e a ordem da escada carrega a leitura.
+///
+/// **A cor e o destaque mudaram em 29/08.** O verde de `Tokens.Cor.alta` não é
+/// deste app -- o JP já tinha vetado a mesma cor no painel da peça: *"esse
+/// verde não encaixa com a identidade do app"* --, e o verde ainda era pintado
+/// sobre tokens claros, num gráfico que hoje abre em território de mercado. O
+/// destaque agora sai de `CurvaDeTamanhos.lideres`, que respeita a margem de
+/// erro e portanto concorda com a manchete acima do gráfico.
+///
+/// `compacto` é a versão da Trends: a mesma barra sem a linha de contagem, que
+/// é leitura de tela cheia. Ninguém quer cinco linhas de "710 of 14978" num
+/// painel de abertura.
 struct BarraDeTamanho: View {
     let linha: CurvaDeTamanhos.Faixa
     let maximo: Double
+    var destacado: Bool = false
+    var compacto: Bool = false
+    @Environment(\.territorio) private var territorio
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
@@ -151,10 +167,14 @@ struct BarraDeTamanho: View {
                     .frame(width: 34, alignment: .leading)
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
+                        // O trilho é a BORDA do território, não a superfície:
+                        // no escuro a superfície é a cor do próprio cartão, e
+                        // a barra vazia sumiria dentro dele.
                         RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta)
-                            .fill(Tokens.Cor.superficie)
+                            .fill(Tokens.Cor.bordaDo(territorio))
                         RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta)
-                            .fill(destaque ? Tokens.Cor.alta : Tokens.Cor.tintaFraca)
+                            .fill(destacado ? Tokens.Cor.acentoDo(territorio)
+                                            : Tokens.Cor.tintaFracaDo(territorio))
                             .frame(width: max(4, geo.size.width * proporcao))
                     }
                 }
@@ -163,7 +183,9 @@ struct BarraDeTamanho: View {
                     .font(Tokens.Fonte.numero)
                     .frame(width: 58, alignment: .trailing)
             }
-            LinhaInsumo(texto: "\(linha.nQuebrou) of \(linha.nEmRisco) became unavailable")
+            if !compacto {
+                LinhaInsumo(texto: "\(linha.nQuebrou) of \(linha.nEmRisco) became unavailable")
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Size \(linha.rotulo ?? ""), \(Leitura.numero(linha.taxaQuebra ?? 0, casas: 1)) percent, \(linha.nQuebrou) of \(linha.nEmRisco)")
@@ -172,10 +194,5 @@ struct BarraDeTamanho: View {
     private var proporcao: Double {
         guard maximo > 0, let t = linha.taxaQuebra else { return 0 }
         return min(1, t / maximo)
-    }
-
-    private var destaque: Bool {
-        guard let t = linha.taxaQuebra, maximo > 0 else { return false }
-        return t >= maximo - 0.0001
     }
 }
