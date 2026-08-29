@@ -4,6 +4,10 @@ import UIKit
 struct MenuLateral: View {
     let fechar: () -> Void
     let escolher: (String) -> Void
+    /// O menu é chrome, não conteúdo: ele não tem território próprio, herda o
+    /// da aba de trás e inverte as duas cores da marca em cima disso. Vem por
+    /// ambiente porque `Raiz` é quem sabe a aba visível -- ver `fundoDoMenu`.
+    @Environment(\.territorio) private var territorio
 
 
     /// A aresta esquerda do botão de busca, contada a partir da borda direita.
@@ -39,7 +43,7 @@ struct MenuLateral: View {
                 // na divisa entre painel e faixa. Sem o véu ela é a única coisa
                 // que separa o painel do que está atrás, então fica -- só mais
                 // curta, para caber na folga acima.
-                Tokens.Cor.azulMarca
+                Tokens.Cor.fundoDoMenu(territorio)
                     .frame(width: largura)
                     .ignoresSafeArea()
                     .shadow(color: .black.opacity(0.20), radius: 10, x: 3)
@@ -52,7 +56,7 @@ struct MenuLateral: View {
                         ForEach(EntradaDoMenu.acoes, id: \.self) { entrada in
                             Button(entrada.titulo) { escolher(entrada.titulo) }
                                 .font(.system(size: 29, weight: .semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Tokens.Cor.tintaDoMenu(territorio))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .frame(height: 92)
                         }
@@ -73,7 +77,13 @@ struct MenuLateral: View {
                         ForEach(EntradaDoMenu.leituras, id: \.self) { entrada in
                             Button(entrada.titulo) { escolher(entrada.titulo) }
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.72))
+                                // 0,72 era medida para branco sobre azul
+                                // escuro. Com o par invertido ela cai a 3,5:1
+                                // no painel claro, abaixo do mínimo da Apple
+                                // para 15 pt; 0,85 devolve os dois lados
+                                // acima de 4,5:1 sem igualar o rodapé ao topo.
+                                .foregroundStyle(
+                                    Tokens.Cor.tintaDoMenu(territorio).opacity(0.85))
                                 .frame(minHeight: 44)
                         }
                     }

@@ -182,6 +182,10 @@ struct Raiz: View {
                         menuAberto = false
                         itemDoMenu = ItemDoMenu(nome: item)
                     })
+                // Só o VALOR do ambiente, não o modificador `.territorio`:
+                // ele também pinta um fundo de tela cheia, e aqui isso
+                // cobriria a aba que o menu deixa à mostra de propósito.
+                .environment(\.territorio, aba == .dados ? .mercado : .armario)
                 .transition(.move(edge: .leading))
                 .zIndex(10)
             }

@@ -261,6 +261,38 @@ extension Tokens.Cor {
     static func tintaFracaDo(_ t: Territorio) -> Color {
         t == .mercado ? tintaFracaNoturna : tintaFraca
     }
+
+    // MARK: - O menu lateral inverte as duas cores da marca (28/08)
+    //
+    // O menu pintava o painel com `azulMarca` e escrevia por cima com
+    // `.white`. `azulMarca` é ADAPTATIVO -- clareia no escuro para continuar
+    // legível sobre o céu escurecido --, então na Trends o painel virava
+    // #96B4D7 com letra branca por cima. O JP viu a mistura e disse o que
+    // faltava: *"a fonte do menu lateral tinha que ser aquele azul escuro pra
+    // dar contraste"*.
+    //
+    // A correção não é escolher UM dos dois visuais, e sim inverter o par:
+    // *"quando a tela é mais clara tipo o add, o menu lateral é o azul escuro
+    // do app com a letra azul claro. e quando a tela for escura, o menu
+    // lateral é o azul claro do app com a letra escura"*. São as mesmas duas
+    // cores oficiais trocando de lugar, e as duas combinações estão medidas:
+    // 6,6:1 no texto cheio e 5,3:1 / 4,7:1 no rodapé a 85%.
+    //
+    // Os valores aqui são FIXOS de propósito. Quem decide a inversão é o
+    // território, não o tema do sistema; um par adaptativo desfaria a conta
+    // acima exatamente como desfez a anterior.
+
+    /// #BBE5ED literal, sem adaptação por tema.
+    static let ceuFixo = fixa(187, 229, 237)
+    /// #374A67 literal, sem adaptação por tema.
+    static let azulMarcaFixo = fixa(55, 74, 103)
+
+    static func fundoDoMenu(_ t: Territorio) -> Color {
+        t == .mercado ? ceuFixo : azulMarcaFixo
+    }
+    static func tintaDoMenu(_ t: Territorio) -> Color {
+        t == .mercado ? azulMarcaFixo : ceuFixo
+    }
 }
 
 extension Tokens.Cor {
