@@ -31,7 +31,7 @@ enum CurvaDeTamanhos {
 
     /// Uma faixa da grade. Os rótulos vêm de dentro da grade de cada produto,
     /// nunca de uma tabela que equipara tamanho entre marcas.
-    struct Faixa: Codable, Hashable, Identifiable {
+    struct Faixa: Decodable, Hashable, Identifiable {
         let termoId: String?
         let semana: String
         let sistema: String

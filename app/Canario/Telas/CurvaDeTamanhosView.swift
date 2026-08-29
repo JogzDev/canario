@@ -149,14 +149,10 @@ struct CurvaDeTamanhosView: View {
 /// destaque agora sai de `CurvaDeTamanhos.lideres`, que respeita a margem de
 /// erro e portanto concorda com a manchete acima do gráfico.
 ///
-/// `compacto` é a versão da Trends: a mesma barra sem a linha de contagem, que
-/// é leitura de tela cheia. Ninguém quer cinco linhas de "710 of 14978" num
-/// painel de abertura.
 struct BarraDeTamanho: View {
     let linha: CurvaDeTamanhos.Faixa
     let maximo: Double
     var destacado: Bool = false
-    var compacto: Bool = false
     @Environment(\.territorio) private var territorio
 
     var body: some View {
@@ -183,9 +179,7 @@ struct BarraDeTamanho: View {
                     .font(Tokens.Fonte.numero)
                     .frame(width: 58, alignment: .trailing)
             }
-            if !compacto {
-                LinhaInsumo(texto: "\(linha.nQuebrou) of \(linha.nEmRisco) became unavailable")
-            }
+            LinhaInsumo(texto: "\(linha.nQuebrou) of \(linha.nEmRisco) became unavailable")
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Size \(linha.rotulo ?? ""), \(Leitura.numero(linha.taxaQuebra ?? 0, casas: 1)) percent, \(linha.nQuebrou) of \(linha.nEmRisco)")
