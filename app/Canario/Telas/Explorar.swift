@@ -436,7 +436,6 @@ struct Explorar: View {
                         }
                     }
                 }
-                LinhaInsumo(texto: "This is the current search pulse, not a confirmed trend on its own.")
             }
         }
     }
@@ -447,12 +446,17 @@ struct Explorar: View {
             ("High", ordenados.filter { ($0.z ?? 0) >= 1 }),
             ("Building", ordenados.filter { (0.35..<1).contains($0.z ?? 0) }),
             ("Steady", ordenados.filter { abs($0.z ?? 0) < 0.35 }),
+            // "Cooling" saiu em 28/08: era a única das quatro que descrevia
+            // um MOVIMENTO -- esfriando -- numa lista que mede POSIÇÃO. O JP
+            // resolveu pelo par que já estava ali: *"se tem high pode ter
+            // low"*.
+            //
             // O `.reversed()` daqui punha "Far below" ACIMA de "Under the
             // usual range", e o JP leu o que a ordem estava dizendo: *"quanto
             // mais em queda, mais em baixo deveria ficar"*. Sem ele, a seção
-            // inteira -- High, Building, Steady, Cooling -- desce como um
+            // inteira -- High, Building, Steady, Low -- desce como um
             // gradiente só, do índice maior para o menor.
-            ("Cooling", ordenados.filter { ($0.z ?? 0) <= -0.35 }),
+            ("Low", ordenados.filter { ($0.z ?? 0) <= -0.35 }),
         ].map { ($0.0, Array($0.1)) }
     }
 
