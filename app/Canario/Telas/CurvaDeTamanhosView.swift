@@ -34,6 +34,10 @@ struct CurvaDeTamanhosView: View {
                 conteudo
             }
         }
+        // Mesmo motivo do relatório do termo: ela é aberta de dois lugares, e
+        // um deles não declarava o território. Quem só existe no mercado diz
+        // isso de si mesma.
+        .territorio(.mercado)
         .navigationTitle(termo == nil ? "Size availability" : "Sizes · \(Traducao.rotuloExibido(termo!))")
         .navigationBarTitleDisplayMode(.inline)
         .task { await carregar() }

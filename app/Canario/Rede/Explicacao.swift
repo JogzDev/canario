@@ -281,3 +281,11 @@ enum Explicacao {
         }
     }
 }
+
+extension String {
+    /// Só a primeira letra, quando a frase vira título de linha.
+    /// `capitalized` maiúscularia todas as palavras.
+    var capitalizedPrimeira: String {
+        isEmpty ? self : prefix(1).uppercased() + dropFirst()
+    }
+}

@@ -232,12 +232,10 @@ struct Explorar: View {
     /// painel escuro. Passa a ler o território como o resto da aba.
     private var atalhoDeComparacao: some View {
         NavigationLink {
-            // Sem `.territorio(.mercado)` de propósito: a tela do Comparar é
-            // uma `List` `insetGrouped` com fundo de sistema, e o modificador
-            // pintaria um `noturno` que a lista cobre inteiro. Ficaria o
-            // carimbo do território sem nada do território -- pior que não
-            // ter, porque some da lista de pendências. Ela precisa ser
-            // convertida de verdade, e isso é trabalho de outra tela.
+            // O Comparar declara o próprio território desde 30/08, com as
+            // duas coisas que a `List` exige: esconder o fundo agrupado do
+            // sistema E pintar o do território. Por muito tempo aqui havia um
+            // aviso dizendo que não dava; dava, faltava a primeira metade.
             Comparar()
         } label: {
             Cartao {
@@ -437,7 +435,7 @@ struct Explorar: View {
                             .padding(.top, Tokens.Espaco.xs)
                         ForEach(grupo.pontos.prefix(limite ?? grupo.pontos.count)) { ponto in
                             if let termo = termosPorId[ponto.termoId] {
-                                NavigationLink { RelatorioDoTermo(termo: termo).territorio(.mercado) } label: {
+                                NavigationLink { RelatorioDoTermo(termo: termo) } label: {
                                     Cartao {
                                         HStack(alignment: .firstTextBaseline) {
                                             Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
@@ -577,7 +575,7 @@ struct Explorar: View {
             } else {
                 ForEach(limite.map { Array(mudaram.prefix($0)) } ?? mudaram) { i in
                     NavigationLink {
-                        if let termo = termoDe(i) { RelatorioDoTermo(termo: termo).territorio(.mercado) }
+                        if let termo = termoDe(i) { RelatorioDoTermo(termo: termo) }
                     } label: {
                         CartaoDeMudanca(indice: i,
                                         rotulo: rotulos[i.termoId] ?? i.termoId,

@@ -72,6 +72,16 @@ struct RelatorioDoTermo: View {
         // O nome do termo é a manchete DA TELA no desenho da Bianca, em corpo
         // grande logo abaixo do voltar. Repeti-lo na barra seria dizer duas
         // vezes a mesma palavra a dois dedos de distância.
+        // Declarado AQUI, e não só em quem empurra.
+        //
+        // O padrão era o local de push declarar o território, e ele vazava a
+        // cada tela nova: o `Explorar` declarava ao abrir esta, esta não
+        // declarava ao abrir o detalhe da fonte, e o detalhe abria preto. O
+        // JP achou por baixo: *"quando eu clico em qualquer uma das paginas de
+        // sources, eu vou pra uma pagina que nao segue o azul escuro nativo da
+        // paleta do app, ela é preta"*. Tela que só existe no mercado diz isso
+        // de si mesma; assim ninguém precisa lembrar de dizer por ela.
+        .territorio(.mercado)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .task { await carregar() }
@@ -342,6 +352,13 @@ struct RelatorioDoTermo: View {
                                       leitura: resumoDaFonte(fonte, pontos: pontos),
                                       semanas: pontos.count,
                                       ultima: pontos.first?.semana)
+                        // Numa `LazyVGrid` a linha toma a altura do item mais
+                        // alto, e o mais baixo fica boiando com uma sobra
+                        // embaixo. "Search" cabe numa linha e "Brazilian
+                        // Editorial" em duas; "6 weeks" cabe e "235 weeks"
+                        // quebra. O resultado eram quatro caixas de alturas
+                        // diferentes -- o desalinhamento que o JP viu.
+                        .frame(maxHeight: .infinity)
                     }
                     .buttonStyle(.plain)
                 }
@@ -440,8 +457,25 @@ private struct DetalheDaFonteEditorial: View {
     let fonte: String
     let pontos: [PontoSerie]
 
-    private var ordenados: [PontoSerie] { pontos.sorted { $0.semana < $1.semana } }
+    private let territorio: Territorio = .mercado
+
+    /// Só a janela recente entra no gráfico.
+    ///
+    /// `pontos` traz a série inteira -- 235 semanas na busca, 236 no editorial
+    /// brasileiro. Desenhar tudo num cartão de 210 pt com um `PointMark` por
+    /// semana produzia uma faixa sólida de marcas, sem eixo e sem leitura
+    /// possível: *"os graficos dentro delas estão bem confusos"*. Um ano é o
+    /// que dá para ler numa tela de telefone, e é a janela que responde à
+    /// pergunta que traz a pessoa aqui -- como esta fonte se moveu.
+    private static let semanasNoGrafico = 52
+
+    private var ordenados: [PontoSerie] {
+        pontos.sorted { $0.semana < $1.semana }.suffix(Self.semanasNoGrafico)
+    }
     private var recente: PontoSerie? { pontos.max { $0.semana < $1.semana } }
+    private var corDaFonte: Color {
+        Tokens.Cor.corDaPerna(fonte)?.tinta ?? Tokens.Cor.acentoDo(territorio)
+    }
 
     var body: some View {
         ScrollView {
@@ -455,20 +489,52 @@ private struct DetalheDaFonteEditorial: View {
                         Text(Leitura.numero(bruto, casas: 2)).font(Tokens.Fonte.corpo)
                     }
                     LinhaInsumo(texto: "Latest measurement: \(Formato.data(recente?.semana ?? "—"))")
-                    if let unidade = recente?.meta?.unidade { LinhaInsumo(texto: unidade) }
+                    // A unidade sai da TABELA do app, não do `meta` do banco.
+                    //
+                    // `meta.unidade` vem gravado em português -- "materias que
+                    // citaram o termo" -- e estava aparecendo cru numa
+                    // interface inteira em inglês. `Explicacao.unidade` já
+                    // traduz as cinco pernas e é a mesma que o painel da peça
+                    // usa; o `meta` fica como estava no banco, que é onde ele
+                    // serve de registro.
+                    LinhaInsumo(texto: Explicacao.unidade(daFonte: fonte).capitalizedPrimeira)
                 }
 
                 if !ordenados.compactMap(\.valorBruto).isEmpty {
                     Cartao {
-                        Text("Measured history").font(Tokens.Fonte.secao)
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Measured history").font(Tokens.Fonte.secao)
+                            Spacer()
+                            Text(janelaDoGrafico)
+                                .font(Tokens.Fonte.miudo)
+                                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                        }
                         Chart(ordenados) { ponto in
                             if let valor = ponto.valorBruto,
                                let data = Formato.dataISO(ponto.semana) {
-                                LineMark(x: .value("Week", data), y: .value("Measured value", valor))
-                                PointMark(x: .value("Week", data), y: .value("Measured value", valor))
+                                // O `PointMark` saiu: com uma marca por semana
+                                // o gráfico virava uma faixa cheia. A linha
+                                // sozinha mostra o movimento, que é o assunto.
+                                LineMark(x: .value("Week", data),
+                                         y: .value("Measured value", valor))
+                                .interpolationMethod(.monotone)
                             }
                         }
-                        .frame(height: 210)
+                        .foregroundStyle(corDaFonte)
+                        .chartYAxis {
+                            AxisMarks(position: .trailing) {
+                                AxisGridLine().foregroundStyle(.quaternary)
+                                AxisValueLabel()
+                            }
+                        }
+                        .chartXAxis {
+                            AxisMarks(values: .automatic(desiredCount: 4)) {
+                                AxisGridLine().foregroundStyle(.quaternary)
+                                AxisValueLabel(format: .dateTime.month(.abbreviated))
+                            }
+                        }
+                        .frame(height: 180)
+                        LinhaInsumo(texto: "Vertical axis: \(Explicacao.unidade(daFonte: fonte)).")
                         LinhaInsumo(texto: fonte.hasPrefix("editorial")
                             ? "This is the source's measured value, not a forecast. Article evidence appears below."
                             : "This is the source's measured value, not a forecast. Its inputs and sample appear below.")
@@ -479,8 +545,18 @@ private struct DetalheDaFonteEditorial: View {
             }
             .padding(Tokens.Espaco.m)
         }
+        .territorio(.mercado)
         .navigationTitle(Traducao.rotuloExibido(termo))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Tokens.Cor.noturno, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+
+    /// "52 weeks" ou o que houver, para o eixo não mentir sobre o alcance.
+    private var janelaDoGrafico: String {
+        let n = ordenados.count
+        return n < Self.semanasNoGrafico
+            ? "\(n) weeks measured" : "last \(n) weeks"
     }
 
     @ViewBuilder
@@ -512,15 +588,38 @@ private struct DetalheDaFonteEditorial: View {
                 if let veiculos = meta?.veiculosEmTexto {
                     LinhaInsumo(texto: veiculos)
                 }
+                // O link não parecia link.
+                //
+                // `Link` envolvendo uma `VStack` não tinge o que está dentro:
+                // os textos saíam na cor de leitura, sem nada dizendo que
+                // abriam a matéria. O JP pediu o remédio junto do diagnóstico
+                // -- *"podem estar melhor expostos, por exemplo usando o tom
+                // de azul claro nativo do app"* --, e o azul claro é o acento
+                // do mercado. A seta de "sai do app" vai junto, porque cor
+                // sozinha não é affordance (§32).
                 ForEach(Array((meta?.exemplos ?? []).enumerated()), id: \.offset) { _, exemplo in
                     if let texto = exemplo.url, let url = URL(string: texto) {
                         Link(destination: url) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(exemplo.titulo).font(Tokens.Fonte.apoio)
-                                Text(exemplo.veiculo).font(Tokens.Fonte.miudo)
-                                    .foregroundStyle(.secondary)
+                            HStack(alignment: .firstTextBaseline,
+                                   spacing: Tokens.Espaco.xs) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(exemplo.titulo)
+                                        .font(Tokens.Fonte.apoio.weight(.medium))
+                                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
+                                        .multilineTextAlignment(.leading)
+                                    Text(exemplo.veiculo)
+                                        .font(Tokens.Fonte.miudo)
+                                        .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "arrow.up.right")
+                                    .font(Tokens.Fonte.miudo.weight(.semibold))
+                                    .foregroundStyle(Tokens.Cor.acentoDo(territorio))
                             }
+                            .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("\(exemplo.titulo), \(exemplo.veiculo), opens the article")
+                        .padding(.vertical, Tokens.Espaco.xs)
                     }
                 }
                 if (meta?.exemplos ?? []).isEmpty {
@@ -572,10 +671,14 @@ struct CartaoDaPerna: View {
                 Image(systemName: icone)
                     .font(Tokens.Fonte.secao)
                     .foregroundStyle(cores.tinta)
+                // `reservesSpace` em vez de `lineLimit` puro: "Search" ocupa
+                // uma linha e "Brazilian Editorial" duas, e sem reservar a
+                // segunda os dois cartões nascem com alturas diferentes antes
+                // mesmo de a grade tentar alinhá-los.
                 Text(Perna.rotulo(fonte).capitalized)
                     .font(Tokens.Fonte.apoio.weight(.semibold))
                     .foregroundStyle(Tokens.Cor.tintaDo(territorio))
-                    .lineLimit(2)
+                    .lineLimit(2, reservesSpace: true)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
@@ -591,17 +694,31 @@ struct CartaoDaPerna: View {
                 }
                 .foregroundStyle(cores.tinta)
             } else {
+                // Perna sem janela comparável mostra a frase no lugar do
+                // número, e a frase é mais alta. Duas linhas reservadas nas
+                // duas pontas mantêm o passo do cartão.
                 Text(leitura)
                     .font(Tokens.Fonte.apoio)
                     .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
-                    .lineLimit(3)
+                    .lineLimit(2, reservesSpace: true)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            Spacer(minLength: 0)
+
             if let ultima {
-                Text("\(semanas) weeks · to \(Formato.data(ultima))")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                // Duas linhas declaradas, não uma que às vezes quebra: com
+                // "235 weeks · to 17/08/2026" quebrando e "6 weeks · to
+                // 24/08/2026" cabendo, os cartões vizinhos saíam com um passo
+                // de diferença.
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(semanas) weeks")
+                    Text("to \(Formato.data(ultima))")
+                }
+                .font(Tokens.Fonte.miudo)
+                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
