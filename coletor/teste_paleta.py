@@ -27,6 +27,15 @@ O QUE ELE CONFERE
 Que cada cor oficial aparece em `Tokens.swift` como triplo RGB decimal, no
 token de nome certo. E que `noite` continua sendo `#0E1116` -- ou seja, que
 ninguem "corrigiu" a tinta para a cor de fundo achando que eram a mesma coisa.
+
+E, desde 30/08, que nenhuma delas aparece ESCRITA A MAO fora do Tokens.
+
+O primeiro portao garantia que a paleta estava num lugar certo; nao garantia
+que era o UNICO lugar. Na integracao da BranchFadul apareceram sete copias de
+`Color(red: 187/255, green: 229/255, blue: 237/255)` espalhadas por
+MenuLateral, Analisar e Conta -- todas com o valor correto, e por isso
+invisiveis. Copia certa hoje e copia velha depois: no dia em que o azul mudar,
+o `grep` acha o token e nao acha as sete.
 """
 
 import pathlib
@@ -56,6 +65,26 @@ def rgb_do_token(fonte, token):
     return tuple(int(g) for g in achado.groups()) if achado else None
 
 
+def literais_espalhados():
+    """Cores oficiais escritas a mao em qualquer Swift que nao o Tokens."""
+    achados = []
+    for arquivo in sorted((RAIZ / "app" / "Canario").rglob("*.swift")):
+        if arquivo == TOKENS:
+            continue
+        fonte = arquivo.read_text(encoding="utf-8")
+        for numeros in re.finditer(
+                r"(\d{1,3})\s*/\s*255\s*,\s*green:\s*(\d{1,3})\s*/\s*255"
+                r"\s*,\s*blue:\s*(\d{1,3})\s*/\s*255", fonte):
+            rgb = tuple(int(g) for g in numeros.groups())
+            for token, (hexa, esperado) in OFICIAIS.items():
+                if rgb == esperado:
+                    linha = fonte[:numeros.start()].count("\n") + 1
+                    achados.append("{}:{} escreve {} a mao; use "
+                                   "`Tokens.Cor` em vez de copiar".format(
+                                       arquivo.relative_to(RAIZ), linha, hexa))
+    return achados
+
+
 def main():
     if not TOKENS.exists():
         print("FALHOU: Tokens.swift nao encontrado")
@@ -80,6 +109,8 @@ def main():
             "Esta {} -- alguem pode te-la confundido com `noturno`.".format(
                 nome, hexa, esperado, obtido))
 
+    falhas.extend(literais_espalhados())
+
     if falhas:
         print("FALHOU: a paleta oficial nao bate com o codigo.")
         for f in falhas:
@@ -87,7 +118,7 @@ def main():
         return 1
 
     print("Paleta oficial: ceu, azulMarca e noturno conferem; "
-          "noite continua sendo tinta.")
+          "noite continua sendo tinta; nenhuma copia a mao.")
     return 0
 
 
