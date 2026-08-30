@@ -326,6 +326,43 @@ extension Tokens.Cor {
     /// de tinta sobre o céu; aqui ele é fundo e não pode inverter com o tema.
     static let noiteFixa = fixa(14, 17, 22)
 
+    // MARK: - As quatro pernas ganham cor (30/08)
+    //
+    // A Bianca desenhou o bloco de Sources com um tom por perna, e o JP
+    // comprou a ideia pelo motivo certo: *"é um aplicativo de moda feminina,
+    // acho que ela podia enfeitar mais... sair da mesmice pode ser bom"*. Ele
+    // duvidou das cores dela, não da ideia, então os valores aqui são meus.
+    //
+    // **A REGRA QUE FAZ ISTO NÃO VIRAR CONFUSÃO: cor de perna é IDENTIDADE,
+    // nunca ESTADO.** O app já comunica direção por cor -- os sete selos de
+    // faixa, verde acima e laranja abaixo. Se um cartão de fonte fosse verde,
+    // ele leria como "acima da faixa" antes de ler como "editorial". Por isso
+    // nenhum destes quatro tons é da família dos selos: âmbar, rosa, azul da
+    // marca e verde-água. Quem diz a direção dentro do cartão continua sendo a
+    // seta mais o sinal, como manda a §32.
+    //
+    // Medidos: a tinta de cada perna sobre o próprio cartão dá de 7,6:1 a
+    // 9,1:1, e o cartão se separa do `noturno` mais do que `superficieNoturna`
+    // se separa (1,32-1,45:1 contra 1,12:1), que é o que faz eles saltarem no
+    // desenho dela.
+
+    /// Fundo e tinta de cada perna. `nil` para fonte desconhecida -- perna nova
+    /// aparece com a superfície de sempre em vez de inventar um tom.
+    static func corDaPerna(_ fonte: String) -> (fundo: Color, tinta: Color)? {
+        switch fonte {
+        case "busca":
+            return (fixa(58, 43, 22), fixa(247, 202, 132))
+        case "editorial_br":
+            return (fixa(60, 30, 47), fixa(246, 176, 208))
+        case "editorial_intl":
+            return (fixa(29, 41, 68), fixa(156, 192, 230))
+        case "varejo":
+            return (fixa(18, 52, 51), fixa(144, 228, 218))
+        default:
+            return nil
+        }
+    }
+
     /// O painel do menu no território claro é #0E1116, e não `azulMarca`.
     ///
     /// Eu tinha lido "o azul escuro do app" como #374A67 e mudei só a letra.

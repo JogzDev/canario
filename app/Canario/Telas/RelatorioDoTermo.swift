@@ -11,12 +11,18 @@ import Charts
 struct RelatorioDoTermo: View {
     let termo: Termo
 
+    /// Constante: esta tela só existe dentro do mercado, e ler o ambiente aqui
+    /// devolveria o valor do pai. Mesmo caso do `Explorar` e do `Comparar`.
+    private let territorio: Territorio = .mercado
+
     @State private var serie: [PontoSerie] = []
     @State private var indices: [IndiceSemanal] = []
     @State private var coberturas: [Cobertura] = []
     @State private var carregando = true
     @State private var erro: String?
     @State private var janelaEmMeses = 6
+    /// O cartão de explicação da escala, que abre no (i) ao lado do número.
+    @State private var explicandoAEscala = false
     @State private var curvaDisponivel = false
 
     private var maisRecente: IndiceSemanal? { indices.first }
@@ -50,12 +56,12 @@ struct RelatorioDoTermo: View {
                     // O portão continua fechado no modelo; a interface apenas
                     // omite a afirmação que não pode sustentar, sem abrir o
                     // relatório com um cartão de fracasso.
+                    cabecalho
                     grafico
                     curva
                     insumos
                 } else {
-                    resumo
-                    indiceEEstado
+                    cabecalho
                     grafico
                     curva
                     insumos
@@ -63,8 +69,11 @@ struct RelatorioDoTermo: View {
             }
             .padding(Tokens.Espaco.m)
         }
-        .navigationTitle(Traducao.rotuloExibido(termo))
-        .navigationBarTitleDisplayMode(.large)
+        // O nome do termo é a manchete DA TELA no desenho da Bianca, em corpo
+        // grande logo abaixo do voltar. Repeti-lo na barra seria dizer duas
+        // vezes a mesma palavra a dois dedos de distância.
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .task { await carregar() }
     }
 
@@ -78,47 +87,144 @@ struct RelatorioDoTermo: View {
     @ViewBuilder
     private var curva: some View {
         if curvaDisponivel {
-            NavigationLink {
-                CurvaDeTamanhosView(termo: termo)
-            } label: {
-                Cartao {
+            // Divisor e linha, não cartão: no desenho da Bianca esta é uma
+            // PORTA entre dois blocos de conteúdo, e cartão a fazia parecer
+            // mais um bloco. O que ela leva continua sendo dito -- só que na
+            // tela de destino, que é onde a pessoa vai lê-lo.
+            VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                Divider().overlay(Tokens.Cor.bordaDo(territorio))
+                NavigationLink {
+                    CurvaDeTamanhosView(termo: termo)
+                } label: {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("Size availability").font(Tokens.Fonte.secao)
+                        Text("Size availability")
+                            .font(.system(size: 22, weight: .bold))
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(Tokens.Fonte.miudo)
-                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                            .font(Tokens.Fonte.secao)
+                            .foregroundStyle(Tokens.Cor.acentoDo(territorio))
                     }
-                    Text("Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()).")
-                        .font(Tokens.Fonte.apoio)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                    LinhaInsumo(texto: "Retail context only; it does not affect the index or state.")
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                LinhaInsumo(texto: "Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()). Retail context only; it does not affect the index or state.")
+                Divider().overlay(Tokens.Cor.bordaDo(territorio))
+            }
+        }
+    }
+
+    /// A manchete da tela: nome, número, selo e a leitura da semana.
+    ///
+    /// **Junta o que eram dois cartões.** A tela abria com um parágrafo e, logo
+    /// abaixo, um cartão com o selo e o número repetindo o mesmo. Pior: o
+    /// parágrafo dizia *"Skirt was within the usual range and slightly under
+    /// the usual range"* -- as duas leituras coladas por um "and", que é a
+    /// mesma contradição que o JP mandou tirar dos cartões da Trends. O selo é
+    /// a faixa desta semana; o `estado` é movimento confirmado; e a frase que
+    /// concilia os dois já existe, em `Explicacao.porQue`.
+    ///
+    /// O número fica no tom da tinta, não no vermelho do desenho: em uma
+    /// leitura "far above" ele sairia verde, e o JP já vetou número verde no
+    /// painel da peça. Quem carrega a direção é o selo, que é medido.
+    private var cabecalho: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(Traducao.rotuloExibido(termo))
+                    .font(.system(size: 40, weight: .bold))
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(2)
+                Spacer(minLength: Tokens.Espaco.s)
+                if temCobertura, let z = atual?.indice {
+                    Button {
+                        explicandoAEscala.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(Tokens.Fonte.apoio)
+                            .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Explicacao.tituloDaEscala)
+                    Text(fmt(z))
+                        .font(.system(size: 34, weight: .bold).monospacedDigit())
+                        .foregroundStyle(Tokens.Cor.tintaDo(territorio))
                 }
             }
-            .buttonStyle(.plain)
+
+            if temCobertura {
+                SeloEstado(estado: atual?.estado, leitura: atual?.indice)
+            }
+
+            if explicandoAEscala {
+                cartaoDaEscala
+            }
+
+            Text(frase).font(Tokens.Fonte.apoio)
+            LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
         }
     }
 
-    /// §29.1 — template determinístico. Cada frase só existe se o número que a
-    /// sustenta existir; nada é preenchido com valor plausível.
-    private var resumo: some View {
+    /// O "How is this number calculated?" do desenho, com texto de verdade.
+    ///
+    /// A Bianca deixou um lugar reservado -- *"put here explanation of how this
+    /// index number is calculated"* --, e o texto já existia: é o mesmo que
+    /// responde ao "1,15 o quê? Paçoquitas?" no painel da peça. Um texto só
+    /// para a mesma pergunta em duas telas.
+    private var cartaoDaEscala: some View {
         Cartao {
-            Text(frase).font(Tokens.Fonte.corpo)
+            HStack(alignment: .firstTextBaseline) {
+                Text(Explicacao.tituloDaEscala).font(Tokens.Fonte.secao)
+                Spacer()
+                Button {
+                    explicandoAEscala = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(Tokens.Fonte.miudo.weight(.semibold))
+                        .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close explanation")
+            }
+            Text(Explicacao.textoDaEscala)
+                .font(Tokens.Fonte.apoio)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
+    /// A frase da semana, sem repetir o que o selo já disse.
+    ///
+    /// Ela dizia *"was within the usual range **and** slightly under the usual
+    /// range"* -- estado e faixa colados por um "and", como se fossem uma
+    /// afirmação só. São duas perguntas, e `Explicacao.porQue` é quem responde
+    /// a segunda sem contradizer a primeira; é a mesma frase dos cartões da
+    /// Trends, então as duas telas passam a falar igual.
     private var frase: String {
+        // O PORTÃO DA §8 VALE PARA A PROSA TAMBÉM.
+        //
+        // A tela escondia o número grande e o selo quando a cobertura não
+        // sustenta, e logo abaixo a frase dizia "The index is +2,14" -- eu
+        // mesmo abri esse buraco ao trazer a frase para o cabeçalho, que antes
+        // só era montado do lado liberado. Recusar o número em corpo 34 e
+        // sussurrá-lo em corpo 15 não é recusar.
+        guard temCobertura else {
+            return "The panel does not have enough coverage this week to state "
+                 + "an index for \(Traducao.rotuloExibido(termo)). What each "
+                 + "source measured on its own is below."
+        }
         guard let atual, let valor = atual.indice else {
             return "There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet."
         }
-        let pernas = Perna.frase(atual.pernasAtivas)
-        if let bruto = atual.estado, let e = Estado(rawValue: bruto) {
-            let prefixo = atual.semana == maisRecente?.semana
-                ? "In the latest week with a reading"
-                : "In the latest week when two sources overlapped"
-            return "\(prefixo), \(Formato.data(atual.semana)), \(Traducao.rotuloExibido(termo)) was \(e.rotulo.lowercased()) and \(Leitura.emPalavras(valor)). Reading \(pernas)."
+        let quando = atual.semana == maisRecente?.semana
+            ? "Latest reading, \(Formato.data(atual.semana))."
+            : "Latest week when two sources overlapped, \(Formato.data(atual.semana))."
+        guard atual.estado != nil else {
+            return "\(quando) The index is \(fmt(valor)), but a state requires two agreeing sources."
         }
-        return "\(Traducao.rotuloExibido(termo)) has an index of \(fmt(valor)) for the week of \(Formato.data(atual.semana)), but a state requires two agreeing sources. Reading \(pernas)."
+        return "\(quando) " + Explicacao.porQue(estado: atual.estado,
+                                                indice: atual, series: serie)
     }
 
     /// §29.3 — índice, estado e as pernas ativas declaradas.
@@ -162,6 +268,17 @@ struct RelatorioDoTermo: View {
                     )
                     .foregroundStyle(by: .value("Source", Perna.rotulo(ponto.fonte)))
                 }
+                // O gráfico usa a MESMA cor de perna dos cartões de Sources.
+                //
+                // Com a escala padrão do Charts ele saía em azul, verde e
+                // laranja de sistema -- e logo abaixo os mesmos quatro nomes
+                // apareciam em âmbar, rosa, azul e verde-água. Duas paletas
+                // para as mesmas quatro coisas na mesma tela: a legenda e os
+                // cartões deixavam de se ensinar um ao outro. E o verde de
+                // sistema ainda colidia com o verde dos selos de faixa.
+                .chartForegroundStyleScale(
+                    domain: escalaDeCor.map(\.0),
+                    range: escalaDeCor.map(\.1))
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) {
                         AxisGridLine().foregroundStyle(.quaternary)
@@ -172,6 +289,15 @@ struct RelatorioDoTermo: View {
                 .accessibilityLabel("Weekly history by source")
                 LinhaInsumo(texto: "To keep lines comparable, the chart shows only weeks measured by every displayed source. Each source's latest date remains listed below.")
             }
+        }
+    }
+
+    /// Rótulo -> cor, na ordem em que as pernas aparecem nos cartões, para a
+    /// legenda do gráfico e a grade de Sources contarem a mesma história.
+    private var escalaDeCor: [(String, Color)] {
+        porFonte.map { fonte, _ in
+            (Perna.rotulo(fonte),
+             Tokens.Cor.corDaPerna(fonte)?.tinta ?? Tokens.Cor.acentoDo(territorio))
         }
     }
 
@@ -195,30 +321,54 @@ struct RelatorioDoTermo: View {
         return naJanela.filter { compartilhadas.contains($0.semana) }
     }
 
-    /// §29.4 — um bloco por fator, com fonte e data.
+    /// §29.4 — um bloco por fator, com fonte e data. Agora em grade de dois.
     private var insumos: some View {
-        Cartao {
-            Text("Sources").font(Tokens.Fonte.secao)
-            ForEach(porFonte, id: \.0) { fonte, pontos in
-                NavigationLink {
-                    DetalheDaFonteEditorial(termo: termo, fonte: fonte, pontos: pontos)
-                } label: {
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                            Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.apoio)
-                            Text(resumoDaFonte(fonte, pontos: pontos)).font(Tokens.Fonte.apoio)
-                            LinhaInsumo(texto: "\(pontos.count) weeks · latest on \(Formato.data(pontos.first?.semana ?? "—"))")
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(Tokens.Fonte.miudo)
-                            .foregroundStyle(Tokens.Cor.tintaFraca)
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sources").font(.system(size: 22, weight: .bold))
+                BotaoDeAjuda(titulo: "What these percentages are",
+                             texto: Self.textoDasFontes,
+                             rotulo: "What these percentages are")
+            }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: Tokens.Espaco.s),
+                                GridItem(.flexible(), spacing: Tokens.Espaco.s)],
+                      spacing: Tokens.Espaco.s) {
+                ForEach(porFonte, id: \.0) { fonte, pontos in
+                    NavigationLink {
+                        DetalheDaFonteEditorial(termo: termo, fonte: fonte, pontos: pontos)
+                    } label: {
+                        CartaoDaPerna(fonte: fonte,
+                                      variacao: variacaoDaFonte(fonte, pontos: pontos),
+                                      leitura: resumoDaFonte(fonte, pontos: pontos),
+                                      semanas: pontos.count,
+                                      ultima: pontos.first?.semana)
                     }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .padding(.vertical, Tokens.Espaco.xs)
             }
         }
+    }
+
+    /// A unidade das quatro porcentagens, num lugar só.
+    ///
+    /// No desenho os cartões trazem "-40%" e nada mais, e a §3 não deixa: um
+    /// número sem a régua não é auditável. Repetir a régua quatro vezes também
+    /// não serve -- viraria a textura que o JP mandou tirar dos cartões da
+    /// Trends. Então ela mora no "?" ao lado do título, uma vez.
+    static let textoDasFontes = """
+        Each card compares this source's latest measured week with its own \
+        average over the previous 12 weeks — the same window the index uses. \
+        It is the movement of that one source, not the combined index.
+
+        A source with no comparable window yet says so instead of showing a \
+        number. Tap a card for the weekly history behind it.
+        """
+
+    /// A variação em pontos percentuais, para a seta e o sinal.
+    private func variacaoDaFonte(_ fonte: String, pontos: [PontoSerie]) -> Double? {
+        guard let recente = pontos.first?.valorBruto,
+              let media = mediaDaJanela(pontos), media > 0 else { return nil }
+        return 100.0 * (recente - media) / media
     }
 
     private var porFonte: [(String, [PontoSerie])] {
@@ -381,5 +531,91 @@ private struct DetalheDaFonteEditorial: View {
                 }
             }
         }
+    }
+}
+
+/// Um cartão de perna: quem mediu, quanto mudou, e desde quando.
+///
+/// **A cor diz QUEM, a seta diz PARA ONDE.** É a regra que faz os quatro tons
+/// da Bianca não brigarem com os sete selos de faixa que o app já usa -- se um
+/// cartão de fonte fosse verde, ele leria como "acima da faixa" antes de ler
+/// como "editorial". Ver `Tokens.Cor.corDaPerna`.
+///
+/// Perna sem tom -- uma que apareça depois e ninguém tenha desenhado -- cai na
+/// superfície de sempre em vez de receber uma cor inventada na hora.
+struct CartaoDaPerna: View {
+    let fonte: String
+    let variacao: Double?
+    let leitura: String
+    let semanas: Int
+    let ultima: String?
+    @Environment(\.territorio) private var territorio
+
+    private var cores: (fundo: Color, tinta: Color) {
+        Tokens.Cor.corDaPerna(fonte)
+            ?? (Tokens.Cor.superficieDo(territorio), Tokens.Cor.tintaDo(territorio))
+    }
+
+    private var icone: String {
+        switch fonte {
+        case "busca": return "magnifyingglass"
+        case "editorial_br": return "pencil"
+        case "editorial_intl": return "globe"
+        case "varejo": return "storefront"
+        default: return "circle.dashed"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            HStack(alignment: .top, spacing: Tokens.Espaco.xs) {
+                Image(systemName: icone)
+                    .font(Tokens.Fonte.secao)
+                    .foregroundStyle(cores.tinta)
+                Text(Perna.rotulo(fonte).capitalized)
+                    .font(Tokens.Fonte.apoio.weight(.semibold))
+                    .foregroundStyle(Tokens.Cor.tintaDo(territorio))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+
+            if let variacao {
+                // §32: a direção não é comunicada só por cor. A seta e o sinal
+                // do número dizem a mesma coisa, e sobrevivem em preto e branco.
+                HStack(spacing: Tokens.Espaco.xs) {
+                    Image(systemName: variacao >= 0 ? "arrow.up" : "arrow.down")
+                        .font(Tokens.Fonte.numero)
+                    Text("\(Leitura.numero(variacao, casas: 0, sinal: true))%")
+                        .font(Tokens.Fonte.numero)
+                }
+                .foregroundStyle(cores.tinta)
+            } else {
+                Text(leitura)
+                    .font(Tokens.Fonte.apoio)
+                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let ultima {
+                Text("\(semanas) weeks · to \(Formato.data(ultima))")
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Tokens.Espaco.m)
+        .background(cores.fundo)
+        .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartao, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(rotuloFalado)
+    }
+
+    private var rotuloFalado: String {
+        let numero = variacao.map {
+            "\(Leitura.numero($0, casas: 0, sinal: true)) percent versus its own 12-week average"
+        } ?? leitura
+        return "\(Perna.rotulo(fonte)), \(numero)"
     }
 }
