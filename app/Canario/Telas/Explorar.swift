@@ -143,8 +143,24 @@ struct Explorar: View {
             // componentes compartilhados leem isto do ambiente e se adaptam
             // sozinhos -- cartão, linha de apoio e selo de estado.
             .territorio(.mercado)
+            // SEM `.toolbarBackground(.visible, for: .navigationBar)`.
+            //
+            // ELE ERA O SUMIÇO DO "WEEKLY TRENDS". O JP relatou o defeito em
+            // 27/08 -- *"o 'Weekly Trends' tá sumindo do Topo"* --, eu não
+            // consegui reproduzir e ficou de resolver no aparelho. A gravação
+            // de 30/08 mostrou, e reproduz no simulador com um gesto: role a
+            // aba para baixo e volte ao topo. O título grande não volta.
+            //
+            // O espaço dele CONTINUA reservado -- o cartão do Comparar fica
+            // na mesma altura com e sem título --, então não era layout: o
+            // fundo opaco forçado da barra passava por cima do título grande
+            // depois do primeiro ciclo de colapso. Sem `.visible`, o iOS
+            // mostra o fundo quando a barra está colapsada e o esconde no
+            // topo, que é onde o título grande vive.
+            //
+            // A cor continua declarada: quando a barra aparece, ela é
+            // `noturno`, e não o material translúcido do sistema.
             .toolbarBackground(Tokens.Cor.noturno, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .navigationTitle("Weekly Trends")
             // Uma reindexação por chegada de taxonomia, venha ela da rede
@@ -154,7 +170,11 @@ struct Explorar: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let alternarMenu {
+                        // A cor sai declarada porque, sem o fundo forçado, a
+                        // do botão passava a depender da rolagem: azul de
+                        // sistema no topo, branca com a barra colapsada.
                         BotaoDoMenu(menuAberto: menuAberto, acao: alternarMenu)
+                            .tint(Tokens.Cor.tintaDo(territorio))
                     }
                 }
             }
