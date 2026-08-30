@@ -229,19 +229,55 @@ extension View {
     /// nada. `ignoresSafeArea` porque o fundo do mercado tem de alcançar a
     /// barra de status — metade escura com uma faixa branca em cima parece
     /// defeito, não desenho.
+    ///
+    /// **O fundo preenche a TELA, não a caixa do conteúdo (30/08).**
+    ///
+    /// Era `.background(...)`, e `background` toma o tamanho de QUEM ele
+    /// modifica. Com a aba carregada isso não aparecia -- o conteúdo é uma
+    /// `ScrollView`, que ocupa tudo. Mas no estado de carga o conteúdo é um
+    /// `Carregando()` de duas linhas, e o fundo saía do tamanho dele: uma
+    /// faixa de `noturno` no meio da tela e **preto puro** em cima e embaixo.
+    ///
+    /// O JP viu no aparelho e descreveu certo: *"elas ainda aparecem como se
+    /// estivessem carregando na base de uma tela preta"*. Medido no quadro de
+    /// 1m14 da gravação: (0,0,0) de 20% a 51% da altura e de novo de 59% a
+    /// 91%, com a faixa de `noturno` só onde o spinner estava.
+    ///
+    /// A `ZStack` resolve porque `Color` se estica sozinha para o espaço
+    /// disponível, e o conteúdo continua com o tamanho natural dele -- o que
+    /// `.frame(maxHeight: .infinity)` estragaria em toda tela empurrada.
     func territorio(_ valor: Territorio) -> some View {
-        environment(\.territorio, valor)
-            .background(Tokens.Cor.fundoDo(valor).ignoresSafeArea())
-            // A tinta padrão da subárvore. Sem isto, todo `Text` fora de um
-            // cartão herda `.label` -- que é escuro -- e some no fundo. Na
-            // primeira montagem da Trends, "Supply moves" e os carimbos de
-            // data ficaram invisíveis exatamente assim.
-            .foregroundStyle(Tokens.Cor.tintaDo(valor))
-            // O esquema do sistema NÃO é decidido aqui, e a tentativa de
-            // decidir foi instrutiva: `preferredColorScheme` se propaga até a
-            // cena, e o da raiz do app ganha do de dentro. A hora no topo
-            // continuava preta sobre #0A0B1A. Quem manda nisso é `Raiz`, pela
-            // aba visível -- ver `CanarioApp.swift`.
+        ZStack {
+            Tokens.Cor.fundoDo(valor).ignoresSafeArea()
+            self
+        }
+        .environment(\.territorio, valor)
+        // O ESQUEMA DA SUBÁRVORE, e não só a tinta.
+        //
+        // `foregroundStyle` abaixo cobre o texto solto, mas não alcança o que
+        // resolve `Color(.label)` por dentro -- linha de `List`, rótulo de
+        // `Picker`, título de barra. Enquanto só a Trends era escura isso não
+        // aparecia, porque `Raiz` já punha a CENA em escuro pela aba visível.
+        //
+        // O Comparar mostrou o buraco: aberto fora daquela aba (o atalho de
+        // teste `-CanarioUITestCompare`), o fundo vinha escuro e as linhas
+        // vinham pretas, ilegíveis. O território sabe que é escuro; ele não
+        // deveria depender de a aba certa estar na frente para dizer isso.
+        //
+        // Isto NÃO é `preferredColorScheme`, que se propaga até a cena e já
+        // brigou com a raiz uma vez -- é o valor local, que só muda como as
+        // cores de sistema resolvem daqui para dentro.
+        .environment(\.colorScheme, valor == .mercado ? .dark : .light)
+        // A tinta padrão da subárvore. Sem isto, todo `Text` fora de um
+        // cartão herda `.label` -- que é escuro -- e some no fundo. Na
+        // primeira montagem da Trends, "Supply moves" e os carimbos de data
+        // ficaram invisíveis exatamente assim.
+        .foregroundStyle(Tokens.Cor.tintaDo(valor))
+        // O esquema do sistema NÃO é decidido aqui, e a tentativa de decidir
+        // foi instrutiva: `preferredColorScheme` se propaga até a cena, e o da
+        // raiz do app ganha do de dentro. A hora no topo continuava preta
+        // sobre #0A0B1A. Quem manda nisso é `Raiz`, pela aba visível -- ver
+        // `CanarioApp.swift`.
     }
 }
 
@@ -286,9 +322,20 @@ extension Tokens.Cor {
     static let ceuFixo = fixa(187, 229, 237)
     /// #374A67 literal, sem adaptação por tema.
     static let azulMarcaFixo = fixa(55, 74, 103)
+    /// #0E1116 literal. É o mesmo valor de `noite`, que é ADAPTATIVO e serve
+    /// de tinta sobre o céu; aqui ele é fundo e não pode inverter com o tema.
+    static let noiteFixa = fixa(14, 17, 22)
 
+    /// O painel do menu no território claro é #0E1116, e não `azulMarca`.
+    ///
+    /// Eu tinha lido "o azul escuro do app" como #374A67 e mudei só a letra.
+    /// O JP corrigiu com o número na mão: *"eu já tinha dito que a cor nova
+    /// desse menu deveria ser o azul escuro (0E1116), o que é estranho porque
+    /// a cor da fonte você já tinha mudado, mas a do fundo não"*. Ele está
+    /// certo sobre a incoerência -- a letra virou `ceuFixo` e o fundo ficou
+    /// onde estava, então o par saiu pela metade.
     static func fundoDoMenu(_ t: Territorio) -> Color {
-        t == .mercado ? ceuFixo : azulMarcaFixo
+        t == .mercado ? ceuFixo : noiteFixa
     }
     static func tintaDoMenu(_ t: Territorio) -> Color {
         t == .mercado ? azulMarcaFixo : ceuFixo
