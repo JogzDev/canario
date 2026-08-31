@@ -14,6 +14,23 @@ abra `Xcode > Settings > Accounts`, entre na conta da equipe `67AYPRFZH8`, use
 `Manage Certificates` para instalar/criar Apple Distribution e atualize os
 profiles. Não retire capabilities do app para contornar o perfil antigo.
 
+## Quem faz o quê
+
+| Etapa | Codex pode fazer | JP precisa fazer |
+|---|---|---|
+| Código, testes, versão e textos | preparar, corrigir, testar e manter o roteiro | aprovar decisões de produto e conteúdo |
+| Conta/certificado Apple | conferir o estado e continuar assim que a sessão existir | entrar no Xcode/App Store Connect, concluir 2FA e aceitar contratos da organização |
+| Exportar e validar | executar o Archive/export e tratar erros técnicos | autorizar prompts da conta ou do Keychain, se aparecerem |
+| Upload | enviar o binário e acompanhar o processamento | manter a sessão Apple disponível |
+| TestFlight interno | configurar o build e organizar o roteiro | instalar no iPhone e testar câmera, fototeca, login Apple e exclusão no aparelho real |
+| Capturas e metadados | gerar capturas limpas, revisar dimensões e preencher os campos | aprovar o material e confirmar declarações legais/privacidade |
+| Revisão | deixar tudo pronto até `Add for Review` | autorizar explicitamente o envio; `Submit for Review` é o ato final externo |
+
+Em outras palavras: depois que a conta Apple estiver ativa neste Mac, Codex
+consegue conduzir exportação, validação, upload, organização do TestFlight,
+capturas e preenchimento. JP continua indispensável para credenciais/2FA, o
+teste físico e a decisão final de submeter a versão à Apple.
+
 ## 1. Antes do Archive
 
 - [ ] Publicar `POLITICA_PUBLICA_1.2.md` em
