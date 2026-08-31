@@ -275,22 +275,30 @@ struct Explorar: View {
         tipo == "reposicao" ? "Restocks" : "Markdowns"
     }
 
-    private var movimentos: some View { movimentos(limite: Self.noPainel) }
+    private var movimentos: some View {
+        movimentos(limite: Self.noPainel, mostraCabecalho: true)
+    }
 
     private var movimentosCompletos: some View {
         ScrollView {
-            movimentos(limite: nil).padding(Tokens.Espaco.m)
+            // O assunto já está na barra de navegação. Repetir "Supply
+            // moves" imediatamente abaixo dela criava dois títulos para a
+            // mesma tela e empurrava o primeiro dado para baixo.
+            movimentos(limite: nil, mostraCabecalho: false)
+                .padding(Tokens.Espaco.m)
         }
         .territorio(.mercado)
         .navigationTitle("Supply moves")
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func movimentos(limite: Int?) -> some View {
+    private func movimentos(limite: Int?, mostraCabecalho: Bool) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            cabecalhoDeSecao(
-                "Supply moves", carimbo: nil,
-                porta: limite == nil ? nil : { AnyView(movimentosCompletos) })
+            if mostraCabecalho {
+                cabecalhoDeSecao(
+                    "Supply moves", carimbo: nil,
+                    porta: { AnyView(movimentosCompletos) })
+            }
             Picker("Supply moves", selection: $movimentoVisivel) {
                 Text("Restocks").tag("reposicao")
                 Text("Markdowns").tag("remarcacao")
@@ -561,27 +569,36 @@ struct Explorar: View {
             .prefix(8).map { $0 }
     }
 
-    private var radarEditorial: some View { radarEditorial(limite: Self.noPainel) }
+    private var radarEditorial: some View {
+        radarEditorial(limite: Self.noPainel, mostraCabecalho: true)
+    }
 
     private var radarEditorialCompleto: some View {
         ScrollView {
-            radarEditorial(limite: nil).padding(Tokens.Espaco.m)
+            // A barra já nomeia a tela. Aqui entram direto a data, a régua e
+            // as matérias, sem repetir "This week in fashion" duas vezes.
+            radarEditorial(limite: nil, mostraCabecalho: false)
+                .padding(Tokens.Espaco.m)
         }
         .territorio(.mercado)
         .navigationTitle("This week in fashion")
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func radarEditorial(limite: Int?) -> some View {
+    private func radarEditorial(limite: Int?, mostraCabecalho: Bool) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            cabecalhoDeSecao(
-                "This week in fashion",
-                carimbo: pulsoEditorial.map(\.semana).max().map(Formato.data),
-                porta: limite == nil || manchetesAtuais.isEmpty
-                       ? nil : { AnyView(radarEditorialCompleto) })
+            if mostraCabecalho {
+                cabecalhoDeSecao(
+                    "This week in fashion",
+                    carimbo: pulsoEditorial.map(\.semana).max().map(Formato.data),
+                    porta: manchetesAtuais.isEmpty
+                           ? nil : { AnyView(radarEditorialCompleto) })
+            } else if let semana = pulsoEditorial.map(\.semana).max() {
+                LinhaInsumo(texto: "Latest publication week: \(Formato.data(semana)).")
+            }
             Text("Current, fashion-specific headlines from the monitored publications. They provide context; one article alone does not establish a trend.")
                 .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
 
             if carregandoEditorial && manchetesAtuais.isEmpty {
                 ProgressView().frame(maxWidth: .infinity, alignment: .center)
@@ -618,26 +635,39 @@ struct Explorar: View {
 
     // MARK: Tendência confirmada
 
-    private var digest: some View { digest(limite: Self.noPainel) }
+    private var digest: some View {
+        digest(limite: Self.noPainel, mostraCabecalho: true)
+    }
 
     /// A seção inteira, em tela própria.
     private var digestCompleto: some View {
         ScrollView {
-            digest(limite: nil).padding(Tokens.Espaco.m)
+            // A barra já traz "What changed?". A tela começa pela data que
+            // explica o recorte, não por uma segunda cópia do título.
+            digest(limite: nil, mostraCabecalho: false)
+                .padding(Tokens.Espaco.m)
         }
         .territorio(.mercado)
         .navigationTitle("What changed?")
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func digest(limite: Int?) -> some View {
+    private func digest(limite: Int?, mostraCabecalho: Bool) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             // "Confirmed movements" era o nome do dado; "What changed?" é a
             // pergunta que a pessoa tem. Pedido do Davi, o JP assinou embaixo.
-            cabecalhoDeSecao(
-                "What changed?",
-                carimbo: mudaram.map(\.semana).max().map { "updated \(Formato.data($0))" },
-                porta: limite == nil || mudaram.isEmpty ? nil : { AnyView(digestCompleto) })
+            if mostraCabecalho {
+                cabecalhoDeSecao(
+                    "What changed?", carimbo: nil,
+                    porta: mudaram.isEmpty ? nil : { AnyView(digestCompleto) })
+            }
+            if let semana = mudaram.map(\.semana).max() {
+                // Esta data não é a data da coleta inteira: é a última semana
+                // em que as duas pernas necessárias puderam ser comparadas.
+                // "updated" fazia a tela parecer congelada em 10/08 mesmo
+                // com reposições de 25/08 e editorial de 24/08 na mesma aba.
+                LinhaInsumo(texto: "Latest week when two sources overlapped: \(Formato.data(semana)).")
+            }
             if mudaram.isEmpty {
                 LinhaInsumo(texto: "No movement has been confirmed by two independent sources in the last \(diasMaximosDoDigest) days.")
             } else {

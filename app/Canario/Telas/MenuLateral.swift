@@ -311,7 +311,7 @@ private struct TermosDoMenu: View {
                             .font(.title2.bold())
                         Text("Effective August 13, 2026")
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Tokens.Cor.noite.opacity(0.70))
                         TextoComTitulo(
                             titulo: "What the app provides",
                             texto: "The app organizes public fashion-market signals and the clothing attributes you confirm. Trend labels are evidence summaries, not forecasts, financial advice or guarantees of sales.")
@@ -729,7 +729,10 @@ private struct TextoComTitulo: View {
             Text(titulo).font(.headline)
             Text(texto)
                 .font(.body)
-                .foregroundStyle(.secondary)
+                // `.secondary` resolvia claro demais sobre #BBE5ED. A tela
+                // já não herda mais o esquema escuro da Trends, mas texto
+                // longo ainda precisa de contraste confortável por si só.
+                .foregroundStyle(Tokens.Cor.noite.opacity(0.70))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
