@@ -402,14 +402,36 @@ struct Explorar: View {
     /// chamar algo de tendência confirmada.
     private var radarDeBusca: some View { radarDeBusca(limite: Self.noPainel) }
 
+    /// A lista inteira, em tela própria.
+    ///
+    /// Ela era a seção do painel sem o limite, e trazia dois defeitos junto:
+    /// repetia "Search interest now" logo abaixo do título da barra, e a
+    /// primeira linha de cada grupo ainda pagava o preço do cabeçalho de
+    /// seção, com carimbo e chevron que aqui não levam a lugar nenhum.
+    ///
+    /// Aqui ela é a tela: o assunto está na barra, a régua vem uma vez no
+    /// topo, e o resto é lista.
     private var radarDeBuscaCompleto: some View {
         ScrollView {
-            radarDeBusca(limite: nil).padding(Tokens.Espaco.m)
+            VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                Text(Self.reguaDaBusca)
+                    .font(Tokens.Fonte.apoio)
+                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                if let semana = buscaDaSemana.map(\.semana).max() {
+                    LinhaInsumo(texto: "Latest closed Google week: \(Formato.data(semana)).")
+                }
+                listaDaBusca(limite: nil)
+            }
+            .padding(Tokens.Espaco.m)
+            .padding(.bottom, 20)
         }
         .territorio(.mercado)
         .navigationTitle("Search interest now")
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    static let reguaDaBusca = "What people in Brazil searched for on Google, "
+        + "compared with each term's previous 12 weeks."
 
     private func radarDeBusca(limite: Int?) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
@@ -418,28 +440,58 @@ struct Explorar: View {
                 carimbo: buscaDaSemana.map(\.semana).max().map(Formato.data),
                 porta: limite == nil || buscaDaSemana.isEmpty
                        ? nil : { AnyView(radarDeBuscaCompleto) })
-            Text("What people in Brazil searched for on Google, compared with each term's previous 12 weeks.")
+            Text(Self.reguaDaBusca)
                 .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
 
-            if carregandoPulso && buscaDaSemana.isEmpty {
-                ProgressView().frame(maxWidth: .infinity, alignment: .center)
-            } else if buscaDaSemana.isEmpty {
-                LinhaInsumo(texto: "No current Google search reading is available.")
-            } else {
-                ForEach(gruposDaBusca, id: \.titulo) { grupo in
+            listaDaBusca(limite: limite)
+        }
+    }
+
+    /// Os grupos e as linhas, com o teto do painel contado na LISTA INTEIRA.
+    ///
+    /// O `prefix` ficava dentro de cada grupo, então "três" virava três por
+    /// grupo -- até doze linhas no painel. É o mesmo defeito que o "What
+    /// changed?" tinha antes de virar bloco único; aqui os grupos ficam,
+    /// porque o JP os manteve, mas o teto passa a valer para o todo.
+    @ViewBuilder
+    private func listaDaBusca(limite: Int?) -> some View {
+        if carregandoPulso && buscaDaSemana.isEmpty {
+            ProgressView().frame(maxWidth: .infinity, alignment: .center)
+        } else if buscaDaSemana.isEmpty {
+            LinhaInsumo(texto: "No current Google search reading is available.")
+        } else {
+            ForEach(gruposVisiveis(limite: limite), id: \.titulo) { grupo in
                     if !grupo.pontos.isEmpty {
                         Text(grupo.titulo.uppercased())
                             .font(Tokens.Fonte.miudo.weight(.semibold))
-                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                            .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
                             .padding(.top, Tokens.Espaco.xs)
-                        ForEach(grupo.pontos.prefix(limite ?? grupo.pontos.count)) { ponto in
+                        ForEach(grupo.pontos) { ponto in
                             if let termo = termosPorId[ponto.termoId] {
                                 NavigationLink { RelatorioDoTermo(termo: termo) } label: {
                                     Cartao {
                                         HStack(alignment: .firstTextBaseline) {
                                             Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
                                             Spacer()
+                                            // SEM O NÚMERO AQUI, e a tentativa
+                                            // valeu o registro: eu o acrescentei
+                                            // achando que duas linhas com o
+                                            // mesmo selo pareceriam empatadas.
+                                            // Ele custa ~55 pt e o selo mais
+                                            // longo -- "Far Above the usual
+                                            // range" -- passou a quebrar em
+                                            // duas linhas nos termos de nome
+                                            // maior, deixando as linhas com
+                                            // alturas diferentes: o mesmo
+                                            // desalinhamento que o JP tinha
+                                            // acabado de apontar nos cartões
+                                            // de fonte. E a lista já desce
+                                            // ordenada pelo índice, então a
+                                            // posição diz o que o número
+                                            // diria. Quem quiser o valor
+                                            // toca e abre o relatório.
+                                            //
                                             // O mesmo selo do "What
                                             // changed?", em vez de uma frase
                                             // solta em azul. Duas listas com
@@ -449,7 +501,7 @@ struct Explorar: View {
                                             SeloEstado(estado: nil, leitura: ponto.z)
                                             Image(systemName: "chevron.right")
                                                 .font(Tokens.Fonte.miudo)
-                                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                                                .foregroundStyle(Tokens.Cor.acentoDo(territorio))
                                         }
                                     }
                                 }
@@ -457,9 +509,25 @@ struct Explorar: View {
                             }
                         }
                     }
-                }
             }
         }
+    }
+
+    /// Os grupos cortados pelo teto do painel, contando a lista inteira.
+    ///
+    /// Grupo que ficou sem nenhuma linha some junto com o próprio cabeçalho:
+    /// título de grupo vazio é a mesma promessa quebrada do chevron que não
+    /// leva a lugar nenhum.
+    private func gruposVisiveis(limite: Int?) -> [(titulo: String, pontos: [PontoSerie])] {
+        guard let limite else { return gruposDaBusca }
+        var restante = limite
+        var saida: [(titulo: String, pontos: [PontoSerie])] = []
+        for grupo in gruposDaBusca where restante > 0 && !grupo.pontos.isEmpty {
+            let fatia = Array(grupo.pontos.prefix(restante))
+            restante -= fatia.count
+            saida.append((grupo.titulo, fatia))
+        }
+        return saida
     }
 
     private var gruposDaBusca: [(titulo: String, pontos: [PontoSerie])] {
