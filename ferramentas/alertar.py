@@ -111,7 +111,8 @@ def corpo_da_falha(execucao, workflow, quem_falhou):
         "",
         "Onde olhar primeiro:",
         "",
-        "- `SAUDE.md` no repositório — o relatório da última coleta que rodou",
+        "- resumo e artefato `SAUDE.md` desta execução — o relatório exato "
+        "que alimentou o portão",
         "- `python3 coletor/verificar_capacidade_banco.py` — banco cheio "
         "bloqueia escrita e derruba a coleta",
         "- `python3 ferramentas/testar_edge_luna.py --so-contrato` — se a "

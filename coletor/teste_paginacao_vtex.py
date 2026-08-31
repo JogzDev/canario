@@ -11,6 +11,34 @@ def main():
     original = varejo.buscar_varejo
     chamadas = []
 
+    # Uma pagina grande pode devolver 500 mais de uma vez antes de estabilizar.
+    # Em 31/08 a unica espera de 5s deixou a Le Lis com 398/1.625 produtos e
+    # bloqueou o motor. A fronteira HTTP deve insistir de forma limitada antes
+    # de entregar uma coleta parcial para a paginacao.
+    buscar_base_original = varejo.buscar
+    ritmo_original = varejo._ritmo
+    dormir_original = varejo.time.sleep
+    respostas = [500, 500, 206]
+    esperas = []
+
+    def buscar_transitorio(url, _dominio):
+        codigo = respostas.pop(0)
+        return codigo, "[]", url, {"resources": "0-0/1"}
+
+    varejo.buscar = buscar_transitorio
+    varejo._ritmo = lambda: None
+    varejo.time.sleep = esperas.append
+    try:
+        codigo, _, _, _ = varejo.buscar_varejo(
+            "https://loja.test/api/catalog", "loja.test")
+    finally:
+        varejo.buscar = buscar_base_original
+        varejo._ritmo = ritmo_original
+        varejo.time.sleep = dormir_original
+    if codigo != 206 or esperas != [5, 15] or respostas:
+        print("FALHOU: 500 transitorio nao usou as esperas crescentes")
+        return 1
+
     def buscar_falso(url, _dominio):
         chamadas.append(url)
         query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)

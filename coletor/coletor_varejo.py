@@ -58,7 +58,12 @@ BLOCO_ESCRITA = 500     # linhas por upsert em lote
 BLOCO_LEITURA = 120     # id_externos por filtro in.()
 LIMITE_GLOBAL = 1.0     # regra 7 emendada: 1 req/s GLOBAL
 BACKOFF_429 = 60        # um unico retry longo (decisao do JP)
-BACKOFF_5XX = 5         # recusa transitoria do backend, uma unica repeticao
+# As paginas VTEX podem passar de 7 MB. Em 31/08 a Le Lis devolveu 500 duas
+# vezes na pagina 350-399, a unica espera de 5s se esgotou e o portao recebeu
+# apenas 398 dos 1.625 produtos declarados. Tres esperas crescentes ainda
+# respeitam o ritmo global, mas nao transformam um soluco curto em catalogo
+# parcial e pipeline vermelho.
+ESPERAS_5XX = (5, 15, 30)
 PRECO_TETO = 200000     # teto de preco para o particionamento (R$)
 NIVEL_MAXIMO = 4        # profundidade maxima da arvore de categorias da VTEX
 FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
@@ -83,15 +88,22 @@ def _ritmo():
 
 
 def buscar_varejo(url, dominio):
-    """buscar() com teto GLOBAL e uma unica repeticao de falha transitoria."""
+    """buscar() com teto GLOBAL e repeticoes limitadas de falha transitoria."""
     _ritmo()
     codigo, corpo, final, cab = buscar(url, dominio)
-    if codigo == 429:
-        time.sleep(BACKOFF_429)
-        _ritmo()
-        codigo, corpo, final, cab = buscar(url, dominio)
-    elif codigo is not None and 500 <= codigo <= 599:
-        time.sleep(BACKOFF_5XX)
+    repetiu_429 = False
+    indice_5xx = 0
+    while True:
+        if codigo == 429 and not repetiu_429:
+            repetiu_429 = True
+            espera = BACKOFF_429
+        elif ((codigo is None or 500 <= codigo <= 599)
+              and indice_5xx < len(ESPERAS_5XX)):
+            espera = ESPERAS_5XX[indice_5xx]
+            indice_5xx += 1
+        else:
+            break
+        time.sleep(espera)
         _ritmo()
         codigo, corpo, final, cab = buscar(url, dominio)
     return codigo, corpo, final, cab

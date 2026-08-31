@@ -118,10 +118,30 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: "$PY coletor/gerar_saude.py"
 
-      - name: Publicar relatorio unico
-        if: ${{ always() && github.ref_name == 'main' }}
-        run: >-
-          bash .github/commitar.sh "SAUDE.md" "Saude consolidada do pipeline"
+      # Relatorio e portao sao responsabilidades diferentes. A `main` exige
+      # PR, portanto tentar commitar SAUDE.md daqui deixava a saude vermelha
+      # mesmo depois de `gerar_saude.py` declarar todas as fontes saudaveis --
+      # e, por dependencia, pulava o motor. O relatorio agora acompanha a run;
+      # falha de apresentacao nunca pode mudar o veredito dos dados.
+      - name: Expor relatorio na propria execucao
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          if [[ -s SAUDE.md ]]; then
+            cat SAUDE.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Saude — relatorio nao gerado' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guardar relatorio para download
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: saude-${{ github.run_id }}-${{ github.run_attempt }}
+          path: SAUDE.md
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Bloquear publicacao do motor
         if: ${{ steps.portao.outcome == 'failure' }}

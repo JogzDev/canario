@@ -233,6 +233,65 @@ def checar_orquestracao(workflows):
     if "portao" not in ids_finais:
         falhar("pipeline-diario.yml", "saude final ficou sem portao")
 
+    def conferir_relatorio_fora_do_portao(arquivo, job):
+        """Relatorio pode falhar; somente o dado pode impedir o motor.
+
+        A main protegida passou a exigir PR em 27/08. O antigo `commitar.sh`
+        transformava essa recusa administrativa em falha da saude e pulava o
+        motor, mesmo com todas as fontes verdes. O resumo e o artefato deixam
+        o diagnostico auditavel sem escrever na branch nem contaminar o gate.
+        """
+        passos_job = job.get("steps", [])
+        escritores = [p for p in passos_job
+                      if "commitar.sh" in str(p.get("run", ""))
+                      or "git push" in str(p.get("run", ""))]
+        if escritores:
+            falhar(arquivo,
+                   "saude voltou a escrever na branch e pode bloquear o motor")
+
+        resumos = [p for p in passos_job
+                   if "GITHUB_STEP_SUMMARY" in str(p.get("run", ""))
+                   and "SAUDE.md" in str(p.get("run", ""))]
+        if (len(resumos) != 1 or
+                "always()" not in str(resumos[0].get("if", "")) or
+                resumos[0].get("continue-on-error") is not True):
+            falhar(arquivo,
+                   "relatorio de saude nao vai ao resumo de forma nao bloqueante")
+
+        artefatos = [p for p in passos_job
+                     if str(p.get("uses", "")).startswith(
+                         "actions/upload-artifact@")
+                     and p.get("with", {}).get("path") == "SAUDE.md"]
+        if (len(artefatos) != 1 or
+                "always()" not in str(artefatos[0].get("if", "")) or
+                artefatos[0].get("continue-on-error") is not True):
+            falhar(arquivo,
+                   "SAUDE.md nao fica disponivel como artefato nao bloqueante")
+
+    conferir_relatorio_fora_do_portao("pipeline-diario.yml", saude)
+
+    # A coleta VTEX integra o pipeline diario. Mesmo que SAUDE.md nao escreva
+    # mais na branch, o antigo commit do cache ainda reproduziria GH006 assim
+    # que uma marca descobrisse departamento novo.
+    coleta_vtex = workflows.get("coleta.yml", {})
+    job_vtex = coleta_vtex.get("jobs", {}).get("coletar", {})
+    passos_vtex = job_vtex.get("steps", [])
+    escritores_vtex = [p for p in passos_vtex
+                       if "commitar.sh" in str(p.get("run", ""))
+                       or "git push" in str(p.get("run", ""))]
+    if escritores_vtex:
+        falhar("coleta.yml",
+               "coleta VTEX ainda escreve direto na main protegida")
+    artefatos_cache = [p for p in passos_vtex
+                       if str(p.get("uses", "")).startswith(
+                           "actions/upload-artifact@")
+                       and p.get("with", {}).get("path") ==
+                       "anexos/departamentos_vtex.json"]
+    if (len(artefatos_cache) != 1 or
+            artefatos_cache[0].get("continue-on-error") is not True):
+        falhar("coleta.yml",
+               "cache VTEX alterado nao fica auditavel sem bloquear a coleta")
+
     recuperacao = workflows.get("recuperar-pipeline.yml", {})
     gatilhos_recuperacao = recuperacao.get(
         "on", recuperacao.get(True, {})) or {}
@@ -263,6 +322,8 @@ def checar_orquestracao(workflows):
                "motor manual herda jobs pulados e nao publica")
     passos_saude_recuperacao = jobs_recuperacao.get("saude", {}).get(
         "steps", [])
+    conferir_relatorio_fora_do_portao(
+        "recuperar-pipeline.yml", jobs_recuperacao.get("saude", {}))
     dependencia_recuperacao = next((p for p in passos_saude_recuperacao
                                     if p.get("id") == "dependencias"), {})
     if "somente_validar" not in str(dependencia_recuperacao.get("if", "")):
