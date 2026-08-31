@@ -25,9 +25,9 @@ def main():
     exigir(funcao, [
         'withSupabase({ auth: "publishable" }',
         'const MODEL = "gpt-5.6-luna"',
-        'const PROMPT_VERSION = "alvo-estrutura-motivos-cintura-v10"',
-        'print_motifs',
-        'tomate_print',
+        'const PROMPT_VERSION = "alvo-estrutura-cintura-v11"',
+        # A48 tirou `print_motifs` do contrato. O guarda-chuva `conversacional`
+        # ficou, e e ele que a Luna precisa continuar sabendo reconhecer.
         'conversacional',
         'cintura_baixa',
         'A pullover, sweatshirt, hoodie or quarter-zip fleece is upper_other',

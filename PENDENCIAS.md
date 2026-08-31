@@ -42,6 +42,56 @@ interface.
 
 Depois destas três, tela por tela, no ritmo que permitir fazer bem feito.
 
+## Migrations aplicadas em 27/08 — conferidas em produção
+
+**A48 e A49 estão no banco.** Aplicadas pelo conector do Supabase no projeto
+`tbluoqpnjqsflfoclmms`, com verificação depois de cada uma:
+
+| Conferido | Antes | Depois |
+|---|---:|---:|
+| `motivo_estampa` aprovados | 6 | **0** (6 reprovados) |
+| `conversacional` aprovado | 1 | 1 |
+| termos aprovados no total | 51 | 45 |
+| ligações em `produto_termos` dos motivos | 212 | **212** (nada destruído) |
+| coluna `cores_prioridade` | ausente | presente, com 2 `check` |
+| `aplicar_mudancas_closet` carrega a ordem | não | **sim** |
+| `similares_da_peca_amplo` cita `motivo_estampa` | sim | **não** |
+
+E o motor continua de pé: `conversacional` devolve 24 peças (igual a antes),
+`tomate_print` devolve 0 (aposentado, como planejado), o caso do vídeo
+(`casaco_jaqueta` + `cinza`) devolve 24 e o motor amplo devolve 12 para
+`vestido` + `floral`.
+
+**Nota sobre o registro de migrations.** `supabase_migrations.schema_migrations`
+tinha 72 linhas e parava na A34, enquanto o schema já continha o efeito da A35
+até a A47 — sinal de que as intermediárias foram aplicadas pelo editor SQL, que
+não registra. O registro não é fonte confiável de estado neste projeto; o schema
+é. A48 e A49 ficaram registradas.
+
+## A Luna subiu para a v11 em 27/08
+
+Decisão do JP, depois de reabrir o caso: ele aceita os 79,2% do vocabulário
+ampliado (*"0,8% é muito pouco pra reprovar algo que claramente funciona, e é a
+minha escolha final"*) e exigiu que as melhorias da v9, da v10 e da v11
+estivessem **todas** na versão final. Isso descartou a saída cirúrgica de
+implantar só a remoção sobre a v9.
+
+O que a produção ganhou, além da remoção do `print_motifs`:
+
+- o termo **`conversacional`** — sem ele, a Luna nunca conseguiria pré-marcar
+  *Illustrated prints*, e a A48 ficaria pela metade para sempre;
+- **cintura média e baixa** — a v9 só sabia devolver `cintura_alta`, ou seja,
+  dois dos três valores eram letra morta.
+
+Antes de subir, cada comportamento da v9 foi conferido no código implantado:
+modelo, `max_output_tokens`, `reasoning.effort`, limite de imagem, rate limit
+por origem e global, consentimento, `verify_jwt = false` e a ordenação de cor
+por área visível. Nenhum se perdeu. Sonda de contrato depois do deploy:
+`invalid_image` / HTTP 400.
+
+**Nada mais depende do JP nesta frente.** As três coisas que estavam na mão
+dele — A48, A49 e o redeploy — estão feitas.
+
 ## Operacional — aberto agora
 
 - **Amaro e PatBô: RESOLVIDO em 26/08, e a causa era transitória.** As duas
@@ -114,6 +164,31 @@ Depois destas três, tela por tela, no ritmo que permitir fazer bem feito.
   TestFlight e repetir os fluxos críticos no binário distribuído.
 - Atualizar capturas e metadata da App Store com as telas finais; só então
   submeter a 1.2 para revisão.
+
+## Fila do depois — decidido, sem prazo
+
+- **Calibrar o motor de similares.** Pedido do JP em 27/08. O que já está
+  medido e aponta para onde mexer:
+  - **A cobertura por dimensão é o gargalo, não a regra.** Medido em 26/08:
+    categoria 97,4%, cor 38,5%, tecido 33,6% — e depois disso despenca, com
+    estampa em 5,4% e cintura em 4,6%. Exigir 70% dos atributos quando duas
+    das cinco dimensões quase não existem no painel é zero garantido.
+  - **A escada de relaxamento vale mais que qualquer ajuste de peso.** Na
+    medição da polo: 4 de 5 atributos devolveu **0** similares; tirar um
+    único atributo da dimensão mais rala devolveu **13 peças em 4 marcas**.
+  - **Duas cores da mesma dimensão colapsam o conjunto.** `vestido + preto`
+    dá 202, `vestido + branco&cru` dá 153, e as três juntas dão **12** —
+    porque título de produto quase nunca lista duas cores. Dentro da mesma
+    dimensão os termos deveriam competir (OR), não se exigir (AND).
+  - **A A49 abre um caminho novo, e assimétrico.** A peça do usuário agora
+    sabe qual é a cor principal; o produto do painel não sabe, porque a cor
+    dele sai do título e título não diz proporção. Dá para exigir que a cor
+    **principal** da peça case, em vez de aceitar qualquer coincidência de
+    cor — é o que evita uma busca por verde devolver uma peça 80% rosa com um
+    detalhe verde.
+  - **O maior buraco isolado:** 4.509 produtos dizem "estampado" no título e
+    só 1.100 receberam algum termo de `estampa`. São ~3.400 peças que o
+    painel declara estampadas e o motor não consegue casar.
 
 ## Para a virada de temporada — não mexer antes da 1.2
 

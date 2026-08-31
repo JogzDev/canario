@@ -400,4 +400,60 @@ final class PecasSalvasTests: XCTestCase {
         XCTAssertEqual(peca.termoIds.filter { $0 == "malha" }.count, 1)
         XCTAssertFalse(peca.termoIds.contains("trico_croche"))
     }
+    // MARK: A49 — a ordem das cores
+
+    /// O caso que motivou o campo: a ordem tem que atravessar o disco.
+    ///
+    /// Ela cabia dentro de `termoIds`, que é `[String]` e preserva ordem. Não
+    /// foi feito assim porque ali a prioridade seria significado escondido
+    /// numa lista que o resto do sistema trata como conjunto — e um `sorted()`
+    /// em qualquer ponto do caminho a apagaria sem quebrar nada.
+    func testOrdemDasCoresSobreviveAoDiscoEEhIndependenteDeTermoIds() throws {
+        let peca = PecaSalva(apelido: "Vestido da festa",
+                             termoIds: ["vestido", "verde", "preto", "branco_cru"],
+                             coresPorPrioridade: ["preto", "verde"])
+        let dados = try JSONEncoder().encode(peca)
+        let devolta = try JSONDecoder().decode(PecaSalva.self, from: dados)
+
+        XCTAssertEqual(devolta.coresPorPrioridade, ["preto", "verde"],
+                       "a primeira é a cor principal, e isso não pode virar ordem alfabética")
+        XCTAssertEqual(devolta.termoIds.sorted(),
+                       ["branco_cru", "preto", "verde", "vestido"],
+                       "os termos continuam sendo o conjunto de sempre")
+    }
+
+    /// `nil` é "não sei a ordem", não "não tem ordem". Peça criada antes da
+    /// A49 chega assim, e a tela precisa poder distinguir para não desenhar um
+    /// número inventado sobre uma cor.
+    func testPecaAntigaContinuaSemOrdemEIssoNaoEhZero() throws {
+        let antiga = PecaSalva(termoIds: ["vestido", "preto"])
+        XCTAssertNil(antiga.coresPorPrioridade)
+
+        let dados = try JSONEncoder().encode(antiga)
+        XCTAssertNil(try JSONDecoder().decode(PecaSalva.self, from: dados)
+            .coresPorPrioridade)
+    }
+
+    /// Prioridade apontando para cor que a peça não tem seria a peça dizendo
+    /// que sua cor principal é uma cor que ela não tem.
+    func testPrioridadeForaDosTermosConfirmadosCai() {
+        let peca = PecaSalva(termoIds: ["vestido", "preto"],
+                             coresPorPrioridade: ["preto", "azul"])
+        XCTAssertEqual(peca.coresPorPrioridade, ["preto"])
+
+        let sobrouNada = PecaSalva(termoIds: ["vestido"],
+                                   coresPorPrioridade: ["azul"])
+        XCTAssertNil(sobrouNada.coresPorPrioridade,
+                     "lista vazia e ausência são a mesma coisa; guardar `[]` mentiria")
+    }
+
+    /// O teto de três não é escolha da tela: é o mesmo `maxItems` que o prompt
+    /// da Luna impõe, e existe também como `check` na tabela.
+    func testOrdemDasCoresParaEmTres() {
+        let peca = PecaSalva(
+            termoIds: ["vestido", "preto", "verde", "azul", "branco_cru"],
+            coresPorPrioridade: ["preto", "verde", "azul", "branco_cru"])
+        XCTAssertEqual(peca.coresPorPrioridade, ["preto", "verde", "azul"])
+    }
+
 }

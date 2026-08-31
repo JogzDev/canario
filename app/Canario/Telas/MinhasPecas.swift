@@ -281,19 +281,14 @@ private struct FiltroDoCloset: View {
     }
 
     private var opcoes: [Opcao] {
-        let motivos = Set(termos.filter {
-            $0.dimensao == "motivo_estampa" || $0.id == "conversacional"
-        }.map(\.id))
+        // A A48 acabou com `motivo_estampa`: `conversacional` virou a família
+        // inteira e não precisa mais ser agrupado com nada. O agrupamento
+        // artificial "Conversational prints" some junto com o motivo dele.
         let tricos = Set(["malha", "trico_croche"]).intersection(termos.map(\.id))
         var resultado = termos.compactMap { termo -> Opcao? in
-            if motivos.contains(termo.id) || tricos.contains(termo.id) { return nil }
+            if tricos.contains(termo.id) { return nil }
             return Opcao(id: termo.id, rotulo: Traducao.rotuloExibido(termo),
                          dimensao: termo.dimensao, ids: [termo.id])
-        }
-        if !motivos.isEmpty {
-            resultado.append(Opcao(id: "conversational_prints",
-                                   rotulo: "Conversational prints",
-                                   dimensao: "estampa", ids: motivos))
         }
         if !tricos.isEmpty {
             resultado.append(Opcao(id: "knit_and_crochet",
@@ -301,7 +296,7 @@ private struct FiltroDoCloset: View {
                                    dimensao: "tecido", ids: tricos))
         }
         let prioridadeDeEstampa = ["animal_print", "floral", "listra", "xadrez",
-                                   "geometrica", "conversational_prints", "liso"]
+                                   "geometrica", "conversacional", "liso"]
         return resultado.sorted { esquerda, direita in
             if esquerda.dimensao == "estampa", direita.dimensao == "estampa" {
                 return (prioridadeDeEstampa.firstIndex(of: esquerda.id) ?? 99)

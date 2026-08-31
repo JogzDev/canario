@@ -47,6 +47,9 @@ def main():
     termo = ler("Telas/RelatorioDoTermo.swift")
     peca = ler("Telas/RelatorioDaPeca.swift")
     importar = ler("Telas/ImportarPeca.swift")
+    explorar = ler("Telas/Explorar.swift")
+    menu = ler("Telas/MenuLateral.swift")
+    raiz = ler("CanarioApp.swift")
 
     assert 'Label("Not confirmed"' not in componentes
     assert '.presentationCompactAdaptation(.popover)' not in componentes
@@ -82,6 +85,35 @@ def main():
     # Build de colaborador (REMOTE_ANALYSIS_ENABLED = NO) precisa dizer que a
     # analise esta desligada, em vez de parecer que ela falhou.
     assert 'Cloud visual analysis is off in this build' in importar
+
+    # A data do What changed não é a data de atualização do painel inteiro:
+    # é a última semana em que duas fontes puderam ser comparadas. Chamar isso
+    # de "updated" fez a coleta de 25/08 parecer congelada em 10/08.
+    assert '"updated \\(Formato.data($0))"' not in explorar
+    assert 'Latest week when two sources overlapped:' in explorar
+
+    # As telas completas já têm título na barra. Estes parâmetros mantêm o
+    # cabeçalho de seção só no painel e evitam títulos duplicados no destino.
+    for chamada in (
+            "movimentos(limite: nil, mostraCabecalho: false)",
+            "radarEditorial(limite: nil, mostraCabecalho: false)",
+            "digest(limite: nil, mostraCabecalho: false)"):
+        assert chamada in explorar
+
+    # Terms e Privacy ficam sobre o céu fixo da marca. `.secondary` sozinho
+    # cai abaixo do contraste confortável para texto corrido nesse fundo.
+    assert 'Tokens.Cor.noite.opacity(0.70)' in menu
+
+    # A mola do menu ultrapassava a posição final por quatro pixels e voltava,
+    # produzindo a faixa clara que só aparecia durante alguns quadros.
+    assert '.animation(.snappy' not in raiz
+    assert '.animation(.easeOut(duration: 0.24), value: menuAberto)' in raiz
+
+    # A lista aberta ao tocar numa marca é mercado, mesmo quando o destino da
+    # NavigationLink deixa de propagar o ambiente esperado.
+    lista_eventos = explorar.split("struct ListaDeEventos: View", 1)[1]
+    lista_eventos = lista_eventos.split("// MARK: - Cartão do digest", 1)[0]
+    assert '.territorio(.mercado)' in lista_eventos
 
     # O card do manequim já é centralizado na tela pela VStack; o que sobrava
     # era o desenho estar torto DENTRO do card. Meia unidade de tolerância é

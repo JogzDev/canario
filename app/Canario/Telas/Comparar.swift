@@ -38,6 +38,11 @@ struct Comparar: View {
 
     private let maximo = 6   // §27: de 2 a 6 peças
 
+    /// Constante, e não `@Environment`: esta tela declara o próprio
+    /// território logo abaixo, e ambiente que a view escreve não volta para
+    /// ela -- leria o `.armario` do pai. Mesmo caso do `Explorar`.
+    private let territorio: Territorio = .mercado
+
     var body: some View {
         NavigationStack {
             Group {
@@ -50,7 +55,20 @@ struct Comparar: View {
                 }
             }
             .navigationTitle("Compare")
+            .toolbarBackground(Tokens.Cor.noturno, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
+        // Comparar é a porta de entrada da Trends desde 29/08, e continuava
+        // preta: `List` traz o fundo agrupado do sistema, que no escuro é
+        // preto puro, e ele cobria qualquer fundo declarado atrás. O JP:
+        // *"a tela de compare ainda não atualizou pro azul escuro e continua
+        // preta também"*.
+        //
+        // São duas coisas, e as duas precisam ser ditas: esconder o fundo da
+        // lista (`scrollContentBackground`) e pintar o do território. Só uma
+        // delas não muda nada -- foi por isso que a primeira tentativa, com
+        // `.territorio` sozinho, ficou igual e eu preferi tirar.
+        .territorio(.mercado)
         .task { await carregar() }
     }
 
@@ -62,8 +80,9 @@ struct Comparar: View {
                     .font(Tokens.Fonte.apoio)
                 Text("This compares already collected market data. It is not a sales forecast and does not include your costs, timing or history.")
                     .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
             }
+            .listRowBackground(Tokens.Cor.superficieDo(territorio))
 
             if escolhidos.count >= 2 {
                 Section("Side by side") {
@@ -74,25 +93,26 @@ struct Comparar: View {
                                        cobertura: coberturas[termo.id])
                     }
                 }
+                .listRowBackground(Tokens.Cor.superficieDo(territorio))
                 if let leitura = leituraDaDistancia {
                     Section("Where they diverge") {
                         Text(leitura).font(Tokens.Fonte.apoio)
                     }
+                    .listRowBackground(Tokens.Cor.superficieDo(territorio))
                 }
             } else {
                 Section {
                     Text("Choose at least 2 attributes below.")
                         .font(Tokens.Fonte.apoio)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
                 }
+                .listRowBackground(Tokens.Cor.superficieDo(territorio))
             }
 
             ForEach(dimensoesComparaveis, id: \.self) { dimensao in
                 Section(Traducao.rotuloDaDimensao(dimensao)) {
                     ForEach(termosComparaveis.filter {
                         $0.dimensao == dimensao
-                            || (dimensao == "estampa"
-                                && $0.dimensao == "motivo_estampa")
                     }) { termo in
                         Button {
                             alternar(termo.id)
@@ -108,7 +128,7 @@ struct Comparar: View {
                                 if indices[termo.id]?.indice == nil {
                                     Text("Panel data")
                                         .font(Tokens.Fonte.miudo)
-                                        .foregroundStyle(Tokens.Cor.acao)
+                                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
                                 }
                             }
                         }
@@ -116,9 +136,11 @@ struct Comparar: View {
                                   && escolhidos.count >= maximo)
                     }
                 }
+                .listRowBackground(Tokens.Cor.superficieDo(territorio))
             }
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
     }
 
     /// Toda medição real de varejo entra no catálogo. O índice composto mantém
@@ -131,9 +153,7 @@ struct Comparar: View {
     private var dimensoesComparaveis: [String] {
         let ordem = ["categoria", "cor", "estampa", "tecido", "comprimento",
                      "silhueta", "cintura", "estetica"]
-        let presentes = Set(termosComparaveis.map {
-            $0.dimensao == "motivo_estampa" ? "estampa" : $0.dimensao
-        })
+        let presentes = Set(termosComparaveis.map(\.dimensao))
         return ordem.filter(presentes.contains)
             + presentes.filter { !ordem.contains($0) }.sorted()
     }
@@ -234,6 +254,9 @@ struct LinhaComparada: View {
     let indice: IndiceSemanal?
     let varejo: PontoSerie?
     let cobertura: Cobertura?
+    /// Aqui o ambiente VALE: esta linha é filha do `Comparar`, que já
+    /// declarou o território acima dela.
+    @Environment(\.territorio) private var territorio
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
@@ -245,7 +268,7 @@ struct LinhaComparada: View {
                 } else {
                     Label("Panel data", systemImage: "building.2")
                         .font(Tokens.Fonte.miudo.weight(.semibold))
-                        .foregroundStyle(Tokens.Cor.acao)
+                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
                 }
             }
 
@@ -279,11 +302,11 @@ struct LinhaComparada: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(titulo)
                 .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
             Text(valor).font(Tokens.Fonte.numero)
             Text(detalhe)
                 .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

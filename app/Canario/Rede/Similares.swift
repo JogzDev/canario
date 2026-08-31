@@ -139,12 +139,32 @@ enum Similares {
         let nomes = descricao
             ?? atributos.map(Traducao.rotuloExibido).joined(separator: " + ")
         if r.nSimilares == 0 {
-            return ["I found no panel item with \(nomes). It may be an uncommon combination, "
+            // A tela chama `similares_da_peca_amplo`, que SEMPRE tenta o
+            // conjunto estrito e depois tenta de novo largando a dimensão
+            // menos distintiva. Quando volta zero, as duas tentativas
+            // falharam -- e não dizer isso deixa a pessoa achando que basta
+            // desmarcar um atributo à mão para o painel responder.
+            let tentouMais = (r.dimensoesPedidas ?? 0) > 1
+                ? " I also tried a wider match, dropping the least distinctive dimension, and that found nothing either."
+                : ""
+            return ["I found no panel item with \(nomes).\(tentouMais) "
+                  + "It may be an uncommon combination, "
                   + "or the panel may not cover it yet; the data cannot distinguish those cases."]
         }
 
-        frases.append("Across \(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s"), "
-                    + "I found \(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s") with \(nomes).")
+        // Quando o motor afrouxou, as peças encontradas **não têm** todos os
+        // atributos pedidos -- e esta frase as anunciava com a lista inteira,
+        // afirmando o contrário do que os próprios cartões dizem logo abaixo
+        // ("3 of 5 · no gray or solid"). Duas partes da mesma tela discordando
+        // é a forma mais cara de mentir: a pessoa acredita na primeira.
+        if afrouxou(r) {
+            frases.append("Across \(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s"), "
+                        + "I found \(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s") "
+                        + "close to \(nomes) — none matches all of them.")
+        } else {
+            frases.append("Across \(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s"), "
+                        + "I found \(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s") with \(nomes).")
+        }
 
         // A porcentagem só entra quando o conjunto a sustenta.
         if r.nSimilares >= minimoParaPorcentagem {
@@ -197,6 +217,18 @@ enum Similares {
 
     /// Como o limiar de semelhança foi aplicado. Regra 3: o usuário precisa
     /// poder auditar o que "parecida" significou nesta tela.
+    /// O motor precisou largar uma dimensão para achar alguma coisa.
+    ///
+    /// É a mesma conta que `criterio` faz para escolher a frase dele; ela vive
+    /// aqui para as duas partes da tela nunca discordarem sobre se houve
+    /// afrouxamento — que foi exatamente o que aconteceu até 27/08, com o
+    /// critério dizendo "3 of 5" e o resultado dizendo "com todos os 7".
+    static func afrouxou(_ r: Resumo) -> Bool {
+        guard let dimensoes = r.dimensoesPedidas,
+              let minimoDimensoes = r.minimoDimensoes else { return false }
+        return minimoDimensoes < max(1, Int(ceil(0.7 * Double(dimensoes))))
+    }
+
     static func criterio(_ r: Resumo) -> String {
         if let dimensoes = r.dimensoesPedidas,
            let minimoDimensoes = r.minimoDimensoes {
@@ -204,7 +236,9 @@ enum Similares {
             let alternativas = r.atributosPedidos > dimensoes
                 ? " Selections within the same dimension are alternatives."
                 : ""
-            if minimoDimensoes < base {
+            // Mesma conta de `afrouxou`, e é de propósito que ela apareça uma
+            // vez só: as duas frases da tela têm de concordar sempre.
+            if afrouxou(r) {
                 let omitida = r.dimensaoRelaxada.map {
                     " The expanded set does not require \(Traducao.rotuloDaDimensao($0).lowercased())."
                 } ?? ""

@@ -76,7 +76,7 @@ def main():
         arquivos, "create or replace function public.similares_da_peca_amplo(")
     exigencias_amostra_util = [
         "jsonb_array_length(coalesce(estrita->'pecas'",
-        "t.dimensao not in ('categoria', 'motivo_estampa')",
+        "t.dimensao <> 'categoria'",
         "dimensao_relaxada",
         "public.similares_da_peca(termos_reduzidos",
         "grant execute on function public.similares_da_peca_amplo",

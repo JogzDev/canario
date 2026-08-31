@@ -25,7 +25,7 @@ final class ArmarioVisivelTests: XCTestCase {
          termo("verde", "Verde", "cor"),
          termo("preto", "Preto", "cor"),
          termo("listra", "Listrado", "estampa"),
-         termo("tomate_print", "Tomate", "motivo_estampa"),
+         termo("conversacional", "Conversacional", "estampa"),
          termo("malha", "Malha", "tecido")]
     }
 
@@ -43,18 +43,19 @@ final class ArmarioVisivelTests: XCTestCase {
         XCTAssertNil(catalogo.categoria(de: PecaSalva(termoIds: ["verde"])))
     }
 
-    /// A38: `motivo_estampa` não é uma segunda dimensão para o usuário. Se ele
-    /// escolher Stripes e Tomato, os dois competem dentro de Pattern (OR) em
-    /// vez de se exigirem mutuamente (AND).
-    func testMotivoDeEstampaFiltraDentroDeEstampa() {
+    /// Dois valores da MESMA dimensão competem (OR) em vez de se exigirem
+    /// mutuamente (AND). Era a regra que fazia `motivo_estampa` colapsar em
+    /// Pattern antes da A48; agora que a família é uma só, ela continua
+    /// valendo entre dois valores de `estampa` — que é onde sempre valeu.
+    func testDoisValoresDaMesmaDimensaoSaoOR() {
         let catalogo = CatalogoDoArmario(termos: taxonomia)
         let listrada = PecaSalva(termoIds: ["camisa", "listra"])
-        let tomate = PecaSalva(termoIds: ["vestido", "tomate_print"])
+        let ilustrada = PecaSalva(termoIds: ["vestido", "conversacional"])
         let lisa = PecaSalva(termoIds: ["camisa", "verde"])
 
-        let filtro = FiltroDoArmario(atributos: ["listra", "tomate_print"])
-        let visiveis = filtro.aplicar(a: [listrada, tomate, lisa], catalogo: catalogo)
-        XCTAssertEqual(visiveis.map(\.id), [listrada.id, tomate.id])
+        let filtro = FiltroDoArmario(atributos: ["listra", "conversacional"])
+        let visiveis = filtro.aplicar(a: [listrada, ilustrada, lisa], catalogo: catalogo)
+        XCTAssertEqual(visiveis.map(\.id), [listrada.id, ilustrada.id])
     }
 
     func testDimensoesDiferentesSaoAND_EMesmaDimensaoEhOR() {

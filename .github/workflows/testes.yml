@@ -77,6 +77,15 @@ jobs:
         run: "$PY coletor/teste_privacidade_declarada.py"
       - name: Regressões da experiência em aparelho
         run: "$PY coletor/teste_experiencia_app.py"
+      # Icone faltando nao quebra nada: o termo aparece com um circulo
+      # pontilhado e segue selecionavel. Este portao e o unico jeito de a
+      # falta aparecer antes de alguem abrir a tela.
+      - name: Todo termo da taxonomia tem icone
+        run: "$PY coletor/teste_icones_da_taxonomia.py"
+      # Cor nao quebra teste: um #0A0B1A que vira #0E1116 compila, roda e so
+      # aparece quando o desenho volta do Figma e nao bate.
+      - name: A paleta oficial esta no codigo
+        run: "$PY coletor/teste_paleta.py"
       - name: Contrato do avaliador Luna (sem rede)
         run: "$PY coletor/teste_avaliar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)
@@ -158,9 +167,9 @@ jobs:
           trap "xcrun simctl shutdown 'DataDrobe-CI' 2>/dev/null || true" EXIT
           xcrun simctl boot 'DataDrobe-CI'
           xcrun simctl bootstatus 'DataDrobe-CI' -b
-          # Estes dois exercitam dados reais e ficam na regressao local de oito
+          # Estes dois exercitam dados reais e ficam na regressao local de nove
           # fluxos. O checkout do CI usa Config.xcconfig.example por desenho;
-          # portanto aqui rodam somente os seis fluxos realmente offline.
+          # portanto aqui rodam somente os sete fluxos realmente offline.
           caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
             -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
             -derivedDataPath "$RUNNER_TEMP/CanarioDerivedData-$GITHUB_RUN_ID" \
@@ -168,6 +177,7 @@ jobs:
             -only-testing:CanarioUITests/CanarioUITests/testAddAbreComAcaoPrincipalEMenu \
             -only-testing:CanarioUITests/CanarioUITests/testClosetContinuaAcessivelSemRede \
             -only-testing:CanarioUITests/CanarioUITests/testAsTresTelasPrincipaisUsamOMesmoMenu \
+            -only-testing:CanarioUITests/CanarioUITests/testQEAAbreLegivelSobreATrends \
             -only-testing:CanarioUITests/CanarioUITests/testPrivacyAbrePeloCaminhoDeterministico \
             -only-testing:CanarioUITests/CanarioUITests/testImportacaoAbreSemRedeComAsEntradasPrincipais \
             -only-testing:CanarioUITests/CanarioUITests/testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails \

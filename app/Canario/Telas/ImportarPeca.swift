@@ -92,10 +92,33 @@ struct ImportarPeca: View {
         case confirmarAlvo
         /// O que o app leu, já marcado, para a pessoa corrigir.
         case atributos
+        /// A leitura de mercado da peça confirmada, e o lugar onde ela é
+        /// guardada no Closet.
+        ///
+        /// Esta etapa existiu até 24/08, saiu no `dee5957` junto com a
+        /// reorganização do Add, e volta em 27/08 com o fluxo que o JP
+        /// desenhou: "Show me the market, e no final da tela de show me the
+        /// market o usuário tem a chance de adicionar ao closet ou não".
+        /// Guardar deixa de ser o fim do preenchimento e passa a ser uma
+        /// decisão tomada **depois** de ver o que o mercado diz — que é a
+        /// ordem em que a informação chega para quem está comprando.
+        case painel
     }
 
     /// Ver o comentário na tela de confirmação do alvo.
     static let mostraAlternativasDeAlvo = false
+
+    /// Teto de cores por peça, fixado pelo JP em 26/08. Não é número
+    /// arbitrário: bate com o `maxItems: 3` que o prompt da Luna já impõe, e
+    /// a quarta cor deixaria de descrever a peça para descrever a estampa —
+    /// que tem dimensão própria.
+    static let tetoDeCores = 3
+
+    /// Neutros, depois cromáticos. Dois blocos de cinco.
+    static let ordemDasCores = [
+        "preto", "cinza", "branco_cru", "terrosos", "outras_cores",
+        "vermelho_rosa", "amarelo_laranja", "verde", "azul", "lilas_roxo",
+    ]
 
     @State private var etapa = Etapa.entrada
     @State private var nomeDoArquivo: String?
@@ -116,7 +139,13 @@ struct ImportarPeca: View {
     @State private var alvoEscolhido: Int?
     @State private var descricaoDoAlvo = ""
     @State private var nomeDaPeca = ""
-    @State private var salvandoNoCloset = false
+    /// As cores **na ordem de prioridade**: índice 0 é a cor principal.
+    ///
+    /// Existe separado de `detectados` porque `Set` não tem ordem, e ordem é
+    /// justamente o que esta dimensão carrega: 1 é a cor que domina a peça, 2
+    /// e 3 são as secundárias. A Luna já devolve ranqueado por área visível;
+    /// aqui a ordem só é preservada e fica editável.
+    @State private var coresPorPrioridade: [String] = []
     @State private var analiseConcluidaParaOAlvo = false
     @State private var mostrandoEditorDeRecorte = false
     @State private var pedindoConsentimentoDaNuvem = false
@@ -155,6 +184,23 @@ struct ImportarPeca: View {
                     case .entrada:       telaDeEntrada
                     case .confirmarAlvo: confirmacaoDoAlvo
                     case .atributos:     telaDeAtributos
+                    case .painel:
+                        RelatorioDaPeca(
+                            termos: termosDoFormulario.filter { detectados.contains($0.id) },
+                            precoAlvo: precoAlvo,
+                            miniaturaJPEG: miniaturaJPEG,
+                            pecaSalva: nil,
+                            coresPorPrioridade: coresPorPrioridade,
+                            apelido: nomeDaPeca,
+                            todosOsTermos: termosDoFormulario,
+                            selecao: $detectados,
+                            aoConcluir: { encerrarFluxo() },
+                            adicionarAoClosetNoCantoEsquerdo: true)
+                            // Corrigir um chip aqui recria a view, e o `.task`
+                            // dela recalcula o painel. NÃO chama a Luna de
+                            // novo: reler a foto é outra ação e custa dinheiro.
+                            // Corrigir o que ela leu é grátis e instantâneo.
+                            .id(detectados)
                     }
                 }
             }
@@ -207,6 +253,11 @@ struct ImportarPeca: View {
             avisoDeUso = await RegistroDeAnalises.shared.aviso()
             if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
                 detectados = Set(["vestido", "preto"])
+                // A rota determinística preenche o conjunto na mão, então
+                // precisa preencher a ordem também -- senão a tela mostraria
+                // preto marcado e sem número, que é um estado que a interação
+                // real nunca produz.
+                ordenarCoresPelaTaxonomia()
                 procedencia = ["Offline interface test."]
                 etapa = .atributos
             }
@@ -266,22 +317,29 @@ struct ImportarPeca: View {
 
     private var confirmacaoDoAlvo: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 14) {
                 // 1. Imagem Principal em Destaque (Fundo Azul Claro, sem borda)
                 if let escolhida = opcaoEscolhida {
+                    // 240, e não 300: com o card maior a tela pedia rolagem
+                    // para chegar no botão que é a razão dela existir, o que o
+                    // Davi apontou no teste de 27/08. A foto continua sendo o
+                    // maior elemento da tela; ela só parou de empurrar a ação
+                    // para fora.
                     PreviaDoAlvo(dados: escolhida.dados,
                                  id: escolhida.id,
-                                 altura: 300,
+                                 altura: 240,
                                  selecionada: false,
                                  corDeFundo: corDestaque,
-                                 raio: 32)
+                                 raio: Tokens.Raio.cartaoGrande)
+                        .sombraDeCartao()
+                        .accessibilityLabel("Selected photo of your item")
                 }
 
                 // 2. Seletor de Foto (No Background vs Full Photo)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Choose a photo")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black)
+                        .font(.system(.headline, design: .rounded))
+                        .foregroundStyle(Tokens.Cor.tinta)
 
                     HStack(spacing: 14) {
                         ForEach(opcoesDeAlvo) { opcao in
@@ -294,14 +352,15 @@ struct ImportarPeca: View {
                                 VStack(spacing: 6) {
                                     PreviaDoAlvo(dados: opcao.dados,
                                                  id: opcao.id,
-                                                 altura: 88,
+                                                 altura: 96,
                                                  selecionada: alvoEscolhido == opcao.id,
                                                  corDeFundo: corDestaque,
-                                                 raio: 16)
+                                                 raio: Tokens.Raio.cartao)
+                                        .sombraDeCartao()
 
                                     Text(opcao.tipo == .primeiroPlano ? "No Background" : "Full photo")
-                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(.black)
+                                        .font(.system(.footnote, design: .rounded).weight(.semibold))
+                                        .foregroundStyle(Tokens.Cor.tinta)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -312,12 +371,11 @@ struct ImportarPeca: View {
 
                 // 3. Campo de Dica Opcional com Card Arredondado Neutro
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("If there is more than 1 item in the photo,\nspecify the target")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black)
+                    Text("If there is more than 1 item in the photo, specify the target")
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
+                        .foregroundStyle(Tokens.Cor.tinta)
 
                     Divider()
-                        .background(Color.black.opacity(0.12))
 
                     TextField("Ex: Black Tank Top", text: $descricaoDoAlvo)
                         .font(.system(size: 15, design: .rounded))
@@ -328,9 +386,12 @@ struct ImportarPeca: View {
                             analiseConcluidaParaOAlvo = false
                         }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, Tokens.Espaco.m)
                 .padding(.vertical, 14)
-                .background(Color.black.opacity(0.05))
+                // Cinza do sistema, e não um preto a 5%: o cinza do sistema
+                // acompanha o aparelho e o contraste, e o preto translúcido
+                // fica sujo sobre qualquer fundo que não seja branco puro.
+                .background(Tokens.Cor.superficie)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 // O aviso do teto diário mora aqui, e não na tela de
@@ -351,9 +412,10 @@ struct ImportarPeca: View {
                             .font(.system(size: 17, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Color.blue)
+                            .frame(minHeight: 52)
+                            .background(Tokens.Cor.acao)
                             .clipShape(Capsule())
+                            .sombraDeCartao()
                     }
                     .buttonStyle(.plain)
                     .disabled(opcaoEscolhida == nil)
@@ -363,9 +425,9 @@ struct ImportarPeca: View {
                     } label: {
                         Text("Choose another photo")
                             .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.blue)
+                            .foregroundStyle(Tokens.Cor.acao)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 38)
+                            .frame(minHeight: 44)
                     }
                     .buttonStyle(.plain)
                 }
@@ -375,6 +437,14 @@ struct ImportarPeca: View {
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
+        // A tela cabe inteira desde que o card da foto encolheu, mas a
+        // `ScrollView` continuava aceitando o puxão e mostrando uma faixa
+        // branca embaixo -- parecia conteúdo cortado que não existe.
+        // `.basedOnSize` desliga o repique **só quando o conteúdo cabe**: com
+        // Dynamic Type grande, quando ele deixa de caber, a rolagem volta
+        // sozinha. Tirar a `ScrollView` daria a mesma tela estática e deixaria
+        // o botão inalcançável em texto grande, que é caso de aceite da 1.2.
+        .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -389,29 +459,63 @@ struct ImportarPeca: View {
     }
 
     /// Tela 1: a foto e as opções de entrada simplificadas.
+    /// Tela 1: três entradas, centralizadas, e nada mais.
+    ///
+    /// O preço desceu para o fim da tela de atributos em 26/08 -- pedir um
+    /// número antes de a pessoa ter visto a peça reconhecida era pedir cedo.
+    /// Sobrou pouca coisa, e o JP foi direto: *"não precisa ser um slider que
+    /// sobe tudo, só o necessário pra dar ao usuário as 3 opções"*.
+    ///
+    /// A `ScrollView` fica, e não por teimosia: em Dynamic Type grande o grupo
+    /// passa da tela, e sem ela o último botão sairia cortado -- o que
+    /// reprovaria justamente o aceite de acessibilidade que já passou. O
+    /// `minHeight` resolve os dois pedidos ao mesmo tempo: com o texto no
+    /// tamanho normal o conteúdo é alto como a tela e os `Spacer` o
+    /// centralizam, sem nada para rolar; quando ele cresce, o scroll aparece
+    /// sozinho porque passou a ser necessário.
     private var telaDeEntrada: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
-                importador
-                precoOpcional
-            }
-            .padding(Tokens.Espaco.m)
-        }
-        .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    precoEmFoco = false
-                    dicaDoAlvoEmFoco = false
-                    nomeDaPecaEmFoco = false
+        GeometryReader { area in
+            ScrollView {
+                VStack(spacing: Tokens.Espaco.g) {
+                    Spacer(minLength: 0)
+                    importador
+                    Spacer(minLength: 0)
+                    if let nomeDoArquivo {
+                        LinhaInsumo(texto: "Loaded: \(nomeDoArquivo)")
+                    }
+                    avisoDePrivacidade
                 }
+                .padding(.horizontal, Tokens.Espaco.g)
+                .padding(.vertical, Tokens.Espaco.m)
+                .frame(maxWidth: .infinity, minHeight: area.size.height)
             }
         }
+        // Sem barra de teclado: esta tela tem três botões e nenhum campo
+        // desde que o preço desceu para a tela de atributos.
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     /// Tela 3: o que o app leu, já marcado, para a pessoa corrigir.
     private var telaDeAtributos: some View {
+        telaDeAtributosSemTeclado
+            // O `intended price` desceu para esta tela em 26/08 e o teclado
+            // dele veio sem saída: `decimalPad` não tem tecla de retorno, e a
+            // barra de "Done" tinha ficado na tela de entrada, que já não tem
+            // campo nenhum. Sem isto, quem digitasse o preço ficava com meia
+            // tela coberta e nenhum jeito óbvio de fechar.
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        precoEmFoco = false
+                        nomeDaPecaEmFoco = false
+                    }
+                }
+            }
+    }
+
+    private var telaDeAtributosSemTeclado: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
                 if let miniaturaJPEG {
@@ -429,30 +533,40 @@ struct ImportarPeca: View {
                         explicacao: erro,
                         oQueTem: "You can select the attributes below and continue.")
                 }
-                Cartao {
-                    Text("Name this item").font(Tokens.Fonte.secao)
-                    TextField("Clothing name (optional)", text: $nomeDaPeca)
-                        .textInputAutocapitalization(.sentences)
-                        .submitLabel(.done)
-                        .focused($nomeDaPecaEmFoco)
-                        .onSubmit { nomeDaPecaEmFoco = false }
-                    LinhaInsumo(texto: "If left blank, Closet, links and spreadsheets use the confirmed category.")
-                }
-                if !procedencia.isEmpty { oQueLi }
                 atributos
+                precoOpcional
+                // A procedência desceu para cá, e recolhida.
+                //
+                // Ela ficava entre o nome e a grade, aberta, com quatro
+                // bullets de evidência e o texto da marca -- e no teste em
+                // aparelho de 27/08 o primeiro atributo tocável só apareceu
+                // depois de duas telas de rolagem. O Davi foi direto: "a
+                // pessoa precisa conseguir ir direto pros ajustes".
+                //
+                // A regra 3 continua valendo: saber de onde saiu cada
+                // marcação não é opcional. O que muda é que ela deixa de ser
+                // leitura OBRIGATÓRIA antes da ação e vira leitura disponível
+                // a um toque, depois dela.
+                if !procedencia.isEmpty { oQueLi }
+                // O preenchimento não termina em "guardar": termina em ver.
+                // Guardar passa a ser a decisão tomada na tela seguinte, com a
+                // leitura de mercado à vista -- que é a ordem em que a
+                // informação chega para quem está comprando.
                 if !detectados.isEmpty {
                     Button {
-                        Task { await salvarNoCloset() }
+                        precoEmFoco = false
+                        nomeDaPecaEmFoco = false
+                        etapa = .painel
                     } label: {
-                        Group {
-                            if salvandoNoCloset { ProgressView() }
-                            else { Label("Add to Closet", systemImage: "archivebox") }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: 44)
+                        Text("Show me the market")
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Tokens.Cor.acao)
+                            .clipShape(Capsule())
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(salvandoNoCloset)
+                    .buttonStyle(.plain)
                 }
             }
             .padding(Tokens.Espaco.m)
@@ -460,112 +574,200 @@ struct ImportarPeca: View {
     }
 
     private var importador: some View {
-        VStack(spacing: 16) {
-            PhotosPicker(selection: $daFototeca, matching: .images, photoLibrary: .shared()) {
-                VStack(spacing: 20) {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 80, weight: .regular))
-                        .foregroundStyle(.black)
-
+        VStack(spacing: Tokens.Espaco.m) {
+            PhotosPicker(selection: $daFototeca, matching: .images,
+                         photoLibrary: .shared()) {
+                VStack(spacing: Tokens.Espaco.g) {
+                    // Variante preenchida, como no Figma: o cartão é a ação
+                    // principal da tela e o desenho vazado do contorno some
+                    // dentro de 300 pt de superfície colorida.
+                    Image(systemName: "photo.fill.on.rectangle.fill")
+                        .font(.system(size: 76))
+                        .foregroundStyle(Tokens.Cor.noite)
                     Text("Choose from Photos")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black)
+                        .font(.system(.headline, design: .rounded))
+                        .foregroundStyle(Tokens.Cor.noite)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 280)
-                .background(corDestaque)
-                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .frame(height: 300)
+                .background(Tokens.Cor.ceu)
+                .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartaoGrande,
+                                            style: .continuous))
+                .sombraDeCartao()
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Choose from Photos")
 
+            // Some no simulador e em aparelho sem câmera, em vez de abrir nada.
             if CapturaDeCamera.disponivel {
-                Button {
+                BotaoDeEntrada(titulo: "Take a photo", simbolo: "camera") {
                     erro = nil
                     mostrandoCamera = true
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "camera")
-                            .font(.system(size: 18, weight: .semibold))
-                        Text("Take a photo")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                    }
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(corDestaque)
-                    .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
             }
-
-            Button {
+            BotaoDeEntrada(titulo: "Choose a file or PDF", simbolo: "doc.badge.plus") {
                 erro = nil
                 mostrandoSeletor = true
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 18, weight: .semibold))
-                    Text("Choose a file or PDF")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                }
-                .foregroundStyle(.black)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(corDestaque)
-                .clipShape(Capsule())
             }
-            .buttonStyle(.plain)
-
-            if let nomeDoArquivo {
-                LinhaInsumo(texto: "Loaded: \(nomeDoArquivo)")
-                    .padding(.top, 4)
-            }
-
-            // Dizer o que acontece com a foto ANTES de a pessoa escolher uma é
-            // obrigação declarada na ficha e na política, não enfeite -- e é a
-            // única linha da tela que diz se a análise na nuvem está ligada
-            // neste build. O visual novo apagou a frase inteira; ela volta no
-            // rodapé, que foi onde a revisão de UX pediu que ela ficasse.
-            Text(Supabase.analiseRemotaHabilitada
-                 ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
-                 : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-                .padding(.top, 8)
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 8)
+    }
+
+    /// Dizer o que acontece com a foto ANTES de a pessoa escolher uma é
+    /// obrigação declarada na ficha e na política, não enfeite -- e é a única
+    /// linha da tela que diz se a análise na nuvem está ligada neste build. O
+    /// visual novo apagou a frase inteira; ela vive no rodapé, que foi onde a
+    /// revisão de UX pediu que ficasse.
+    private var avisoDePrivacidade: some View {
+        Text(Supabase.analiseRemotaHabilitada
+             ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
+             : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
+            .font(Tokens.Fonte.miudo)
+            .foregroundStyle(Tokens.Cor.tintaFraca)
+            .multilineTextAlignment(.center)
     }
 
     private var oQueLi: some View {
         Cartao {
-            Text("What I read from this file").font(Tokens.Fonte.secao)
-            ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
-            LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                    ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
+                    LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
+                }
+                .padding(.top, Tokens.Espaco.s)
+            } label: {
+                Text("What I read from this file").font(Tokens.Fonte.secao)
+            }
         }
     }
 
     private var atributos: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
+        VStack(alignment: .leading, spacing: 24) {
             HStack {
-                Text("Item attributes").font(Tokens.Fonte.secao)
+                Text("Describe your item attributes")
+                    .font(.system(.headline, design: .rounded))
                 Spacer()
                 if !detectados.isEmpty {
-                    Button("Clear") { detectados.removeAll() }
+                    Button("Clear") { limparAtributos() }
                         .font(Tokens.Fonte.miudo)
                 }
+            }
+
+            // Uma linha no lugar de um relatório. Ela diz as duas coisas que
+            // a pessoa precisa saber para agir: já veio preenchido, e mexer é
+            // esperado. O texto é do Davi, quase palavra por palavra.
+            Text("We've selected what we identified — adjust anything that looks off.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
+
+            // O nome fica aqui, entre o convite e a grade, como no Figma: é o
+            // único campo digitado da tela e some se ficar espremido entre
+            // dois cartões.
+            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+                HStack(spacing: Tokens.Espaco.s) {
+                    TextField("Clothing name (optional)", text: $nomeDaPeca)
+                        .textInputAutocapitalization(.sentences)
+                        .submitLabel(.done)
+                        .focused($nomeDaPecaEmFoco)
+                        .onSubmit { nomeDaPecaEmFoco = false }
+                    Image(systemName: "pencil")
+                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .accessibilityHidden(true)
+                }
+                Divider()
+                Text("If left blank, Closet, links and spreadsheets use the confirmed category.")
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
             }
             ForEach(dimensoes, id: \.self) { dimensao in
-                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text(Traducao.rotuloDaDimensao(dimensao))
-                        .font(Tokens.Fonte.miudo)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                    FluxoDeChips(
-                        termos: termosVisiveis(na: dimensao),
-                        todos: termosDoFormulario,
-                        marcados: $detectados)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    if dimensao == "cor" { legendaDaOrdemDeCor }
+                    FlowLayout(espaco: dimensao == "cor" ? 8 : 12) {
+                        ForEach(termosVisiveis(na: dimensao)) { termo in
+                            BotaoDeAtributo(termo: termo,
+                                            ativo: detectados.contains(termo.id),
+                                            compacto: dimensao == "cor",
+                                            prioridade: prioridade(de: termo),
+                                            acao: { alternar(termo) })
+                        }
+                    }
+                    Divider()
                 }
             }
+        }
+    }
+
+    /// A tela precisa dizer o que os números significam, e dizer de onde eles
+    /// vieram. "1" sobre um círculo não se explica sozinho, e apresentar uma
+    /// ordem calculada pela Luna como se fosse escolha da pessoa seria o tipo
+    /// de silêncio que a §2 proíbe.
+    private var legendaDaOrdemDeCor: some View {
+        Text(coresPorPrioridade.isEmpty
+             ? "Pick up to \(Self.tetoDeCores), in order — the first one is the main color."
+             : "1 is the main color, 2 and 3 are secondary. Tap a color again to remove it.")
+            .font(Tokens.Fonte.miudo)
+            .foregroundStyle(Tokens.Cor.tintaFraca)
+    }
+
+    private func prioridade(de termo: Termo) -> Int? {
+        guard termo.dimensao == "cor",
+              let posicao = coresPorPrioridade.firstIndex(of: termo.id)
+        else { return nil }
+        return posicao + 1
+    }
+
+    /// Marcar e desmarcar. Cor tem regra própria porque é a única dimensão em
+    /// que a ORDEM é informação: as outras respondem "é isto?", e cor responde
+    /// "nesta ordem".
+    private func alternar(_ termo: Termo) {
+        guard termo.dimensao == "cor" else {
+            detectados = FormularioDaPeca.alternar(termo, em: detectados,
+                                                   termos: termosDoFormulario)
+            sincronizarCores()
+            return
+        }
+        if let posicao = coresPorPrioridade.firstIndex(of: termo.id) {
+            coresPorPrioridade.remove(at: posicao)
+            detectados.remove(termo.id)
+            return
+        }
+        // No teto, o toque não faz nada em silêncio -- e silêncio numa tela de
+        // toque é indistinguível de defeito. A legenda acima já diz o teto
+        // antes do toque, que é o momento em que a informação serve.
+        guard coresPorPrioridade.count < Self.tetoDeCores else { return }
+        coresPorPrioridade.append(termo.id)
+        detectados = FormularioDaPeca.podar(detectados.union([termo.id]),
+                                            termos: termosDoFormulario)
+    }
+
+    private func limparAtributos() {
+        detectados.removeAll()
+        coresPorPrioridade.removeAll()
+    }
+
+    /// A ordem e o conjunto têm que dizer a mesma coisa. Sem isto, uma cor
+    /// removida pela poda continuaria com número na tela — e número na tela
+    /// que não corresponde a nada salvo é exatamente o que este projeto foi
+    /// construído para não fazer.
+    private func sincronizarCores() {
+        coresPorPrioridade.removeAll { !detectados.contains($0) }
+    }
+
+    /// Ordem de recurso, para quando a leitura não ranqueia.
+    ///
+    /// A leitura local sai do texto do arquivo, e texto não diz proporção:
+    /// "vestido preto e branco" não informa qual das duas domina. Então a
+    /// ordem aqui é a da taxonomia e a pessoa reordena tocando. Só a Luna
+    /// ranqueia por área visível, e é por isso que o caminho dela usa
+    /// `coresSugeridas` em vez desta função.
+    private func ordenarCoresPelaTaxonomia() {
+        let cores = termosDoFormulario
+            .filter { $0.dimensao == "cor" && detectados.contains($0.id) }
+            .map(\.id)
+        coresPorPrioridade = Array(cores.prefix(Self.tetoDeCores))
+        for excedente in cores.dropFirst(Self.tetoDeCores) {
+            detectados.remove(excedente)
         }
     }
 
@@ -590,22 +792,29 @@ struct ImportarPeca: View {
         let permitidas = FormularioDaPeca.dimensoesPermitidas(categorias: categorias)
         var vistas: [String] = []
         for t in termosDoFormulario where permitidas.contains(t.dimensao) {
-            let visivel = t.dimensao == "motivo_estampa" ? "estampa" : t.dimensao
-            if !vistas.contains(visivel) { vistas.append(visivel) }
+            if !vistas.contains(t.dimensao) { vistas.append(t.dimensao) }
         }
         return vistas
     }
 
     private func termosVisiveis(na dimensao: String) -> [Termo] {
-        let encontrados = termosDoFormulario.filter {
-            $0.dimensao == dimensao
-                || (dimensao == "estampa" && $0.dimensao == "motivo_estampa")
-        }.filter { $0.id != "trico_croche" }
+        let encontrados = termosDoFormulario
+            .filter { $0.dimensao == dimensao }
+            .filter { $0.id != "trico_croche" }
+        // Cor não sai na ordem do servidor. Ela chegava Blue, Black, White,
+        // Red / Green, Earth, Gray, Yellow / Purple, Other -- com os neutros
+        // espalhados no meio dos cromáticos, o que obriga a varrer a grade
+        // inteira para achar cinza. Neutros na primeira fileira, cromáticos na
+        // segunda: são exatamente cinco e cinco, e é a arrumação do Figma.
+        if dimensao == "cor" {
+            return Self.ordemDasCores.compactMap { id in
+                encontrados.first { $0.id == id }
+            } + encontrados.filter { !Self.ordemDasCores.contains($0.id) }
+        }
         guard dimensao == "estampa" else { return encontrados }
         let prioridade = [
             "animal_print", "floral", "listra", "xadrez", "geometrica",
-            "conversacional", "tomate_print", "cereja_print", "morango_print",
-            "banana_print", "abacaxi_print", "melancia_print", "liso",
+            "conversacional", "liso",
         ]
         return encontrados.sorted {
             (prioridade.firstIndex(of: $0.id) ?? 99)
@@ -731,7 +940,8 @@ struct ImportarPeca: View {
         switch etapa {
         case .entrada:       return "Analyze an item"
         case .confirmarAlvo: return "Confirm your item"
-        case .atributos:     return "Confirm your item"
+        case .atributos:     return "Fill the info"
+        case .painel:        return "Market panel"
         }
     }
 
@@ -743,7 +953,25 @@ struct ImportarPeca: View {
             cancelarConfirmacao()
         case .atributos:
             etapa = .confirmarAlvo
+        case .painel:
+            etapa = .atributos
         }
+    }
+
+    /// A peça foi guardada e o fluxo acabou. Volta ao começo pronto para a
+    /// próxima, em vez de deixar a pessoa desandar as etapas uma a uma.
+    private func encerrarFluxo() {
+        cancelarConfirmacao()
+        detectados = []
+        coresPorPrioridade = []
+        nomeDaPeca = ""
+        precoDigitado = ""
+        procedencia = []
+        nomeDoArquivo = nil
+        miniaturaJPEG = nil
+        erro = nil
+        aoSalvar?()
+        dismiss()
     }
 
     private func cancelarConfirmacao() {
@@ -765,26 +993,6 @@ struct ImportarPeca: View {
         return String(limpa.prefix(160))
     }
 
-    @MainActor
-    private func salvarNoCloset() async {
-        guard !detectados.isEmpty else { return }
-        salvandoNoCloset = true
-        nomeDaPecaEmFoco = false
-        let nova = PecaSalva(
-            apelido: nomeDaPeca.trimmingCharacters(in: .whitespacesAndNewlines),
-            termoIds: Array(detectados).sorted(),
-            precoAlvo: precoAlvo)
-        let salvou = await PecasSalvas.shared.salvar(
-            nova, miniaturaDados: miniaturaJPEG)
-        salvandoNoCloset = false
-        if salvou {
-            aoSalvar?()
-            dismiss()
-        } else {
-            erro = "Your Closet is full (\(PecasSalvas.teto))."
-        }
-    }
-
     private func analisarImagemConfirmada(_ imagem: CGImage, nome: String,
                                           dadosParaNuvem: Data?,
                                           descricaoDoAlvo: String?) async {
@@ -804,6 +1012,7 @@ struct ImportarPeca: View {
                     dadosParaNuvem, alvo: descricaoDoAlvo)
                 if analise.alvoAmbiguo {
                     detectados = []
+                    coresPorPrioridade = []
                     procedencia = analise.decisionEvidence.map {
                         "Why the target was ambiguous: \($0)"
                     }
@@ -813,6 +1022,13 @@ struct ImportarPeca: View {
                     detectados = FormularioDaPeca.podar(
                         analise.idsSugeridos(existentes: existentes),
                         termos: termos)
+                    // A ordem vem da Luna, que ranqueia por área visível. É a
+                    // única fonte de ranqueamento que existe no sistema.
+                    coresPorPrioridade = analise
+                        .coresSugeridas(existentes: existentes)
+                        .filter { detectados.contains($0) }
+                        .prefix(Self.tetoDeCores)
+                        .map { $0 }
                     let porId = Dictionary(uniqueKeysWithValues: termos.map { ($0.id, $0) })
                     let lidos = detectados.compactMap { porId[$0] }
                         .sorted { ($0.dimensao, $0.id) < ($1.dimensao, $1.id) }
@@ -834,6 +1050,7 @@ struct ImportarPeca: View {
                     }
                     if !FormularioDaPeca.temCategoria(detectados, termos: termos) {
                         detectados = []
+                        coresPorPrioridade = []
                         erro = "The analysis returned an invalid category. Choose the attributes manually."
                     }
                 }
@@ -858,6 +1075,7 @@ struct ImportarPeca: View {
         let achado = Importacao.atributos(de: leitura, em: termos)
         let reconheceuPeca = FormularioDaPeca.temCategoria(achado.marcados, termos: termos)
         detectados = reconheceuPeca ? achado.marcados : []
+        ordenarCoresPelaTaxonomia()
         procedencia = achado.procedencia
         if let mensagem {
             erro = mensagem
@@ -886,6 +1104,44 @@ struct ImportarPeca: View {
             return
         }
         await prepararConfirmacao(imagem, nome: url.lastPathComponent)
+    }
+}
+
+/// As duas entradas secundárias da tela de análise.
+///
+/// Nasceram como dois blocos idênticos copiados um do outro, e a cópia já
+/// tinha começado a divergir -- altura, peso da fonte e espaçamento do ícone
+/// eram escritos duas vezes. Uma view, e a próxima entrada nasce igual às
+/// outras sem ninguém precisar lembrar das medidas.
+private struct BotaoDeEntrada: View {
+    /// `LocalizedStringKey`, e não `String`, por um motivo medido: com
+    /// `String` o Xcode não enxerga o literal do lado de quem chama, e o
+    /// primeiro build depois desta view **podou "Take a photo" e "Choose a
+    /// file or PDF" do String Catalog**. Os botões continuavam funcionando --
+    /// e tinham deixado de ser traduzíveis, sem erro nenhum.
+    let titulo: LocalizedStringKey
+    let simbolo: String
+    let acao: () -> Void
+
+    var body: some View {
+        Button(action: acao) {
+            HStack(spacing: Tokens.Espaco.s) {
+                Image(systemName: simbolo)
+                    .font(.system(size: 18, weight: .semibold))
+                Text(titulo)
+                    .font(.system(.callout, design: .rounded).weight(.bold))
+            }
+            .foregroundStyle(Tokens.Cor.noite)
+            .frame(maxWidth: .infinity)
+            // 54 é confortável e passa dos 44 pt mínimos da HIG; `minHeight`
+            // em vez de `height` para o botão crescer com Dynamic Type em vez
+            // de cortar o rótulo.
+            .frame(minHeight: 54)
+            .background(Tokens.Cor.ceu)
+            .clipShape(Capsule())
+            .sombraDeCartao()
+        }
+        .buttonStyle(.plain)
     }
 }
 

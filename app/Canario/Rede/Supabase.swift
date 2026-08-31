@@ -11,7 +11,6 @@ struct AnaliseVisualRemota: Decodable, Equatable {
     let category: String
     let decisionEvidence: [String]
     let pattern: String
-    let printMotifs: [String]
     let fabrics: [String]
     let length: String
     let silhouette: String
@@ -26,7 +25,6 @@ struct AnaliseVisualRemota: Decodable, Equatable {
         case category, pattern, fabrics, length, silhouette, waist, aesthetics, colors, model
         case targetClarity = "target_clarity"
         case garmentStructure = "garment_structure"
-        case printMotifs = "print_motifs"
         case decisionEvidence = "decision_evidence"
         case additionalVisualAttributes = "additional_visual_attributes"
         case promptVersion = "prompt_version"
@@ -34,10 +32,24 @@ struct AnaliseVisualRemota: Decodable, Equatable {
 
     /// Converte a saída fechada em sugestões, sem permitir que `not_visible`
     /// ou texto livre virem ids acidentalmente.
+    /// As cores **na ordem que a Luna devolveu**, que é a ordem que importa.
+    ///
+    /// O prompt dela manda: *"Colors are ordered: the primary color first,
+    /// followed by at most two secondary colors… Rank colors by visible
+    /// surface area on the target garment only"*, com `maxItems: 3`. Ou seja,
+    /// o ranqueamento por área visível já existe no servidor desde a A31 — e
+    /// `idsSugeridos` jogava fora, porque `Set` não tem ordem. A tela de
+    /// atributos precisa dessa ordem para dizer qual é a cor principal, e
+    /// inventá-la a partir da ordem da taxonomia seria numerar por acaso.
+    func coresSugeridas(existentes: Set<String>) -> [String] {
+        var vistas: Set<String> = []
+        return colors.filter { existentes.contains($0) && vistas.insert($0).inserted }
+    }
+
     func idsSugeridos(existentes: Set<String>) -> Set<String> {
         let escalares = [category, pattern, length, silhouette, waist]
             .filter { $0 != "not_visible" }
-        return Set(escalares + printMotifs + fabrics + aesthetics + colors)
+        return Set(escalares + fabrics + aesthetics + colors)
             .intersection(existentes)
     }
 

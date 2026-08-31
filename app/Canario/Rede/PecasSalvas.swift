@@ -68,6 +68,22 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
     /// Rejeição explícita da vitrine atual de similares. É escolha do usuário,
     /// não leitura calculada do motor, e pode ser persistida localmente.
     var similaresRejeitados: Bool?
+    /// As cores da peça em ordem de prioridade: a primeira é a principal.
+    ///
+    /// Campo próprio, e não a ordem de `termoIds`, embora `[String]` preserve
+    /// ordem e a coluna `text[]` também. A razão é que ali a prioridade seria
+    /// significado **escondido** numa lista que o resto do sistema trata como
+    /// conjunto: um `sorted()` inocente em qualquer ponto do caminho a
+    /// apagaria sem quebrar teste e sem erro.
+    ///
+    /// `nil` em peça criada antes da A49, e a diferença importa: `nil`
+    /// significa "não sei a ordem", não "não tem ordem". A tela desenha número
+    /// só quando sabe — número errado sobre uma cor é pior que número nenhum.
+    ///
+    /// Sempre subconjunto de `termoIds`, no máximo três. As duas regras estão
+    /// também em `check` na tabela: a do cliente protege quem usa a interface,
+    /// a do banco protege a tabela de qualquer outro caminho.
+    var coresPorPrioridade: [String]?
 
     init(id: UUID = UUID(), apelido: String = "", termoIds: [String],
          precoAlvo: Double? = nil, canal: String? = nil,
@@ -75,7 +91,7 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
          miniaturaHashRemoto: String? = nil,
          miniaturaExtensaoRemota: String? = nil,
          favorita: Bool? = nil, similaresRejeitados: Bool? = nil,
-         atualizadaEm: Date? = nil) {
+         atualizadaEm: Date? = nil, coresPorPrioridade: [String]? = nil) {
         self.id = id
         self.apelido = apelido
         self.termoIds = Traducao.idsCanonicos(termoIds)
@@ -88,6 +104,18 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
         self.miniaturaExtensaoRemota = miniaturaExtensaoRemota
         self.favorita = favorita
         self.similaresRejeitados = similaresRejeitados
+        // A ordem é filtrada pelo que a peça de fato tem: uma prioridade
+        // apontando para uma cor fora de `termoIds` seria a peça dizendo que
+        // sua cor principal é uma cor que ela não tem.
+        if let coresPorPrioridade {
+            let confirmados = Set(self.termoIds)
+            let validas = Traducao.idsCanonicos(coresPorPrioridade)
+                .filter(confirmados.contains)
+                .prefix(3)
+            self.coresPorPrioridade = validas.isEmpty ? nil : Array(validas)
+        } else {
+            self.coresPorPrioridade = nil
+        }
     }
 
     /// Nome para a lista quando o usuário não deu um. Usa os rótulos vindos do

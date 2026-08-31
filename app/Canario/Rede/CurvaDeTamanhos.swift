@@ -197,6 +197,28 @@ enum CurvaDeTamanhos {
         return "\(risco) sizes at risk across \(grades) panel size ranges, a \(janelaDias)-day window, week of \(Formato.data(semana))."
     }
 
+    /// Quais tamanhos a curva pode destacar sem contrariar a própria manchete.
+    ///
+    /// **A barra e o texto discordavam.** O destaque era `taxa == máximo`, sem
+    /// margem: no painel de 24/08, M (5,0%), G (4,7%) e P (4,7%) empatam
+    /// dentro do erro, e a manchete dizia isso -- "M, G e P deixam a grade no
+    /// mesmo passo" --, enquanto o gráfico logo abaixo pintava só o M. Duas
+    /// afirmações sobre a mesma medida, e a do gráfico era a que a §2 proíbe.
+    ///
+    /// `empatados` já existia exatamente para essa pergunta, e nasceu do mesmo
+    /// erro na manchete. Faltava a barra usá-la.
+    ///
+    /// Devolve vazio quando TODOS empatam: aí não há líder, e pintar a curva
+    /// inteira comunica tanto quanto não pintar nada.
+    static func lideres(_ linhas: [Faixa]) -> Set<String> {
+        let comTaxa = linhas.filter { $0.rotulo != nil && $0.taxaQuebra != nil }
+        guard let topo = comTaxa.max(by: { ($0.taxaQuebra ?? 0) < ($1.taxaQuebra ?? 0) })
+        else { return [] }
+        let empatam = comTaxa.filter { empatados($0, topo) }
+        guard empatam.count < comTaxa.count else { return [] }
+        return Set(empatam.compactMap(\.rotulo))
+    }
+
     /// Ordena os rótulos do menor para o maior, para a tela desenhar a curva na
     /// ordem em que a grade existe.
     static func emOrdem(_ linhas: [Faixa]) -> [Faixa] {

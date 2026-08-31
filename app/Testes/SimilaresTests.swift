@@ -200,4 +200,78 @@ final class SimilaresTests: XCTestCase {
         XCTAssertTrue(Formato.dinheiro(79.9).contains(","), "abaixo de 100 mostra centavos")
         XCTAssertTrue(Formato.dinheiro(1199).contains("1.199"))
     }
+    // MARK: O resultado e o critério não podem discordar (27/08)
+
+    private func resumoRelaxado(similares: Int = 9, marcas: Int = 2,
+                                dimensoes: Int = 5,
+                                minimoDimensoes: Int = 3) -> Similares.Resumo {
+        Similares.Resumo(
+            nSimilares: similares, nMarcas: marcas, atributosPedidos: 7,
+            dimensoesPedidas: dimensoes, minimoEmComum: 3,
+            minimoDimensoes: minimoDimensoes, dimensaoRelaxada: "cor",
+            nComTodos: 0, comPreco: similares,
+            pctPrecoCheio: nil, pctGradeQuebrada: nil, pctEsgotada: nil,
+            precoMin: 79, precoMax: 299, precoMediana: 179,
+            percentilDoAlvo: nil, exibidos: min(similares, 8))
+    }
+
+    /// O defeito que o desenho da tela do relatório expôs.
+    ///
+    /// Quando o motor afrouxa, os cartões dizem "3 of 5 · no gray or solid" e o
+    /// Result dizia, logo acima, que encontrou peças **com** os sete atributos.
+    /// Duas partes da mesma tela afirmando coisas opostas — e a pessoa acredita
+    /// na primeira, que é a que está em cima.
+    func testResultadoNaoAfirmaTodosOsAtributosQuandoOMotorAfrouxou() {
+        let r = resumoRelaxado()
+        XCTAssertTrue(Similares.afrouxou(r))
+
+        let frases = Similares.frasesDoResumo(r, atributos: atributos)
+        let primeira = frases[0]
+        XCTAssertTrue(primeira.contains("close to"),
+                      "a frase precisa dizer que são aproximações: \(primeira)")
+        XCTAssertTrue(primeira.contains("none matches all of them"),
+                      "e precisa negar o casamento completo: \(primeira)")
+        XCTAssertFalse(primeira.contains("items with Dress"),
+                       "não pode anunciar as peças COM a lista inteira")
+    }
+
+    /// Sem afrouxamento, a frase antiga continua valendo palavra por palavra.
+    func testSemAfrouxamentoAFraseContinuaAAfirmativa() {
+        let r = resumo(similares: 230, marcas: 9)
+        XCTAssertFalse(Similares.afrouxou(r))
+        XCTAssertTrue(Similares.frasesDoResumo(r, atributos: atributos)[0]
+            .contains("panel items with"))
+    }
+
+    /// Zero resultado precisa dizer que a busca larga já foi tentada. Sem isso,
+    /// a pessoa desmarca um atributo à mão achando que resolve — e o motor já
+    /// tinha feito exatamente isso por ela.
+    func testZeroContaQueAJanelaLargaTambemFalhou() {
+        let vazio = Similares.Resumo(
+            nSimilares: 0, nMarcas: 0, atributosPedidos: 7,
+            dimensoesPedidas: 5, minimoEmComum: 4, minimoDimensoes: 4,
+            dimensaoRelaxada: nil, nComTodos: 0, comPreco: 0,
+            pctPrecoCheio: nil, pctGradeQuebrada: nil, pctEsgotada: nil,
+            precoMin: nil, precoMax: nil, precoMediana: nil,
+            percentilDoAlvo: nil, exibidos: 0)
+        let frase = Similares.frasesDoResumo(vazio, atributos: atributos)[0]
+        XCTAssertTrue(frase.contains("wider match"), frase)
+        XCTAssertTrue(frase.contains("cannot distinguish those cases"),
+                      "a ressalva da §2 não pode ter sumido: \(frase)")
+    }
+
+    /// Com uma dimensão só não há o que largar, e a tela não pode dizer que
+    /// tentou uma busca mais larga que nunca existiu.
+    func testComUmaDimensaoNaoInventaUmaTentativaQueNaoHouve() {
+        let vazio = Similares.Resumo(
+            nSimilares: 0, nMarcas: 0, atributosPedidos: 1,
+            dimensoesPedidas: 1, minimoEmComum: 1, minimoDimensoes: 1,
+            dimensaoRelaxada: nil, nComTodos: 0, comPreco: 0,
+            pctPrecoCheio: nil, pctGradeQuebrada: nil, pctEsgotada: nil,
+            precoMin: nil, precoMax: nil, precoMediana: nil,
+            percentilDoAlvo: nil, exibidos: 0)
+        XCTAssertFalse(Similares.frasesDoResumo(vazio, atributos: atributos)[0]
+            .contains("wider match"))
+    }
+
 }
