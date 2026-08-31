@@ -8,7 +8,7 @@ Checklist iniciado em 24/08/2026.
 - Team: `67AYPRFZH8`.
 - Idioma-fonte do app: inglês.
 - Destino: iPhone, iOS 17+.
-- Análise visual: Luna v8 ligada; cópia reduzida e sem metadados só é enviada
+- Análise visual: Luna v11 ligada; cópia reduzida e sem metadados só é enviada
   após consentimento explícito.
 - Upload atual: **ainda não enviado**.
 - Archive: **ainda não gerado**.
@@ -28,7 +28,8 @@ Checklist iniciado em 24/08/2026.
 
 ```text
 DataDrobe 1.2 adds optional Apple, Google and email accounts, offline-first
-Closet sync without photo upload, password recovery and in-app account deletion.
+Closet sync of structured details and a reduced, metadata-free thumbnail,
+password recovery and in-app account deletion. Original photos are never uploaded.
 
 Please test camera, Photos and PDF/file import; target selection and crop;
 the cloud-consent disclosure; guest use; all three sign-in methods; confirmation

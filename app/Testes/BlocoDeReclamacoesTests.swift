@@ -236,9 +236,32 @@ final class BlocoDeReclamacoesTests: XCTestCase {
         XCTAssertTrue(texto.contains("1"), "dizer quantas pernas há hoje é o que torna a recusa verificável")
     }
 
+    /// A reclamação original continua valendo: "estável" não pode ser lido
+    /// como "não temos dado". O que mudou em 27/08 foi a FIXTURE, não a
+    /// exigência — ela usava `estavel` com z = 1,15, que está **fora** da
+    /// faixa usual, e é justamente o caso em que o selo dizia "above the usual
+    /// range" e esta frase respondia "within the usual range". Um índice
+    /// estável de verdade fica dentro da faixa, e é ele que este teste sempre
+    /// quis descrever.
     func testEstavelEhResultadoMedidoENaoFaltaDeDado() {
-        let texto = Explicacao.porQue(estado: "estavel", indice: indice("estavel"), series: [])
+        let dentroDaFaixa = IndiceSemanal(
+            id: 1, termoId: "preto", segmento: "feminino_casual_br",
+            semana: "2026-07-27", indice: 0.2, estado: "estavel",
+            pernasAtivas: ["editorial_br", "editorial_intl"], nPernas: 2,
+            meta: nil, computadoEm: nil)
+        let texto = Explicacao.porQue(estado: "estavel", indice: dentroDaFaixa,
+                                      series: [])
         XCTAssertTrue(texto.lowercased().contains("measured result"))
+    }
+
+    /// E o caso fora da faixa também não pode sugerir dado faltando: ele
+    /// explica a posição da semana, que é medição, e diz por que ela ainda não
+    /// virou movimento.
+    func testEstavelForaDaFaixaExplicaEmVezDeSugerirAusencia() {
+        let texto = Explicacao.porQue(estado: "estavel", indice: indice("estavel"),
+                                      series: [])
+        XCTAssertTrue(texto.contains("one week is not a movement"), texto)
+        XCTAssertFalse(texto.lowercased().contains("no data"), texto)
     }
 
     // MARK: "Quero o nome dos sites que fizeram o bot chegar a essa conclusão"

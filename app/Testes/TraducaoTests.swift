@@ -128,24 +128,24 @@ final class TraducaoTests: XCTestCase {
         // reconheceu a peça, e disso quem cuida é `temCategoria` acima.
         let semCategoria = FormularioDaPeca.dimensoesPermitidas(categorias: [])
         XCTAssertEqual(semCategoria,
-                       ["categoria", "cor", "estampa", "motivo_estampa",
-                        "tecido", "estetica"])
+                       ["categoria", "cor", "estampa", "tecido", "estetica"])
         XCTAssertEqual(FormularioDaPeca.podar(["verde"], termos: termos), ["verde"],
                        "a cor marcada antes da categoria não pode ser apagada")
     }
 
-    func testMotivoVisualNaoSomeAntesDosSimilares() {
+    /// A A48 reprovou `motivo_estampa`, e a poda passou a não conhecer a
+    /// dimensão. Um id de dimensão desconhecida **não** pode ser apagado: ele
+    /// pode ser termo novo que este app ainda não recebeu, e apagar seria
+    /// perder escolha de quem já tinha marcado.
+    func testIdDeDimensaoDesconhecidaSobreviveAPoda() {
         let termos = [
             Termo(id: "vestido", rotulo: "Vestido", dimensao: "categoria",
                   exclusiva: true, sinonimos: nil, semPernaBusca: nil,
                   palavrasPt: nil, palavrasEn: nil),
-            Termo(id: "tomate_print", rotulo: "Tomate", dimensao: "motivo_estampa",
-                  exclusiva: false, sinonimos: nil, semPernaBusca: "sim",
-                  palavrasPt: nil, palavrasEn: nil),
         ]
         XCTAssertEqual(FormularioDaPeca.podar(
-            ["vestido", "tomate_print"], termos: termos),
-            ["vestido", "tomate_print"])
+            ["vestido", "termo_de_amanha"], termos: termos),
+            ["vestido", "termo_de_amanha"])
     }
 
     /// Comprimento, silhueta e cintura continuam presos à categoria: são eles
@@ -488,14 +488,31 @@ final class PistaDoTermoTests: XCTestCase {
         XCTAssertEqual(pista, "ruffle · lace · puff sleeve")
     }
 
-    /// O sinônimo que só repete o rótulo não ensina nada.
-    func testNaoRepeteOProprioRotulo() {
+    /// O sinônimo que só repete o rótulo não ensina nada — e "repetir" inclui
+    /// a variação da mesma palavra.
+    ///
+    /// A versão anterior aceitava "tailoring · suiting" ao lado do rótulo
+    /// **Tailored**: metade da legenda era o próprio rótulo com outra
+    /// terminação, gastando a linha mais curta da tela para não dizer nada.
+    /// Agora radical de quatro letras em comum já conta como repetição.
+    func testNaoRepeteOProprioRotuloNemAVariacaoDele() {
         let pista = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
             "alfaiataria", "estetica", "Alfaiataria",
             "tailoring|tailored|suiting")))
-        XCTAssertFalse(pista.lowercased().contains("tailored"),
-                       "o rótulo exibido é \"Tailored\": \(pista)")
-        XCTAssertEqual(pista, "tailoring · suiting")
+        XCTAssertEqual(pista, "suiting")
+
+        // O mesmo defeito em boho: "bohemian" não ensina nada a quem acabou de
+        // ler "Boho & artisanal".
+        let boho = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
+            "boho_artesanal", "estetica", "Boho e artesanal",
+            "boho|bohemian|fringe|embroidered|macrame")))
+        XCTAssertEqual(boho, "fringe · embroidered · macrame")
+
+        // E o corte não pode ser guloso a ponto de comer palavra útil:
+        // "basic" e "Essential" não têm radical em comum, e as duas ficam.
+        let basico = try! XCTUnwrap(Traducao.pistaDoTermo(termo(
+            "basico", "estetica", "Basico", "basic|essential|minimal")))
+        XCTAssertEqual(basico, "basic · minimal")
     }
 
     /// Quem responde olhando não precisa de dica, e a dica ocuparia espaço.

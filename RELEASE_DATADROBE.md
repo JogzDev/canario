@@ -12,9 +12,9 @@ da 1.0 permanece apenas como registro histórico.
 | Team | `67AYPRFZH8` |
 | Plataforma | iPhone, iOS 17+ |
 | Idioma-fonte | inglês |
-| Análise visual | OpenAI/Luna v8 habilitada, sempre com consentimento explícito |
+| Análise visual | OpenAI/Luna v11 habilitada, sempre com consentimento explícito |
 
-A versão 1.0 já está publicada. O upload da 1.1 deve ir para o mesmo registro;
+A versão 1.1 já está publicada. O upload da 1.2 deve ir para o mesmo registro;
 `com.canario.app` é um identificador histórico sem relação com este envio.
 
 **Corte executado em 21/08:** Archive Release validado, exportação App Store
@@ -23,9 +23,11 @@ TestFlight e não foi submetido à App Review. O Archive está preservado no
 Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 
 **Candidato atual:** 1.2 build 1, ainda local. Inclui conta opcional por Apple,
-Google ou e-mail, sessão no Keychain, Closet offline-first sincronizado sem
-fotos, recuperação de senha e exclusão integral iniciada dentro do app. Ainda
-não existe Archive nem upload deste candidato.
+Google ou e-mail, sessão no Keychain, Closet offline-first com dados estruturados
+e miniatura reduzida sincronizados, recuperação de senha e exclusão integral
+iniciada dentro do app. A foto original nunca é enviada. O Archive foi gerado
+em 31/08; a exportação App Store aguarda conta Apple ativa, certificado Apple
+Distribution e perfil de loja atualizado. Ainda não existe upload deste candidato.
 
 ## Portões antes do Archive
 
@@ -38,7 +40,7 @@ Todos precisam estar verdes no mesmo commit:
    CODE_SIGNING_ALLOWED=NO` — fluxos de interface.
 4. `python3 ferramentas/testar_edge_luna.py --so-contrato` — Edge Function
    disponível sem gastar uma análise.
-5. Luna v8 conferida contra o gabarito humano: categoria 19/24 (79,2%) e cor
+5. Luna v11 conferida contra o gabarito humano: categoria 19/24 (79,2%) e cor
    principal 20/24 (83,3%). Em uma amostra de 24, cada acerto vale 4,17 pontos
    percentuais e 80% exatos não são atingíveis; 19/24 é o inteiro mais próximo
    da meta. O aceite é aplicação proporcional do portão, não exceção de um
@@ -88,10 +90,12 @@ pessoa, via Supabase para OpenAI, depois de um consentimento separado. O app
 não guarda a imagem enviada; a OpenAI pode manter logs de monitoramento de
 abuso por até 30 dias. A conta é opcional. Quando conectada, e-mail, User ID e
 os dados estruturados do Closet são ligados ao usuário para sincronização;
-fotos do Closet continuam locais. Não há tracking nem publicidade.
+uma miniatura reduzida e sem metadados do Closet é sincronizada; a foto original
+continua local. Não há tracking nem publicidade.
 
 Essas frases precisam estar de acordo em quatro lugares: tela Privacy,
-disclosure antes do envio, `PrivacyInfo.xcprivacy` e ficha da App Store 1.1.
+disclosure antes do envio, `PrivacyInfo.xcprivacy`, política pública e ficha da
+App Store 1.2.
 
 ## Se a assinatura falhar
 

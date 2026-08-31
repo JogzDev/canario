@@ -36,6 +36,7 @@ actor SincronizacaoDoCloset {
         let criadaEm: Date?
         let favorita: Bool?
         let similaresRejeitados: Bool?
+        let coresPrioridade: [String]?
         let miniaturaHash: String?
         let miniaturaExtensao: String?
         let atualizadoEm: Date
@@ -47,6 +48,7 @@ actor SincronizacaoDoCloset {
             case precoAlvo = "preco_alvo"
             case criadaEm = "criada_em"
             case similaresRejeitados = "similares_rejeitados"
+            case coresPrioridade = "cores_prioridade"
             case miniaturaHash = "miniatura_hash"
             case miniaturaExtensao = "miniatura_extensao"
             case atualizadoEm = "atualizado_em"
@@ -62,7 +64,8 @@ actor SincronizacaoDoCloset {
                              miniaturaExtensaoRemota: miniaturaExtensao,
                              favorita: favorita,
                              similaresRejeitados: similaresRejeitados,
-                             atualizadaEm: atualizadoEm)
+                             atualizadaEm: atualizadoEm,
+                             coresPorPrioridade: coresPrioridade)
         }
     }
 
@@ -118,13 +121,39 @@ actor SincronizacaoDoCloset {
                          data: Date())
     }
 
+    /// Colunas do Closet, com e sem a novidade da A49.
+    ///
+    /// Existem duas porque o PostgREST recusa a **consulta inteira** quando
+    /// uma coluna citada não existe: pedir `cores_prioridade` num banco sem a
+    /// migration aplicada não devolveria a peça sem ordem — devolveria erro, e
+    /// a sincronização do Closet pararia por completo.
+    ///
+    /// Isso não é hipótese remota: o app roda direto do Xcode contra produção
+    /// na máquina de três pessoas, e quem instalar o build novo antes de a
+    /// migration entrar cairia exatamente aí. Hoje mesmo um `Config.xcconfig`
+    /// não conferido custou uma investigação inteira; esta é a mesma classe de
+    /// armadilha, e sai por dez linhas.
+    private static let colunas =
+        "id,apelido,termo_ids,cores_prioridade,preco_alvo,canal,criada_em,favorita,similares_rejeitados,miniatura_hash,miniatura_extensao,atualizado_em,removido_em"
+    private static let colunasAntesDaA49 =
+        "id,apelido,termo_ids,preco_alvo,canal,criada_em,favorita,similares_rejeitados,miniatura_hash,miniatura_extensao,atualizado_em,removido_em"
+
     private func buscar(_ contexto: ContextoAutenticado) async throws -> [LinhaRemota] {
+        do {
+            return try await buscar(contexto, colunas: Self.colunas)
+        } catch {
+            // Uma segunda tentativa, e só uma: se a versão sem a coluna nova
+            // também falhar, o problema é outro e tem que subir.
+            return try await buscar(contexto, colunas: Self.colunasAntesDaA49)
+        }
+    }
+
+    private func buscar(_ contexto: ContextoAutenticado,
+                        colunas: String) async throws -> [LinhaRemota] {
         var componentes = URLComponents(
             url: contexto.url.appendingPathComponent("rest/v1/closet_items"),
             resolvingAgainstBaseURL: false)
-        componentes?.queryItems = [URLQueryItem(
-            name: "select",
-            value: "id,apelido,termo_ids,preco_alvo,canal,criada_em,favorita,similares_rejeitados,miniatura_hash,miniatura_extensao,atualizado_em,removido_em")]
+        componentes?.queryItems = [URLQueryItem(name: "select", value: colunas)]
         guard let url = componentes?.url else { throw Falha.dadosInvalidos }
         var req = URLRequest(url: url)
         autenticar(&req, contexto)
@@ -146,6 +175,7 @@ actor SincronizacaoDoCloset {
                 "criada_em": Self.data(peca.criadaEm),
                 "atualizado_em": Self.data(peca.atualizadaEm ?? peca.criadaEm),
             ]
+            if let valor = peca.coresPorPrioridade { linha["cores_prioridade"] = valor }
             if let valor = peca.precoAlvo { linha["preco_alvo"] = valor }
             if let valor = peca.canal { linha["canal"] = valor }
             if let valor = peca.favorita { linha["favorita"] = valor }

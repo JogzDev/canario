@@ -21,10 +21,12 @@ enum Traducao {
         "liso": "Solid", "floral": "Floral", "listra": "Stripes",
         "animal_print": "Animal print", "xadrez": "Checks & plaid",
         "geometrica": "Graphic & geometric",
-        "conversacional": "Conversational prints",
-        "tomate_print": "Tomato print", "cereja_print": "Cherry print",
-        "morango_print": "Strawberry print", "banana_print": "Banana print",
-        "abacaxi_print": "Pineapple print", "melancia_print": "Watermelon print",
+        // "Conversational print" é o termo do mercado e não sobreviveu ao
+        // teste mais simples: o JP, que conhece o assunto, não soube dizer o
+        // que era. Um rótulo que precisa de aula não é rótulo. "Illustrated"
+        // diz a coisa em uma palavra e faz a fronteira certa com animal print,
+        // que é PELE de bicho e não desenho de bicho.
+        "conversacional": "Illustrated prints",
         // Material
         "algodao": "Cotton", "linho": "Linen", "jeans": "Denim", "couro": "Leather",
         "malha": "Knit & crochet", "trico_croche": "Knit & crochet",
@@ -73,6 +75,14 @@ enum Traducao {
     /// na mão, o que envenena o dado na origem.
     private static let dimensoesQuePedemPista: Set<String> = ["estetica"]
 
+    // Estampa ficou de fora, e a tentativa de incluí-la é a razão deste
+    // comentário. `palavras_en` é vocabulário do MATCHER, não legenda: as de
+    // `conversacional` são "conversational print | novelty print | object
+    // print | fruit print…", e as três primeiras devolveriam na tela
+    // exatamente o jargão que o rótulo novo existe para não usar. Legenda de
+    // estampa tem casa própria no CSV -- a coluna `exemplo` --, que o servidor
+    // ainda não expõe e o `Termo` ainda não carrega.
+
     /// O que OLHAR para responder, quando o rótulo sozinho pede gosto.
     ///
     /// O JP: "não é muito amigável com o usuário fazer ele descrever o que é
@@ -96,18 +106,44 @@ enum Traducao {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { palavra in
                 guard !palavra.isEmpty else { return false }
-                // O sinônimo que só repete o próprio rótulo não é pista.
-                return !rotulo.contains(palavra.lowercased())
+                // O sinônimo que só repete o próprio rótulo não é pista -- e
+                // "repetir" inclui a variação da mesma palavra. A comparação
+                // por conteúdo deixava passar "bohemian" ao lado de "Boho" e
+                // "tailoring" ao lado de "Tailored": duas linhas gastas para
+                // não dizer nada. Radical de quatro letras em comum já é a
+                // mesma palavra para efeito de pista.
+                return !Self.compartilhaRadical(palavra.lowercased(), com: rotulo)
             }
         guard !palavras.isEmpty else { return nil }
         return palavras.prefix(3).joined(separator: " · ")
+    }
+
+    /// Duas palavras são a mesma para efeito de legenda quando começam igual
+    /// por pelo menos três letras E esse começo é pelo menos metade da menor
+    /// delas. As duas condições existem juntas por casos reais opostos:
+    /// `boho` e `bohemian` só compartilham três letras e são obviamente a
+    /// mesma palavra (3 de 4 letras de `boho`), enquanto `sequin` e `shine`
+    /// compartilham uma e não são.
+    ///
+    /// Isto vale para legenda e **só** para legenda. O matcher do §11 continua
+    /// exigindo palavra inteira, porque lá radical em comum é exatamente o
+    /// erro que faz `reta` casar `preta`.
+    private static func compartilhaRadical(_ palavra: String,
+                                           com rotulo: String) -> Bool {
+        rotulo.split(whereSeparator: { !$0.isLetter }).contains { pedaco in
+            let a = Array(palavra), b = Array(pedaco.lowercased())
+            let menor = min(a.count, b.count)
+            var iguais = 0
+            while iguais < menor, a[iguais] == b[iguais] { iguais += 1 }
+            return iguais >= 3 && iguais * 2 >= menor
+        }
     }
 
     static func rotuloDaDimensao(_ dimensao: String) -> String {
         [
             "categoria": "Category",
             "cor": "Color",
-            "estampa": "Pattern", "motivo_estampa": "Pattern",
+            "estampa": "Pattern",
             "tecido": "Material",
             "estetica": "Style",
             "comprimento": "Length",
@@ -220,7 +256,7 @@ enum FormularioDaPeca {
         // terão Padrão e Material! O que tem que aparecer condicional é estilo
         // da calça e por aí vai."
         var resultado: Set<String> = [
-            "categoria", "cor", "estampa", "motivo_estampa", "tecido", "estetica"
+            "categoria", "cor", "estampa", "tecido", "estetica"
         ]
         if !categorias.isDisjoint(with: ["vestido", "saia"]) {
             resultado.insert("comprimento")

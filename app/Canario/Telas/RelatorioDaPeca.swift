@@ -21,6 +21,18 @@ struct RelatorioDaPeca: View {
     var miniaturaJPEG: Data?
     /// Quando aberto pelo Closet, evita salvar uma duplicata da mesma peça.
     var pecaSalva: PecaSalva? = nil
+    /// As cores em ordem de prioridade, vindas da tela de atributos. Vazio
+    /// quando a tela é aberta de um lugar que não tem essa informação — e aí a
+    /// peça é guardada sem ordem, que é diferente de guardada com a ordem
+    /// errada.
+    var coresPorPrioridade: [String] = []
+    /// O nome que a pessoa deu à peça na tela anterior.
+    ///
+    /// Chega vazio quando a tela é aberta pela busca ou pelo Closet, onde não
+    /// há nome a carregar. Existe porque guardar a peça passou a acontecer
+    /// AQUI, e não no preenchimento: sem este campo, o nome digitado uma tela
+    /// atrás seria descartado no momento exato de salvar, sem aviso.
+    var apelido: String = ""
     /// A taxonomia inteira, para os chips de correção no topo. Vazia quando a
     /// tela é aberta de um lugar onde corrigir não faz sentido -- o Closet, por
     /// exemplo, onde a peça já foi salva com os atributos confirmados.
@@ -106,8 +118,11 @@ struct RelatorioDaPeca: View {
             Button {
                 Task {
                     let nova = PecaSalva(
+                        apelido: apelido.trimmingCharacters(in: .whitespacesAndNewlines),
                         termoIds: termos.map(\.id), precoAlvo: precoAlvo,
-                        similaresRejeitados: rejeitouSimilares ? true : nil)
+                        similaresRejeitados: rejeitouSimilares ? true : nil,
+                        coresPorPrioridade: coresPorPrioridade.isEmpty
+                            ? nil : coresPorPrioridade)
                     guardada = await PecasSalvas.shared.salvar(
                         nova, miniaturaDados: miniaturaJPEG)
                     if guardada == true { pecaGuardadaNestaTela = nova }
@@ -129,27 +144,34 @@ struct RelatorioDaPeca: View {
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else {
-                    if adicionarAoClosetNoCantoEsquerdo {
-                        Cartao {
-                            Text("Keep this item")
-                                .font(Tokens.Fonte.secao)
-                            Text("Tap Add to Closet above to keep the confirmed attributes and this photo. You can still review the full market reading first.")
-                                .font(Tokens.Fonte.apoio)
-                                .foregroundStyle(Tokens.Cor.tintaFraca)
-                        }
-                    }
-                    if pecaSalva != nil { fotoDaPeca }
-                    if let selecao, !todosOsTermos.isEmpty {
-                        chipsDeCorrecao(selecao)
-                    }
-                    // §29, na ordem que ela manda: o parágrafo vem primeiro, e
-                    // ele é feito de similares — não do índice.
+                    // A ordem mudou em 27/08, e o motivo está medido.
+                    //
+                    // A foto NÃO aparecia neste caminho: `fotoDaPeca` só
+                    // desenhava com `pecaSalva != nil`, ou seja, só vindo do
+                    // Closet. Quem acabava de fotografar a peça chegava ao
+                    // painel dela sem vê-la. E o nome que a tela anterior pede
+                    // não aparecia em lugar nenhum.
+                    //
+                    // Os similares subiram porque a reclamação nº 1 da revisão
+                    // de 20/08 continua na PENDENCIAS: "ter os similares logo
+                    // em seguida e com foto! ... acho que é a parte mais legal
+                    // da nossa ferramenta". Eles eram o quinto bloco.
+                    //
+                    // A §29 continua respeitada: ela manda o parágrafo do
+                    // painel vir antes do número do conjunto, e vem -- Result
+                    // antes de By attribute, e o Combined reading por último.
+                    // O que mudou de lugar é a foto e a vitrine, não a ordem
+                    // da leitura.
+                    heroiDaPeca
+                    vitrineDeSimilares
                     resumo
-                    blocoDeSimilares
                     porAtributo
                     if pecaSalva != nil { editorialDosAtributos }
                     blocoDoCluster
                     blocoDoHistorico
+                    if let selecao, !todosOsTermos.isEmpty {
+                        chipsDeCorrecao(selecao)
+                    }
                 }
             }
             .padding(Tokens.Espaco.m)
@@ -168,6 +190,176 @@ struct RelatorioDaPeca: View {
                 ToolbarItem(placement: .topBarTrailing) { botaoDeGuardar }
             }
         }
+    }
+
+    // MARK: - Vitrine
+
+    /// A fileira de similares no alto, e a porta para todos eles.
+    ///
+    /// Substitui a lista vertical que ficava em quinto lugar. O motivo está na
+    /// PENDENCIAS desde 20/08: *"ter os similares logo em seguida e com foto!
+    /// Não tô mais vendo eles e acho que é a parte mais legal da nossa
+    /// ferramenta."* Uma lista de cartões altos empurrava tudo para baixo; uma
+    /// fileira mostra quatro de relance e cabe acima da dobra.
+    ///
+    /// **Nada de honestidade se perde aqui, ela muda de lugar.** O quanto casou
+    /// e o que faltou, a grade de tamanhos, a remarcação e o link continuam
+    /// inteiros -- na tela que o chevron abre, onde há espaço para eles serem
+    /// lidos em vez de espremidos numa miniatura de 96 pt.
+    @ViewBuilder
+    private var vitrineDeSimilares: some View {
+        if carregandoSimilares {
+            secaoCarregando("Similar pieces")
+        } else if let erroDosSimilares {
+            falhaLocal(titulo: "Similar pieces", mensagem: erroDosSimilares)
+        } else if let s = similares, let r = s.resumo,
+                  !s.pecas.filter(Similares.podeExibir).isEmpty {
+            let visiveis = s.pecas.filter(Similares.podeExibir)
+            VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                NavigationLink {
+                    TodosOsSimilares(resumo: r, pecas: visiveis,
+                                     atributos: termos, precoAlvo: precoAlvo,
+                                     nomeDaPeca: nomeExibido)
+                } label: {
+                    HStack {
+                        Text("Show similar pieces").font(Tokens.Fonte.secao)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Show all \(visiveis.count) similar pieces")
+
+                // O critério continua dito ANTES da vitrine: quantos casaram e
+                // com quantos atributos. Sem ele a fileira parece um resultado
+                // exato, e quase nunca é.
+                LinhaInsumo(texto: Similares.criterio(r))
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: Tokens.Espaco.m) {
+                        ForEach(visiveis.prefix(8)) { peca in
+                            MiniaturaDeSimilar(peca: peca, pedidos: termos)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+
+                if let leitura = Similares.leituraDoPreco(r, alvo: precoAlvo) {
+                    Cartao {
+                        Text("Where your price falls")
+                            .font(Tokens.Fonte.miudo.weight(.semibold))
+                        Text(leitura).font(Tokens.Fonte.apoio)
+                    }
+                }
+            }
+        } else if let s = similares, let r = s.resumo {
+            // Zero similares tem texto próprio e não some da tela.
+            Cartao {
+                Text("Similar pieces").font(Tokens.Fonte.secao)
+                LinhaInsumo(texto: Similares.criterio(r))
+            }
+        }
+    }
+
+    // MARK: - Herói
+
+    /// A peça, grande, com o nome que a pessoa deu.
+    ///
+    /// Ela não existia neste caminho. `fotoDaPeca` só desenhava vindo do
+    /// Closet, então quem acabava de fotografar chegava ao painel da própria
+    /// peça sem vê-la -- e o nome digitado uma tela antes não aparecia em
+    /// canto nenhum do app até a peça ser guardada.
+    private var heroiDaPeca: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(Tokens.Cor.ceu)
+                if let imagem = imagemDoHeroi {
+                    Image(uiImage: imagem)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(Tokens.Espaco.m)
+                } else {
+                    // Sem foto o quadro não vira buraco: ele diz o que falta.
+                    VStack(spacing: Tokens.Espaco.s) {
+                        Image(systemName: "photo")
+                            .font(.system(size: 34, weight: .regular))
+                        Text("No photo for this item")
+                            .font(Tokens.Fonte.miudo)
+                    }
+                    .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.6))
+                }
+            }
+            .frame(height: 300)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(imagemDoHeroi == nil
+                                ? "This item has no photo" : "Photo of \(nomeExibido)")
+
+            Text(nomeExibido)
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(Tokens.Cor.azulMarca)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Os atributos confirmados como subtítulo, e não mais como cartão
+            // de lista. Eles são a legenda da peça, não uma seção -- e a
+            // correção continua a um toque, no fim da tela.
+            // Quando ninguém nomeou a peça, o título cai na categoria -- e
+            // aí a legenda não pode começar repetindo a mesma palavra logo
+            // abaixo ("Dress" / "Dress · Black"). Nesse caso a categoria sai da
+            // legenda, que passa a dizer só o que o título ainda não disse.
+            if !atributosDaLegenda.isEmpty {
+                Text(atributosDaLegenda.map(Traducao.rotuloExibido)
+                        .joined(separator: " · "))
+                    .font(Tokens.Fonte.apoio)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if pecaSalva != nil { trocarFoto }
+        }
+    }
+
+    /// A foto do herói vem de onde ela existir: do fluxo de importação, que
+    /// carrega os bytes em memória, ou do Closet, que já a tem em disco.
+    private var imagemDoHeroi: UIImage? {
+        if let miniaturaDaPeca { return miniaturaDaPeca }
+        guard let miniaturaJPEG else { return nil }
+        return UIImage(data: miniaturaJPEG)
+    }
+
+    /// Os atributos da legenda, sem repetir o que o título já diz.
+    private var atributosDaLegenda: [Termo] {
+        guard nomeVeioDaCategoria else { return termos }
+        return termos.filter { $0.dimensao != "categoria" }
+    }
+
+    private var nomeVeioDaCategoria: Bool {
+        let proprio = NomeCompartilhavel.apelidoValido(
+            apelido.trimmingCharacters(in: .whitespacesAndNewlines))
+        let doCloset = pecaSalva.flatMap {
+            NomeCompartilhavel.apelidoValido($0.apelido)
+        }
+        return proprio == nil && doCloset == nil
+    }
+
+    /// O nome da peça: o que a pessoa digitou, ou a categoria confirmada.
+    ///
+    /// Cair na categoria e não em "Item" é o mesmo critério que o Closet já
+    /// usa, e é o que faz o título dizer algo mesmo quando ninguém nomeou.
+    private var nomeExibido: String {
+        let apelidoLimpo = apelido.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let valido = NomeCompartilhavel.apelidoValido(apelidoLimpo) { return valido }
+        if let salva = pecaSalva,
+           let doCloset = NomeCompartilhavel.apelidoValido(salva.apelido) {
+            return doCloset
+        }
+        if let categoria = termos.first(where: { $0.dimensao == "categoria" }) {
+            return Traducao.rotuloExibido(categoria)
+        }
+        return termos.isEmpty ? "Item" : Traducao.rotuloExibido(termos[0])
     }
 
     /// Atalho pedido para o Closet: cada atributo abre a mesma série editorial
@@ -204,30 +396,24 @@ struct RelatorioDaPeca: View {
     }
 
     /// A edição visual mora no detalhe, onde há contexto para entender qual
-    /// peça será alterada. O card continua oferecendo “Add photo” somente para
-    /// itens antigos que ainda não têm nenhuma.
-    private var fotoDaPeca: some View {
-        Cartao {
-            if let miniaturaDaPeca {
-                Image(uiImage: miniaturaDaPeca)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 220)
-                    .accessibilityLabel("Saved clothing photo")
-            }
+    /// peça será alterada. A foto em si subiu para o herói; aqui ficou só a
+    /// ação, que é do Closet e não do fluxo de importação — no fluxo a foto
+    /// acabou de ser escolhida e trocar significa voltar, não editar.
+    private var trocarFoto: some View {
+        VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
             if let erroDaFoto {
                 Text(erroDaFoto).font(Tokens.Fonte.miudo).foregroundStyle(.secondary)
             }
             PhotosPicker(selection: $fotoEscolhida, matching: .images) {
-                HStack {
+                HStack(spacing: Tokens.Espaco.xs) {
                     if processandoFoto { ProgressView().controlSize(.small) }
                     Label(miniaturaDaPeca == nil ? "Add photo" : "Replace photo",
                           systemImage: "photo.badge.arrow.down")
                 }
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .font(Tokens.Fonte.miudo.weight(.medium))
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.plain)
+            .foregroundStyle(Tokens.Cor.acao)
             .disabled(processandoFoto)
         }
     }
@@ -384,34 +570,7 @@ struct RelatorioDaPeca: View {
 
     /// §29.4 — o bloco de insumos de varejo: similares com preço, remarcação e
     /// estado da grade, sempre.
-    @ViewBuilder
-    private var blocoDeSimilares: some View {
-        if carregandoSimilares {
-            secaoCarregando("Similar pieces")
-        } else if let erroDosSimilares {
-            falhaLocal(titulo: "Similar pieces", mensagem: erroDosSimilares)
-        } else if let s = similares, let r = s.resumo,
-                  !s.pecas.filter(Similares.podeExibir).isEmpty {
-            if rejeitouSimilares {
-                // Pedido em 26/08: a resposta ao feedback agradece em vez de
-                // só repetir de volta o que a pessoa marcou.
-                LinhaInsumo(texto: "Thanks for the feedback! We'll keep working to bring you better suggestions.")
-                Button("Review similar pieces again") { rejeitarSimilares(false) }
-                    .buttonStyle(.bordered)
-            } else {
-                BlocoDeSimilares(resumo: r,
-                                 pecas: s.pecas.filter(Similares.podeExibir),
-                                 atributos: termos, precoAlvo: precoAlvo)
-                Button("None of these looks like my item") { rejeitarSimilares(true) }
-                    .buttonStyle(.bordered)
-                    .frame(minHeight: 44)
-            }
-        } else {
-            LinhaInsumo(texto: "No panel item matched all selected attributes.")
-        }
-    }
-
-    private func secaoCarregando(_ titulo: String) -> some View {
+        private func secaoCarregando(_ titulo: String) -> some View {
         Cartao {
             HStack {
                 Text(titulo).font(Tokens.Fonte.secao)
@@ -472,16 +631,41 @@ struct RelatorioDaPeca: View {
                 .padding(.leading, Tokens.Espaco.xs)
             ForEach(publicaveis) { termo in
                 Cartao {
+                    let indice = indices[termo.id]
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                            Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
+                            Text(Traducao.rotuloExibido(termo))
+                                .font(.system(.title3, design: .rounded).weight(.semibold))
                             Text(Traducao.rotuloDaDimensao(termo.dimensao))
                                 .font(Tokens.Fonte.miudo)
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                         }
                         Spacer()
+                        // O número sobe para o mesmo peso do rótulo, e fica na
+                        // COR DA TINTA.
+                        //
+                        // No desenho da Bianca ele estava em verde, e verde
+                        // quer dizer "bom". Isto aqui é desvio-padrão: acima
+                        // da faixa usual não é bom nem ruim, é posição. Pintar
+                        // de verde transformaria medição em veredito, que é
+                        // exatamente o que as regras 2 e 6 existem para
+                        // impedir. A direção continua dita -- por escrito, na
+                        // pílula, que a §32 exige que não dependa de cor.
+                        if let valor = indice?.indice {
+                            // Sinal só quando ele significa alguma coisa. Com
+                            // `sinal: true` sempre, um índice nulo saía como
+                            // "+0.0" -- um mais na frente de zero, que sugere
+                            // direção onde não há nenhuma.
+                            Text(Leitura.numero(valor, casas: 1,
+                                                sinal: abs(valor) >= 0.05))
+                                .font(.system(size: 34, weight: .semibold,
+                                              design: .rounded))
+                                .foregroundStyle(Tokens.Cor.tinta)
+                                .monospacedDigit()
+                                .accessibilityLabel(
+                                    "\(Leitura.numero(valor, casas: 1, sinal: abs(valor) >= 0.05)) on the statistical scale")
+                        }
                     }
-                    let indice = indices[termo.id]
                     SeloEstado(estado: indice?.estado, leitura: indice?.indice)
                     conteudo(de: termo)
                 }
@@ -514,7 +698,25 @@ struct RelatorioDaPeca: View {
     @ViewBuilder
     private var blocoDoHistorico: some View {
         Cartao {
-            Text("How these attributes moved").font(Tokens.Fonte.secao)
+            Text("This mix, week by week").font(Tokens.Fonte.secao)
+            // O título anterior, "How these attributes moved", não era falso --
+            // era uma frase onde devia haver um nome, e não dizia o que se
+            // move nem em relação a quê. O JP perguntou por que eu o achava
+            // feio; é isto. "Mix" faz o trabalho que faltava: diz que a linha
+            // é da COMBINAÇÃO, e não da peça.
+            //
+            // E a explicação embaixo passa a carregar o que o título não
+            // consegue. Ela precisa dizer três coisas, porque a §34 depende
+            // disso: que o app não segue a peça de ninguém, que a linha é do
+            // recorte de mercado que os atributos ocupam, e que o ponto
+            // marcado é semana rala. Sem a primeira, um gráfico de dois anos
+            // sobre uma peça criada hoje afirma um histórico que não existe.
+            Text("The panel items that share these attributes, week by week. "
+                 + "It is not your item: DataDrobe never tracks a piece you "
+                 + "own. A marked point is a week built on fewer attributes "
+                 + "than you selected, so the line is thinner there.")
+                .font(Tokens.Fonte.apoio)
+                .foregroundStyle(Tokens.Cor.tintaFraca)
             if carregandoSerie {
                 ProgressView().frame(maxWidth: .infinity, alignment: .center)
             } else if let erroDaSerie {
@@ -627,6 +829,24 @@ struct RelatorioDaPeca: View {
                                 .foregroundStyle(Tokens.Cor.tintaFraca)
                         }
                     }
+                    // A barra do peso, colada no texto que a nomeia.
+                    //
+                    // Ideia da Bianca, e boa: peso é proporção, e proporção se
+                    // lê num piscar numa barra e não num número. A armadilha
+                    // que o desenho dela tinha é que a barra ficava na mesma
+                    // linha do VALOR (-1,37) e podia ser lida como se fosse
+                    // ele. Aqui ela nasce imediatamente antes da frase que
+                    // começa com "55% of the weight", e é essa vizinhança que
+                    // diz de quem ela é.
+                    if let peso = a.pesoRelativo {
+                        BarraDePeso(fracao: peso)
+                    }
+                    // E a frase inteira fica. O desenho novo mostrava só "55%
+                    // of the weight", mas é a segunda metade -- "2% of items
+                    // with this dimension (13 in the panel)" -- que EXPLICA o
+                    // peso. Sem ela, o parágrafo acima promete que atributo
+                    // incomum pesa mais e a tela não mostra o quanto ele é
+                    // incomum.
                     if let p = Cluster.porQuePesa(a) { LinhaInsumo(texto: p) }
             }
             if let s = Cluster.ressalvaDeSemana(c) { LinhaInsumo(texto: s) }
