@@ -75,6 +75,13 @@ struct Analisar: View {
             }
         }
         .task { await carregar() }
+        // A busca é `fullScreenCover` da `Raiz` e abre de QUALQUER aba,
+        // inclusive da Trends -- e a Trends deixa a cena em escuro. Como esta
+        // tela pinta o próprio fundo em #BBE5ED, sem declarar o esquema ela
+        // herdava tinta clara sobre fundo claro. É o mesmo defeito dos prints
+        // do Profile e do Q&A, só que numa tela que ninguém tinha aberto por
+        // esse caminho ainda.
+        .territorio(.armario)
     }
 
     @ViewBuilder

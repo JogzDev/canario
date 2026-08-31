@@ -167,9 +167,9 @@ jobs:
           trap "xcrun simctl shutdown 'DataDrobe-CI' 2>/dev/null || true" EXIT
           xcrun simctl boot 'DataDrobe-CI'
           xcrun simctl bootstatus 'DataDrobe-CI' -b
-          # Estes dois exercitam dados reais e ficam na regressao local de oito
+          # Estes dois exercitam dados reais e ficam na regressao local de nove
           # fluxos. O checkout do CI usa Config.xcconfig.example por desenho;
-          # portanto aqui rodam somente os seis fluxos realmente offline.
+          # portanto aqui rodam somente os sete fluxos realmente offline.
           caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
             -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
             -derivedDataPath "$RUNNER_TEMP/CanarioDerivedData-$GITHUB_RUN_ID" \
@@ -177,6 +177,7 @@ jobs:
             -only-testing:CanarioUITests/CanarioUITests/testAddAbreComAcaoPrincipalEMenu \
             -only-testing:CanarioUITests/CanarioUITests/testClosetContinuaAcessivelSemRede \
             -only-testing:CanarioUITests/CanarioUITests/testAsTresTelasPrincipaisUsamOMesmoMenu \
+            -only-testing:CanarioUITests/CanarioUITests/testQEAAbreLegivelSobreATrends \
             -only-testing:CanarioUITests/CanarioUITests/testPrivacyAbrePeloCaminhoDeterministico \
             -only-testing:CanarioUITests/CanarioUITests/testImportacaoAbreSemRedeComAsEntradasPrincipais \
             -only-testing:CanarioUITests/CanarioUITests/testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails \

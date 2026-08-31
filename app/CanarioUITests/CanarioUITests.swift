@@ -44,8 +44,28 @@ final class CanarioUITests: XCTestCase {
             XCTAssertTrue(app.buttons["Open menu"].waitForExistence(timeout: 5))
             app.buttons["Open menu"].tap()
             XCTAssertTrue(app.buttons["Privacy"].waitForExistence(timeout: 2))
+            let fechar = app.buttons.matching(identifier: "Close menu")
+            XCTAssertEqual(fechar.count, 1,
+                           "o botão coberto da barra não pode duplicar o X do painel")
+            fechar.element.tap()
+            XCTAssertTrue(app.buttons["Open menu"].waitForExistence(timeout: 2))
             app.terminate()
         }
+    }
+
+    func testQEAAbreLegivelSobreATrends() {
+        let app = aplicativo(argumentos: ["-CanarioAbrirTrends"])
+        app.launch()
+
+        XCTAssertTrue(app.buttons["Open menu"].waitForExistence(timeout: 5))
+        app.buttons["Open menu"].tap()
+        XCTAssertTrue(app.buttons["Q&A"].waitForExistence(timeout: 2))
+        app.buttons["Q&A"].tap()
+
+        XCTAssertTrue(app.staticTexts["What is a confirmed movement?"]
+            .waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Why can two dates be different?"].exists)
+        XCTAssertTrue(app.buttons["Back"].exists)
     }
 
     func testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails() {
@@ -87,9 +107,9 @@ final class CanarioUITests: XCTestCase {
         let app = aplicativo(argumentos: ["-CanarioAbrirPrivacy"])
         app.launch()
 
-        XCTAssertTrue(app.navigationBars["Privacy"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Privacy"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Privacy in this build"].exists)
-        XCTAssertTrue(app.buttons["Close"].exists)
+        XCTAssertTrue(app.buttons["Back"].exists)
     }
 
     func testImportacaoAbreSemRedeComAsEntradasPrincipais() {

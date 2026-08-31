@@ -247,10 +247,15 @@ struct BotaoDoMenu: View {
     let acao: () -> Void
 
     var body: some View {
-        Button(action: acao) {
-            Image(systemName: menuAberto ? "xmark" : "ellipsis")
+        if !menuAberto {
+            Button(action: acao) {
+                Image(systemName: "ellipsis")
+            }
+            .accessibilityLabel("Open menu")
         }
-        .accessibilityLabel(menuAberto ? "Close menu" : "Open menu")
+        // Aberto, o painel opaco traz o próprio X. O botão da barra de trás
+        // precisa sair da árvore, não só ficar visualmente coberto: o SwiftUI
+        // continuava expondo dois "Close menu" para o VoiceOver.
     }
 }
 

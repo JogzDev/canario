@@ -53,6 +53,32 @@ struct MenuLateral: View {
                     .shadow(color: .black.opacity(0.20), radius: 10, x: 3)
 
                 VStack(alignment: .leading, spacing: 0) {
+                    // O FECHAR MORA AQUI, e não mais na barra de trás.
+                    //
+                    // O desenho antigo contava com o botão da tela de trás
+                    // aparecendo por cima: ele virava "xmark" quando o menu
+                    // abria, na mesma posição do ellipsis. Só que o painel é
+                    // opaco e tem `zIndex(10)` -- cobre a barra inteira, e o X
+                    // ficou invisível. O JP mandou o print: *"o botao de
+                    // fechar o menu lateral que agora simplesmente sumiu (ou
+                    // nao existe mais)"*.
+                    //
+                    // Tocar fora continua fechando, mas isso é atalho para
+                    // quem já sabe. Sem controle visível, quem não sabe fica
+                    // preso -- e preso num menu é o pior lugar do app.
+                    Button(action: fechar) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Tokens.Cor.tintaDoMenu(territorio))
+                            .frame(width: 44, height: 44, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Close menu")
+
+                    // As entradas que levam a uma AÇÃO ficam grandes. Antes as
+                    // seis tinham o mesmo peso, e o texto jurídico disputava a
+                    // tela com a peça salva.
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(EntradaDoMenu.acoes, id: \.self) { entrada in
                             Button(entrada.titulo) { escolher(entrada.titulo) }
@@ -62,7 +88,7 @@ struct MenuLateral: View {
                                 .frame(height: 92)
                         }
                     }
-                    .padding(.top, 100)
+                    .padding(.top, Tokens.Espaco.g)
 
                     Spacer()
 
@@ -120,6 +146,18 @@ struct TelaDoMenu: View {
             .navigationBarBackButtonHidden(true)
             .toolbar(.hidden, for: .navigationBar)
         }
+        // O TEXTO SUMIA QUANDO O MENU ERA ABERTO PELA TRENDS.
+        //
+        // Estas telas pintam o próprio fundo em #BBE5ED, mas a tinta vinha de
+        // `.primary`/`.secondary`, que resolvem pelo ESQUEMA da cena -- e a
+        // cena é escura enquanto a aba de mercado está atrás. Resultado:
+        // branco sobre azul claro, ilegível. O JP mandou o print do Profile e
+        // do Q&A com os títulos e o corpo praticamente invisíveis.
+        //
+        // Elas são território do usuário, sempre: `.territorio(.armario)`
+        // declara o esquema claro para a subárvore inteira, e é a mesma
+        // correção que o Comparar recebeu do outro lado da divisa.
+        .territorio(.armario)
     }
 }
 
