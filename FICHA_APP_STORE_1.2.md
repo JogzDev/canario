@@ -75,3 +75,17 @@ rows, then removes the signed-in Closet and Keychain session from the device.
 Antes do envio: publicar `POLITICA_PUBLICA_1.2.md`, configurar a Privacy Policy
 URL, fornecer uma conta de demonstração por e-mail ao App Review e confirmar
 que Apple/Google estão ativos no ambiente de produção.
+
+## URLs e copyright
+
+| Campo | Valor |
+|---|---|
+| Support URL | `https://datadrobe.carrd.co` |
+| Marketing URL | `https://datadrobe.carrd.co` |
+| Privacy Policy URL | `https://datadrobe.carrd.co/#privacy` |
+| Copyright | `2026 Fundação Padre Leonel Franca` |
+
+O site público precisa conter integralmente o texto de
+`POLITICA_PUBLICA_1.2.md` antes de selecionar este build para revisão. Em
+31/08/2026 a URL ainda mostrava a política efetiva em 22/08/2026, que descreve
+o comportamento anterior e não cobre conta nem sincronização.
