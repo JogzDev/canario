@@ -25,8 +25,9 @@ Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 **Candidato atual:** 1.2 build 1, ainda local. Inclui conta opcional por Apple,
 Google ou e-mail, sessão no Keychain, Closet offline-first com dados estruturados
 e miniatura reduzida sincronizados, recuperação de senha e exclusão integral
-iniciada dentro do app. A foto original nunca é enviada. Ainda não existe
-Archive nem upload deste candidato.
+iniciada dentro do app. A foto original nunca é enviada. O Archive foi gerado
+em 31/08; a exportação App Store aguarda conta Apple ativa, certificado Apple
+Distribution e perfil de loja atualizado. Ainda não existe upload deste candidato.
 
 ## Portões antes do Archive
 

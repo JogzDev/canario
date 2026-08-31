@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 26/08/2026, 18:20 em São Paulo
+**Última atualização:** 31/08/2026, 12:12 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -23,12 +23,12 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 |---|---|---|
 | Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **17.760 produtos candidatos** |
 | Banco | plano gratuito; inchaço recuperado em 26/08 | **407.342.227 / 500.000.000 bytes (81,5%)** · 92.657.773 bytes livres |
-| Rota paga de visão (Luna) | produção preservada; prompt expandido da 1.2 **retido** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
-| App na loja | **1.1 publicada; 1.2 build 1 em desenvolvimento** | função e aceites físicos fechados; falta o pacote do Figma, que começou pelas duas telas de importação |
+| Rota paga de visão (Luna) | **v11 em produção** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
+| App na loja | **1.1 publicada; candidato 1.2 (1) fechado** | pacote visual integrado; testes verdes; Archive criado; exportação bloqueada pela conta/certificado Apple local |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google nativo e e-mail validados no iPhone** | cliente iOS, callbacks, Keychain e Supabase configurados; relogin Google aprovado |
 | Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
-| Testes | **257 Swift** · **30 portões Python** · **8 UI** | 31 suítes Python no repositório; uma é sonda manual |
+| Testes | **281 Swift** · **32 portões Python** · **9 UI** | sete fluxos UI offline rodam no CI; dois usam dados reais e ficam na regressão local |
 
 ## 0. Trabalho ativo — conta, capacidade, privacidade declarada e 1.2
 
@@ -462,14 +462,13 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
 * Loja: **1.1 publicada**
-* Repositório: **1.2 build 1 em desenvolvimento na `main`**; PRs #16, #17 e #18
-  mesclados. O pacote do Figma começou a entrar pelo PR #19, que traz as telas
-  *Analyze an item* e *Confirm your item* implementadas pelo Davi Fadul
-* Processo do Figma: **uma tela por branch, PR revisado, merge só pelo JP**. A
-  `main` está protegida desde 26/08 — PR obrigatório, uma aprovação, `App
+* Repositório: **candidato 1.2 build 1 fechado**; todo o trabalho de
+  `development`, inclusive o pacote visual final e as correções de 30/08, foi
+  integrado na branch de release para entrada na `main`
+* A `main` está protegida desde 26/08 — PR obrigatório, uma aprovação, `App
   (Swift)` e `Coletores (Python)` verdes, sem force-push nem deleção
 * TestFlight 1.1: upload aceito pela Apple em 21/08 e versão publicada
-* TestFlight 1.2: **ainda não enviado; Archive ainda não gerado**
+* TestFlight 1.2: **ainda não enviado; Archive gerado em 31/08**
 * App Review 1.2: **não enviado**
 * Time: `67AYPRFZH8`
 * Alvo mínimo: iOS 17
@@ -479,6 +478,14 @@ O Archive Release foi criado, validado, exportado e preservado no Organizer em
 O binário empacotado foi conferido: DataDrobe, bundle e versão corretos, Luna
 `YES`, configuração do Supabase presente, `PrivacyInfo.xcprivacy` incluído e
 assinatura válida. O App Store Connect aceitou o upload sem warning de pacote.
+
+O Archive 1.2 (1) foi criado com Xcode 26.2 e preservado no Organizer em
+`~/Library/Developer/Xcode/Archives/2026-08-31/DataDrobe 1.2 (1) 12.10.xcarchive`.
+O build, os sete fluxos UI do CI, 281 testes Swift e 32 portões Python passaram.
+A exportação App Store não foi concluída porque o Xcode deste Mac está sem conta
+Apple ativa e o Keychain não contém uma identidade Apple Distribution; o perfil
+de loja local também antecede Sign in with Apple e Associated Domains. Entrar
+na conta e regenerar certificado/perfil é o bloqueio operacional antes do upload.
 
 A identidade é conferida no CI a cada push por
 `coletor/teste_identidade_do_app.py`, que exige que gerador, `project.pbxproj`,
@@ -505,10 +512,10 @@ catálogo.
 
 ## 5. Testes
 
-* **257** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
-* **31** suítes Python no repositório; **30** rodam no CI a cada push. A 31ª,
+* **281** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **33** suítes Python no repositório; **32** rodam no CI a cada push. A 33ª,
   `teste_30s.py`, é a sonda manual do README e não entra no portão
-* **8** testes de interface no alvo `CanarioUITests`; seis rotas offline rodam no CI
+* **9** testes de interface no alvo `CanarioUITests`; sete rotas offline rodam no CI
 
 > Estes três números aparecem também no resumo de 30 segundos, e em 25/08 os
 > dois blocos discordavam — a tabela dizia 249/8, esta seção dizia 239/7. Um
@@ -529,7 +536,7 @@ transformar o `project.pbxproj` em edição manual recorrente.
    Dynamic Type e VoiceOver, confirmados pelo JP, somando-se a instalação
    limpa, câmera, fototeca e relogin Google nativo. **Nenhum aceite manual
    continua pendente antes do Figma**
-2. Repetir a regressão visual completa depois de aplicar o pacote final do Figma
+2. Repetir a regressão visual completa da 1.2 em aparelho físico e nas capturas
 3. O app fixa `.preferredColorScheme(.light)` por decisão de produto; modo
    escuro não é uma variante suportada nem um caso de aceite da 1.2. As telas
    de Trends e de relatório de termo do Figma são desenhadas sobre fundo

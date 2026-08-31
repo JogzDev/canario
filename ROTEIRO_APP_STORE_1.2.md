@@ -6,6 +6,14 @@ aceita reiniciar o build em 1 ao mudar a versão; só aumente para 2 se `1.2 (1)
 já tiver sido processado no App Store Connect ou se for necessário recompilar
 depois do primeiro upload.
 
+**Bloqueio encontrado neste Mac:** o Archive foi criado, mas a exportação
+falhou porque o Xcode não tem conta Apple ativa, não há identidade Apple
+Distribution com chave privada no Keychain e o perfil de loja instalado não
+inclui Sign in with Apple nem Associated Domains. Antes de repetir a exportação,
+abra `Xcode > Settings > Accounts`, entre na conta da equipe `67AYPRFZH8`, use
+`Manage Certificates` para instalar/criar Apple Distribution e atualize os
+profiles. Não retire capabilities do app para contornar o perfil antigo.
+
 ## 1. Antes do Archive
 
 - [ ] Publicar `POLITICA_PUBLICA_1.2.md` em

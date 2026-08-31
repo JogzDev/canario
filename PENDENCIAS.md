@@ -1,14 +1,13 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 26/08/2026 às 18:20 BRT.** Esta lista substitui a triagem de
+**Atualizado em 31/08/2026 às 12:12 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
-## Pacote visual do Figma — a frente ativa
+## Pacote visual do Figma — entregue no candidato 1.2
 
-Arquivo `EZ58SkSJRlcTLOC6NDgdGR`, uma página só. **Uma tela por branch, PR
-revisado, merge só pelo JP.** A hierarquia do Market panel e a redução de texto
-em "Which item" ficam nesta etapa para não desenhar duas vezes a mesma
-interface.
+Arquivo `EZ58SkSJRlcTLOC6NDgdGR`, uma página só. As telas finais, a hierarquia
+do Market panel, Fill the info, busca, conta, ajustes, tendências, similares e
+os consertos de menu/paleta foram incorporados ao candidato em 31/08.
 
 **Regras de desenho combinadas em 26/08, válidas para todas as telas:**
 
@@ -23,24 +22,22 @@ interface.
 - Imagens de peça nas telas do Figma são **exemplo** — o casaco de bandeiras
   não vai para o app. Todo campo de imagem mostra a peça que o usuário enviou.
 
-**Fila desta rodada — as três telas do fluxo de importar:**
+**As três telas do fluxo de importar estão implementadas:**
 
-1. *Analyze an item* — entregue como **provisória** pelo Davi. Refazer a
-   formatação no padrão Apple. Ela tem pouca informação: **não deve ser um
-   scroll que sobe a tela inteira**, só o necessário para oferecer as três
-   entradas.
-2. *Confirm your item* — já chega mais perto do padrão; falta o mesmo
-   acabamento.
-3. *Fill the info* — **ainda não implementada**, e é a que muda comportamento:
+1. *Analyze an item* — finalizada com as três entradas.
+2. *Confirm your item* — finalizada com seleção/recorte do alvo.
+3. *Fill the info* — finalizada, incluindo:
    - **Cor passa a ter ordem de prioridade.** Os números 1, 2 e 3 sobre os
      círculos são posição, não contagem: 1 é a cor principal, 2 a secundária, 3
-     a terciária. Nem toda peça chega a três. **Teto de 2 ou 3 — o JP decide o
-     número.** É o **único** campo com ordem; categoria, estampa, estilo e o
+     a terciária. Nem toda peça chega a três. **O teto foi fixado em 3.** É o
+     **único** campo com ordem; categoria, estampa, estilo e o
      resto seguem seleção simples, como hoje.
    - **É uma tela de scroll longo**, e o `intended price` desce para o fim
      dela. Ele sai da tela de entrada — decisão de produto tomada em 26/08.
 
-Depois destas três, tela por tela, no ritmo que permitir fazer bem feito.
+O portão automatizado abriu Add, percorreu o fluxo e salvou sem repetir a antiga
+tela Clothing Details. A última pendência desta frente é a regressão visual em
+aparelho e a produção de capturas novas para a loja.
 
 ## Migrations aplicadas em 27/08 — conferidas em produção
 
@@ -145,11 +142,10 @@ dele — A48, A49 e o redeploy — estão feitas.
   chaves que só existiam na cópia local são textos que o visual novo tirou da
   interface. Depois do merge do PR #19, `git checkout --
   app/Canario/Localizable.xcstrings` descarta a cópia sem perder nada.
-- `FICHA_APP_STORE_1.1.md`, `POLITICA_PUBLICA_1.1.md`, `SONDA_CANDIDATAS.md` e
-  `capturas_1.1/` continuam só na máquina. Nenhum entrou em commit de agente, de
-  propósito; decidir o que versionar é seu.
+- `POLITICA_PUBLICA_1.1.md`, `SONDA_CANDIDATAS.md` e `capturas_1.1/` continuam
+  só na máquina. Nenhum foi apagado ou alterado por este corte.
 
-## Fechamento de release — depois do Figma
+## Fechamento de release — estado em 31/08
 
 - **Já validados fisicamente em 26/08:** instalação limpa, login e relogin com o
   SDK Google nativo, câmera e fototeca — e também **offline, Universal Links,
@@ -158,10 +154,16 @@ dele — A48, A49 e o redeploy — estão feitas.
   também não voltaram a ocorrer. **Nenhum aceite físico segue pendente.** O app
   é deliberadamente light-only (`.preferredColorScheme(.light)`), portanto modo
   escuro não é caso suportado.
-- Rodar a regressão visual no iPhone e a suíte completa **depois** do pacote do
-  Figma — é o único aceite que precisa ser repetido, porque as telas mudam.
-- Gerar Archive Release 1.2, validar assinatura/entitlements, enviar ao
-  TestFlight e repetir os fluxos críticos no binário distribuído.
+- **Suíte automatizada repetida:** 281 Swift, 32 portões Python, build iOS e
+  sete fluxos UI verdes.
+- **Archive Release 1.2 (1) gerado e preservado no Organizer.** A exportação
+  está bloqueada até entrar na conta Apple no Xcode, instalar/criar a identidade
+  Apple Distribution e regenerar o perfil de loja com Sign in with Apple e
+  Associated Domains.
+- Rodar a regressão visual no iPhone; é o aceite que precisa ser repetido porque
+  as telas mudaram.
+- Depois da exportação verde, enviar ao TestFlight e repetir os fluxos críticos
+  no binário distribuído.
 - Atualizar capturas e metadata da App Store com as telas finais; só então
   submeter a 1.2 para revisão.
 
