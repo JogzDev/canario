@@ -49,6 +49,7 @@ def main():
     importar = ler("Telas/ImportarPeca.swift")
     explorar = ler("Telas/Explorar.swift")
     menu = ler("Telas/MenuLateral.swift")
+    raiz = ler("CanarioApp.swift")
 
     assert 'Label("Not confirmed"' not in componentes
     assert '.presentationCompactAdaptation(.popover)' not in componentes
@@ -102,6 +103,17 @@ def main():
     # Terms e Privacy ficam sobre o céu fixo da marca. `.secondary` sozinho
     # cai abaixo do contraste confortável para texto corrido nesse fundo.
     assert 'Tokens.Cor.noite.opacity(0.70)' in menu
+
+    # A mola do menu ultrapassava a posição final por quatro pixels e voltava,
+    # produzindo a faixa clara que só aparecia durante alguns quadros.
+    assert '.animation(.snappy' not in raiz
+    assert '.animation(.easeOut(duration: 0.24), value: menuAberto)' in raiz
+
+    # A lista aberta ao tocar numa marca é mercado, mesmo quando o destino da
+    # NavigationLink deixa de propagar o ambiente esperado.
+    lista_eventos = explorar.split("struct ListaDeEventos: View", 1)[1]
+    lista_eventos = lista_eventos.split("// MARK: - Cartão do digest", 1)[0]
+    assert '.territorio(.mercado)' in lista_eventos
 
     # O card do manequim já é centralizado na tela pela VStack; o que sobrava
     # era o desenho estar torto DENTRO do card. Meia unidade de tolerância é

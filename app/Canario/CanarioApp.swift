@@ -96,7 +96,11 @@ struct Raiz: View {
         // indicador de rolagem, `Picker` segmentado -- e é o que faz o app
         // continuar claro no resto, que é a decisão de produto de sempre.
         .preferredColorScheme(aba == .dados ? .dark : .light)
-        .animation(.snappy(duration: 0.35), value: menuAberto)
+        // O menu não pode ultrapassar a borda e voltar. `.snappy` tem mola:
+        // na gravação a 60 fps, a aresta chegou a 849 px e recuou para 845 px,
+        // revelando por alguns quadros uma faixa do céu atrás do painel. O
+        // `easeOut` preserva o deslizamento e termina exatamente em zero.
+        .animation(.easeOut(duration: 0.24), value: menuAberto)
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })
         }

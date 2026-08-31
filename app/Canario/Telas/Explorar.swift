@@ -1002,6 +1002,12 @@ struct ListaDeEventos: View {
             }
             .padding(Tokens.Espaco.m)
         }
+        // NavigationLink não é uma fronteira de design confiável: esta tela
+        // herdava o esquema escuro da aba, mas não o fundo nem os cartões do
+        // território. O resultado era preto puro (`systemBackground`) atrás
+        // de cinza genérico nas listas Restocks/Markdowns. É uma tela de
+        // mercado e precisa declarar isso por conta própria.
+        .territorio(.mercado)
         .navigationTitle("\(titulo) · \(marca)")
         .navigationBarTitleDisplayMode(.inline)
     }
