@@ -142,6 +142,45 @@ final class AutenticacaoTests: XCTestCase {
         let url = URL(string: "datadrobe://auth-callback#type=recovery&access_token=x")!
         XCTAssertEqual(Autenticacao.tipoDoCallback(url), "recovery")
     }
+
+    func testAppleGuardaCodigoDeAutorizacaoNoServidorEAvisaFallbackNaExclusao() async throws {
+        var chamadas: [URLRequest] = []
+        ProtocoloAuthFalso.responder = { [usuario] pedido in
+            chamadas.append(pedido)
+            switch pedido.url?.path {
+            case "/auth/v1/token":
+                return (200, Data("""
+                {"access_token":"access-apple","refresh_token":"refresh","expires_in":3600,
+                 "user":{"id":"\(usuario)","email":"relay@privaterelay.appleid.com",
+                 "app_metadata":{"providers":["apple"]}}}
+                """.utf8))
+            case "/functions/v1/registrar-credencial-apple":
+                XCTAssertEqual(pedido.value(forHTTPHeaderField: "Authorization"),
+                               "Bearer access-apple")
+                let corpo = try JSONSerialization.jsonObject(with: corpoAuth(pedido))
+                    as? [String: String]
+                XCTAssertEqual(corpo?["authorization_code"], "codigo-apple-unico")
+                return (200, Data(#"{"stored":true,"reused":false}"#.utf8))
+            case "/functions/v1/excluir-conta":
+                return (200, Data(#"{"deleted":true,"apple_revocation":"manual_required"}"#.utf8))
+            default:
+                XCTFail("caminho inesperado: \(pedido.url?.path ?? "sem caminho")")
+                return (500, Data())
+            }
+        }
+
+        let conta = cliente()
+        _ = try await conta.entrarComApple("id-token", nonce: "nonce-original",
+                                           codigoDeAutorizacao: "codigo-apple-unico")
+        let exclusao = try await conta.solicitarExclusao()
+
+        XCTAssertEqual(chamadas.map { $0.url?.path }, [
+            "/auth/v1/token",
+            "/functions/v1/registrar-credencial-apple",
+            "/functions/v1/excluir-conta",
+        ])
+        XCTAssertTrue(exclusao.exigeRevogacaoManualApple)
+    }
 }
 
 private func corpoAuth(_ pedido: URLRequest) -> Data {

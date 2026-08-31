@@ -49,8 +49,9 @@ final class GestorDaConta: NSObject, ObservableObject {
         }
         self.nonceApple = nil
         executar {
-            try await Autenticacao.shared.entrarComToken(
-                token, provedor: .apple, nonce: nonceApple)
+            let codigo = credencial.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+            return try await Autenticacao.shared.entrarComApple(
+                token, nonce: nonceApple, codigoDeAutorizacao: codigo)
         }
     }
 
@@ -128,13 +129,12 @@ final class GestorDaConta: NSObject, ObservableObject {
         Task {
             defer { trabalhando = false }
             do {
-                let usavaApple = sessao?.usuario.provedores?.contains("apple") == true
-                try await Autenticacao.shared.solicitarExclusao()
+                let resultado = try await Autenticacao.shared.solicitarExclusao()
                 await PecasSalvas.shared.apagarTudo()
                 await PecasSalvas.shared.usarEspacoDoUsuario(nil)
                 sessao = nil
                 ultimaSincronizacao = nil
-                mostrarRevogacaoManualApple = usavaApple
+                mostrarRevogacaoManualApple = resultado.exigeRevogacaoManualApple
             } catch {
                 mensagemDeErro = error.localizedDescription
             }

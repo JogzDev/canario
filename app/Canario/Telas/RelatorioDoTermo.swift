@@ -84,6 +84,7 @@ struct RelatorioDoTermo: View {
         .territorio(.mercado)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .navegacaoDoMercado()
         .task { await carregar() }
     }
 
@@ -548,8 +549,7 @@ private struct DetalheDaFonteEditorial: View {
         .territorio(.mercado)
         .navigationTitle(Traducao.rotuloExibido(termo))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Tokens.Cor.noturno, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .navegacaoDoMercado()
     }
 
     /// "52 weeks" ou o que houver, para o eixo não mentir sobre o alcance.

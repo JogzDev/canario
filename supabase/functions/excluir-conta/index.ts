@@ -1,6 +1,7 @@
 // A26 — exclusão integral iniciada dentro do app.
 // A função valida o JWT recebido e usa service role somente no servidor.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { revogarTokenApple } from "../_shared/apple-sign-in.ts";
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
@@ -41,6 +42,28 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
+
+  const providers = Array.isArray(data.user.app_metadata?.providers)
+    ? data.user.app_metadata.providers : [];
+  const usaApple = providers.includes("apple");
+  let revogacaoApple: "not_applicable" | "revoked" | "manual_required" = "not_applicable";
+  if (usaApple) {
+    const { data: credencial, error: credentialError } = await admin
+      .from("apple_refresh_tokens")
+      .select("refresh_token")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+    // Não interrompemos o direito de exclusão porque uma conta antiga pode
+    // não ter token para a Apple revogar. Nesse caso o cliente abre o caminho
+    // oficial manual depois de apagar os dados, como a Apple orienta.
+    if (!credentialError && credencial?.refresh_token) {
+      const revogado = await revogarTokenApple(credencial.refresh_token)
+        .catch(() => false);
+      revogacaoApple = revogado ? "revoked" : "manual_required";
+    } else {
+      revogacaoApple = "manual_required";
+    }
+  }
 
   // A44 ligou o Storage, e a linha abaixo era o aviso deixado quando ele ainda
   // não existia: apagar o usuário faz `closet_items` cair por ON DELETE CASCADE,
@@ -94,6 +117,7 @@ Deno.serve(async (req) => {
   return new Response(JSON.stringify({
     deleted: true,
     miniaturas_removidas: paraApagar.length,
+    apple_revocation: revogacaoApple,
   }), {
     status: 200,
     headers: { "content-type": "application/json" },

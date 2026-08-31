@@ -21,6 +21,18 @@ profiles. Não retire capabilities do app para contornar o perfil antigo.
 - [ ] Confirmar Support URL, e-mail de suporte e copyright da ficha 1.2.
 - [ ] Confirmar no Supabase de produção Apple, Google e e-mail ativos; criar uma
   conta de demonstração exclusiva para a equipe de revisão.
+- [ ] Aplicar a migração `20260831152000_a50_tokens_de_revogacao_apple.sql` e
+  publicar as funções `registrar-credencial-apple` e `excluir-conta` no mesmo
+  ambiente de produção. No cofre de secrets do Supabase, cadastrar
+  `APPLE_TEAM_ID` (`67AYPRFZH8`), `APPLE_SIGN_IN_KEY_ID` e
+  `APPLE_SIGN_IN_PRIVATE_KEY` (o conteúdo completo do arquivo `.p8` criado em
+  Apple Developer; nunca no repositório). `APPLE_CLIENT_ID` pode ficar ausente,
+  pois o app usa `br.com.canario.ch3.app` como padrão.
+- [ ] Depois disso, criar uma conta Apple nova de teste, excluí-la e confirmar
+  a resposta `apple_revocation: revoked` no log da Edge Function. Uma conta
+  Apple antiga, criada antes dessa mudança, pode não ter refresh token e deve
+  cair no atalho manual do Apple Account — isso é esperado e continua apagando
+  todos os dados do DataDrobe.
 - [ ] Confirmar que termos/acordos, contratos e dados da organização não têm
   pendências no App Store Connect.
 - [ ] Rodar todos os portões de `RELEASE_DATADROBE.md` no mesmo commit.

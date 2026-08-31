@@ -39,6 +39,14 @@ struct DesafioOAuth: Sendable {
     let verificador: String
 }
 
+/// O login pode funcionar mesmo se uma conta Apple antiga não tiver entregue
+/// um refresh token. Essa informação não é de produto: ela só permite que a
+/// interface seja honesta, no momento da exclusão, sobre revogação automática
+/// ou o caminho manual oficial da Apple.
+struct ResultadoDaExclusao: Sendable {
+    let exigeRevogacaoManualApple: Bool
+}
+
 /// Cliente pequeno para o contrato HTTP público do Supabase Auth.
 ///
 /// O app já tem uma camada de rede própria e não precisa incorporar um SDK
@@ -120,6 +128,14 @@ actor Autenticacao {
         }
 
         var texto: String { errorDescription ?? msg ?? message ?? error ?? "" }
+    }
+
+    private struct RespostaDeExclusao: Decodable {
+        let appleRevocation: String?
+
+        enum CodingKeys: String, CodingKey {
+            case appleRevocation = "apple_revocation"
+        }
     }
 
     private let url: URL
@@ -217,6 +233,26 @@ actor Autenticacao {
         return try await autenticar(caminho: "token", query: "grant_type=id_token", corpo: corpo)
     }
 
+    /// No native Sign in with Apple, o `identityToken` autentica a conta no
+    /// Supabase e o `authorizationCode` de uso único permite ao nosso servidor
+    /// obter o refresh token que a Apple exige para revogação posterior.
+    ///
+    /// Não se recusa o login por uma falha de infraestrutura nessa segunda
+    /// etapa: a pessoa ainda precisa poder entrar e excluir os próprios dados.
+    /// Sem a credencial, a exclusão mostra o fluxo manual oficial da Apple.
+    func entrarComApple(_ token: String, nonce: String?,
+                        codigoDeAutorizacao: String?) async throws -> SessaoDaConta {
+        let sessao = try await entrarComToken(token, provedor: .apple, nonce: nonce)
+        guard let codigoDeAutorizacao, !codigoDeAutorizacao.isEmpty else { return sessao }
+        do {
+            try await registrarCredencialApple(codigoDeAutorizacao, sessao: sessao)
+        } catch {
+            // O código não atravessa logs nem armazenamento local. A sessão
+            // continua válida; `excluir-conta` sinalizará a alternativa manual.
+        }
+        return sessao
+    }
+
     func desafioOAuthGoogle() throws -> DesafioOAuth {
         guard configurada else { throw Falha.semConfiguracao }
         let verificador = Self.segredoAleatorio(comprimento: 64)
@@ -274,19 +310,43 @@ actor Autenticacao {
         limparSessao()
     }
 
-    func solicitarExclusao() async throws {
+    func solicitarExclusao() async throws -> ResultadoDaExclusao {
         guard let atual = await sessaoAtual() else { throw Falha.callbackInvalido }
         let endpoint = url.appendingPathComponent("functions/v1/excluir-conta")
         var req = URLRequest(url: endpoint)
         req.httpMethod = "POST"
         req.setValue(chave, forHTTPHeaderField: "apikey")
         req.setValue("Bearer \(atual.accessToken)", forHTTPHeaderField: "Authorization")
-        let (_, resposta) = try await sessaoHTTP.data(for: req)
+        let (dados, resposta) = try await sessaoHTTP.data(for: req)
         let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(codigo) else {
             throw Falha.resposta(codigo, "The account could not be deleted. Please try again.")
         }
+        let respostaDaExclusao = try? JSONDecoder().decode(RespostaDeExclusao.self, from: dados)
+        let usavaApple = atual.usuario.provedores?.contains("apple") == true
         limparSessao()
+        return ResultadoDaExclusao(
+            exigeRevogacaoManualApple: usavaApple
+                && respostaDaExclusao?.appleRevocation != "revoked")
+    }
+
+    private func registrarCredencialApple(_ codigo: String,
+                                          sessao: SessaoDaConta) async throws {
+        guard configurada else { throw Falha.semConfiguracao }
+        let endpoint = url.appendingPathComponent("functions/v1/registrar-credencial-apple")
+        var req = URLRequest(url: endpoint)
+        req.httpMethod = "POST"
+        req.setValue(chave, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(sessao.accessToken)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "authorization_code": codigo,
+        ])
+        let (_, resposta) = try await sessaoHTTP.data(for: req)
+        let status = (resposta as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            throw Falha.resposta(status, "Apple authorization could not be prepared for account deletion.")
+        }
     }
 
     private func autenticar(caminho: String, query: String,

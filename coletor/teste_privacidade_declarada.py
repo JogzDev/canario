@@ -38,6 +38,12 @@ APP = os.path.join(RAIZ, "app", "Canario")
 MANIFESTO = os.path.join(APP, "PrivacyInfo.xcprivacy")
 SYNC = os.path.join(APP, "Rede", "SincronizacaoDoCloset.swift")
 EXCLUIR = os.path.join(RAIZ, "supabase", "functions", "excluir-conta", "index.ts")
+REGISTRAR_APPLE = os.path.join(
+    RAIZ, "supabase", "functions", "registrar-credencial-apple", "index.ts")
+APPLE_COMPARTILHADO = os.path.join(
+    RAIZ, "supabase", "functions", "_shared", "apple-sign-in.ts")
+APPLE_MIGRACAO = os.path.join(
+    RAIZ, "supabase", "migrations", "20260831152000_a50_tokens_de_revogacao_apple.sql")
 ANALISE = os.path.join(RAIZ, "supabase", "functions", "analisar-peca", "index.ts")
 BUCKET = "closet-thumbnails"
 
@@ -241,8 +247,39 @@ def main():
               "depois do deleteUser os objetos ficam orfaos")
         return 1
 
+    # 6. Sign in with Apple só é revogável por REST se o authorization code
+    #    nativo for trocado e o refresh token ficar no servidor. A interface
+    #    pode oferecer o caminho manual para sessões legadas, mas novo código
+    #    não pode voltar a fingir que deleteUser revoga a autorização Apple.
+    registrar_apple = ler(REGISTRAR_APPLE)
+    apple_compartilhado = ler(APPLE_COMPARTILHADO)
+    migracao_apple = ler(APPLE_MIGRACAO)
+    if registrar_apple is None or apple_compartilhado is None or migracao_apple is None:
+        return 1
+    if ("authorization_code" not in registrar_apple
+            or "trocarCodigoApple" not in registrar_apple
+            or "apple_refresh_tokens" not in registrar_apple):
+        print("FALHOU: novo login Apple nao troca e guarda o refresh token "
+              "necessario para a revogacao REST")
+        return 1
+    if ("APPLE_AUDIENCE" not in apple_compartilhado
+            or "/auth/revoke" not in apple_compartilhado
+            or "refresh_token" not in apple_compartilhado):
+        print("FALHOU: a revogacao REST da Apple nao usa o endpoint/token esperado")
+        return 1
+    if ("revogarTokenApple" not in codigo
+            or "apple_revocation" not in codigo
+            or "apple_refresh_tokens" not in codigo):
+        print("FALHOU: excluir-conta nao chama a revogacao Apple antes do delete")
+        return 1
+    if ("force row level security" not in migracao_apple.lower()
+            or "revoke all on table public.apple_refresh_tokens" not in migracao_apple.lower()
+            or "on delete cascade" not in migracao_apple.lower()):
+        print("FALHOU: refresh token Apple nao esta protegido e acoplado a exclusao")
+        return 1
+
     print("Privacidade declarada: app, manifesto, ficha, politica e "
-          "excluir-conta concordam sobre a miniatura sincronizada")
+          "excluir-conta concordam sobre miniatura e revogacao Apple")
     return 0
 
 

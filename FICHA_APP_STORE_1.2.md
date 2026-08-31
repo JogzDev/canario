@@ -70,6 +70,10 @@ write and delete to the owning account. Original photos are never uploaded.
 Account → Delete account removes every stored thumbnail first, then permanently
 deletes the Supabase Auth user and cascades deletion of all synchronized Closet
 rows, then removes the signed-in Closet and Keychain session from the device.
+For a new Sign in with Apple session, the server first revokes the retained
+Apple refresh token through Apple's REST API. An older Apple session that has
+no revocation token receives the official Apple Account fallback after its data
+has still been deleted.
 ```
 
 Antes do envio: publicar `POLITICA_PUBLICA_1.2.md`, configurar a Privacy Policy

@@ -62,9 +62,12 @@ Account deletion
 
 Account settings includes Delete account. Confirming it permanently deletes the
 account, its synchronized Closet records and every thumbnail stored for it, and
-removes the signed-in Closet and session from that iPhone. If you used Sign in with Apple and no Apple token
-is available to revoke programmatically, the app directs you to Apple Account
-settings after deletion so you can remove the remaining authorization.
+removes the signed-in Closet and session from that iPhone. For new Sign in with
+Apple sessions, DataDrobe securely retains the Apple refresh token only to call
+Apple's revocation API when you delete the account, then deletes that token with
+the account. If an older Apple session has no token available to revoke
+programmatically, the app directs you to Apple Account settings after deletion
+so you can remove the remaining authorization.
 
 Photos and camera
 

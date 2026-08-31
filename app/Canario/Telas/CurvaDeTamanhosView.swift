@@ -40,6 +40,7 @@ struct CurvaDeTamanhosView: View {
         .territorio(.mercado)
         .navigationTitle(termo == nil ? "Size availability" : "Sizes · \(Traducao.rotuloExibido(termo!))")
         .navigationBarTitleDisplayMode(.inline)
+        .navegacaoDoMercado()
         .task { await carregar() }
     }
 

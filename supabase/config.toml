@@ -23,6 +23,9 @@ verify_jwt = false
 [functions.excluir-conta]
 verify_jwt = true
 
+[functions.registrar-credencial-apple]
+verify_jwt = true
+
 # Production values are injected only while running `supabase config push`.
 # No SMTP credential is stored in the repository.
 [auth.email.smtp]

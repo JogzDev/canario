@@ -402,3 +402,17 @@ extension Tokens.Cor {
         t == .mercado ? ceuFixo : acao
     }
 }
+
+extension View {
+    /// Fixa também a superfície que o UIKit anima entre duas telas de mercado.
+    /// `territorio(.mercado)` já colore o conteúdo, mas um `NavigationLink`
+    /// não herda o fundo da barra durante alguns frames do gesto de voltar. A
+    /// barra padrão clara chegava a piscar no alto, sobretudo à direita, antes
+    /// do destino reaparecer. Esta é a borda da transição, não só a aparência
+    /// da tela já estável.
+    func navegacaoDoMercado() -> some View {
+        toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Tokens.Cor.noturno, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+}

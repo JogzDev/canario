@@ -176,6 +176,15 @@ struct RelatorioDaPeca: View {
             }
             .padding(Tokens.Espaco.m)
         }
+        // O painel de uma peça pertence ao território claro, mas não ao branco
+        // padrão do sistema. Era a única tela desse percurso que descartava o
+        // céu da marca ao ser empurrada pelo Closet e, por isso, parecia outro
+        // app. O fundo e a barra são declarados juntos para não haver um frame
+        // branco entre a foto e a área segura durante a navegação.
+        .background(Tokens.Cor.ceu.ignoresSafeArea())
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Tokens.Cor.ceuFixo, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
         .task { await carregar() }
         .task(id: pecaSalva?.miniaturaArquivo) { await carregarMiniaturaDaPeca() }
         .onAppear { rejeitouSimilares = pecaSalva?.similaresRejeitados ?? false }
