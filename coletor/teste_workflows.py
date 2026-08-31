@@ -270,6 +270,28 @@ def checar_orquestracao(workflows):
 
     conferir_relatorio_fora_do_portao("pipeline-diario.yml", saude)
 
+    # A coleta VTEX integra o pipeline diario. Mesmo que SAUDE.md nao escreva
+    # mais na branch, o antigo commit do cache ainda reproduziria GH006 assim
+    # que uma marca descobrisse departamento novo.
+    coleta_vtex = workflows.get("coleta.yml", {})
+    job_vtex = coleta_vtex.get("jobs", {}).get("coletar", {})
+    passos_vtex = job_vtex.get("steps", [])
+    escritores_vtex = [p for p in passos_vtex
+                       if "commitar.sh" in str(p.get("run", ""))
+                       or "git push" in str(p.get("run", ""))]
+    if escritores_vtex:
+        falhar("coleta.yml",
+               "coleta VTEX ainda escreve direto na main protegida")
+    artefatos_cache = [p for p in passos_vtex
+                       if str(p.get("uses", "")).startswith(
+                           "actions/upload-artifact@")
+                       and p.get("with", {}).get("path") ==
+                       "anexos/departamentos_vtex.json"]
+    if (len(artefatos_cache) != 1 or
+            artefatos_cache[0].get("continue-on-error") is not True):
+        falhar("coleta.yml",
+               "cache VTEX alterado nao fica auditavel sem bloquear a coleta")
+
     recuperacao = workflows.get("recuperar-pipeline.yml", {})
     gatilhos_recuperacao = recuperacao.get(
         "on", recuperacao.get(True, {})) or {}

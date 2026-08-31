@@ -44,7 +44,7 @@ on:
         default: true
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   # Serializa também disparos manuais contra as demais pernas. O pipeline
@@ -77,12 +77,22 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: "$PY coletor/pente_fino_datacenter.py"
 
-      - name: Commitar veredito do pente fino
+      - name: Expor veredito do pente fino
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' && inputs.pente_fino }}
-        run: >-
-          bash .github/commitar.sh
-          "PENTE_FINO_DATACENTER.md anexos/painel_marcas.csv"
-          "Pente fino do datacenter"
+        continue-on-error: true
+        run: cat PENTE_FINO_DATACENTER.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar veredito do pente fino
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' && inputs.pente_fino }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pente-fino-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            PENTE_FINO_DATACENTER.md
+            anexos/painel_marcas.csv
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Coletar varejo e gerar saude
         env:
@@ -95,11 +105,31 @@ jobs:
           COLETA_PLATAFORMA: vtex
         run: "$PY coletor/coletor_varejo.py"
 
-      # Um único job ao fim do pipeline publica SAUDE.md. Aqui persiste apenas
-      # a árvore VTEX descoberta, que tem um único escritor.
-      - name: Commitar cache de departamentos
+      # A main protegida exige PR. Cache e coleta sao responsabilidades
+      # diferentes: uma descoberta nova fica auditavel como artefato, sem
+      # transformar a coleta em vermelha por uma tentativa de push proibida.
+      - name: Detectar mudanca no cache de departamentos
+        id: cache
         if: always()
-        run: >-
-          bash .github/commitar.sh
-          "anexos/departamentos_vtex.json"
-          "Cache de departamentos da coleta"
+        continue-on-error: true
+        run: |
+          if git diff --quiet -- anexos/departamentos_vtex.json; then
+            echo 'alterado=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'alterado=true' >> "$GITHUB_OUTPUT"
+            {
+              echo '## Cache VTEX atualizado'
+              echo ''
+              echo 'A coleta descobriu departamentos novos. O arquivo está no artefato desta execução e deve entrar por PR.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guardar cache de departamentos atualizado
+        if: ${{ always() && steps.cache.outputs.alterado == 'true' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: departamentos-vtex-${{ github.run_id }}-${{ github.run_attempt }}
+          path: anexos/departamentos_vtex.json
+          if-no-files-found: warn
+          retention-days: 30
