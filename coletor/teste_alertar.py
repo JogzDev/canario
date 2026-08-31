@@ -47,7 +47,7 @@ def main():
         return 1
 
     corpo = corpo_da_falha("https://exemplo/run/1", "Pipeline diario", "motor")
-    for esperado in ("Pipeline diario", "motor", "SAUDE.md",
+    for esperado in ("Pipeline diario", "motor", "SAUDE.md", "desta execução",
                      "fecha sozinha", "verificar_capacidade_banco"):
         if esperado not in corpo:
             print("FALHOU: corpo do alerta sem {!r}".format(esperado))

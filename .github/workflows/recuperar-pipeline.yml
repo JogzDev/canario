@@ -13,7 +13,7 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: pipeline-diario
@@ -61,10 +61,25 @@ jobs:
         continue-on-error: true
         run: exit 1
 
-      - name: Publicar relatorio unico
-        if: ${{ always() && github.ref_name == 'main' }}
-        run: >-
-          bash .github/commitar.sh "SAUDE.md" "Saude consolidada do pipeline"
+      - name: Expor relatorio na propria execucao
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          if [[ -s SAUDE.md ]]; then
+            cat SAUDE.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Saude — relatorio nao gerado' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guardar relatorio para download
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: saude-${{ github.run_id }}-${{ github.run_attempt }}
+          path: SAUDE.md
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Bloquear publicacao do motor
         if: >-
