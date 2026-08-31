@@ -26,10 +26,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: canario-dados
-  cancel-in-progress: false
-
 jobs:
   vtex:
     if: ${{ github.event_name == 'schedule' || inputs.plataforma == 'vtex' }}

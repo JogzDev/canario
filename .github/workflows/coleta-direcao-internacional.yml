@@ -15,10 +15,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: canario-dados
-  cancel-in-progress: false
-
 jobs:
   coletar:
     uses: ./.github/workflows/coleta-shopify.yml

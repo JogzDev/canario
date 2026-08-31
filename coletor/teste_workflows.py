@@ -54,6 +54,36 @@ def checar_orquestracao(workflows):
         falhas.append((os.path.join(os.path.dirname(WORKFLOWS), arquivo),
                        mensagem))
 
+    def grupo_de_concorrencia(dados):
+        concorrencia = dados.get("concurrency")
+        if isinstance(concorrencia, str):
+            return concorrencia
+        if isinstance(concorrencia, dict):
+            return concorrencia.get("group")
+        return None
+
+    # Um workflow chamador mantém o próprio grupo ocupado durante toda a run.
+    # Se chamar um workflow reutilizável que pede o mesmo grupo literal, o
+    # filho nunca consegue começar. O GitHub encerra em segundos sem criar o
+    # job chamado nem produzir log útil — exatamente o vermelho silencioso da
+    # coleta de catálogo em 31/08.
+    for arquivo, dados in workflows.items():
+        grupo_pai = grupo_de_concorrencia(dados)
+        if not grupo_pai:
+            continue
+        for nome_job, job in (dados.get("jobs") or {}).items():
+            chamado = job.get("uses") if isinstance(job, dict) else None
+            prefixo = "./.github/workflows/"
+            if not isinstance(chamado, str) or not chamado.startswith(prefixo):
+                continue
+            arquivo_filho = os.path.basename(chamado)
+            grupo_filho = grupo_de_concorrencia(workflows.get(arquivo_filho, {}))
+            if grupo_filho == grupo_pai:
+                falhar(arquivo,
+                       "job `{}` chama workflow com o mesmo grupo de "
+                       "concorrencia `{}` e cria deadlock".format(
+                           nome_job, grupo_pai))
+
     individuais = {
         "coleta.yml": "./.github/workflows/coleta.yml",
         "coleta-shopify.yml": "./.github/workflows/coleta-shopify.yml",
