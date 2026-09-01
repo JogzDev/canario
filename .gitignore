@@ -28,6 +28,12 @@ VERIFICACAO_TRENDS.html
 # Checkpoint bruto da auditoria HTTP; o JSON final e o relatorio ficam versionados.
 anexos/auditoria_links_app.jsonl
 
+# Descoberta privada da 1.3: artefato temporario com URLs candidatas.
+radar-scout.json
+radar-scout-*.json
+radar-scout-receipt.json
+radar-scout-receipt-*.json
+
 # Xcode (alem do que ja estava acima)
 *.xcuserdatad/
 *.moved-aside

@@ -1,0 +1,115 @@
+name: Market Intelligence — scout privado Luna
+
+# Laboratorio privado e isolado. Ele nunca chama o motor, nunca grava no
+# Supabase e nunca participa do pipeline-diario. Uma falha gera somente um
+# artefato ausente nesta execucao; a coleta publica continua verde.
+on:
+  workflow_dispatch:
+
+# O cron só entra quando ao menos uma fonte externa estiver `green`, com
+# processamento por IA e domínio autorizados. Até lá, um agendamento criaria
+# vermelho conhecido em vez de informação; o laboratório é manual por desenho.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-intelligence-lab
+  cancel-in-progress: false
+
+jobs:
+  descobrir:
+    runs-on: [self-hosted, macOS, sempre-ligado]
+    environment: market-intelligence-lab
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/python-mac
+
+      - name: Limpar artefatos desta rota no runner persistente
+        run: |
+          rm -f "$RUNNER_TEMP/radar-scout.json" \
+            "$RUNNER_TEMP/radar-scout-receipt.json"
+
+      - name: Conferir o contrato sem rede
+        run: "$PY coletor/teste_pesquisar_radar_luna.py"
+
+      - name: Verificar direitos e configuração sem gastar
+        id: preflight
+        env:
+          OPENAI_SCOUT_API_KEY: ${{ secrets.OPENAI_SCOUT_API_KEY }}
+          OPENAI_SCOUT_PROJECT_ID: ${{ secrets.OPENAI_SCOUT_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          estado=$("$PY" ferramentas/pesquisar_radar_luna.py --verificar-prontidao)
+          pronto=false
+          motivo="nenhuma fonte web com processamento integral autorizado"
+          retencao=1
+          if [[ "$estado" == "ready" \
+                && ${#OPENAI_SCOUT_API_KEY} -ge 20 \
+                && ${#OPENAI_SCOUT_API_KEY} -le 512 \
+                && "${OPENAI_SCOUT_PROJECT_ID:-}" =~ ^proj_[A-Za-z0-9_-]{6,200}$ ]]; then
+            pronto=true
+            motivo="pronto"
+            retencao=$("$PY" ferramentas/pesquisar_radar_luna.py --retencao-artefato)
+          elif [[ "$estado" == "ready" ]]; then
+            motivo="credencial ou projeto dedicado do Scout ausente"
+          fi
+          echo "pronto=$pronto" >> "$GITHUB_OUTPUT"
+          echo "motivo=$motivo" >> "$GITHUB_OUTPUT"
+          echo "retencao=$retencao" >> "$GITHUB_OUTPUT"
+
+      - name: Descobrir candidatos sem publicar
+        if: steps.preflight.outputs.pronto == 'true'
+        env:
+          OPENAI_SCOUT_API_KEY: ${{ secrets.OPENAI_SCOUT_API_KEY }}
+          OPENAI_SCOUT_PROJECT_ID: ${{ secrets.OPENAI_SCOUT_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          "$PY" ferramentas/pesquisar_radar_luna.py \
+            --saida "$RUNNER_TEMP/radar-scout.json" \
+            --recibo "$RUNNER_TEMP/radar-scout-receipt.json"
+
+      - name: Resumir a execucao sem promover candidatos
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/radar-scout.json" ]]; then
+            "$PY" -c 'import json, os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/radar-scout.json")); print("## Scout privado\n\n- candidatos: {}\n- contrato: `{}`\n- modelo: `{}`\n- tokens: {}\n- buscas web: {}\n- custo máximo estimado: US$ {:.6f}\n\nO artefato requer revisão humana; nada foi publicado.".format(len(p["result"]["candidates"]), p["contract"], p["model_resolved"], p["usage"]["total_tokens"], p["web_search_calls"], p["estimated_cost_usd_upper_bound"]))' >> "$GITHUB_STEP_SUMMARY"
+          elif [[ -f "$RUNNER_TEMP/radar-scout-receipt.json" ]]; then
+            "$PY" -c 'import json, os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/radar-scout-receipt.json")); chamada=p.get("call_started") is True; conclusao=("A requisição foi iniciada; custo pode ter ocorrido." if chamada else "A requisição não foi iniciada; nenhuma chamada paga foi feita."); print("## Scout privado sem artefato válido\n\n- estado: `{}`\n- cobrança: `{}`\n\n{} Nenhum candidato foi promovido ou publicado.".format(p["status"], p["billing_status"], conclusao))' >> "$GITHUB_STEP_SUMMARY"
+          elif [[ '${{ steps.preflight.outputs.pronto }}' == 'true' ]]; then
+            echo '## Scout privado falhou antes de produzir recibo' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo '- a etapa estava habilitada; o estado de cobrança é desconhecido' >> "$GITHUB_STEP_SUMMARY"
+            echo '- nenhum candidato foi promovido ou publicado' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Scout privado bloqueado com segurança' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo "- motivo: ${{ steps.preflight.outputs.motivo }}" >> "$GITHUB_STEP_SUMMARY"
+            echo '- nenhuma chamada paga foi feita' >> "$GITHUB_STEP_SUMMARY"
+            echo '- o pipeline diário não foi afetado' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guardar candidatos para revisão humana
+        if: success() && steps.preflight.outputs.pronto == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: radar-scout-run-${{ github.run_id }}
+          path: ${{ runner.temp }}/radar-scout.json
+          if-no-files-found: error
+          retention-days: ${{ steps.preflight.outputs.retencao }}
+
+      - name: Guardar recibo técnico sem conteúdo de fonte
+        if: always() && steps.preflight.outputs.pronto == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: radar-scout-receipt-${{ github.run_id }}
+          path: ${{ runner.temp }}/radar-scout-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Remover artefatos locais do runner persistente
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/radar-scout.json" \
+            "$RUNNER_TEMP/radar-scout-receipt.json"

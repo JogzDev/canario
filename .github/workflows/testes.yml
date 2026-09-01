@@ -42,6 +42,8 @@ jobs:
         run: "$PY coletor/teste_materializacao.py"
       - name: Estado final das migrations
         run: "$PY coletor/teste_migrations.py"
+      - name: Fundação evidence-first da inteligência de mercado 1.3
+        run: "$PY coletor/teste_market_intelligence_13.py"
       - name: Publicacao atomica do motor
         run: "$PY coletor/teste_publicacao_motor.py"
       - name: Portao operacional de saude
@@ -88,6 +90,12 @@ jobs:
         run: "$PY coletor/teste_paleta.py"
       - name: Contrato do avaliador Luna (sem rede)
         run: "$PY coletor/teste_avaliar_luna.py"
+      - name: Governança executável das fontes do radar (sem rede)
+        run: "$PY coletor/teste_fontes_radar.py"
+      - name: Etiqueta contratual do radar (sem rede)
+        run: "$PY coletor/teste_etiqueta_radar.py"
+      - name: Contrato do scout privado de mercado (sem rede)
+        run: "$PY coletor/teste_pesquisar_radar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)
         run: "$PY coletor/teste_edge_luna.py"
       # O contrato acima le o arquivo do disco. Em 14/08 o arquivo estava
