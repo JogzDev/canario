@@ -198,6 +198,52 @@ def checar_orquestracao(workflows):
     if "schedule" not in gatilhos:
         falhar("pipeline-diario.yml", "pipeline unico sem `schedule`")
 
+    # O primeiro pacote factual da 1.3 e um laboratorio deliberadamente
+    # separado do pipeline diario. Transformar esse workflow em cron, deixar o
+    # artefato persistir ou remover a limpeza do runner mudaria o contrato de
+    # privacidade sem passar pela revisao de fontes.
+    etiqueta = workflows.get("radar-etiqueta-privado.yml", {})
+    gatilhos_etiqueta = etiqueta.get(
+        "on", etiqueta.get(True, {})) or {}
+    if set(gatilhos_etiqueta) != {"workflow_dispatch"}:
+        falhar("radar-etiqueta-privado.yml",
+               "pacote privado da Etiqueta deve ter apenas disparo manual")
+    job_etiqueta = etiqueta.get("jobs", {}).get("materializar", {})
+    if job_etiqueta.get("environment") != "market-intelligence-lab":
+        falhar("radar-etiqueta-privado.yml",
+               "materializador saiu do ambiente isolado do laboratorio")
+    passos_etiqueta = job_etiqueta.get("steps", [])
+    execucoes_etiqueta = "\n".join(
+        str(p.get("run", "")) for p in passos_etiqueta)
+    if ("materializar_etiqueta_radar.py" not in execucoes_etiqueta or
+            "--supabase" not in execucoes_etiqueta):
+        falhar("radar-etiqueta-privado.yml",
+               "workflow nao materializa a RPC privada da Etiqueta")
+    artefatos_etiqueta = [
+        p for p in passos_etiqueta
+        if str(p.get("uses", "")).startswith("actions/upload-artifact@")]
+    if (len(artefatos_etiqueta) != 1 or
+            artefatos_etiqueta[0].get("with", {}).get(
+                "retention-days") != 7 or
+            "success()" not in str(artefatos_etiqueta[0].get("if", ""))):
+        falhar("radar-etiqueta-privado.yml",
+               "artefato privado deve existir por sete dias e so em sucesso")
+    limpezas_etiqueta = [
+        p for p in passos_etiqueta
+        if "rm -f" in str(p.get("run", "")) and
+        "radar-etiqueta-facts.json" in str(p.get("run", ""))]
+    if (len(limpezas_etiqueta) != 2 or
+            "always()" not in str(limpezas_etiqueta[-1].get("if", ""))):
+        falhar("radar-etiqueta-privado.yml",
+               "runner persistente nao limpa o pacote antes e depois da run")
+    proibidos_etiqueta = ("openai", "schedule", "pipeline-diario.yml",
+                          "insert into", "update public.", "delete from")
+    for proibido in proibidos_etiqueta:
+        if proibido in execucoes_etiqueta.lower():
+            falhar("radar-etiqueta-privado.yml",
+                   "workflow privado contem operacao proibida `{}`".format(
+                       proibido))
+
     jobs = pipeline.get("jobs", {})
     cadeia = {
         "varejo-vtex": (None, individuais["coleta.yml"]),

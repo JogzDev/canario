@@ -132,6 +132,22 @@ Pinterest, Guardian, YouTube e Google Trends permanecem `yellow` ou `red` até o
 registro conter autorização suficiente. A existência de uma API ou de uma
 página pública não promove a fonte.
 
+### Primeiro pacote factual da Etiqueta
+
+O materializador inicial lê, por uma RPC privada e paginada, somente peças do
+segmento brasileiro que estejam ofertáveis e tenham sido avistadas nos últimos
+sete dias. Usa a etiqueta de composição mais recente ainda presente na janela
+de 21 dias dos snapshots. Descrição de marketing, imagem, grade, preço e URL não
+entram no pacote.
+
+O texto integral existe apenas em memória durante o parse. O artefato guarda o
+hash da etiqueta, trechos-fonte curtos, fatos `candidate_fact`, abstensões,
+avisos e denominadores explícitos. Share de uma faceta usa somente produtos em
+que aquela dimensão foi observável; a cobertura contra todos os elegíveis fica
+separada. O resultado é `private_candidate_only`, requer revisão humana e não
+insere conceito, evidência ou leitura. O workflow permanece manual e conserva o
+artefato por sete dias durante o benchmark.
+
 ## Pautas do briefing
 
 O piloto observa oito famílias, sem abrir a taxonomia pública automaticamente:
@@ -181,7 +197,8 @@ Uma leitura só pode ser publicada quando:
 
 1. contrato, registro de fontes e fundação de evidências;
 2. parser determinístico da Etiqueta e conjunto de regressão;
-3. materialização privada do primeiro pacote factual;
+3. materialização privada do primeiro pacote factual — implementada; execução
+   real depende da aplicação deliberada da RPC A52;
 4. Scout privado com allowlist, sem cron e sem publicação;
 5. tela/fila de revisão e primeiro briefing cego;
 6. benchmark de quatro semanas e ajuste de taxonomia;

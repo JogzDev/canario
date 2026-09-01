@@ -33,6 +33,8 @@ radar-scout.json
 radar-scout-*.json
 radar-scout-receipt.json
 radar-scout-receipt-*.json
+radar-etiqueta-facts.json
+radar-etiqueta-facts-*.json
 
 # Xcode (alem do que ja estava acima)
 *.xcuserdatad/
