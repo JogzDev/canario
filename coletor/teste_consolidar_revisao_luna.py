@@ -5,6 +5,7 @@ import csv
 import json
 from pathlib import Path
 import tempfile
+import copy
 
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -12,20 +13,29 @@ CAMINHO = RAIZ / "ferramentas" / "consolidar_revisao_luna.py"
 SPEC = importlib.util.spec_from_file_location("consolidar_revisao_luna", CAMINHO)
 MODULO = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULO)
+BATCH_ID = "a" * 64
+IMAGE_SHA = "b" * 64
 
 
 def resposta(sample_id, categoria="camisa", cor="branco_cru", imagem=None):
+    estruturas = {
+        "camisa": "upper_shirt_construction",
+        "blusa_top": "upper_other",
+        "not_visible": "target_not_determinable",
+    }
+    ambiguo = categoria == "not_visible"
     return {
         "sample_id": sample_id,
         # O gabarito carrega a IMAGEM desde 19/08: o sample_id e posicional e
         # muda entre execucoes, e casar por ele comparava a resposta humana de
         # uma foto com a leitura da Luna de outra.
         "imagem": imagem or "{}.jpg".format(sample_id),
-        "target_clarity": "clear",
+        "image_sha256": IMAGE_SHA,
+        "target_clarity": "ambiguous_target" if ambiguo else "clear",
         "category": categoria,
-        "structure": "upper_shirt_construction",
-        "primary_color": cor,
-        "secondary_colors": ["vermelho_rosa", "azul"],
+        "structure": estruturas[categoria],
+        "primary_color": "not_visible" if ambiguo else cor,
+        "secondary_colors": [] if ambiguo else ["vermelho_rosa", "azul"],
         "notes": "",
         "reviewed_at": "2026-08-11T00:00:00Z",
     }
@@ -33,8 +43,11 @@ def resposta(sample_id, categoria="camisa", cor="branco_cru", imagem=None):
 
 def escrever_revisao(caminho, nome, respostas):
     caminho.write_text(json.dumps({
+        "contract": MODULO.CONTRATO_REVISAO,
+        "batch_id": BATCH_ID,
         "rubric_version": "categoria-cor-v2",
         "reviewer": nome,
+        "exported_at": "2026-08-11T01:00:00Z",
         "answers": respostas,
     }), encoding="utf-8")
 
@@ -56,7 +69,12 @@ def testar_comparacao_independente():
         assert comparacao["agreements"]["secondary_colors"] == 2
         assert comparacao["disagreements"] == [{
             "sample_id": "S02",
-            "fields": {"category": {"A": "camisa", "B": "blusa_top"}},
+            "fields": {
+                "category": {"A": "camisa", "B": "blusa_top"},
+                "structure": {
+                    "A": "upper_shirt_construction", "B": "upper_other",
+                },
+            },
         }]
 
 
@@ -65,19 +83,25 @@ def testar_csv_preserva_comentario_e_normaliza_cores():
         caminho = Path(temporaria) / "jp.csv"
         with caminho.open("w", encoding="utf-8", newline="") as arquivo:
             escritor = csv.DictWriter(arquivo, fieldnames=[
-                "rubric_version", "reviewer", "sample_id", "target_clarity",
-                "category", "structure", "primary_color", "secondary_colors",
-                "notes", "reviewed_at",
+                "contract", "batch_id", "rubric_version", "reviewer",
+                "exported_at", "sample_id", "imagem", "image_sha256",
+                "target_clarity", "category", "structure", "primary_color",
+                "secondary_colors", "notes", "reviewed_at",
             ])
             escritor.writeheader()
             escritor.writerow({
+                "contract": MODULO.CONTRATO_REVISAO,
+                "batch_id": BATCH_ID,
                 "rubric_version": "categoria-cor-v2",
                 "reviewer": "JP",
+                "exported_at": "2026-08-12T01:00:00Z",
                 "sample_id": "S14",
-                "target_clarity": "ambiguous_target",
-                "category": "not_visible",
-                "structure": "target_not_determinable",
-                "primary_color": "not_visible",
+                "imagem": "14.jpg",
+                "image_sha256": IMAGE_SHA,
+                "target_clarity": "clear",
+                "category": "camisa",
+                "structure": "upper_shirt_construction",
+                "primary_color": "preto",
                 "secondary_colors": "branco_cru|verde",
                 "notes": "O verde pertence ao fundo; a peça parece um conjunto.",
                 "reviewed_at": "2026-08-12T00:00:00Z",
@@ -90,13 +114,93 @@ def testar_csv_preserva_comentario_e_normaliza_cores():
             "O verde pertence ao fundo; a peça parece um conjunto.")
 
 
+def testar_revisao_nova_falha_fechada_em_campos_e_semantica():
+    base = {
+        "contract": MODULO.CONTRATO_REVISAO,
+        "batch_id": BATCH_ID,
+        "rubric_version": "categoria-cor-v2",
+        "reviewer": "R1",
+        "exported_at": "2026-08-11T01:00:00Z",
+        "answers": [resposta("S01")],
+    }
+
+    def alterar_reviewer(v):
+        v["reviewer"] = ""
+
+    def alterar_rubrica(v):
+        v["rubric_version"] = "categoria-cor-v999"
+
+    def alterar_enum(v):
+        v["answers"][0]["target_clarity"] = "talvez"
+
+    def alterar_categoria(v):
+        v["answers"][0]["category"] = "blusa_top"
+
+    def alterar_cores(v):
+        v["answers"][0]["secondary_colors"] = ["azul", "azul"]
+
+    def alterar_timestamp(v):
+        v["answers"][0]["reviewed_at"] = "2026-08-11T00:00:00"
+
+    def alterar_cronologia(v):
+        v["answers"][0]["reviewed_at"] = "2026-08-11T02:00:00Z"
+
+    def adicionar_campo(v):
+        v["answers"][0]["surpresa"] = True
+
+    with tempfile.TemporaryDirectory() as temporaria:
+        pasta = Path(temporaria)
+        for indice, mutacao in enumerate((
+                alterar_reviewer, alterar_rubrica, alterar_enum,
+                alterar_categoria, alterar_cores, alterar_timestamp,
+                alterar_cronologia, adicionar_campo)):
+            dados = copy.deepcopy(base)
+            mutacao(dados)
+            caminho = pasta / "invalida-{}.json".format(indice)
+            caminho.write_text(json.dumps(dados), encoding="utf-8")
+            try:
+                MODULO.carregar_revisao(caminho)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("revisao malformada foi aceita: {}".format(
+                    mutacao.__name__))
+
+
+def testar_comparacao_exige_lote_e_revisores_distintos():
+    primeira = {
+        "reviewer": "R1", "batch_id": BATCH_ID,
+        "rubric_version": "categoria-cor-v2",
+        "answers": {"S01": resposta("S01")},
+    }
+    repetida = copy.deepcopy(primeira)
+    try:
+        MODULO.comparar_revisoes([primeira, repetida])
+    except ValueError as erro:
+        assert "distinto" in str(erro).lower()
+    else:
+        raise AssertionError("mesmo revisor contou duas vezes")
+
+    segunda = copy.deepcopy(primeira)
+    segunda["reviewer"] = "R2"
+    segunda["batch_id"] = "c" * 64
+    try:
+        MODULO.comparar_revisoes([primeira, segunda])
+    except ValueError as erro:
+        assert "batch_id" in str(erro)
+    else:
+        raise AssertionError("lotes diferentes foram comparados")
+
+
 def testar_adjudicacao_parcial_fecha_ouro():
     revisao_a = {
-        "reviewer": "A", "rubric_version": "categoria-cor-v2",
+        "reviewer": "A", "batch_id": BATCH_ID,
+        "rubric_version": "categoria-cor-v2",
         "answers": {"S01": resposta("S01"), "S02": resposta("S02")},
     }
     revisao_b = {
-        "reviewer": "B", "rubric_version": "categoria-cor-v2",
+        "reviewer": "B", "batch_id": BATCH_ID,
+        "rubric_version": "categoria-cor-v2",
         "answers": {
             "S01": resposta("S01"),
             "S02": resposta("S02", categoria="blusa_top"),
@@ -108,11 +212,14 @@ def testar_adjudicacao_parcial_fecha_ouro():
     voto["notes"] = "Blusa residual, sem construção de camisaria."
     voto["adjudication_basis"] = "A descrição visual resolve o clique."
     adjudicacao = {
-        "reviewer": "JP", "rubric_version": "categoria-cor-v2",
+        "reviewer": "JP", "batch_id": BATCH_ID,
+        "rubric_version": "categoria-cor-v2",
         "answers": {"S02": voto},
     }
     ouro = MODULO.adjudicar_revisoes(
         [revisao_a, revisao_b], adjudicacao)
+    assert ouro["contract"] == MODULO.CONTRATO_GABARITO
+    assert ouro["batch_id"] == BATCH_ID
     assert len(ouro["answers"]) == 2
     assert ouro["answers"][0]["category"] == "camisa"
     assert ouro["answers"][1]["category"] == "blusa_top"
@@ -121,6 +228,22 @@ def testar_adjudicacao_parcial_fecha_ouro():
         "Blusa residual, sem construção de camisaria.")
     assert ouro["answers"][1]["adjudication_basis"] == (
         "A descrição visual resolve o clique.")
+    with tempfile.TemporaryDirectory() as temporaria:
+        caminho_ouro = Path(temporaria) / "ouro.json"
+        caminho_ouro.write_text(json.dumps(ouro), encoding="utf-8")
+        recarregado = MODULO.carregar_revisao(caminho_ouro)
+        assert recarregado["batch_id"] == BATCH_ID
+        assert set(recarregado["answers"]) == {"S01", "S02"}
+
+    adjudicacao_repetida = copy.deepcopy(adjudicacao)
+    adjudicacao_repetida["reviewer"] = "A"
+    try:
+        MODULO.adjudicar_revisoes(
+            [revisao_a, revisao_b], adjudicacao_repetida)
+    except ValueError as erro:
+        assert "terceiro" in str(erro).lower()
+    else:
+        raise AssertionError("um dos revisores foi aceito como adjudicador")
 
 
 def montar_avaliacao(acertos_categoria=20, acertos_cor=20):
@@ -376,6 +499,8 @@ def main():
     testes = [
         testar_comparacao_independente,
         testar_csv_preserva_comentario_e_normaliza_cores,
+        testar_revisao_nova_falha_fechada_em_campos_e_semantica,
+        testar_comparacao_exige_lote_e_revisores_distintos,
         testar_adjudicacao_parcial_fecha_ouro,
         testar_portao_exige_categoria_e_cor,
         testar_cor_primaria_empatada_aceita_as_duas_sem_esconder_a_matriz,

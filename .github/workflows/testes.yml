@@ -96,6 +96,8 @@ jobs:
         run: "$PY coletor/teste_etiqueta_radar.py"
       - name: Pacote factual privado da Etiqueta (sem rede)
         run: "$PY coletor/teste_materializar_etiqueta_radar.py"
+      - name: Revisão humana privada da Etiqueta (sem rede)
+        run: "$PY coletor/teste_revisao_etiqueta_radar.py"
       - name: Contrato do scout privado de mercado (sem rede)
         run: "$PY coletor/teste_pesquisar_radar_luna.py"
       - name: Contrato da Edge Function Luna (sem rede)

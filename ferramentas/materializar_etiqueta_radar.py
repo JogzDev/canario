@@ -30,8 +30,8 @@ import supabase_rest  # noqa: E402
 
 
 CONTRATO_ENTRADA = "datadrobe_label_source_rows_v1"
-CONTRATO_SAIDA = "datadrobe_label_fact_pack_v1"
-VERSAO_MATERIALIZADOR = "etiqueta-materializer-v1"
+CONTRATO_SAIDA = "datadrobe_label_fact_pack_v2"
+VERSAO_MATERIALIZADOR = "etiqueta-materializer-v2"
 FONTE_ID = "datadrobe_curadoria_interna"
 SEGMENTO = "feminino_casual_br"
 FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
@@ -418,12 +418,33 @@ def materializar(linhas, data_corte, contrato_fonte, gerado_em=None):
             ),
         }
 
+    population = {
+        "segment": SEGMENTO,
+        "eligibility": (
+            "currently offerable and observed no more than 7 days before "
+            "the cutoff"
+        ),
+        "eligible_products": len(linhas),
+        "products_with_source_label": com_etiqueta,
+        "products_without_source_label": len(linhas) - com_etiqueta,
+        "products_with_candidate_fact": com_fato,
+        "products_globally_abstained": abstidos_globalmente,
+        "abstention_reasons": dict(sorted(abstencoes.items())),
+        "warning_counts": dict(sorted(avisos.items())),
+        "dimensions": dimensoes,
+    }
+    payload = {
+        "population": population,
+        "items": sorted(itens, key=lambda item: item["product_id"]),
+        "aggregates": agregados_publicos,
+    }
     identidade = {
         "contract": CONTRATO_SAIDA,
         "materializer_version": VERSAO_MATERIALIZADOR,
         "parser_version": VERSAO_PARSER,
         "cutoff_date": data_corte.isoformat(),
         "input_sha256": entrada_sha,
+        "payload_sha256": _sha256(_json_canonico(payload)),
         "source_contract_sha256": contrato_fonte[
             "source_contract_sha256"],
         "source_registry_sha256": contrato_fonte[
@@ -445,23 +466,7 @@ def materializar(linhas, data_corte, contrato_fonte, gerado_em=None):
         "materializer_sha256": _sha256(Path(__file__).read_bytes()),
         "parser_sha256": _sha256(
             (RAIZ / "coletor" / "etiqueta_radar.py").read_bytes()),
-        "population": {
-            "segment": SEGMENTO,
-            "eligibility": (
-                "currently offerable and observed no more than 7 days before "
-                "the cutoff"
-            ),
-            "eligible_products": len(linhas),
-            "products_with_source_label": com_etiqueta,
-            "products_without_source_label": len(linhas) - com_etiqueta,
-            "products_with_candidate_fact": com_fato,
-            "products_globally_abstained": abstidos_globalmente,
-            "abstention_reasons": dict(sorted(abstencoes.items())),
-            "warning_counts": dict(sorted(avisos.items())),
-            "dimensions": dimensoes,
-        },
-        "items": sorted(itens, key=lambda item: item["product_id"]),
-        "aggregates": agregados_publicos,
+        **payload,
     }
     return pacote
 

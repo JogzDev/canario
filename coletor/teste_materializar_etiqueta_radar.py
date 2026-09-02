@@ -68,6 +68,12 @@ class PacoteTests(unittest.TestCase):
         self.assertEqual(pacote["source_id"], materializador.FONTE_ID)
         self.assertRegex(pacote["package_id"], r"^[0-9a-f]{64}$")
         self.assertRegex(pacote["input_sha256"], r"^[0-9a-f]{64}$")
+        self.assertRegex(pacote["payload_sha256"], r"^[0-9a-f]{64}$")
+        payload = {chave: pacote[chave] for chave in (
+            "population", "items", "aggregates")}
+        self.assertEqual(
+            pacote["payload_sha256"],
+            materializador._sha256(materializador._json_canonico(payload)))
         self.assertRegex(pacote["authorization_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(len(pacote["items"]), 2)
         self.assertNotIn(

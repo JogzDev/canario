@@ -216,18 +216,28 @@ def checar_orquestracao(workflows):
     execucoes_etiqueta = "\n".join(
         str(p.get("run", "")) for p in passos_etiqueta)
     if ("materializar_etiqueta_radar.py" not in execucoes_etiqueta or
-            "--supabase" not in execucoes_etiqueta):
+            "--supabase" not in execucoes_etiqueta or
+            "preparar_revisao_etiqueta_radar.py" not in execucoes_etiqueta or
+            "teste_revisao_etiqueta_radar.py" not in execucoes_etiqueta):
         falhar("radar-etiqueta-privado.yml",
-               "workflow nao materializa a RPC privada da Etiqueta")
+               "workflow nao materializa e prepara a revisao privada")
     artefatos_etiqueta = [
         p for p in passos_etiqueta
         if str(p.get("uses", "")).startswith("actions/upload-artifact@")]
-    if (len(artefatos_etiqueta) != 1 or
-            artefatos_etiqueta[0].get("with", {}).get(
-                "retention-days") != 7 or
-            "success()" not in str(artefatos_etiqueta[0].get("if", ""))):
+    caminhos_artefatos_etiqueta = [
+        str(passo.get("with", {}).get("path", ""))
+        for passo in artefatos_etiqueta
+    ]
+    if (len(artefatos_etiqueta) != 2 or
+            set(caminhos_artefatos_etiqueta) != {
+                "${{ runner.temp }}/radar-etiqueta-facts.json",
+                "${{ runner.temp }}/radar-etiqueta-revisao.html",
+            } or
+            any(passo.get("with", {}).get("retention-days") != 7
+                or "success()" not in str(passo.get("if", ""))
+                for passo in artefatos_etiqueta)):
         falhar("radar-etiqueta-privado.yml",
-               "artefato privado deve existir por sete dias e so em sucesso")
+               "pacote e fila cegos devem ser artefatos separados por sete dias")
     limpezas_etiqueta = [
         p for p in passos_etiqueta
         if "rm -f" in str(p.get("run", "")) and
@@ -236,6 +246,10 @@ def checar_orquestracao(workflows):
             "always()" not in str(limpezas_etiqueta[-1].get("if", ""))):
         falhar("radar-etiqueta-privado.yml",
                "runner persistente nao limpa o pacote antes e depois da run")
+    if any("radar-etiqueta-revisao.html" not in str(p.get("run", ""))
+           for p in limpezas_etiqueta):
+        falhar("radar-etiqueta-privado.yml",
+               "runner persistente nao limpa a fila cega antes e depois")
     proibidos_etiqueta = ("openai", "schedule", "pipeline-diario.yml",
                           "insert into", "update public.", "delete from")
     for proibido in proibidos_etiqueta:

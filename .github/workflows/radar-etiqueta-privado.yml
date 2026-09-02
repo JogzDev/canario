@@ -23,10 +23,14 @@ jobs:
       - uses: ./.github/actions/python-mac
 
       - name: Limpar artefato anterior do runner persistente
-        run: rm -f "$RUNNER_TEMP/radar-etiqueta-facts.json"
+        run: |
+          rm -f "$RUNNER_TEMP/radar-etiqueta-facts.json"
+          rm -f "$RUNNER_TEMP/radar-etiqueta-revisao.html"
 
       - name: Conferir contrato sem rede
-        run: "$PY coletor/teste_materializar_etiqueta_radar.py"
+        run: |
+          "$PY" coletor/teste_materializar_etiqueta_radar.py
+          "$PY" coletor/teste_revisao_etiqueta_radar.py
 
       - name: Materializar fatos candidatos sem publicar
         env:
@@ -38,20 +42,37 @@ jobs:
             --supabase \
             --saida "$RUNNER_TEMP/radar-etiqueta-facts.json"
 
+      - name: Criar fila cega autocontida sem publicar
+        run: |
+          "$PY" ferramentas/preparar_revisao_etiqueta_radar.py \
+            --pacote "$RUNNER_TEMP/radar-etiqueta-facts.json" \
+            --saida "$RUNNER_TEMP/radar-etiqueta-revisao.html"
+
       - name: Resumir cobertura e abstencao
         if: success()
         run: |
-          "$PY" -c 'import json, os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/radar-etiqueta-facts.json")); x=p["population"]; print("## Etiqueta privada\n\n- elegíveis: {}\n- com etiqueta-fonte: {}\n- com fato candidato: {}\n- abstidos globalmente: {}\n- pacote: `{}`\n\nNenhum conceito, evidência ou briefing foi publicado.".format(x["eligible_products"], x["products_with_source_label"], x["products_with_candidate_fact"], x["products_globally_abstained"], p["package_id"]))' >> "$GITHUB_STEP_SUMMARY"
+          "$PY" -c 'import json, os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/radar-etiqueta-facts.json")); x=p["population"]; print("## Etiqueta privada\n\n- elegíveis: {}\n- com etiqueta-fonte: {}\n- com fato candidato: {}\n- abstidos globalmente: {}\n- pacote: `{}`\n- payload: `{}`\n\nNenhum conceito, evidência ou briefing foi publicado.".format(x["eligible_products"], x["products_with_source_label"], x["products_with_candidate_fact"], x["products_globally_abstained"], p["package_id"], p["payload_sha256"]))' >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Guardar pacote para revisão humana
+      - name: Guardar somente a fila cega para distribuição
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: radar-etiqueta-facts-${{ github.run_id }}
+          name: radar-etiqueta-revisao-cega-${{ github.run_id }}
+          path: ${{ runner.temp }}/radar-etiqueta-revisao.html
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Guardar pacote factual somente para o coordenador
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: radar-etiqueta-coordenador-${{ github.run_id }}
           path: ${{ runner.temp }}/radar-etiqueta-facts.json
           if-no-files-found: error
           retention-days: 7
 
       - name: Remover artefato local do runner persistente
         if: always()
-        run: rm -f "$RUNNER_TEMP/radar-etiqueta-facts.json"
+        run: |
+          rm -f "$RUNNER_TEMP/radar-etiqueta-facts.json"
+          rm -f "$RUNNER_TEMP/radar-etiqueta-revisao.html"

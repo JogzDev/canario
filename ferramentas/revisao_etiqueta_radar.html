@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>DataDrobe — revisão cega da Etiqueta</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --navy: #172b4d; --blue: #2f6fa3; --sky: #dff3f6;
+      --paper: #fff; --ink: #17233b; --muted: #5d6b7c;
+      --line: #ccd9df; --danger: #a32f45; --success: #16724a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #14243a; --ink: #f3f8fa; --muted: #b8c7d2;
+        --line: #3d566b; --sky: #1d384c; --navy: #bcebf1;
+        --blue: #84c6ee; --danger: #ff9cad; --success: #70d5a5;
+      }
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: color-mix(in srgb, var(--sky) 62%, var(--paper)); color: var(--ink); }
+    main { width: min(1040px, calc(100% - 28px)); margin: 26px auto 52px; }
+    h1, h2, p { margin-top: 0; }
+    h1 { color: var(--navy); margin-bottom: 8px; }
+    p { color: var(--muted); line-height: 1.5; }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; }
+    .toolbar { padding: 16px; display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: end; }
+    label { display: grid; gap: 6px; font-weight: 650; }
+    input, select, textarea, button { font: inherit; }
+    input, select, textarea { width: 100%; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+    textarea { resize: vertical; min-height: 74px; }
+    button { color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+    button.primary { background: var(--navy); border-color: var(--navy); color: var(--paper); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .progress { margin: 18px 0; display: grid; gap: 8px; }
+    .progress-head { display: flex; justify-content: space-between; color: var(--muted); gap: 16px; }
+    progress { width: 100%; height: 12px; accent-color: var(--blue); }
+    .nav { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; }
+    .nav button { padding: 7px 2px; font-size: .76rem; }
+    .nav button.done { background: var(--sky); border-color: var(--blue); }
+    .nav button.active { outline: 3px solid var(--blue); outline-offset: 1px; }
+    .review { overflow: hidden; }
+    .review-head { padding: 16px 18px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); gap: 12px; }
+    .review-body { padding: 20px; display: grid; gap: 18px; }
+    .fact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .fact { background: var(--sky); border-radius: 12px; padding: 12px; min-width: 0; }
+    .fact span { color: var(--muted); display: block; font-size: .8rem; margin-bottom: 4px; }
+    .fact strong, .fact code { overflow-wrap: anywhere; }
+    blockquote { margin: 0; padding: 18px; border-left: 5px solid var(--blue); background: color-mix(in srgb, var(--sky) 55%, var(--paper)); border-radius: 6px 14px 14px 6px; font-size: 1.05rem; line-height: 1.55; }
+    fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 13px; margin: 0; }
+    legend { font-weight: 700; padding: 0 6px; }
+    .choices { display: grid; gap: 9px; }
+    .choices label { display: grid; grid-template-columns: auto 1fr; align-items: start; font-weight: 500; }
+    .choices input { width: auto; margin-top: 3px; }
+    .conditional { display: grid; gap: 12px; }
+    .hint { color: var(--muted); font-size: .86rem; line-height: 1.4; }
+    .error { color: var(--danger); min-height: 1.3em; font-weight: 650; }
+    .actions { border-top: 1px solid var(--line); padding: 16px 18px; display: flex; justify-content: space-between; gap: 10px; }
+    details { margin-top: 16px; padding: 14px 16px; }
+    summary { cursor: pointer; font-weight: 700; }
+    #rubric { padding-top: 12px; display: grid; gap: 8px; color: var(--muted); }
+    .empty { text-align: center; padding: 52px 20px; color: var(--muted); }
+    @media (max-width: 760px) {
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .toolbar label { grid-column: 1 / -1; }
+      .nav { grid-template-columns: repeat(8, 1fr); }
+      .fact-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      main { width: min(100% - 16px, 1040px); margin-top: 12px; }
+      .toolbar { grid-template-columns: 1fr; }
+      .nav { grid-template-columns: repeat(6, 1fr); }
+      .actions { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Revisão cega da Etiqueta</h1>
+    <p>Julgue apenas se cada trecho sustenta o fato exibido. Produtos, marcas, agregados, confiança do parser e decisões de outras pessoas não estão neste arquivo.</p>
+    <section class="card toolbar">
+      <label>Alias do revisor
+        <input id="reviewer" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Ex.: R1, R2 ou A1">
+      </label>
+      <button id="clear" type="button">Limpar rascunho</button>
+      <button id="export" class="primary" type="button">Exportar submissão</button>
+    </section>
+    <div class="progress">
+      <div class="progress-head"><span id="progress-text">0 concluídos</span><span id="save-state">Informe um alias</span></div>
+      <progress id="progress" value="0" max="1"></progress>
+      <nav id="subject-nav" class="nav" aria-label="Fatos candidatos"></nav>
+    </div>
+  </header>
+
+  <section id="review" class="card review">
+    <div class="review-head"><strong id="subject-title">E000001</strong><span class="hint">ordem cega · ID estável no export</span></div>
+    <div class="review-body">
+      <div class="fact-grid">
+        <div class="fact"><span>Família</span><strong id="family"></strong></div>
+        <div class="fact"><span>Faceta</span><strong id="facet"></strong></div>
+        <div class="fact"><span>Valor candidato</span><code id="value"></code></div>
+      </div>
+      <div>
+        <div class="hint">Trecho-fonte</div>
+        <blockquote id="excerpt"></blockquote>
+      </div>
+      <fieldset>
+        <legend>O trecho sustenta exatamente o fato?</legend>
+        <div id="decisions" class="choices"></div>
+      </fieldset>
+      <div id="conditional" class="conditional" hidden>
+        <label>Motivo controlado
+          <select id="reason"></select>
+        </label>
+        <label>Nota <span id="note-requirement" class="hint">opcional</span>
+          <textarea id="note" maxlength="1000" placeholder="Explique apenas o que o trecho permite concluir."></textarea>
+        </label>
+      </div>
+      <div id="error" class="error" role="alert"></div>
+    </div>
+    <div class="actions">
+      <button id="previous" type="button">← Anterior</button>
+      <button id="save-next" class="primary" type="button">Salvar e avançar →</button>
+      <button id="next" type="button">Próximo →</button>
+    </div>
+  </section>
+
+  <details class="card">
+    <summary>Rubrica integral e proveniência</summary>
+    <div id="rubric"></div>
+  </details>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const batch = __DATADROBE_LABEL_REVIEW_BATCH_JSON__;
+  const aliasPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
+  const decisionLabels = {
+    supported_candidate: "Sim — sustenta exatamente o fato candidato",
+    rejected_candidate: "Não — o fato candidato está incorreto",
+    insufficient_context: "Contexto insuficiente — não é seguro decidir"
+  };
+  const reasons = {
+    rejected_candidate: [
+      ["", "Selecione…"], ["wrong_family", "Família incorreta"],
+      ["wrong_facet", "Faceta incorreta"], ["wrong_value", "Valor incorreto"],
+      ["not_supported_by_excerpt", "O trecho não sustenta o fato"],
+      ["other", "Outro motivo"]
+    ],
+    insufficient_context: [
+      ["", "Selecione…"], ["excerpt_ambiguous", "Trecho ambíguo"],
+      ["excerpt_incomplete", "Trecho incompleto"], ["other", "Outro motivo"]
+    ]
+  };
+  const ids = ["reviewer", "clear", "export", "progress-text", "progress", "save-state",
+    "subject-nav", "review", "subject-title", "family", "facet", "value", "excerpt",
+    "decisions", "conditional", "reason", "note-requirement", "note", "error",
+    "previous", "save-next", "next", "rubric"];
+  const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+  let index = 0;
+  let reviewer = "";
+  let answers = {};
+  const sessionDrafts = new Map();
+  let persistentStorage = true;
+
+  function key(alias) {
+    return `datadrobe:label-review:${batch.batch_id}:${alias.toLowerCase()}`;
+  }
+  function storageGet(storageKey) {
+    try { return window.localStorage.getItem(storageKey); }
+    catch { persistentStorage = false; return null; }
+  }
+  function storageSet(storageKey, value) {
+    try { window.localStorage.setItem(storageKey, value); return true; }
+    catch { persistentStorage = false; return false; }
+  }
+  function storageRemove(storageKey) {
+    try { window.localStorage.removeItem(storageKey); return true; }
+    catch { persistentStorage = false; return false; }
+  }
+  function plainObject(value) {
+    return Boolean(value && typeof value === "object" && !Array.isArray(value));
+  }
+  function blank(subjectId) {
+    return {subject_id: subjectId, decision: "", reason_code: null, note: "", reviewed_at: ""};
+  }
+  function normalizeNote(value) {
+    return value.normalize("NFC").replace(/\s+/gu, " ").replace(/\p{C}/gu, "").trim();
+  }
+  function cleanDraft(value) {
+    const cleaned = {};
+    if (!plainObject(value)) return cleaned;
+    batch.subjects.forEach(subject => {
+      const answer = value[subject.subject_id];
+      if (!plainObject(answer) || answer.subject_id !== subject.subject_id ||
+          typeof answer.decision !== "string" || !Object.hasOwn(decisionLabels, answer.decision) ||
+          typeof answer.note !== "string" || answer.note.length > 1000 ||
+          typeof answer.reviewed_at !== "string" || !Number.isFinite(Date.parse(answer.reviewed_at))) return;
+      const allowed = reasons[answer.decision];
+      if (answer.decision === "supported_candidate" ? answer.reason_code !== null || answer.note !== "" :
+          !allowed.some(([code]) => code === answer.reason_code)) return;
+      // Rebuild the envelope: browser storage cannot add exported fields or
+      // override the identity of a subject supplied by this batch.
+      cleaned[subject.subject_id] = {
+        subject_id: subject.subject_id, decision: answer.decision,
+        reason_code: answer.reason_code, note: normalizeNote(answer.note),
+        reviewed_at: answer.reviewed_at
+      };
+    });
+    return cleaned;
+  }
+  function current() {
+    const subject = batch.subjects[index];
+    if (!subject) return null;
+    if (!plainObject(answers[subject.subject_id])) answers[subject.subject_id] = blank(subject.subject_id);
+    return answers[subject.subject_id];
+  }
+  function valid(answer) {
+    if (!plainObject(answer) || typeof answer.note !== "string" ||
+        answer.note.length > 1000 || normalizeNote(answer.note) !== answer.note ||
+        typeof answer.reviewed_at !== "string" || !Number.isFinite(Date.parse(answer.reviewed_at)) ||
+        Date.parse(answer.reviewed_at) > Date.now()) return false;
+    if (answer.decision === "supported_candidate") return answer.reason_code === null && !answer.note;
+    const allowed = (reasons[answer.decision] || []).map(item => item[0]).filter(Boolean);
+    return allowed.includes(answer.reason_code) && (answer.reason_code !== "other" || Boolean(answer.note.trim()));
+  }
+  function save() {
+    if (reviewer && aliasPattern.test(reviewer)) {
+      sessionDrafts.set(reviewer.toLowerCase(), answers);
+      storageSet(key(reviewer), JSON.stringify(answers));
+      el["save-state"].textContent = persistentStorage ?
+        "Rascunho salvo neste navegador" : "Rascunho apenas nesta sessão";
+    } else {
+      el["save-state"].textContent = "Use um alias: letras, números, ponto, _ ou -";
+    }
+  }
+  function load(alias) {
+    const next = alias.trim();
+    if (reviewer && next.toLowerCase() === reviewer.toLowerCase()) { render(); return; }
+    const unassigned = reviewer ? {} : answers;
+    if (aliasPattern.test(reviewer)) sessionDrafts.set(reviewer.toLowerCase(), answers);
+    reviewer = next;
+    answers = {};
+    if (aliasPattern.test(reviewer)) {
+      if (sessionDrafts.has(reviewer.toLowerCase())) {
+        answers = sessionDrafts.get(reviewer.toLowerCase());
+      } else {
+        try {
+          const stored = storageGet(key(reviewer));
+          answers = stored === null ? unassigned : cleanDraft(JSON.parse(stored));
+        } catch { answers = {}; }
+      }
+      save();
+    }
+    render();
+  }
+  function setOptions(select, options, selected) {
+    select.replaceChildren();
+    options.forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value; option.textContent = label; option.selected = value === selected;
+      select.append(option);
+    });
+  }
+  function renderDecisionControls(answer) {
+    el.decisions.replaceChildren();
+    Object.entries(decisionLabels).forEach(([value, label]) => {
+      const wrapper = document.createElement("label");
+      const radio = document.createElement("input");
+      const text = document.createElement("span");
+      radio.type = "radio"; radio.name = "decision"; radio.value = value;
+      radio.checked = answer.decision === value; text.textContent = label;
+      radio.addEventListener("change", () => {
+        answer.decision = value;
+        answer.reason_code = value === "supported_candidate" ? null : "";
+        answer.note = "";
+        answer.reviewed_at = new Date().toISOString();
+        save(); render();
+      });
+      wrapper.append(radio, text); el.decisions.append(wrapper);
+    });
+  }
+  function renderNav() {
+    el["subject-nav"].replaceChildren();
+    batch.subjects.forEach((subject, position) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `E${String(position + 1).padStart(6, "0")}`;
+      if (valid(answers[subject.subject_id])) button.classList.add("done");
+      if (position === index) button.classList.add("active");
+      button.addEventListener("click", () => { index = position; render(); });
+      el["subject-nav"].append(button);
+    });
+  }
+  function renderRubric() {
+    el.rubric.replaceChildren();
+    const question = document.createElement("strong"); question.textContent = batch.rubric.question;
+    el.rubric.append(question);
+    batch.rubric.rules.forEach(rule => {
+      const row = document.createElement("div"); row.textContent = `• ${rule}`; el.rubric.append(row);
+    });
+    const provenance = document.createElement("code");
+    provenance.textContent = `lote ${batch.batch_id} · rubrica ${batch.rubric_sha256}`;
+    el.rubric.append(provenance);
+  }
+  function render() {
+    const done = batch.subjects.filter(subject => valid(answers[subject.subject_id])).length;
+    el.progress.max = Math.max(batch.subject_count, 1); el.progress.value = done;
+    el["progress-text"].textContent = `${done} de ${batch.subject_count} concluídos`;
+    renderNav(); renderRubric();
+    el.previous.disabled = index === 0 || batch.subject_count === 0;
+    el.next.disabled = index >= batch.subject_count - 1 || batch.subject_count === 0;
+    el["save-next"].disabled = batch.subject_count === 0;
+    el.export.disabled = batch.subject_count === 0;
+    if (!batch.subject_count) {
+      el.review.replaceChildren();
+      const empty = document.createElement("div"); empty.className = "empty";
+      empty.textContent = "Este pacote não contém fatos candidatos para revisão.";
+      el.review.append(empty); return;
+    }
+    const subject = batch.subjects[index];
+    const answer = current();
+    el["subject-title"].textContent = `E${String(index + 1).padStart(6, "0")}`;
+    el.family.textContent = subject.family; el.facet.textContent = subject.facet_id;
+    el.value.textContent = JSON.stringify(subject.value); el.excerpt.textContent = subject.source_excerpt;
+    renderDecisionControls(answer);
+    const conditional = answer.decision && answer.decision !== "supported_candidate";
+    el.conditional.hidden = !conditional;
+    if (conditional) {
+      setOptions(el.reason, reasons[answer.decision], answer.reason_code || "");
+      el.note.value = answer.note; el["note-requirement"].textContent = answer.reason_code === "other" ? "obrigatória" : "opcional";
+    }
+    el.error.textContent = "";
+  }
+  function touchAndSave() {
+    const answer = current();
+    if (!valid(answer)) { el.error.textContent = "Complete a decisão e o motivo antes de avançar."; return false; }
+    answer.reviewed_at = new Date().toISOString(); save(); return true;
+  }
+  function exportSubmission() {
+    const alias = el.reviewer.value.trim();
+    if (!aliasPattern.test(alias)) { el.error.textContent = "Informe um alias válido antes de exportar."; return; }
+    if (reviewer && alias.toLowerCase() !== reviewer.toLowerCase()) {
+      load(alias);
+    } else if (!reviewer) {
+      reviewer = alias;
+      save();
+    }
+    const decisions = batch.subjects.map(subject => answers[subject.subject_id]).filter(valid);
+    if (decisions.length !== batch.subject_count) { el.error.textContent = "Conclua todos os fatos antes de exportar."; return; }
+    const submission = {
+      contract: batch.submission_contract,
+      batch_id: batch.batch_id,
+      source_package_id: batch.source_package_id,
+      rubric_version: batch.rubric.version,
+      rubric_sha256: batch.rubric_sha256,
+      reviewer_alias: alias,
+      state: "submitted",
+      submitted_at: new Date().toISOString(),
+      decisions: decisions
+    };
+    const blob = new Blob([JSON.stringify(submission, null, 2) + "\n"], {type: "application/json"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `etiqueta-${batch.batch_id.slice(0, 12)}-${alias}.json`;
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    el["save-state"].textContent = "Submissão exportada";
+  }
+
+  el.reviewer.addEventListener("change", event => load(event.target.value));
+  el.reviewer.addEventListener("blur", event => load(event.target.value));
+  el.reason.addEventListener("change", () => {
+    const answer = current(); answer.reason_code = el.reason.value;
+    if (answer.reason_code !== "other") answer.note = normalizeNote(el.note.value);
+    answer.reviewed_at = new Date().toISOString(); save(); render();
+  });
+  el.note.addEventListener("input", () => {
+    const answer = current(); answer.note = normalizeNote(el.note.value);
+    answer.reviewed_at = new Date().toISOString(); save();
+  });
+  el.previous.addEventListener("click", () => { if (index > 0) { index -= 1; render(); } });
+  el.next.addEventListener("click", () => { if (index < batch.subject_count - 1) { index += 1; render(); } });
+  el["save-next"].addEventListener("click", () => { if (touchAndSave() && index < batch.subject_count - 1) { index += 1; render(); } });
+  el.clear.addEventListener("click", () => {
+    const alias = el.reviewer.value.trim();
+    if (aliasPattern.test(alias) && window.confirm("Apagar o rascunho deste alias e lote?")) {
+      storageRemove(key(alias)); answers = {}; render(); save();
+    }
+  });
+  el.export.addEventListener("click", exportSubmission);
+  render();
+})();
+</script>
+</body>
+</html>

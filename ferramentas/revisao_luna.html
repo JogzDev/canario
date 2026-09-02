@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Canário — revisão cega Luna</title>
   <style>
     :root {
@@ -104,9 +105,10 @@
   <header>
     <h1>Revisão cega — categoria e cor</h1>
     <p>Não abra <code>predicoes-recuperadas.csv</code> antes de exportar seus rótulos. Clique na imagem para ampliar.</p>
+    <p>Envie o JSON exportado para consolidação. O CSV é um formato técnico: não o abra diretamente em planilhas, que podem interpretar texto como fórmula.</p>
     <section class="toolbar">
-      <label>Nome do revisor
-        <input id="reviewer" type="text" autocomplete="name" placeholder="Ex.: JP" required>
+      <label>Alias do revisor
+        <input id="reviewer" type="text" autocomplete="off" placeholder="Ex.: R1" maxlength="160" required>
       </label>
       <button id="export" class="primary" type="button">Exportar gabarito cego</button>
     </section>
@@ -146,7 +148,7 @@
         </fieldset>
 
         <label class="field-label">Observação opcional
-          <textarea id="notes" placeholder="Registre corte, oclusão, conjunto, short-saia ou evidência decisiva."></textarea>
+          <textarea id="notes" maxlength="2000" placeholder="Registre corte, oclusão, conjunto, short-saia ou evidência decisiva."></textarea>
         </label>
         <div id="sample-error" class="error" role="alert"></div>
       </form>
@@ -168,6 +170,9 @@
 (() => {
   "use strict";
   const samples = __CANARIO_SAMPLES_JSON__;
+  const batchId = __CANARIO_BATCH_ID_JSON__;
+  const reviewContract = "canario_luna_review_submission_v1";
+  const reviewMode = "review";
   const rubricVersion = "categoria-cor-v2";
   const categories = [
     ["", "Selecione…"], ["vestido", "Vestido"], ["saia", "Saia"],
@@ -218,18 +223,50 @@
     "previous", "mark-next", "next"
   ].map(id => [id, document.getElementById(id)]));
   let index = 0;
-  let reviewer = localStorage.getItem("canario-luna-last-reviewer") || "";
+  const lastReviewerKey = `canario-luna:${batchId}:${reviewMode}:last-reviewer`;
+  let persistentStorage = true;
+  function readStorage(key) {
+    try { return localStorage.getItem(key); }
+    catch { persistentStorage = false; return null; }
+  }
+  function writeStorage(key, value) {
+    try { localStorage.setItem(key, value); }
+    catch { persistentStorage = false; }
+  }
+  let reviewer = readStorage(lastReviewerKey) || "";
   let answers = {};
+  let loadedKey = null;
 
-  function storageKey(name) { return `canario-luna:${rubricVersion}:${name.trim().toLowerCase()}`; }
+  function storageKey(name) { return `canario-luna:${batchId}:${reviewMode}:${rubricVersion}:${name.trim().toLowerCase()}`; }
   function blankAnswer() {
     return { target_clarity: "", category: "", structure: "", primary_color: "", secondary_colors: [], notes: "", reviewed_at: "" };
   }
+  function normalizeAnswer(value) {
+    const answer = blankAnswer();
+    if (!value || typeof value !== "object" || Array.isArray(value)) return answer;
+    for (const field of Object.keys(answer)) {
+      if (field === "secondary_colors") {
+        if (Array.isArray(value[field])) answer[field] = value[field].filter(color => typeof color === "string");
+      } else if (typeof value[field] === "string") answer[field] = value[field];
+    }
+    return answer;
+  }
+  function validReviewer(name) {
+    return Boolean(name.trim() && name.length <= 160 && !/[\x00-\x1f\x7f]/.test(name));
+  }
   function loadReviewer(name) {
     reviewer = name.trim();
-    localStorage.setItem("canario-luna-last-reviewer", reviewer);
-    try { answers = JSON.parse(localStorage.getItem(storageKey(reviewer)) || "{}"); }
-    catch { answers = {}; }
+    writeStorage(lastReviewerKey, reviewer);
+    const key = storageKey(reviewer);
+    if (key !== loadedKey) {
+      let stored;
+      try { stored = JSON.parse(readStorage(key) || "{}"); } catch { stored = {}; }
+      answers = {};
+      samples.forEach(sample => {
+        answers[sample.sample_id] = normalizeAnswer(stored?.[sample.sample_id]);
+      });
+      loadedKey = key;
+    }
     render();
   }
   function current() {
@@ -238,13 +275,25 @@
     return answers[id];
   }
   function save() {
-    if (reviewer) localStorage.setItem(storageKey(reviewer), JSON.stringify(answers));
-    els["save-state"].textContent = reviewer ? "Salvo localmente" : "Informe o revisor";
+    if (validReviewer(reviewer)) writeStorage(storageKey(reviewer), JSON.stringify(answers));
+    els["save-state"].textContent = !validReviewer(reviewer) ? "Informe um alias válido" :
+      persistentStorage ? "Salvo localmente" : "Rascunho apenas nesta sessão — exporte antes de fechar";
   }
   function isComplete(answer) {
-    if (!answer.target_clarity) return false;
+    if (!clarityOptions.some(([value]) => value === answer.target_clarity) ||
+        typeof answer.notes !== "string" || answer.notes.length > 2000 ||
+        /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(answer.notes) ||
+        typeof answer.reviewed_at !== "string" ||
+        !/(?:Z|[+-]\d{2}:\d{2})$/.test(answer.reviewed_at) ||
+        !Number.isFinite(Date.parse(answer.reviewed_at)) ||
+        Date.parse(answer.reviewed_at) > Date.now() ||
+        !Array.isArray(answer.secondary_colors) || answer.secondary_colors.length > 2 ||
+        new Set(answer.secondary_colors).size !== answer.secondary_colors.length ||
+        answer.secondary_colors.some(color => color === answer.primary_color ||
+          !colors.some(([value]) => value && value !== "not_visible" && value === color)) ||
+        !colors.some(([value]) => value && value === answer.primary_color)) return false;
     if (answer.target_clarity === "ambiguous_target") {
-      return answer.category === "not_visible" && answer.structure === "target_not_determinable" && answer.primary_color === "not_visible";
+      return answer.category === "not_visible" && answer.structure === "target_not_determinable" && answer.primary_color === "not_visible" && !answer.secondary_colors.length;
     }
     return Boolean(answer.category === categoryByStructure[answer.structure] &&
       answer.category !== "not_visible" &&
@@ -353,17 +402,35 @@
   }
   function exportAnswers() {
     capture();
-    if (!reviewer) { alert("Informe o nome do revisor."); els.reviewer.focus(); return; }
+    if (!validReviewer(reviewer)) { alert("Informe um alias válido, com até 160 caracteres."); els.reviewer.focus(); return; }
     const missing = samples.filter(sample => !isComplete(answers[sample.sample_id] || {})).map(sample => sample.sample_id);
     if (missing.length) { alert(`Ainda faltam: ${missing.join(", ")}`); return; }
-    const rows = samples.map(sample => ({ sample_id: sample.sample_id, ...answers[sample.sample_id] }));
+    const rows = samples.map(sample => ({
+      sample_id: sample.sample_id,
+      imagem: sample.imagem,
+      image_sha256: sample.image_sha256,
+      ...normalizeAnswer(answers[sample.sample_id])
+    }));
     const exportedAt = new Date().toISOString();
-    const payload = { rubric_version: rubricVersion, reviewer, exported_at: exportedAt, answers: rows };
+    const payload = {
+      contract: reviewContract,
+      batch_id: batchId,
+      rubric_version: rubricVersion,
+      reviewer,
+      exported_at: exportedAt,
+      answers: rows
+    };
     const safeName = reviewer.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "revisor";
     download(`rotulos-${safeName}.json`, "application/json", JSON.stringify(payload, null, 2) + "\n");
-    const fields = ["rubric_version", "reviewer", "sample_id", "target_clarity", "category", "structure", "primary_color", "secondary_colors", "notes", "reviewed_at"];
+    const fields = ["contract", "batch_id", "rubric_version", "reviewer", "exported_at", "sample_id", "imagem", "image_sha256", "target_clarity", "category", "structure", "primary_color", "secondary_colors", "notes", "reviewed_at"];
     const lines = [fields.map(csvEscape).join(",")];
-    rows.forEach(row => lines.push(fields.map(field => csvEscape(field === "rubric_version" ? rubricVersion : field === "reviewer" ? reviewer : row[field])).join(",")));
+    rows.forEach(row => lines.push(fields.map(field => csvEscape(
+      field === "contract" ? reviewContract :
+      field === "batch_id" ? batchId :
+      field === "rubric_version" ? rubricVersion :
+      field === "reviewer" ? reviewer :
+      field === "exported_at" ? exportedAt : row[field]
+    )).join(",")));
     download(`rotulos-${safeName}.csv`, "text/csv", lines.join("\n") + "\n");
   }
 

@@ -148,6 +148,51 @@ separada. O resultado é `private_candidate_only`, requer revisão humana e não
 insere conceito, evidência ou leitura. O workflow permanece manual e conserva o
 artefato por sete dias durante o benchmark.
 
+O contrato `datadrobe_label_fact_pack_v2` inclui `payload_sha256` sobre
+população, itens e agregados. Esse hash entra no `package_id`, e ambos ficam no
+resumo imutável da execução do Actions. Assim, recalcular IDs depois de alterar
+um fato já não preserva a identidade registrada da materialização.
+
+### Revisão humana dos fatos da Etiqueta
+
+O mesmo workflow produz um HTML autocontido e sem rede. Cada sujeito da revisão
+expõe somente ID de revisão, família, faceta, valor candidato e trecho-fonte. IDs de
+produto e marca, agregados, shares, confiança do parser e conclusão editorial
+ficam cegos. A posição visual `E000001` serve apenas para navegação; o JSON usa o
+SHA-256 estável da assinatura semântica.
+
+Extrações semanticamente idênticas — mesma versão do parser, família, faceta,
+valor e trecho — compartilham um sujeito, embora cada ocorrência preserve seu
+`fact_id`. Isso evita pedir a duas pessoas que revisem centenas de vezes
+`100% algodão` sem transferir decisão entre trechos diferentes. O piloto falha
+fechado acima de 250 assinaturas únicas; ele não tenta renderizar até um milhão
+de botões nem finge que uma carga humana impraticável é um processo de produto.
+Sharding só será adicionado quando um pacote real demonstrar essa necessidade.
+
+O `batch_id` cobre canonicamente o pacote integral, a rubrica e todos os sujeitos.
+Uma submissão só é aceita quando cobre o lote inteiro na ordem exata, usa a mesma
+rubrica e contém decisões e horários válidos. Dois aliases distintos revisam o
+mesmo lote de forma independente. Consenso fecha o fato; divergência gera outro
+HTML contendo exclusivamente os sujeitos divergentes, sem mostrar identidade ou
+escolha dos revisores, para um terceiro alias adjudicar.
+
+O consolidado reaplica a decisão a cada `fact_id` coberto pela assinatura e
+recalcula todos os agregados apenas com fatos
+`confirmed_candidate`; nunca confia nos shares candidatos recebidos. Rejeições e
+contexto insuficiente permanecem explícitos. Nem a revisão nem a adjudicação
+promovem conceito, criam evidência ou liberam staging. Correções não são feitas
+em linha: uma extração corrigida deve nascer como novo fato com novo ID. Os
+contratos JSON são independentes da interface para poderem alimentar um painel
+web, iOS ou Android sem mudar as regras de negócio.
+
+Para não repetir trechos e decisões, o resultado normaliza
+`reviewed_subjects` e conserva em `reviewed_facts` apenas o vínculo mínimo
+`fact_id → review_subject_id`. Contagens, sujeitos, vínculos e agregados têm
+hashes próprios incluídos na identidade final.
+
+O passo a passo de uso, inclusive o que fazer quando há divergência, vive em
+`REVISAO_HUMANA_ETIQUETA_1_3.md`.
+
 ## Pautas do briefing
 
 O piloto observa oito famílias, sem abrir a taxonomia pública automaticamente:
@@ -200,10 +245,13 @@ Uma leitura só pode ser publicada quando:
 3. materialização privada do primeiro pacote factual — implementada; execução
    real depende da aplicação deliberada da RPC A52;
 4. Scout privado com allowlist, sem cron e sem publicação;
-5. tela/fila de revisão e primeiro briefing cego;
-6. benchmark de quatro semanas e ajuste de taxonomia;
-7. leitura somente de dados publicados no app;
-8. avaliação da cadência e eventual ampliação de fontes.
+5. fila cega de fatos, duas revisões, adjudicação mínima e recálculo humano —
+   implementados sem banco e sem publicação;
+6. walking skeleton de cardinalidade 1: revisão conceitual, uma evidência draft
+   idempotente e um briefing determinístico `insufficient` ainda draft;
+7. benchmark de quatro semanas e ajuste de taxonomia;
+8. leitura somente de dados publicados no app;
+9. avaliação da cadência e eventual ampliação de fontes.
 
 Nada desta fundação aplica a migração em produção, executa chamada paga ou
 altera a 1.2 por si só. Esses passos recebem portões próprios depois que esta

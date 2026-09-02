@@ -7,6 +7,7 @@ gabarito adjudicado e do JSONL completo produzido pelo avaliador.
 
 import argparse
 import csv
+import datetime as dt
 import json
 import math
 import re
@@ -31,6 +32,41 @@ CAMPOS_DO_PORTAO = (
 # segmentador. Nao e um id da taxonomia de proposito, para nunca casar com o
 # gabarito. Ver `_previsao` para o motivo de nao reaproveitar `not_visible`.
 SEM_RESPOSTA = "sem_resposta"
+CONTRATO_REVISAO = "canario_luna_review_submission_v1"
+CONTRATO_GABARITO = "canario_luna_gold_v1"
+RUBRICAS_SUPORTADAS = {"categoria-cor-v2", "categoria-cor-v3"}
+CLAREZAS = {
+    "clear", "partially_occluded", "multiple_garments_target_clear",
+    "ambiguous_target",
+}
+CATEGORIA_POR_ESTRUTURA = {
+    "one_piece_no_separate_legs": "vestido",
+    "one_piece_with_separate_legs": "macacao",
+    "lower_continuous_panel": "saia",
+    "lower_two_legs_short": "short",
+    "lower_two_legs_long": "calca",
+    "upper_shirt_construction": "camisa",
+    "upper_outer_layer": "casaco_jaqueta",
+    "upper_other": "blusa_top",
+    "target_not_determinable": "not_visible",
+}
+CORES = {
+    "preto", "branco_cru", "cinza", "azul", "verde", "lilas_roxo",
+    "vermelho_rosa", "amarelo_laranja", "terrosos", "outras_cores",
+    "not_visible",
+}
+CAMPOS_RESPOSTA = {
+    "sample_id", "imagem", "image_sha256", "target_clarity", "category",
+    "structure", "primary_color", "secondary_colors", "notes", "reviewed_at",
+}
+CAMPOS_RESPOSTA_OPCIONAIS = {
+    "adjudication_basis", "original_selection", "acceptable_primary_colors",
+}
+CAMPOS_CSV = (
+    "contract", "batch_id", "rubric_version", "reviewer", "exported_at",
+    "sample_id", "imagem", "image_sha256", "target_clarity", "category",
+    "structure", "primary_color", "secondary_colors", "notes", "reviewed_at",
+)
 
 
 def _cores_secundarias(valor):
@@ -41,37 +77,233 @@ def _cores_secundarias(valor):
     return [cor.strip() for cor in re.split(r"[;|,]", valor) if cor.strip()]
 
 
-def _dados_da_revisao(caminho):
+def _texto_controlado(valor, campo, minimo, maximo, permitir_quebras=False):
+    if not isinstance(valor, str) or not minimo <= len(valor.strip()) <= maximo:
+        raise ValueError("{} fora do contrato".format(campo))
+    permitidos = "\n\r\t" if permitir_quebras else ""
+    if any((ord(c) < 32 and c not in permitidos) or ord(c) == 127 for c in valor):
+        raise ValueError("{} contem caractere de controle".format(campo))
+    return valor.strip()
+
+
+def _instante(valor, campo):
+    texto = _texto_controlado(valor, campo, 1, 64)
+    try:
+        instante = dt.datetime.fromisoformat(texto.replace("Z", "+00:00"))
+    except ValueError as erro:
+        raise ValueError("{} fora de ISO-8601".format(campo)) from erro
+    if instante.tzinfo is None:
+        raise ValueError("{} precisa registrar fuso".format(campo))
+    if instante.astimezone(dt.timezone.utc) > (
+            dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=10)):
+        raise ValueError("{} esta no futuro".format(campo))
+    return texto
+
+
+def _validar_reviewer(valor):
+    return _texto_controlado(valor, "reviewer", 1, 160)
+
+
+def _validar_rubrica(valor):
+    if valor not in RUBRICAS_SUPORTADAS:
+        raise ValueError("rubric_version desconhecida: {}".format(valor))
+    return valor
+
+
+def _validar_resposta(resposta, estrita=True):
+    if not isinstance(resposta, dict):
+        raise ValueError("Resposta fora do contrato")
+    if estrita and (not CAMPOS_RESPOSTA <= set(resposta)
+                    or set(resposta) - CAMPOS_RESPOSTA
+                    - CAMPOS_RESPOSTA_OPCIONAIS):
+        raise ValueError("Campos da resposta fora do contrato")
+    ausentes = [campo for campo in CAMPOS_RESPOSTA if campo not in resposta]
+    if ausentes:
+        raise ValueError("Campos ausentes: {}".format(", ".join(sorted(ausentes))))
+
+    sample_id = resposta["sample_id"]
+    if not isinstance(sample_id, str) or not re.fullmatch(r"S[0-9]{2,6}", sample_id):
+        raise ValueError("sample_id fora do contrato")
+    imagem = _texto_controlado(resposta["imagem"], "imagem", 1, 255)
+    if (imagem in (".", "..") or Path(imagem).name != imagem or "\\" in imagem
+            or not re.fullmatch(r"[^/\\\x00-\x1f]+[.](?:jpg|jpeg|png|webp|heic)",
+                                imagem, re.IGNORECASE)):
+        raise ValueError("imagem deve ser somente o nome do arquivo")
+    if not isinstance(resposta["image_sha256"], str) or not re.fullmatch(
+            r"[0-9a-f]{64}", resposta["image_sha256"]):
+        raise ValueError("image_sha256 fora do contrato")
+    if resposta["target_clarity"] not in CLAREZAS:
+        raise ValueError("target_clarity fora do contrato em {}".format(sample_id))
+    estrutura = resposta["structure"]
+    if estrutura not in CATEGORIA_POR_ESTRUTURA:
+        raise ValueError("structure fora do contrato em {}".format(sample_id))
+    if resposta["category"] != CATEGORIA_POR_ESTRUTURA[estrutura]:
+        raise ValueError("category contradiz structure em {}".format(sample_id))
+    primaria = resposta["primary_color"]
+    if primaria not in CORES:
+        raise ValueError("primary_color fora do contrato em {}".format(sample_id))
+    secundarias = resposta["secondary_colors"]
+    if (not isinstance(secundarias, list) or len(secundarias) > 2
+            or any(not isinstance(cor, str) for cor in secundarias)
+            or len(set(secundarias)) != len(secundarias)
+            or any(cor not in CORES - {"not_visible"} for cor in secundarias)
+            or primaria in secundarias):
+        raise ValueError("secondary_colors fora do contrato em {}".format(sample_id))
+    ambiguo = resposta["target_clarity"] == "ambiguous_target"
+    if ambiguo != (estrutura == "target_not_determinable"):
+        raise ValueError("clareza e estrutura incoerentes em {}".format(sample_id))
+    if ambiguo:
+        if primaria != "not_visible" or secundarias:
+            raise ValueError("alvo ambiguo deve abster cor em {}".format(sample_id))
+    elif primaria == "not_visible":
+        raise ValueError("alvo determinado exige cor em {}".format(sample_id))
+    if not isinstance(resposta["notes"], str) or len(resposta["notes"]) > 2000:
+        raise ValueError("notes fora do contrato em {}".format(sample_id))
+    _texto_controlado(
+        resposta["notes"], "notes", 0, 2000, permitir_quebras=True)
+    _instante(resposta["reviewed_at"], "reviewed_at")
+    if "adjudication_basis" in resposta:
+        _texto_controlado(
+            resposta["adjudication_basis"], "adjudication_basis", 0, 1000,
+            permitir_quebras=True)
+    if "original_selection" in resposta and not isinstance(
+            resposta["original_selection"], dict):
+        raise ValueError("original_selection fora do contrato")
+    if "original_selection" in resposta:
+        original = resposta["original_selection"]
+        if (set(original) - set(CAMPOS_HUMANOS)
+                or len(json.dumps(original, ensure_ascii=False)) > 4096):
+            raise ValueError("original_selection fora do contrato")
+        for campo, valor in original.items():
+            if campo == "target_clarity" and valor not in CLAREZAS:
+                raise ValueError("target_clarity original fora do contrato")
+            if campo == "category" and valor not in set(
+                    CATEGORIA_POR_ESTRUTURA.values()):
+                raise ValueError("category original fora do contrato")
+            if campo == "structure" and valor not in CATEGORIA_POR_ESTRUTURA:
+                raise ValueError("structure original fora do contrato")
+            if campo == "primary_color" and valor not in CORES:
+                raise ValueError("primary_color original fora do contrato")
+            if campo == "secondary_colors" and (
+                    not isinstance(valor, list)
+                    or len(valor) > 2
+                    or any(not isinstance(cor, str) for cor in valor)
+                    or len(set(valor)) != len(valor)
+                    or any(cor not in CORES - {"not_visible"} for cor in valor)):
+                raise ValueError("secondary_colors original fora do contrato")
+    if "acceptable_primary_colors" in resposta:
+        aceitaveis = resposta["acceptable_primary_colors"]
+        if (not isinstance(aceitaveis, list) or not 1 <= len(aceitaveis) <= 2
+                or any(not isinstance(cor, str) for cor in aceitaveis)
+                or len(set(aceitaveis)) != len(aceitaveis)
+                or any(cor not in CORES for cor in aceitaveis)
+                or primaria not in aceitaveis):
+            raise ValueError("acceptable_primary_colors fora do contrato")
+    return resposta
+
+
+def _dados_da_revisao(caminho, permitir_legado=False):
     """Aceita o JSON exportado pelo formulario e o CSV do revisor."""
     if caminho.suffix.lower() != ".csv":
         return json.loads(caminho.read_text(encoding="utf-8"))
 
     with caminho.open(encoding="utf-8-sig", newline="") as arquivo:
-        respostas = list(csv.DictReader(arquivo))
+        leitor = csv.DictReader(arquivo)
+        campos = tuple(leitor.fieldnames or ())
+        respostas = list(leitor)
     if not respostas:
         return {"answers": []}
+    if campos != CAMPOS_CSV:
+        if not permitir_legado:
+            raise ValueError("CSV fora do contrato: {}".format(caminho))
+        campos_legados = (
+            "rubric_version", "reviewer", "sample_id", "target_clarity",
+            "category", "structure", "primary_color", "secondary_colors",
+            "notes", "reviewed_at",
+        )
+        if campos != campos_legados:
+            raise ValueError("CSV legado fora do contrato: {}".format(caminho))
+        rubricas = {resposta.pop("rubric_version", "") for resposta in respostas}
+        revisores = {resposta.pop("reviewer", "") for resposta in respostas}
+        if len(rubricas) != 1 or len(revisores) != 1:
+            raise ValueError("CSV mistura revisores ou versoes da rubrica: {}".format(
+                caminho))
+        for resposta in respostas:
+            resposta["secondary_colors"] = _cores_secundarias(
+                resposta.get("secondary_colors"))
+        return {
+            "rubric_version": next(iter(rubricas)),
+            "reviewer": next(iter(revisores)),
+            "answers": respostas,
+        }
+
+    contratos = {resposta.pop("contract", "") for resposta in respostas}
+    lotes = {resposta.pop("batch_id", "") for resposta in respostas}
     rubricas = {resposta.pop("rubric_version", "") for resposta in respostas}
     revisores = {resposta.pop("reviewer", "") for resposta in respostas}
-    if len(rubricas) != 1 or len(revisores) != 1:
+    exportados = {resposta.pop("exported_at", "") for resposta in respostas}
+    if any(len(valores) != 1 for valores in (
+            contratos, lotes, rubricas, revisores, exportados)):
         raise ValueError("CSV mistura revisores ou versoes da rubrica: {}".format(
             caminho))
     for resposta in respostas:
         resposta["secondary_colors"] = _cores_secundarias(
             resposta.get("secondary_colors"))
     return {
+        "contract": next(iter(contratos)),
+        "batch_id": next(iter(lotes)),
         "rubric_version": next(iter(rubricas)),
         "reviewer": next(iter(revisores)),
+        "exported_at": next(iter(exportados)),
         "answers": respostas,
     }
 
 
-def carregar_revisao(caminho):
-    dados = _dados_da_revisao(caminho)
+def carregar_revisao(caminho, permitir_legado=False):
+    dados = _dados_da_revisao(caminho, permitir_legado=permitir_legado)
+    if not isinstance(dados, dict):
+        raise ValueError("Envelope de revisao fora do contrato: {}".format(caminho))
+    contrato = dados.get("contract")
+    novo = contrato == CONTRATO_REVISAO
+    gabarito = contrato == CONTRATO_GABARITO
+    if not novo and not gabarito and not permitir_legado:
+        raise ValueError("Contrato de revisao ausente ou desconhecido: {}".format(
+            caminho))
+    if novo and set(dados) != {
+            "contract", "batch_id", "rubric_version", "reviewer",
+            "exported_at", "answers"}:
+        raise ValueError("Envelope de revisao fora do contrato: {}".format(caminho))
+    if gabarito and set(dados) != {
+            "contract", "batch_id", "reviewer", "rubric_version",
+            "source_reviewers", "unresolved_non_gate_fields", "answers"}:
+        raise ValueError("Envelope de gabarito fora do contrato: {}".format(caminho))
+    if novo:
+        if not isinstance(dados["batch_id"], str) or not re.fullmatch(
+                r"[0-9a-f]{64}", dados["batch_id"]):
+            raise ValueError("batch_id fora do contrato: {}".format(caminho))
+        _instante(dados["exported_at"], "exported_at")
+    elif gabarito:
+        if not isinstance(dados.get("batch_id"), str) or not re.fullmatch(
+                r"[0-9a-f]{64}", dados["batch_id"]):
+            raise ValueError("batch_id do gabarito fora do contrato")
+
+    reviewer = _validar_reviewer(dados.get("reviewer"))
+    rubrica = _validar_rubrica(dados.get("rubric_version"))
     respostas = dados.get("answers")
     if not isinstance(respostas, list) or not respostas:
         raise ValueError("Revisao sem answers: {}".format(caminho))
     por_id = {}
     for resposta in respostas:
+        if novo:
+            _validar_resposta(resposta, estrita=True)
+            revisada = dt.datetime.fromisoformat(
+                resposta["reviewed_at"].replace("Z", "+00:00"))
+            exportada = dt.datetime.fromisoformat(
+                dados["exported_at"].replace("Z", "+00:00"))
+            if revisada > exportada:
+                raise ValueError("reviewed_at posterior a exported_at")
+        elif gabarito:
+            _validar_resposta(resposta, estrita=False)
         sample_id = resposta.get("sample_id")
         if not sample_id or sample_id in por_id:
             raise ValueError("sample_id ausente ou repetido em {}".format(caminho))
@@ -80,9 +312,19 @@ def carregar_revisao(caminho):
             raise ValueError("Campos ausentes em {}: {}".format(
                 sample_id, ", ".join(ausentes)))
         por_id[sample_id] = resposta
+    identidades = [
+        (resposta.get("imagem"), resposta.get("image_sha256"))
+        for resposta in por_id.values()
+        if resposta.get("imagem") is not None
+    ]
+    if novo or gabarito:
+        if len(set(identidades)) != len(identidades):
+            raise ValueError("Revisao repete a mesma imagem: {}".format(caminho))
     return {
-        "reviewer": dados.get("reviewer") or caminho.stem,
-        "rubric_version": dados.get("rubric_version"),
+        "contract": contrato,
+        "batch_id": dados.get("batch_id"),
+        "reviewer": reviewer,
+        "rubric_version": rubrica,
         "answers": por_id,
     }
 
@@ -96,13 +338,38 @@ def _comparavel(campo, valor):
 def comparar_revisoes(revisoes):
     if len(revisoes) < 2:
         raise ValueError("A comparacao cega exige pelo menos dois revisores.")
+    revisores = [_validar_reviewer(revisao.get("reviewer"))
+                 for revisao in revisoes]
+    if len({revisor.casefold() for revisor in revisores}) != len(revisores):
+        raise ValueError("Cada revisao deve ter um revisor distinto.")
+    lotes_recebidos = [revisao.get("batch_id") for revisao in revisoes]
+    if (any(not isinstance(lote, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", lote)
+            for lote in lotes_recebidos)
+            or len(set(lotes_recebidos)) != 1):
+        raise ValueError("Revisoes nao pertencem ao mesmo batch_id valido.")
+    lotes = set(lotes_recebidos)
+    for revisao in revisoes:
+        if not isinstance(revisao.get("answers"), dict) or not revisao["answers"]:
+            raise ValueError("Revisao carregada sem respostas.")
+        for resposta in revisao["answers"].values():
+            _validar_resposta(resposta, estrita=True)
     ids = set(revisoes[0]["answers"])
-    rubrica = revisoes[0]["rubric_version"]
+    rubrica = _validar_rubrica(revisoes[0].get("rubric_version"))
     for revisao in revisoes[1:]:
         if set(revisao["answers"]) != ids:
             raise ValueError("Revisores nao cobrem as mesmas amostras.")
         if revisao["rubric_version"] != rubrica:
             raise ValueError("Revisores usaram versoes diferentes da rubrica.")
+    for sample_id in ids:
+        identidades = {
+            (revisao["answers"][sample_id].get("imagem"),
+             revisao["answers"][sample_id].get("image_sha256"))
+            for revisao in revisoes
+        }
+        if (len(identidades) != 1 or None in next(iter(identidades))):
+            raise ValueError(
+                "Identidade da imagem diverge em {}.".format(sample_id))
 
     acordos = {campo: 0 for campo in CAMPOS_HUMANOS}
     divergencias = []
@@ -126,8 +393,9 @@ def comparar_revisoes(revisoes):
                 "fields": campos_divergentes,
             })
     return {
+        "batch_id": next(iter(lotes)),
         "rubric_version": rubrica,
-        "reviewers": [revisao["reviewer"] for revisao in revisoes],
+        "reviewers": revisores,
         "sample_size": len(ids),
         "agreements": acordos,
         "disagreements": divergencias,
@@ -147,6 +415,10 @@ def adjudicar_revisoes(revisoes, adjudicacao):
     """Fecha o ouro: consenso dos dois revisores + voto cego do adjudicador."""
     comparacao = comparar_revisoes(revisoes)
     ids_divergentes = ids_para_adjudicar(comparacao)
+    if not isinstance(adjudicacao.get("answers"), dict):
+        raise ValueError("Adjudicacao sem respostas.")
+    for resposta in adjudicacao["answers"].values():
+        _validar_resposta(resposta, estrita=True)
     ids_adjudicados = set(adjudicacao["answers"])
     if ids_adjudicados != ids_divergentes:
         faltam = sorted(ids_divergentes - ids_adjudicados)
@@ -156,6 +428,19 @@ def adjudicar_revisoes(revisoes, adjudicacao):
                 faltam, sobram))
     if adjudicacao["rubric_version"] != comparacao["rubric_version"]:
         raise ValueError("Adjudicacao usou outra versao da rubrica.")
+    if adjudicacao.get("batch_id") != comparacao["batch_id"]:
+        raise ValueError("Adjudicacao pertence a outro batch_id.")
+    adjudicador = _validar_reviewer(adjudicacao.get("reviewer"))
+    if adjudicador.casefold() in {
+            revisor.casefold() for revisor in comparacao["reviewers"]}:
+        raise ValueError("O adjudicador deve ser terceiro revisor independente.")
+    for sample_id in ids_divergentes:
+        origem = revisoes[0]["answers"][sample_id]
+        voto = adjudicacao["answers"][sample_id]
+        if (voto.get("imagem"), voto.get("image_sha256")) != (
+                origem.get("imagem"), origem.get("image_sha256")):
+            raise ValueError(
+                "Adjudicacao trouxe outra imagem em {}.".format(sample_id))
 
     respostas = []
     nao_adjudicados = []
@@ -189,7 +474,9 @@ def adjudicar_revisoes(revisoes, adjudicacao):
             final["original_selection"] = voto.get("original_selection", {})
         respostas.append(final)
     return {
-        "reviewer": "ADJUDICADO: {}".format(adjudicacao["reviewer"]),
+        "contract": CONTRATO_GABARITO,
+        "batch_id": comparacao["batch_id"],
+        "reviewer": "ADJUDICADO: {}".format(adjudicador),
         "rubric_version": comparacao["rubric_version"],
         "source_reviewers": comparacao["reviewers"],
         "unresolved_non_gate_fields": nao_adjudicados,
@@ -653,7 +940,7 @@ def main():
     if bool(args.gabarito) != bool(args.resultados):
         raise SystemExit("--gabarito e --resultados devem ser usados juntos")
     if args.gabarito:
-        ouro = carregar_revisao(args.gabarito)
+        ouro = carregar_revisao(args.gabarito, permitir_legado=True)
         avaliacao = combinar_avaliacoes([
             avaliar_contra_gabarito(ouro, carregar_resultados(caminho))
             for caminho in args.resultados
