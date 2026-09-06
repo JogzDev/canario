@@ -101,7 +101,7 @@ struct Analisar: View {
                     CoberturaInsuficiente(
                         titulo: "This term isn't tracked yet",
                         explicacao: "“\(texto)” is outside the reviewed vocabulary, so there is no market reading for it yet.",
-                        oQueTem: "Try: " + sugestoes.joined(separator: ", ")
+                        oQueTem: frase("Try: \(sugestoes.joined(separator: ", "))")
                     )
                     // O vocabulário não cobre a expressão, mas a imprensa pode
                     // tê-la escrito -- foi exatamente o caso de "Napoleon
@@ -140,7 +140,7 @@ struct Analisar: View {
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.primary)
 
-                Text("Try: " + sugestoes.prefix(3).joined(separator: ", "))
+                Text(frase("Try: \(sugestoes.prefix(3).joined(separator: ", "))"))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.primary.opacity(0.80))
                     .multilineTextAlignment(.center)

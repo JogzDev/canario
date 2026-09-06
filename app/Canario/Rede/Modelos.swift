@@ -122,10 +122,10 @@ enum Estado: String {
 
     var rotulo: String {
         switch self {
-        case .emAlta: return "Trending up"
-        case .emQueda: return "Trending down"
+        case .emAlta: return frase("Trending up")
+        case .emQueda: return frase("Trending down")
         case .pico: return "Spike"
-        case .estavel: return "Within the usual range"
+        case .estavel: return frase("Within the usual range")
         }
     }
 
@@ -202,20 +202,29 @@ struct PontoSerie: Codable, Identifiable, Hashable {
 enum Perna {
     static func rotulo(_ fonte: String) -> String {
         switch fonte {
-        case "busca": return "search"
-        case "editorial_br": return "Brazilian editorial"
-        case "editorial_intl": return "international editorial"
-        case "varejo": return "retail"
+        case "busca": return frase("search")
+        case "editorial_br": return frase("Brazilian editorial")
+        case "editorial_intl": return frase("international editorial")
+        case "varejo": return frase("retail")
+        // Nome próprio de serviço: não traduz, como DataDrobe ou Google.
         case "lyst": return "Lyst"
         default: return fonte
         }
     }
 
-    static func frase(_ pernas: [String]?) -> String {
+    /// Renomeado de `frase(_:)` em 05/09.
+    ///
+    /// O nome colidia com a função global `frase(_:)` que resolve texto no
+    /// idioma escolhido: dentro deste enum, `frase("...")` passava a chamar
+    /// este membro e a tentar converter uma `String` em `[String]?`. O
+    /// compilador pegou, mas o defeito interessante é o outro — se as
+    /// assinaturas fossem compatíveis, ele teria compilado e chamado a função
+    /// errada em silêncio.
+    static func baseadoEm(_ pernas: [String]?) -> String {
         guard let pernas, !pernas.isEmpty else {
-            return "no qualified combined external reading for this week"
+            return frase("no qualified combined external reading for this week")
         }
-        return "based on: " + pernas.map(rotulo).joined(separator: " + ")
+        return frase("based on: ") + pernas.map(rotulo).joined(separator: " + ")
     }
 }
 
@@ -256,10 +265,10 @@ struct Cobertura: Decodable, Hashable {
     var oQueFalta: String {
         var partes: [String] = []
         if let p = pecasNaCelula, p < minimoPecas {
-            partes.append("\(p) panel items this week, minimum \(minimoPecas)")
+            partes.append(frase("\(String(p)) panel items this week, minimum \(String(minimoPecas))"))
         }
         if let m = marcasExternas, m < minimoMarcas {
-            partes.append("\(m) external brands reporting, minimum \(minimoMarcas)")
+            partes.append(frase("\(String(m)) external brands reporting, minimum \(String(minimoMarcas))"))
         }
         if let pct = coberturaDimensaoPct,
            let minimo = minimoCoberturaDimensaoPct,
@@ -268,7 +277,7 @@ struct Cobertura: Decodable, Hashable {
                 String(format: "this dimension labels %.1f%% of current offers, minimum %.0f%%",
                        pct, minimo))
         } else if coberturaDimensaoPct == nil {
-            partes.append("dimension-level coverage has not been measured")
+            partes.append(frase("dimension-level coverage has not been measured"))
         }
         return partes.isEmpty ? "coverage below the minimum" : partes.joined(separator: "; ")
     }
@@ -442,7 +451,7 @@ enum LeituraDoEvento {
         switch tipo {
         case "reposicao":
             let t = detalhe?.tamanhos?.joined(separator: ", ") ?? "—"
-            return "Size \(t) returned and remained available"
+            return frase("Size \(t) returned and remained available")
         case "remarcacao":
             // "Price dropped 50%" media uma coisa e era lida como outra.
             //
@@ -464,9 +473,9 @@ enum LeituraDoEvento {
             if let pct = detalhe?.quedaPct {
                 return String(format: "%.1f%% below its previous price", pct)
             }
-            return "Price cut since the last reading"
+            return frase("Price cut since the last reading")
         case "saida_de_linha":
-            return "Removed from the catalog"
+            return frase("Removed from the catalog")
         default:
             return tipo
         }
@@ -491,7 +500,7 @@ enum LeituraDoEvento {
         guard let coisa else { return nil }
 
         if ordinal == 1 {
-            return "First \(coisa) since \(Formato.data(inicioDaColeta))"
+            return frase("First \(coisa) since \(Formato.data(inicioDaColeta))")
         }
         let mod100 = ordinal % 100
         let suffix: String
@@ -542,13 +551,13 @@ enum Leitura {
 
         var rotulo: String {
             switch self {
-            case .muitoAcima: return "Far Above the usual range"
-            case .acima: return "Above the usual range"
-            case .poucoAcima: return "Slightly above the usual range"
-            case .habitual: return "Within the usual range"
-            case .poucoAbaixo: return "Slightly under the usual range"
-            case .abaixo: return "Under the usual range"
-            case .muitoAbaixo: return "Far below the usual range"
+            case .muitoAcima: return frase("Far Above the usual range")
+            case .acima: return frase("Above the usual range")
+            case .poucoAcima: return frase("Slightly above the usual range")
+            case .habitual: return frase("Within the usual range")
+            case .poucoAbaixo: return frase("Slightly under the usual range")
+            case .abaixo: return frase("Under the usual range")
+            case .muitoAbaixo: return frase("Far below the usual range")
             }
         }
 
@@ -604,7 +613,7 @@ enum Leitura {
         let lado = exibido == 0
             ? "level with"
             : (z > 0 ? "above" : "below")
-        return "\(numero(exibido, casas: 1)) on the statistical scale, \(lado) this attribute's usual behavior over the previous 12 weeks"
+        return frase("\(numero(exibido, casas: 1)) on the statistical scale, \(lado) this attribute's usual behavior over the previous 12 weeks")
     }
 
     /// Variação percentual entre o valor mais recente e a média da janela.
@@ -612,7 +621,7 @@ enum Leitura {
     static func variacao(recente: Double?, media: Double?) -> String? {
         guard let recente, let media, media > 0 else { return nil }
         let pct = 100.0 * (recente - media) / media
-        return "\(numero(pct, casas: 0, sinal: true))% vs. the window average"
+        return frase("\(numero(pct, casas: 0, sinal: true))% vs. the window average")
     }
 
     /// Número no idioma-fonte da interface (inglês), com ponto decimal.

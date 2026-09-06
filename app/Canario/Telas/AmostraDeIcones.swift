@@ -47,8 +47,7 @@ struct AmostraDeIcones: View {
                     // seção porque é assim que a tela chega depois da leitura
                     // da Luna -- com o palpite dela já marcado e tudo pronto
                     // para a pessoa corrigir.
-                    Text("The blue ring means selected — on the real screen it "
-                         + "arrives on whatever Luna read, ready to be changed.")
+                    Text("The blue ring means selected — on the real screen it arrives on whatever Luna read, ready to be changed.")
                         .font(.footnote)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
 

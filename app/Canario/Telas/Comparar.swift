@@ -186,9 +186,9 @@ struct Comparar: View {
         let pctV = Leitura.numero(maisVarejo.1, casas: 1)
 
         if maisEditorial.0.id == maisVarejo.0.id {
-            return "\(Traducao.rotuloExibido(maisEditorial.0)) leads both axes: it moved most across external signals and is the most present in the panel (\(pctE)% of the assortment). When both move together, it reads as an established attribute rather than a new movement."
+            return frase("\(Traducao.rotuloExibido(maisEditorial.0)) leads both axes: it moved most across external signals and is the most present in the panel (\(pctE)% of the assortment). When both move together, it reads as an established attribute rather than a new movement.")
         }
-        return "\(Traducao.rotuloExibido(maisEditorial.0)) moved most across external signals this week and occupies \(pctE)% of the panel assortment. \(Traducao.rotuloExibido(maisVarejo.0)) is most present in stores at \(pctV)%. The screen shows this gap between external attention and what brands already carry; what to do with it depends on your costs and timing."
+        return frase("\(Traducao.rotuloExibido(maisEditorial.0)) moved most across external signals this week and occupies \(pctE)% of the panel assortment. \(Traducao.rotuloExibido(maisVarejo.0)) is most present in stores at \(pctV)%. The screen shows this gap between external attention and what brands already carry; what to do with it depends on your costs and timing.")
     }
 
     private func alternar(_ id: String) {
@@ -284,12 +284,12 @@ struct LinhaComparada: View {
             }
             LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")).")
             if let pernas = indice?.pernasAtivas, !pernas.isEmpty {
-                LinhaInsumo(texto: "External signal \(Perna.frase(pernas)).")
+                LinhaInsumo(texto: "External signal \(Perna.baseadoEm(pernas)).")
             }
             if indice?.indice == nil {
                 LinhaInsumo(texto: cobertura.map {
                     "The panel measurement exists. The combined external signal is withheld: \($0.oQueFalta)."
-                } ?? "The panel measurement exists. No qualified combined external signal is available for this week.")
+                } ?? frase("The panel measurement exists. No qualified combined external signal is available for this week."))
             }
             if let semana = varejo?.semana ?? indice?.semana {
                 LinhaInsumo(texto: "Week of \(Formato.data(semana)).")

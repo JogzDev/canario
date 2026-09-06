@@ -117,6 +117,13 @@ jobs:
         run: "$PY coletor/teste_consolidar_revisao_luna.py"
       - name: Adjudicacao cega do Luna (sem rede)
         run: "$PY coletor/teste_preparar_adjudicacao_luna.py"
+      # A troca de idioma da A53 falha CALADA: uma frase fora do catalogo nao
+      # quebra o build, nao aparece no log e nao derruba teste nenhum -- ela so
+      # chega ao usuario em ingles no meio do portugues. Aconteceu com
+      # "Language" e "Ask me the first time", vistas no simulador em 05/09.
+      # Este portao le o codigo e o catalogo e exige que os dois concordem.
+      - name: Toda frase da interface esta traduzida (A53)
+        run: "$PY ferramentas/extrair_frases.py --conferir"
       - name: Modulos compilam
         run: "$PY -m py_compile coletor/*.py"
       # `py_compile` acima confere SINTAXE. Nome usado e nunca definido passa

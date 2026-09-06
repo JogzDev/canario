@@ -294,28 +294,28 @@ enum Similares {
         if r.nSimilares >= minimoParaPorcentagem {
             if let cheio = r.pctPrecoCheio {
                 frases.append(entao
-                    ? "\(Leitura.numero(cheio, casas: 0))% were at full price then."
-                    : "\(Leitura.numero(cheio, casas: 0))% remain at full price.")
+                    ? frase("\(Leitura.numero(cheio, casas: 0))% were at full price then.")
+                    : frase("\(Leitura.numero(cheio, casas: 0))% remain at full price."))
             }
             if let quebrada = r.pctGradeQuebrada {
                 var f = entao
-                    ? "\(Leitura.numero(quebrada, casas: 0))% had missing sizes"
-                    : "\(Leitura.numero(quebrada, casas: 0))% have missing sizes"
+                    ? frase("\(Leitura.numero(quebrada, casas: 0))% had missing sizes")
+                    : frase("\(Leitura.numero(quebrada, casas: 0))% have missing sizes")
                 if let esgotada = r.pctEsgotada, esgotada >= 5 {
                     f += entao
-                        ? ", and \(Leitura.numero(esgotada, casas: 0))% had no size left"
-                        : ", and \(Leitura.numero(esgotada, casas: 0))% have no size left"
+                        ? frase(", and \(Leitura.numero(esgotada, casas: 0))% had no size left")
+                        : frase(", and \(Leitura.numero(esgotada, casas: 0))% have no size left")
                 }
                 frases.append(f + ".")
             }
         } else {
-            frases.append("There are too few for percentages to be meaningful. Below \(minimoParaPorcentagem) matches, the items are shown without a summary statistic.")
+            frases.append(frase("There are too few for percentages to be meaningful. Below \(String(minimoParaPorcentagem)) matches, the items are shown without a summary statistic."))
         }
 
         if let mediana = r.precoMediana {
             frases.append(entao
-                ? "The median price then was \(Formato.dinheiro(mediana))."
-                : "The median price is \(Formato.dinheiro(mediana)).")
+                ? frase("The median price then was \(Formato.dinheiro(mediana)).")
+                : frase("The median price is \(Formato.dinheiro(mediana))."))
         }
         return frases
     }
@@ -337,14 +337,13 @@ enum Similares {
         let pct = Int(p.rounded())
         let posicao: String
         switch pct {
-        case ..<25:  posicao = "below most of them"
-        case 25..<45: posicao = "in the lower half"
-        case 45..<55: posicao = "near the middle"
-        case 55..<75: posicao = "in the upper half"
-        default:      posicao = "above most of them"
+        case ..<25:  posicao = frase("below most of them")
+        case 25..<45: posicao = frase("in the lower half")
+        case 45..<55: posicao = frase("near the middle")
+        case 55..<75: posicao = frase("in the upper half")
+        default:      posicao = frase("above most of them")
         }
-        return "\(Formato.dinheiro(alvo)) is at the \(pct)th percentile among priced matches — \(posicao). "
-             + "This is a panel price position, not a judgment of your price; your costs and margin are not included."
+        return frase("\(Formato.dinheiro(alvo)) is at the \(String(pct))th percentile among priced matches — \(posicao). This is a panel price position, not a judgment of your price; your costs and margin are not included.")
     }
 
     /// Como o limiar de semelhança foi aplicado. Regra 3: o usuário precisa
@@ -366,40 +365,43 @@ enum Similares {
            let minimoDimensoes = r.minimoDimensoes {
             let base = max(1, Int(ceil(0.7 * Double(dimensoes))))
             let alternativas = r.atributosPedidos > dimensoes
-                ? " Selections within the same dimension are alternatives."
+                ? " " + frase("Selections within the same dimension are alternatives.")
                 : ""
             // Mesma conta de `afrouxou`, e é de propósito que ela apareça uma
             // vez só: as duas frases da tela têm de concordar sempre.
             if afrouxou(r) {
                 let omitida = r.dimensaoRelaxada.map {
-                    " The expanded set does not require \(Traducao.rotuloDaDimensao($0).lowercased())."
+                    " " + frase("The expanded set does not require \(Traducao.rotuloDaDimensao($0).lowercased()).")
                 } ?? ""
                 let ancora = r.dimensaoRelaxada == "categoria"
-                    ? "The recognizable print motif still matches; clothing category may differ."
-                    : "Category still matches."
-                return "No useful set reached the usual \(base)-of-\(dimensoes)-dimension match. "
-                     + "Showing the closest available matches at \(minimoDimensoes) of \(dimensoes). \(ancora)"
+                    ? frase("The recognizable print motif still matches; clothing category may differ.")
+                    : frase("Category still matches.")
+                return frase("No useful set reached the usual \(String(base))-of-\(String(dimensoes))-dimension match. Showing the closest available matches at \(String(minimoDimensoes)) of \(String(dimensoes)). \(ancora)")
                      + omitida
                      + alternativas
             }
-            return "Matches cover at least \(minimoDimensoes) of \(dimensoes) selected dimensions; category always matches."
+            return frase("Matches cover at least \(String(minimoDimensoes)) of \(String(dimensoes)) selected dimensions; category always matches.")
                  + alternativas
         }
         if r.minimoEmComum == r.atributosPedidos {
-            return "All \(r.atributosPedidos) attributes matched."
+            return frase("All \(String(r.atributosPedidos)) attributes matched.")
         }
         if r.nComTodos > 0 {
             let n = r.nComTodos
-            return "\(n) piece\(n == 1 ? "" : "s") match\(n == 1 ? "es" : "") "
-                 + "all \(r.atributosPedidos) attributes; the rest, at least "
-                 + "\(r.minimoEmComum)."
+            // Duas frases inteiras, e não uma com `\(n == 1 ? "" : "s")` no
+            // meio. Plural montado por ternário só funciona em inglês: em
+            // português muda o verbo e o artigo, e nenhuma tradução consegue
+            // reordenar isso a partir de um sufixo solto. Cada forma é uma
+            // chave, e cada idioma escreve a sua.
+            return n == 1
+                ? frase("1 piece matches all \(String(r.atributosPedidos)) attributes; the rest, at least \(String(r.minimoEmComum)).")
+                : frase("\(String(n)) pieces match all \(String(r.atributosPedidos)) attributes; the rest, at least \(String(r.minimoEmComum)).")
         }
         // Quando nada bate em tudo, a frase antiga imprimia literalmente
         // "0 match all of them" -- anunciar a ausencia, que e a forma mais
         // desanimadora de dizer a mesma coisa. Aqui ela diz o melhor que existe
         // e aponta para onde a diferenca esta explicada, peca a peca.
-        return "Closest available: \(r.minimoEmComum) of your "
-             + "\(r.atributosPedidos) attributes. Each card shows what differs."
+        return frase("Closest available: \(String(r.minimoEmComum)) of your \(String(r.atributosPedidos)) attributes. Each card shows what differs.")
     }
 
     /// Uma linha de desfecho por peça — o "e o desfecho delas" da §5.
@@ -407,20 +409,20 @@ enum Similares {
         var partes: [String] = []
         if let g = p.grade, g.degraus > 0 {
             if g.esgotada {
-                partes.append("no size available")
+                partes.append(frase("no size available"))
             } else if g.quebrada {
                 let faltam = g.faltando.prefix(3).joined(separator: ", ")
-                partes.append("\(g.disponiveis) of \(g.degraus) sizes, missing \(faltam)")
+                partes.append(frase("\(String(g.disponiveis)) of \(String(g.degraus)) sizes, missing \(faltam)"))
             } else {
-                partes.append("full size range, \(g.degraus) sizes")
+                partes.append(frase("full size range, \(String(g.degraus)) sizes"))
             }
         }
         if let q = p.quedaPct {
-            partes.append("marked down \(Leitura.numero(q, casas: 0))%")
+            partes.append(frase("marked down \(Leitura.numero(q, casas: 0))%"))
         } else if p.preco != nil {
-            partes.append("at full price")
+            partes.append(frase("at full price"))
         }
-        return partes.isEmpty ? "no price or size data" : partes.joined(separator: " · ")
+        return partes.isEmpty ? frase("no price or size data") : partes.joined(separator: " · ")
     }
 
     /// Produto explicitamente esgotado não é alternativa útil. Falta de grade
@@ -450,21 +452,26 @@ enum Similares {
         // número: é menos do que o ideal, e ainda assim mais honesto que nada.
         guard let tem = p.termosEmComum else {
             return p.emComum >= total
-                ? "All \(total) attributes"
-                : "\(p.emComum) of \(total) attributes"
+                ? frase("All \(String(total)) attributes")
+                : frase("\(String(p.emComum)) of \(String(total)) attributes")
         }
         let conjunto = Set(tem)
         let faltam = pedidos.filter { !conjunto.contains($0.id) }
-        guard !faltam.isEmpty else { return "All \(total) attributes" }
+        guard !faltam.isEmpty else { return frase("All \(String(total)) attributes") }
         let nomes = faltam.map { Traducao.rotuloExibido($0).lowercased() }
-        return "\(total - faltam.count) of \(total) · no \(listar(nomes))"
+        return frase("\(String(total - faltam.count)) of \(String(total)) · no \(listar(nomes))")
     }
 
     /// "a", "a or b", "a, b or c" — o "or" importa: são atributos que a peça
     /// NÃO tem, e "and" leria como se ela tivesse os dois.
+    ///
+    /// O conectivo passou a ser traduzível: em português a lista é "a, b ou c",
+    /// e deixar " or " cravado aqui produziria "vermelho, floral or midi" —
+    /// meia frase em cada idioma, que é como uma tradução parcial se anuncia.
     private static func listar(_ itens: [String]) -> String {
         guard let ultimo = itens.last else { return "" }
         guard itens.count > 1 else { return ultimo }
-        return itens.dropLast().joined(separator: ", ") + " or " + ultimo
+        return itens.dropLast().joined(separator: ", ")
+             + frase(" or ") + ultimo
     }
 }

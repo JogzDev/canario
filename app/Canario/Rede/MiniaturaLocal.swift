@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import ImageIO
@@ -33,8 +34,8 @@ enum MiniaturaLocal {
 
         var rotulo: String {
             switch tipo {
-            case .primeiroPlano: return "Isolated item \(id + 1)"
-            case .fotoCompleta: return "Full photo"
+            case .primeiroPlano: return frase("Isolated item \(String(id + 1))")
+            case .fotoCompleta: return frase("Full photo")
             }
         }
     }
@@ -228,8 +229,34 @@ enum MiniaturaLocal {
                     return contexto.createCGImage(composta, from: recorte)
                 }
         } catch {
+            // NÃO É A MESMA COISA QUE "não achei peça", e o código tratava como
+            // se fosse.
+            //
+            // `VNGenerateForegroundInstanceMaskRequest` precisa do Neural
+            // Engine. No simulador ele falha sempre, com
+            // `Error code: 9; Could not create inference context` -- medido em
+            // 05/09, e foi o que fez a tela de confirmação aparecer só com
+            // "Foto inteira" numa captura que parecia mostrar a função sumida.
+            // Num aparelho a mesma exceção significaria outra coisa: memória,
+            // imagem corrompida, modelo indisponível.
+            //
+            // O retorno continua `[]`, porque a tela deve mesmo cair na foto
+            // inteira nos dois casos -- o que muda é que a falha para de ser
+            // indistinguível do silêncio legítimo. É a regra do §16 da
+            // blueprint aplicada ao app: não esconder falha como execução de
+            // sucesso vazia.
+            registrarFalhaDeSegmentacao(error)
             return []
         }
+    }
+
+    /// Onde a falha do segmentador fica visível para quem for investigar.
+    ///
+    /// `os_log` e não `print`: sai no Console.app de um aparelho físico, que é
+    /// o único lugar onde esta função roda de verdade.
+    private static func registrarFalhaDeSegmentacao(_ erro: Error) {
+        Logger(subsystem: "br.com.canario.ch3.app", category: "segmentacao")
+            .error("primeiro plano indisponível: \(erro.localizedDescription, privacy: .public)")
     }
 
     /// A medição vive em `MascaraDeInstancia`, que é testada sem simulador.

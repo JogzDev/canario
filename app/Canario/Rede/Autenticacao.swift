@@ -67,21 +67,21 @@ actor Autenticacao {
         var errorDescription: String? {
             switch self {
             case .semConfiguracao:
-                return "Account sync is not configured in this build. You can keep using DataDrobe without an account."
+                return frase("Account sync is not configured in this build. You can keep using DataDrobe without an account.")
             case .emailInvalido:
-                return "Enter a valid email address."
+                return frase("Enter a valid email address.")
             case .senhaCurta:
-                return "Use at least 10 characters for your password."
+                return frase("Use at least 10 characters for your password.")
             case .callbackInvalido:
-                return "The sign-in response could not be verified. Please try again."
+                return frase("The sign-in response could not be verified. Please try again.")
             case .rede:
-                return "The account service could not be reached. Your local Closet is still available."
+                return frase("The account service could not be reached. Your local Closet is still available.")
             case .resposta(let codigo, let mensagem):
                 if codigo == 400 && mensagem.lowercased().contains("invalid login") {
-                    return "The email or password is incorrect."
+                    return frase("The email or password is incorrect.")
                 }
                 if codigo == 429 {
-                    return "Too many attempts. Wait a moment and try again."
+                    return frase("Too many attempts. Wait a moment and try again.")
                 }
                 return mensagem.isEmpty ? "The account service returned HTTP \(codigo)." : mensagem
             }

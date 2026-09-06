@@ -3,7 +3,8 @@ import UIKit
 
 struct MenuLateral: View {
     let fechar: () -> Void
-    let escolher: (String) -> Void
+    /// Carrega a ENTRADA, não o rótulo. O rótulo traduz; a entrada não.
+    let escolher: (EntradaDoMenu) -> Void
     /// O menu é chrome, não conteúdo: ele não tem território próprio, herda o
     /// da aba de trás e inverte as duas cores da marca em cima disso. Vem por
     /// ambiente porque `Raiz` é quem sabe a aba visível -- ver `fundoDoMenu`.
@@ -81,7 +82,7 @@ struct MenuLateral: View {
                     // tela com a peça salva.
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(EntradaDoMenu.acoes, id: \.self) { entrada in
-                            Button(entrada.titulo) { escolher(entrada.titulo) }
+                            Button(entrada.titulo) { escolher(entrada) }
                                 .font(.system(size: 29, weight: .semibold))
                                 .foregroundStyle(Tokens.Cor.tintaDoMenu(territorio))
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,7 +95,7 @@ struct MenuLateral: View {
 
                     HStack(spacing: Tokens.Espaco.m) {
                         ForEach(EntradaDoMenu.leituras, id: \.self) { entrada in
-                            Button(entrada.titulo) { escolher(entrada.titulo) }
+                            Button(entrada.titulo) { escolher(entrada) }
                                 .font(.system(size: 15, weight: .medium))
                                 // 0,72 era medida para branco sobre azul
                                 // escuro. Com o par invertido ela cai a 3,5:1
@@ -123,7 +124,15 @@ struct MenuLateral: View {
 /// comportamento que o binário tem hoje, sem prometer conta ou IA ainda não
 /// conectadas.
 struct TelaDoMenu: View {
-    let nome: String
+    /// A ENTRADA, e não o texto dela.
+    ///
+    /// Este `switch` era `switch nome { case "Settings": ... }`, com o rótulo
+    /// exibido servindo de identificador. Com a interface em português nenhum
+    /// caso casaria e todo item do menu cairia no `default`, abrindo o Q&A —
+    /// sem erro e sem teste vermelho, porque os dois lados liam o mesmo
+    /// literal. O enum resolve a categoria inteira do problema, e não só a
+    /// ocorrência: agora falta um caso é erro de compilação.
+    let entrada: EntradaDoMenu
     var aoVoltarParaMenu: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
@@ -134,13 +143,13 @@ struct TelaDoMenu: View {
     var body: some View {
         NavigationStack {
             Group {
-                switch nome {
-                case "Favorites": FavoritosDoMenu(aoVoltar: voltar)
-                case "Account": ContaDoMenu(aoVoltar: voltar)
-                case "Terms": TermosDoMenu(aoVoltar: voltar)
-                case "Settings": AjustesDoMenu(aoVoltar: voltar)
-                case "Privacy": PrivacidadeDoMenu(aoVoltar: voltar)
-                default: PerguntasDoMenu(aoVoltar: voltar)
+                switch entrada {
+                case .favoritos: FavoritosDoMenu(aoVoltar: voltar)
+                case .conta: ContaDoMenu(aoVoltar: voltar)
+                case .termos: TermosDoMenu(aoVoltar: voltar)
+                case .ajustes: AjustesDoMenu(aoVoltar: voltar)
+                case .privacidade: PrivacidadeDoMenu(aoVoltar: voltar)
+                case .perguntas: PerguntasDoMenu(aoVoltar: voltar)
                 }
             }
             .navigationBarBackButtonHidden(true)
@@ -163,7 +172,7 @@ struct TelaDoMenu: View {
 
 /// Componente visual reutilizável de cabeçalho padronizado para todas as telas do Menu Lateral.
 struct CabecalhoDoMenu: View {
-    let titulo: String
+    let titulo: LocalizedStringKey
     let aoVoltar: () -> Void
 
     var body: some View {
@@ -269,15 +278,18 @@ private struct MiniaturaFavorita: View {
     @State private var imagem: UIImage?
 
     var body: some View {
-        Group {
+        // O painel do menu é uma das duas cores da marca (#0E1116 ou #BBE5ED,
+        // invertidas pelo território) e a peça ficava direto sobre ela. Mesmo
+        // aqui, onde a miniatura é sobretudo "qual é esta", a moldura neutra é
+        // barata e evita a única coisa que não pode acontecer no app: a mesma
+        // peça parecer de duas cores em duas telas.
+        SubstratoDaPeca(raio: Tokens.Raio.etiqueta, respiro: Tokens.Espaco.xs) {
             if let imagem {
                 Image(uiImage: imagem)
                     .resizable()
                     .scaledToFit()
             } else {
-                Image(systemName: "tshirt")
-                    .font(.system(size: 30, weight: .light))
-                    .foregroundStyle(Tokens.Cor.azulMarca)
+                PecaSemFoto(simbolo: "tshirt", tamanho: 30)
             }
         }
         .frame(width: 66, height: 78)
@@ -346,6 +358,15 @@ private struct AjustesDoMenu: View {
     @State private var preferenciaVisual = PreferenciaDaAnaliseVisual.perguntar
     @State private var carregouPreferenciaVisual = false
     @Environment(\.accessibilityReduceMotion) private var reduzirMovimento
+    /// O idioma é o primeiro ajuste da tela de propósito: quem precisa dele é
+    /// justamente quem não está lendo o resto com facilidade, e obrigar essa
+    /// pessoa a percorrer análise visual e armazenamento em inglês para achar
+    /// o botão que troca o idioma seria desenhar o problema dentro da solução.
+    /// `ObservedObject` sobre o singleton, e não `EnvironmentObject`: esta
+    /// tela é apresentada por `fullScreenCover` a partir da `Raiz`, e depender
+    /// da propagação do ambiente por uma apresentação modal é a classe de bug
+    /// que aparece como crash em produção e nunca no simulador.
+    @ObservedObject private var idioma = GestorDeIdioma.shared
 
     private let corFundo = Tokens.Cor.ceuFixo
     private let corLinha = Color.white.opacity(0.65)
@@ -353,11 +374,11 @@ private struct AjustesDoMenu: View {
     private var explicacaoDaPreferencia: String {
         switch preferenciaVisual {
         case .perguntar:
-            return "You'll be asked once, the first time you analyze a photo. Your answer is remembered and can be changed here."
+            return frase("You'll be asked once, the first time you analyze a photo. Your answer is remembered and can be changed here.")
         case .nuvem:
-            return "Recommended for more complete attribute suggestions. Only the reduced, metadata-free image you confirm is analyzed."
+            return frase("Recommended for more complete attribute suggestions. Only the reduced, metadata-free image you confirm is analyzed.")
         case .aparelho:
-            return "Analysis stays on this iPhone and does not use the shared cloud-analysis limit."
+            return frase("Analysis stays on this iPhone and does not use the shared cloud-analysis limit.")
         }
     }
 
@@ -389,6 +410,8 @@ private struct AjustesDoMenu: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
+                        secaoIdioma
+
                         if Supabase.analiseRemotaHabilitada {
                             secaoAnaliseVisual
                         }
@@ -453,7 +476,11 @@ private struct AjustesDoMenu: View {
         }
     }
 
-    private func opcaoAnaliseVisual(titulo: String, opcao: PreferenciaDaAnaliseVisual) -> some View {
+    /// `LocalizedStringKey` porque `Text(umaString)` não localiza — foi assim
+    /// que estas três opções apareceram em inglês numa tela já em português,
+    /// visto no simulador em 05/09. Mesmo motivo de `BotaoDeEntrada`.
+    private func opcaoAnaliseVisual(titulo: LocalizedStringKey,
+                                    opcao: PreferenciaDaAnaliseVisual) -> some View {
         Button {
             preferenciaVisual = opcao
         } label: {
@@ -475,6 +502,73 @@ private struct AjustesDoMenu: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    private var secaoIdioma: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Language")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 0) {
+                opcaoDeIdioma(titulo: Text("Match iPhone language"),
+                              opcao: .sistema)
+                divisorCard
+                // O nome de cada idioma vai NELE MESMO, nunca traduzido: é
+                // como o iOS lista os seus, e é o que permite alguém sair de
+                // um idioma que não lê. `Text(verbatim:)` porque "Português"
+                // não é chave de catálogo — é o nome próprio da língua.
+                opcaoDeIdioma(titulo: Text(verbatim: Idioma.ingles.nomeNativo),
+                              opcao: .ingles)
+                divisorCard
+                opcaoDeIdioma(titulo: Text(verbatim: Idioma.portugues.nomeNativo),
+                              opcao: .portugues)
+                divisorCard
+
+                Text("This changes the whole app: screens, messages, attribute names, dates and prices. Headlines keep the language their source published in.")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.primary.opacity(0.85))
+                    .lineSpacing(2)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+            }
+            .background(cardBackground)
+        }
+    }
+
+    private func opcaoDeIdioma(titulo: Text,
+                               opcao: PreferenciaDeIdioma) -> some View {
+        Button {
+            idioma.preferencia = opcao
+        } label: {
+            HStack {
+                titulo
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.primary)
+
+                // O "seguir o iPhone" precisa dizer no que ISSO dá agora,
+                // senão a pessoa escolhe às cegas entre três linhas e duas
+                // delas parecem iguais.
+                if opcao == .sistema {
+                    Text(verbatim: " · \(idioma.preferencia == .sistema ? idioma.atual.nomeNativo : PreferenciaDeIdioma.sistema.resolvido(preferidosDoSistema: Locale.preferredLanguages).nomeNativo)")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(.primary.opacity(0.6))
+                }
+
+                Spacer()
+
+                if idioma.preferencia == opcao {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(idioma.preferencia == opcao ? .isSelected : [])
     }
 
     private var secaoAcessibilidade: some View {
@@ -706,8 +800,14 @@ private struct PaginaInformativa<Conteudo: View>: View {
 
 struct BlocoInformativo: View {
     let icone: String
-    let titulo: String
-    let texto: String
+    /// `LocalizedStringKey`, e não `String`, pelo motivo já medido em
+    /// `BotaoDeEntrada`: com `String` o Xcode não enxerga o literal do lado de
+    /// quem chama, e o texto continua funcionando — só que sem tradução, sem
+    /// erro e sem entrar no catálogo. Termos, Privacidade e Q&A são o maior
+    /// bloco de texto do app; passar despercebido aqui seria a maior metade da
+    /// interface ficando em inglês dentro do português.
+    let titulo: LocalizedStringKey
+    let texto: LocalizedStringKey
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -721,8 +821,8 @@ struct BlocoInformativo: View {
 }
 
 private struct TextoComTitulo: View {
-    let titulo: String
-    let texto: String
+    let titulo: LocalizedStringKey
+    let texto: LocalizedStringKey
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {

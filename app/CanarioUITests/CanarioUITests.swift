@@ -1,9 +1,24 @@
 import XCTest
 
 final class CanarioUITests: XCTestCase {
+    /// Todo fluxo abre o app **em inglês**, e isso é fixado aqui.
+    ///
+    /// Desde a A53 a interface segue o idioma do iPhone por padrão, e estas
+    /// asserções procuram rótulos em inglês ("Add your clothes", "Filter
+    /// Closet"). Num simulador em português elas falhariam sem que nada
+    /// estivesse quebrado — e, pior, num simulador em inglês continuariam
+    /// verdes escondendo uma regressão de tradução. Fixar o idioma separa as
+    /// duas perguntas: aqui se testa NAVEGAÇÃO, e a tradução tem portão
+    /// próprio (`ferramentas/extrair_frases.py --conferir`).
+    ///
+    /// `-chave valor` no argumento de lançamento entra no `UserDefaults` do
+    /// processo, que é de onde o `GestorDeIdioma` lê. Não grava nada no
+    /// aparelho: vale só para esta execução.
+    private static let idiomaFixo = ["-idioma_da_interface", "ingles"]
+
     private func aplicativo(argumentos: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = argumentos
+        app.launchArguments = Self.idiomaFixo + argumentos
         return app
     }
 

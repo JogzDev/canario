@@ -4,6 +4,11 @@ import SwiftUI
 struct CanarioApp: App {
     @StateObject private var conta = GestorDaConta.shared
     @StateObject private var links = CentralDeLinksCompartilhados.shared
+    /// O idioma vive na raiz porque troca a CENA inteira, e não uma tela.
+    /// Ver `Idioma.swift`: mudar `preferencia` reconstrói o bundle das frases
+    /// calculadas e, aqui, troca o `locale` do ambiente — que é o que faz o
+    /// SwiftUI reler o catálogo sem o app fechar.
+    @StateObject private var idioma = GestorDeIdioma.shared
 
     var body: some Scene {
         // A paleta escura experimental de 19/08 nunca passou por revisão de
@@ -30,6 +35,14 @@ struct CanarioApp: App {
             }
             .environmentObject(conta)
             .environmentObject(links)
+            .environmentObject(idioma)
+            // Trocar `\.locale` invalida toda a subárvore que o lê, e todo
+            // `Text(LocalizedStringKey)` lê. É por isso que NÃO há um `.id()`
+            // aqui forçando a cena a renascer: `.id()` funcionaria, e de
+            // quebra fecharia os Ajustes no instante em que a pessoa toca em
+            // "Português" -- porque o estado da apresentação modal mora na
+            // `Raiz`, dentro do que o `.id()` destruiria.
+            .environment(\.locale, idioma.locale)
             .onOpenURL {
                 conta.receberLink($0)
                 links.receber($0)
@@ -47,9 +60,25 @@ struct Raiz: View {
     typealias Aba = AbaDoApp
     @EnvironmentObject private var links: CentralDeLinksCompartilhados
 
+    /// A `Raiz` PRECISA observar o idioma, e o motivo não é óbvio.
+    ///
+    /// Trocar `\.locale` no ambiente invalida quem LÊ o ambiente, e todo
+    /// `Text(LocalizedStringKey)` lê — por isso o conteúdo das telas troca
+    /// sozinho. O rótulo de uma aba não é isso: `Aba.armario.titulo` é uma
+    /// `String` já calculada por `frase(_:)` quando o `body` rodou, e o `body`
+    /// da `Raiz` não roda de novo só porque um valor de ambiente mudou lá em
+    /// cima. `Raiz()` também não tem propriedade nenhuma para o SwiftUI
+    /// comparar, então ele conclui que a view é a mesma e pula o `body`.
+    ///
+    /// Resultado medido no simulador em 05/09: a tela inteira virou para o
+    /// inglês e a barra continuou "Estúdio · Closet · Tendências". Observar o
+    /// gestor aqui é o que amarra o `body` da raiz à troca — e, com ele, a
+    /// barra de compatibilidade e o menu lateral, que são filhos deste `body`.
+    @ObservedObject private var idioma = GestorDeIdioma.shared
+
     struct ItemDoMenu: Identifiable {
-        let nome: String
-        var id: String { nome }
+        let entrada: EntradaDoMenu
+        var id: String { entrada.rawValue }
     }
 
     /// Argumento de inspeção visual: permite abrir o Closet no simulador sem
@@ -72,10 +101,10 @@ struct Raiz: View {
         "-CanarioMenuAberto")
     @State private var itemDoMenu: ItemDoMenu? = {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirPrivacy") {
-            return ItemDoMenu(nome: "Privacy")
+            return ItemDoMenu(entrada: .privacidade)
         }
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirAccount") {
-            return ItemDoMenu(nome: "Account")
+            return ItemDoMenu(entrada: .conta)
         }
         return nil
     }()
@@ -109,7 +138,7 @@ struct Raiz: View {
             Analisar(aoFechar: { buscaAberta = false })
         }
         .fullScreenCover(item: $itemDoMenu) { item in
-            TelaDoMenu(nome: item.nome)
+            TelaDoMenu(entrada: item.entrada)
         }
         .sheet(item: $links.recebida) { peca in
             ReceberPecaCompartilhada(peca: peca)
@@ -186,9 +215,9 @@ struct Raiz: View {
             if menuAberto {
                 MenuLateral(
                     fechar: { menuAberto = false },
-                    escolher: { item in
+                    escolher: { entrada in
                         menuAberto = false
-                        itemDoMenu = ItemDoMenu(nome: item)
+                        itemDoMenu = ItemDoMenu(entrada: entrada)
                     })
                 // Só o VALOR do ambiente, não o modificador `.territorio`:
                 // ele também pinta um fundo de tela cheia, e aqui isso

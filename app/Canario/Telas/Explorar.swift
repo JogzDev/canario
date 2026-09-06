@@ -739,7 +739,7 @@ struct Explorar: View {
         } catch {
             let mensagem = (error as? LocalizedError)?.errorDescription ?? "\(error)"
             if mostrouCache {
-                avisoDeCache = "Offline · showing the last sync"
+                avisoDeCache = frase("Offline · showing the last sync")
                 erro = nil
             } else {
                 erro = mensagem
@@ -1052,6 +1052,7 @@ struct ListaDeEventos: View {
 /// regra que produziu o estado e quem publicou.
 struct CartaoDeMudanca: View {
     let indice: IndiceSemanal
+    /// Rótulo de termo vindo da taxonomia, já traduzido por `Traducao`.
     let rotulo: String
     let series: [PontoSerie]
     @Environment(\.territorio) private var territorio

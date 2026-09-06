@@ -216,7 +216,7 @@ enum NomeCompartilhavel {
     static func resolver(_ peca: PecaSalva, catalogo: CatalogoDoArmario) -> String {
         if let escrito = apelidoValido(peca.apelido) { return escrito }
         if let categoria = catalogo.categoria(de: peca) { return categoria }
-        return "Clothing item"
+        return frase("Clothing item")
     }
 
     /// Conveniência para quem tem só a lista de termos em mãos. **Monta o

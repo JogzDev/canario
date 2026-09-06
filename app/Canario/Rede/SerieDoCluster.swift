@@ -82,8 +82,7 @@ enum SerieDoCluster {
         let umaFonte = r.pontos.filter { ($0.nPernasMin ?? 2) < 2 }.count
         guard ralos > 0 else { return nil }
         if ralos == r.pontos.count {
-            return "Every point has partial attribute or source coverage; "
-                 + "the line shows the available index, not a directional state."
+            return frase("Every point has partial attribute or source coverage; the line shows the available index, not a directional state.")
         }
         var causas = ["\(ralos) of \(r.pontos.count) points have partial coverage"]
         if umaFonte > 0 { causas.append("\(umaFonte) use only one source") }
@@ -121,14 +120,16 @@ enum SerieDoCluster {
     /// diz o que falta — nunca um espaço em branco.
     static func porQueNaoDesenha(_ r: Resposta?) -> String? {
         guard let r else {
-            return "The history for these attributes could not be loaded."
+            return frase("The history for these attributes could not be loaded.")
         }
         if r.atributosComPeso == 0 {
-            return "These attributes do not have panel weights yet, so a combined line cannot be drawn."
+            return frase("These attributes do not have panel weights yet, so a combined line cannot be drawn.")
         }
         if r.pontos.count < pontosMinimos {
-            return "There are \(r.pontos.count) week\(r.pontos.count == 1 ? "" : "s") with readings; "
-                 + "at least \(pontosMinimos) are required to draw the chart. History grows with each collection."
+            let minimo = String(pontosMinimos)
+            return r.pontos.count == 1
+                ? frase("There is 1 week with readings; at least \(minimo) are required to draw the chart. History grows with each collection.")
+                : frase("There are \(String(r.pontos.count)) weeks with readings; at least \(minimo) are required to draw the chart. History grows with each collection.")
         }
         return nil
     }

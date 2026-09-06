@@ -155,10 +155,10 @@ enum CurvaDeTamanhos {
 
         let sujeito: String
         if nomes.count == 1 {
-            sujeito = "Size \(nomes[0]) leaves availability fastest in the panel"
+            sujeito = frase("Size \(nomes[0]) leaves availability fastest in the panel")
         } else {
             let lista = nomes.dropLast().joined(separator: ", ") + " and " + (nomes.last ?? "")
-            sujeito = "Sizes \(lista) leave availability at the same pace and are the panel's fastest"
+            sujeito = frase("Sizes \(lista) leave availability at the same pace and are the panel's fastest")
         }
 
         return sujeito + ": "
@@ -173,13 +173,13 @@ enum CurvaDeTamanhos {
         let razao = m / g
         let vezes = Leitura.numero(razao, casas: 2)
         if razao >= 1.15 {
-            return "Availability breaks more often among smaller sizes: they leave \(vezes) times faster than larger sizes."
+            return frase("Availability breaks more often among smaller sizes: they leave \(vezes) times faster than larger sizes.")
         }
         if razao <= 0.87 {
             let inverso = Leitura.numero(1 / razao, casas: 2)
-            return "Availability breaks more often among larger sizes: they leave \(inverso) times faster than smaller sizes."
+            return frase("Availability breaks more often among larger sizes: they leave \(inverso) times faster than smaller sizes.")
         }
-        return "Both ends of the size range moved at a similar pace in this window; no directional shape is declared."
+        return frase("Both ends of the size range moved at a similar pace in this window; no directional shape is declared.")
     }
 
     /// §24, ressalva obrigatória. Não é rodapé: é a condição de uso do número.
@@ -194,7 +194,7 @@ enum CurvaDeTamanhos {
         let risco = linhas.reduce(0) { $0 + $1.nEmRisco }
         let grades = linhas.map(\.nGrades).max() ?? 0
         let semana = linhas.first?.semana ?? ""
-        return "\(risco) sizes at risk across \(grades) panel size ranges, a \(janelaDias)-day window, week of \(Formato.data(semana))."
+        return frase("\(String(risco)) sizes at risk across \(String(grades)) panel size ranges, a \(String(janelaDias))-day window, week of \(Formato.data(semana)).")
     }
 
     /// Quais tamanhos a curva pode destacar sem contrariar a própria manchete.

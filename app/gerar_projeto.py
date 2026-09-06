@@ -318,7 +318,10 @@ def main():
     A('\t\t\tcompatibilityVersion = "Xcode 14.0";')
     A("\t\t\tdevelopmentRegion = en;")
     A("\t\t\thasScannedForEncodings = 0;")
-    A("\t\t\tknownRegions = (en, Base, );")
+    # pt-BR entra aqui, e nao so no catalogo: sem a regiao declarada no
+    # projeto, o Xcode compila o .xcstrings mas nao empacota o pt-BR.lproj --
+    # e o app fica com a troca de idioma ligada e sem tradução para servir.
+    A("\t\t\tknownRegions = (en, \"pt-BR\", Base, );")
     A("\t\t\tmainGroup = {} ;".format(grupo_raiz))
     A("\t\t\tproductRefGroup = {} ;".format(grupo_produtos))
     A("\t\t\tpackageReferences = (\n\t\t\t\t{} /* XCRemoteSwiftPackageReference \"GoogleSignIn-iOS\" */,\n\t\t\t);".format(
