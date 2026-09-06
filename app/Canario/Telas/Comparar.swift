@@ -273,26 +273,26 @@ struct LinhaComparada: View {
             }
 
             HStack(alignment: .top, spacing: Tokens.Espaco.g) {
-                eixo(titulo: "In the panel",
+                eixo(titulo: frase("In the panel"),
                      valor: varejo?.valorBruto.map {
                          Leitura.numero($0, casas: 1) + "%"
                      } ?? "—",
                      detalhe: varejo?.nAmostra.map { "\($0) items" } ?? "—")
-                eixo(titulo: "External signal",
+                eixo(titulo: frase("External signal"),
                      valor: Explicacao.numeroComUnidade(indice?.indice),
                      detalhe: indice?.indice == nil ? "—" : "statistical scale")
             }
-            LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")).")
+            LinhaInsumo(texto: frase("Panel: \(Explicacao.unidade(daFonte: "varejo"))."))
             if let pernas = indice?.pernasAtivas, !pernas.isEmpty {
-                LinhaInsumo(texto: "External signal \(Perna.baseadoEm(pernas)).")
+                LinhaInsumo(texto: frase("External signal \(Perna.baseadoEm(pernas))."))
             }
             if indice?.indice == nil {
                 LinhaInsumo(texto: cobertura.map {
-                    "The panel measurement exists. The combined external signal is withheld: \($0.oQueFalta)."
+                    frase("The panel measurement exists. The combined external signal is withheld: \($0.oQueFalta).")
                 } ?? frase("The panel measurement exists. No qualified combined external signal is available for this week."))
             }
             if let semana = varejo?.semana ?? indice?.semana {
-                LinhaInsumo(texto: "Week of \(Formato.data(semana)).")
+                LinhaInsumo(texto: frase("Week of \(Formato.data(semana))."))
             }
         }
         .padding(.vertical, Tokens.Espaco.xs)

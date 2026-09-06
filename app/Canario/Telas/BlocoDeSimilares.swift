@@ -68,7 +68,7 @@ struct CartaoDeSimilar: View {
                     }
                     LinhaInsumo(texto: Similares.desfecho(peca))
                     if let u = peca.url, let link = URL(string: u) {
-                        Link("View on the brand's website", destination: link)
+                        Link(frase("View on the brand's website"), destination: link)
                             .font(Tokens.Fonte.miudo)
                     }
                 }

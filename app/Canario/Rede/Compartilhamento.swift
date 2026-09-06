@@ -76,7 +76,7 @@ enum CartaoCompartilhavel {
                     dentroDe: CGRect(x: 90, y: 80, width: 900, height: 650))
                 miniatura.draw(in: destino)
             }
-            let titulo = NSAttributedString(string: nome.isEmpty ? "A piece from my Closet" : nome,
+            let titulo = NSAttributedString(string: nome.isEmpty ? frase("A piece from my Closet") : nome,
                 attributes: [.font: UIFont.systemFont(ofSize: 72, weight: .bold),
                              .foregroundColor: UIColor.black])
             titulo.draw(in: CGRect(x: 90, y: temFoto ? 760 : 210, width: 900, height: 190))

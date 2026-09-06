@@ -145,11 +145,9 @@ enum Similares {
             // falharam -- e não dizer isso deixa a pessoa achando que basta
             // desmarcar um atributo à mão para o painel responder.
             let tentouMais = (r.dimensoesPedidas ?? 0) > 1
-                ? " I also tried a wider match, dropping the least distinctive dimension, and that found nothing either."
+                ? " " + frase("I also tried a wider match, dropping the least distinctive dimension, and that found nothing either.")
                 : ""
-            return ["I found no panel item with \(nomes).\(tentouMais) "
-                  + "It may be an uncommon combination, "
-                  + "or the panel may not cover it yet; the data cannot distinguish those cases."]
+            return [frase("I found no panel item with \(nomes).\(tentouMais) It may be an uncommon combination, or the panel may not cover it yet; the data cannot distinguish those cases.")]
         }
 
         // Quando o motor afrouxou, as peças encontradas **não têm** todos os

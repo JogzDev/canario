@@ -729,13 +729,43 @@ private struct PerguntasDoMenu: View {
     var aoVoltar: () -> Void
     private let corFundo = Tokens.Cor.ceuFixo
 
-    private let perguntas: [(String, String)] = [
-        ("What is a confirmed movement?", "Two consecutive weeks outside the usual range, with at least two independent evidence legs agreeing, such as search interest and relevant fashion coverage. One week alone is not a movement, however large the reading looks, and a spike in a single source is shown separately instead of being promoted to a trend."),
-        ("When does a restock count?", "Only after a second visit confirms it: a size has to disappear, come back and stay available. A size that reappears for a single day may be a catalog correction rather than a buying decision, so the newest confirmed restock is usually from the day before."),
-        ("Why can two dates be different?", "Google search interest and editorial sources close their weeks on different schedules. The app shows the date attached to each signal and does not silently pretend they are the same observation."),
-        ("Are Similar Pieces recommendations?", "No. They are observed products sharing the selected attributes. Price, discount and availability describe the store at collection time; they are not purchase advice."),
-        ("Does the app follow my garment over time?", "No. Opening a saved Closet item recalculates today's market reading for its attributes. The app does not claim that your personal garment rose or fell in the market."),
-        ("How fresh is Weekly Trends?", "Search interest uses the latest closed Google Trends week available under the collection cadence. Fashion coverage uses publication dates. Each section shows its own evidence date so freshness can be audited.")
+    /// A pergunta tem CHAVE estável e TEXTO traduzível, e as duas são coisas
+    /// diferentes.
+    ///
+    /// Era uma tupla `(String, String)` desenhada por `Text(pergunta.0)` — e
+    /// `Text` de uma `String` não localiza nada, então as seis perguntas e as
+    /// seis respostas, o maior bloco de texto do app, ficavam em inglês numa
+    /// interface em português sem nada acusar.
+    ///
+    /// Ao traduzir, o `ForEach(perguntas, id: \.0)` quebrou: o id era o
+    /// PRÓPRIO texto. É a terceira vez que este projeto encontra a mesma
+    /// doença — o rótulo servindo de identidade — depois do menu lateral e do
+    /// `Modo` da tela de conta. Aqui ela nasce resolvida.
+    private struct Pergunta: Identifiable {
+        let id: String
+        let pergunta: LocalizedStringKey
+        let resposta: LocalizedStringKey
+    }
+
+    private let perguntas: [Pergunta] = [
+        Pergunta(id: "movimento_confirmado",
+                 pergunta: "What is a confirmed movement?",
+                 resposta: "Two consecutive weeks outside the usual range, with at least two independent evidence legs agreeing, such as search interest and relevant fashion coverage. One week alone is not a movement, however large the reading looks, and a spike in a single source is shown separately instead of being promoted to a trend."),
+        Pergunta(id: "reposicao_conta",
+                 pergunta: "When does a restock count?",
+                 resposta: "Only after a second visit confirms it: a size has to disappear, come back and stay available. A size that reappears for a single day may be a catalog correction rather than a buying decision, so the newest confirmed restock is usually from the day before."),
+        Pergunta(id: "datas_diferentes",
+                 pergunta: "Why can two dates be different?",
+                 resposta: "Google search interest and editorial sources close their weeks on different schedules. The app shows the date attached to each signal and does not silently pretend they are the same observation."),
+        Pergunta(id: "similares_recomendacao",
+                 pergunta: "Are Similar Pieces recommendations?",
+                 resposta: "No. They are observed products sharing the selected attributes. Price, discount and availability describe the store at collection time; they are not purchase advice."),
+        Pergunta(id: "acompanha_peca",
+                 pergunta: "Does the app follow my garment over time?",
+                 resposta: "No. Opening a saved Closet item recalculates today's market reading for its attributes. The app does not claim that your personal garment rose or fell in the market."),
+        Pergunta(id: "frescor_trends",
+                 pergunta: "How fresh is Weekly Trends?",
+                 resposta: "Search interest uses the latest closed Google Trends week available under the collection cadence. Fashion coverage uses publication dates. Each section shows its own evidence date so freshness can be audited."),
     ]
 
     var body: some View {
@@ -750,13 +780,13 @@ private struct PerguntasDoMenu: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        ForEach(perguntas, id: \.0) { pergunta in
+                        ForEach(perguntas) { pergunta in
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(pergunta.0)
+                                Text(pergunta.pergunta)
                                     .font(.system(size: 16, weight: .bold))
                                     .foregroundStyle(.primary)
 
-                                Text(pergunta.1)
+                                Text(pergunta.resposta)
                                     .font(.system(size: 14, weight: .regular))
                                     .foregroundStyle(.primary.opacity(0.85))
                                     .lineSpacing(3)

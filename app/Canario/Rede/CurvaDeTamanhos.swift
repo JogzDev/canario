@@ -163,8 +163,7 @@ enum CurvaDeTamanhos {
 
         return sujeito + ": "
              + "\(Leitura.numero(taxaPico, casas: 1))% of available sizes became unavailable "
-             + "during the window, versus \(Leitura.numero(taxaVale, casas: 1))% for \(rotuloVale) — "
-             + "\(vezes) times its rate."
+             + frase("during the window, versus \(Leitura.numero(taxaVale, casas: 1))% for \(rotuloVale) — \(vezes) times its rate.")
     }
 
     /// O formato da quebra, que é o que a §24 chama de "à esquerda" ou "à direita".
@@ -184,9 +183,9 @@ enum CurvaDeTamanhos {
 
     /// §24, ressalva obrigatória. Não é rodapé: é a condição de uso do número.
     static let ressalvas = [
-        "Your brand's audience is not the panel's average audience. Fit and customer mix are yours; this is market context, not a prescription.",
-        "Inventory quantities are not visible. Brands often buy fewer units at the ends of a size range, which alone can make them disappear faster.",
-        "The rate counts sizes that were available and then became unavailable. It is not a sales measure; removal can mean a sale, transfer or end of line.",
+        frase("Your brand's audience is not the panel's average audience. Fit and customer mix are yours; this is market context, not a prescription."),
+        frase("Inventory quantities are not visible. Brands often buy fewer units at the ends of a size range, which alone can make them disappear faster."),
+        frase("The rate counts sizes that were available and then became unavailable. It is not a sales measure; removal can mean a sale, transfer or end of line."),
     ]
 
     /// O que sustenta o número, em uma linha (regra 3).

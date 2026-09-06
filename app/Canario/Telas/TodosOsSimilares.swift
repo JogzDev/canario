@@ -39,9 +39,10 @@ struct TodosOsSimilares: View {
                 }
 
                 if resumo.nSimilares > pecas.count {
-                    LinhaInsumo(texto: "Showing \(pecas.count) of \(resumo.nSimilares), "
-                              + "including one of the closest matches per brand. "
-                              + "Percentages above use all \(resumo.nSimilares) matches.")
+                    // Uma frase só: três chaves somadas obrigariam o português
+                    // a manter a ordem do inglês, e a ordem é justamente o que
+                    // muda entre idiomas.
+                    LinhaInsumo(texto: frase("Showing \(String(pecas.count)) of \(String(resumo.nSimilares)), including one of the closest matches per brand. Percentages above use all \(String(resumo.nSimilares)) matches."))
                 }
             }
             .padding(Tokens.Espaco.m)

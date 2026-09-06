@@ -83,7 +83,7 @@ actor Autenticacao {
                 if codigo == 429 {
                     return frase("Too many attempts. Wait a moment and try again.")
                 }
-                return mensagem.isEmpty ? "The account service returned HTTP \(codigo)." : mensagem
+                return mensagem.isEmpty ? frase("The account service returned HTTP \(String(codigo)).") : mensagem
             }
         }
     }
@@ -320,7 +320,7 @@ actor Autenticacao {
         let (dados, resposta) = try await sessaoHTTP.data(for: req)
         let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(codigo) else {
-            throw Falha.resposta(codigo, "The account could not be deleted. Please try again.")
+            throw Falha.resposta(codigo, frase("The account could not be deleted. Please try again."))
         }
         let respostaDaExclusao = try? JSONDecoder().decode(RespostaDeExclusao.self, from: dados)
         let usavaApple = atual.usuario.provedores?.contains("apple") == true
@@ -345,7 +345,7 @@ actor Autenticacao {
         let (_, resposta) = try await sessaoHTTP.data(for: req)
         let status = (resposta as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            throw Falha.resposta(status, "Apple authorization could not be prepared for account deletion.")
+            throw Falha.resposta(status, frase("Apple authorization could not be prepared for account deletion."))
         }
     }
 

@@ -116,6 +116,12 @@ PERMITIDO = [
     "nao e previsao",
     "nem garantia de venda",
     "nao previsoes",
+    # A traducao de "not a forecast" cai na mesma familia: o ingles nao usa
+    # nenhuma palavra da lista, e o portugues usa -- negando. O portao acusou
+    # as duas frases do RelatorioDoTermo em 05/09, e a acusacao estava certa em
+    # perguntar; a liberacao e explicita porque negar a promessa e o oposto de
+    # faze-la, e e onde o §6 quer a palavra aparecendo.
+    "nao uma previsao",
 ]
 
 

@@ -84,9 +84,9 @@ enum SerieDoCluster {
         if ralos == r.pontos.count {
             return frase("Every point has partial attribute or source coverage; the line shows the available index, not a directional state.")
         }
-        var causas = ["\(ralos) of \(r.pontos.count) points have partial coverage"]
-        if umaFonte > 0 { causas.append("\(umaFonte) use only one source") }
-        return causas.joined(separator: "; ") + ". They are marked on the chart."
+        var causas = [frase("\(String(ralos)) of \(String(r.pontos.count)) points have partial coverage")]
+        if umaFonte > 0 { causas.append(frase("\(String(umaFonte)) use only one source")) }
+        return causas.joined(separator: "; ") + ". " + frase("They are marked on the chart.")
     }
 
     /// Por que o gráfico não aparece, quando não aparece. Sempre uma frase que

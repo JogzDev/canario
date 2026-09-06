@@ -127,8 +127,8 @@ actor Supabase {
         /// Toda mensagem de recusa termina lembrando que o caminho manual
         /// continua aberto. Nenhuma dessas falhas impede adicionar a peça.
         static func mensagem(codigo: Int, corpo: String) -> String {
-            let reset = "It resets at midnight, São Paulo time."
-            let manual = "You can still add the item and choose its attributes yourself."
+            let reset = frase("It resets at midnight, São Paulo time.")
+            let manual = frase("You can still add the item and choose its attributes yourself.")
             switch Falha.codigoDoCorpo(corpo) {
             case "daily_origin_limit":
                 return frase("This network reached today's limit of 12 visual analyses. \(reset) \(manual)")

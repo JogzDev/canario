@@ -52,7 +52,15 @@ Não é pesquisa aberta. É ler os termos das fontes que já estão em
 **Portão de saída — um dos dois, e é preciso escrever qual:**
 
 - **pelo menos uma** fonte externa com método autorizado documentado; ou
-- um relatório dizendo que nenhuma existe, com o que faltaria em cada uma.
+- um relatório dizendo que **nenhuma das listadas** serve, com o que faltaria em
+  cada uma, mais uma decisão explícita sobre procurar fora da lista.
+
+> **Correção de 05/09, vinda da revisão do Codex, e ela procede.** A primeira
+> redação deste portão dizia "um relatório dizendo que nenhuma existe". Isso
+> confunde *não achamos acesso nas sete fontes que já listamos* com *não existe
+> fonte externa utilizável*, que é uma afirmação muito maior e que este exercício
+> não sustenta. A lista atual nasceu de uma varredura anterior com outro
+> objetivo; ela não é o universo.
 
 **Por que isto primeiro:** as lacunas estruturais 2, 3 e 4 da própria blueprint
 (entidade canônica separada da observação, identidade lógica independente da
@@ -80,8 +88,23 @@ Mostrar ao Pedro, à Lorena e ao Victor. Não perguntar se gostaram.
 2. alguém **abriu a fonte** para conferir?
 3. alguém **pediu a próxima edição** sem ser convidado?
 
-**Portão de saída:** pelo menos um dos três, com pelo menos uma pessoa. Se
-nenhum acontecer, o problema não é o pipeline — e construí-lo não conserta.
+**O portão é ASSIMÉTRICO, e isso é deliberado.**
+
+- **Negativo forte:** se nenhum dos três sinais aparecer com nenhuma das três
+  pessoas, isso é evidência real de que o problema não está no pipeline — e
+  construí-lo não conserta.
+- **Positivo fraco:** um clique ou uma pergunta de uma pessoa é sinal
+  exploratório, **não** validação do produto. Ele autoriza continuar; não
+  autoriza dizer que a utilidade está provada.
+
+> **Duas correções de 05/09, vindas da revisão do Codex.** A primeira redação
+> tratava "pelo menos um dos três" como portão de validação, e isso é fraco
+> demais para a conclusão que carregava. A segunda: uma edição feita só com
+> composição de etiqueta **não valida o radar** de cores, cortes, contexto
+> internacional e Brasil — ela testa uma pergunta mais estreita e mais barata,
+> *uma leitura quinzenal com evidência rastreável interessa a esta pessoa?*. É
+> uma pergunta que vale responder cedo, desde que ninguém a confunda com a
+> outra.
 
 **Por que isto antes de P2:** a blueprint reconhece que *"conversão, disposição
 de pagar e diferenciação exigem validação própria; não são consequência
@@ -124,16 +147,15 @@ mesma corrige a conta: em cadência quinzenal, isso é **~24 semanas**, não qua
 A honestidade está certa; a regra, aplicada a todo mundo, não fecha dentro do
 horizonte deste projeto.
 
-**Não proponho enfraquecer o portão. Proponho separar o público:**
+**A saída do Codex é melhor que a minha, e eu adoto a dele.** Eu havia proposto
+separar o público — 4 edições revisadas para o piloto, 12 para cliente pagante.
+Isso enfraquece a regra para alguém. A proposta dele preserva a regra inteira e
+resolve o calendário de outro jeito: **as 12 edições revisadas correm ao lado do
+piloto, não antes dele.**
 
-- **piloto com 3 a 5 leitores conhecidos:** revisão integral das primeiras
-  **4** edições, com erro crítico zero. Quem lê sabe que é piloto;
-- **publicação para cliente pagante:** as 12 edições integrais continuam
-  exigidas, sem exceção.
-
-A regra não estava errada — estava aplicada ao público errado. Um piloto com
-três pessoas que sabem que é piloto não carrega o mesmo risco de uma assinatura
-comercial, e tratar os dois igual é o que torna o portão inalcançável.
+O piloto começa quando houver a primeira edição revisada; a exigência das 12
+continua valendo e vai sendo cumprida enquanto o piloto acontece. Nada é
+dispensado, e ninguém espera 24 semanas para começar a aprender.
 
 ### 4.2 As emendas que faltam contra o §34
 

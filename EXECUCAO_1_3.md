@@ -13,7 +13,7 @@ prova**. Uma linha aqui é um fato reproduzível ou não é uma linha.
 | Pacote | Estado | O que sustenta |
 |---|---|---|
 | P0 — recuperação e contrato | **fechado** | worktree `Canario-1.3-blueprint`, branch `codex/1.3-blueprint`, baseline `6f6eac2` |
-| **P1 — uma passagem inteira** | **fechado em 05/09** | laboratório executado em PostgreSQL 17.10 real, 17 checagens, 3 execuções seguidas |
+| **P1 — uma passagem inteira** | **parte transacional validada**; a cadeia extração→admissão, não | laboratório executado em PostgreSQL 17.10 real, 17 checagens, 3 execuções seguidas |
 | P2 — dados duráveis | não começou | — |
 | **F1 — fontes utilizáveis** | **não começou, e é o gargalo** | nenhuma fonte externa admitida; só `datadrobe_curadoria_interna` está `green` |
 | P3 — afirmações e edição | não começou | depende de P2 e F1 |
@@ -111,6 +111,24 @@ escalada é negada para os três papéis, inclusive o bootstrap.
 para sete casos diferentes do mesmo arquivo. A mensagem agora carrega o SQL
 recusado.
 
+### Por que isto NÃO é "P1 fechado"
+
+A blueprint pede, nos itens 5 a 7 do checklist do P1, que as etiquetas
+sintéticas passem **pelo materializador e pelo parser existentes**, que as
+submissões sejam consolidadas **pelo código de revisão real**, e que a cadeia
+original seja reaberta e comparada. A fixture não faz nada disso: ela monta o
+manifesto direto e deriva os hashes de rótulos.
+
+Isso é suficiente para o que ela se propõe — provar persistência, permissões,
+concorrência, atomicidade e idempotência —, e é insuficiente para a parte do P1
+que liga **uma extração revisada** à **sua admissão no banco**. Essa ligação
+continua sem demonstração.
+
+O rótulo honesto, e o que a revisão externa de 05/09 apontou corretamente, é
+**"parte transacional do P1 validada"**. Fechar o P1 exige uma segunda fixture,
+que nasça do `materializar_etiqueta_radar.py` e passe pelo
+`consolidar_revisao_etiqueta_radar.py` antes de chegar ao manifesto.
+
 ### O que o P1 prova, e o que não prova
 
 **Prova:** a fundação A51 aceita exatamente uma passagem válida (coleta →
@@ -120,7 +138,9 @@ observação no futuro e conflito de identidade lógica; que a falha tardia desf
 tudo; que `anon` e `authenticated` não veem rascunho; e que reexecução — inclusive
 concorrente — devolve o recibo existente em vez de duplicar evidência.
 
-**Não prova:** que o parser real da Etiqueta funciona sobre catálogo real; que a
+**Não prova:** a passagem pelo parser e pelo materializador reais, nem a
+reconsolidação da revisão — ver a seção acima; que o parser real da Etiqueta
+funciona sobre catálogo real; que a
 revisão cega dupla foi feita por duas pessoas; que existe alguma fonte externa
 admissível; nem equivalência com a versão do PostgreSQL da produção, que este
 runner não consulta. Também não prova PostgREST, GoTrue nem Edge Functions.
