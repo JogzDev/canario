@@ -29,7 +29,7 @@ final class ModelosTests: XCTestCase {
 
         XCTAssertEqual(ponto.meta?.veiculosEmTexto,
                        "Elle Brasil (4), Vogue Brasil (2)")
-        XCTAssertEqual(Perna.frase(["editorial_br", "varejo"]),
+        XCTAssertEqual(Perna.baseadoEm(["editorial_br", "varejo"]),
                        "based on: Brazilian editorial + retail")
     }
 

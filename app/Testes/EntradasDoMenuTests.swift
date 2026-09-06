@@ -23,8 +23,12 @@ final class EntradasDoMenuTests: XCTestCase {
         XCTAssertEqual(Set(juntas), Set(EntradaDoMenu.allCases))
     }
 
-    /// Os títulos são a chave que a navegação usa para escolher o destino.
-    /// Se um mudar aqui sem mudar lá, a pessoa toca e não abre nada.
+    /// Os títulos são o TEXTO da tela; a chave de navegação é o `rawValue`.
+    ///
+    /// Este teste roda no pacote de lógica, fora do bundle do app, e por isso
+    /// `frase(_:)` devolve a própria chave — ou seja, o inglês do catálogo. É
+    /// exatamente o que se quer conferir aqui: o idioma-fonte não mudou. Que a
+    /// tradução chega à tela é assunto do app, não deste alvo.
     func testTitulosSaoOsDestinosConhecidos() {
         XCTAssertEqual(EntradaDoMenu.allCases.map(\.titulo),
                        ["Favorites", "Account", "Settings",
@@ -36,18 +40,34 @@ final class EntradasDoMenuTests: XCTestCase {
         XCTAssertEqual(Set(titulos).count, titulos.count)
     }
 
-    func testBuscaPeloTituloEncontraEDevolveNilNoDesconhecido() {
-        XCTAssertEqual(EntradaDoMenu.pelaTitulo("Privacy"), .privacidade)
-        XCTAssertEqual(EntradaDoMenu.pelaTitulo("Favorites"), .favoritos)
-        XCTAssertNil(EntradaDoMenu.pelaTitulo("Configurações"))
-        XCTAssertNil(EntradaDoMenu.pelaTitulo(""))
+    /// A busca é pela CHAVE, e a chave não traduz.
+    ///
+    /// O teste antigo casava contra o rótulo exibido, que era também o
+    /// identificador. Em português esse casamento devolveria `nil` para todas
+    /// as entradas e cada item do menu abriria o destino errado — sem erro,
+    /// sem crash e sem nenhum teste falhando, porque os dois lados liam o
+    /// mesmo literal. A chave separada é o que torna isso impossível.
+    func testBuscaPelaChaveEncontraEDevolveNilNoDesconhecido() {
+        XCTAssertEqual(EntradaDoMenu.pelaChave("privacidade"), .privacidade)
+        XCTAssertEqual(EntradaDoMenu.pelaChave("favoritos"), .favoritos)
+        XCTAssertNil(EntradaDoMenu.pelaChave("Privacy"),
+                     "rótulo exibido não pode voltar a servir de chave")
+        XCTAssertNil(EntradaDoMenu.pelaChave(""))
+    }
+
+    /// As chaves são contrato de navegação: mudá-las quebra os atalhos de
+    /// inspeção visual e qualquer estado restaurado.
+    func testChavesDeNavegacaoNaoMudam() {
+        XCTAssertEqual(EntradaDoMenu.allCases.map(\.rawValue),
+                       ["favoritos", "conta", "ajustes",
+                        "termos", "privacidade", "perguntas"])
     }
 
     /// O texto jurídico continua alcançável. Escondê-lo de vez seria trocar um
     /// problema de interface por um de conformidade.
     func testTextosObrigatoriosContinuamNoMenu() {
-        for exigido in ["Terms", "Privacy"] {
-            XCTAssertNotNil(EntradaDoMenu.pelaTitulo(exigido),
+        for exigido in ["termos", "privacidade"] {
+            XCTAssertNotNil(EntradaDoMenu.pelaChave(exigido),
                             "\(exigido) não pode sumir do menu")
         }
     }

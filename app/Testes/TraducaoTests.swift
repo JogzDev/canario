@@ -194,11 +194,11 @@ final class EstadoTests: XCTestCase {
 
     func testFraseDePernasDeclaraOrigem() {
         // §8: a interface declara quais pernas sustentam o número.
-        XCTAssertEqual(Perna.frase(["busca", "editorial_br"]),
+        XCTAssertEqual(Perna.baseadoEm(["busca", "editorial_br"]),
                        "based on: search + Brazilian editorial")
-        XCTAssertEqual(Perna.frase([]),
+        XCTAssertEqual(Perna.baseadoEm([]),
                        "no qualified combined external reading for this week")
-        XCTAssertEqual(Perna.frase(nil),
+        XCTAssertEqual(Perna.baseadoEm(nil),
                        "no qualified combined external reading for this week")
     }
 }

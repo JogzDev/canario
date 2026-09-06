@@ -727,7 +727,7 @@ struct Explorar: View {
         } catch {
             let mensagem = (error as? LocalizedError)?.errorDescription ?? "\(error)"
             if mostrouCache {
-                avisoDeCache = "Offline · showing the last sync"
+                avisoDeCache = frase("Offline · showing the last sync")
                 erro = nil
             } else {
                 erro = mensagem
@@ -940,8 +940,8 @@ struct LinhaDeMarca: View {
         var partes: [String] = []
         // Estava em português numa interface inteiramente em inglês, e só
         // apareceu quando o fundo escuro parou de esconder o texto de apoio.
-        if let d = eventos.map(\.data).max() { partes.append("most recent on \(Formato.data(d))") }
-        if repetidas > 0 { partes.append("\(repetidas) had happened before") }
+        if let d = eventos.map(\.data).max() { partes.append(frase("most recent on \(Formato.data(d))")) }
+        if repetidas > 0 { partes.append(repetidas == 1 ? frase("1 had happened before") : frase("\(String(repetidas)) had happened before")) }
         return partes.joined(separator: " · ")
     }
 }
@@ -950,6 +950,7 @@ struct LinhaDeMarca: View {
 
 struct ListaDeEventos: View {
     let marca: String
+    /// Texto calculado (`rotuloDoMovimento`), já traduzido. Ver `LinhaInsumo`.
     let titulo: String
     let eventos: [EventoVarejo]
     let inicioDaColeta: String
@@ -1019,6 +1020,7 @@ struct ListaDeEventos: View {
 /// regra que produziu o estado e quem publicou.
 struct CartaoDeMudanca: View {
     let indice: IndiceSemanal
+    /// Rótulo de termo vindo da taxonomia, já traduzido por `Traducao`.
     let rotulo: String
     let series: [PontoSerie]
     @Environment(\.territorio) private var territorio

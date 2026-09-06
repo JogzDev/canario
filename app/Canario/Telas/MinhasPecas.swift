@@ -115,7 +115,7 @@ struct MinhasPecas: View {
                 .font(.system(size: 42))
                 .foregroundStyle(Tokens.Cor.acao)
             Text("No clothes yet").font(Tokens.Fonte.secao)
-            Text("Clothes you save from Add stay here, ready to open again and compare.")
+            Text("Clothes you save from Studio stay here, ready to open again and compare.")
                 .font(Tokens.Fonte.corpo)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -205,7 +205,7 @@ struct MinhasPecas: View {
             termos = try await CatalogoDeTermos.shared.carregar()
             catalogo = CatalogoDoArmario(termos: termos)
         } catch {
-            erro = "The taxonomy is unavailable right now. Your clothes and photos are still on this iPhone."
+            erro = frase("The taxonomy is unavailable right now. Your clothes and photos are still on this iPhone.")
         }
     }
 
@@ -218,19 +218,19 @@ struct MinhasPecas: View {
             guard let dados = try await item.loadTransferable(type: Data.self),
                   let imagem = MiniaturaLocal.imagem(de: dados),
                   let miniatura = await MiniaturaLocal.dados(de: imagem) else {
-                erro = "I couldn't read that image. Try another photo."
+                erro = frase("I couldn't read that image. Try another photo.")
                 return nil
             }
             guard await PecasSalvas.shared.salvar(
                 peca, miniaturaDados: miniatura) else {
-                erro = "I couldn't save that photo. Your existing item was not changed."
+                erro = frase("I couldn't save that photo. Your existing item was not changed.")
                 return nil
             }
             pecas = await PecasSalvas.shared.todas()
             erro = nil
             return miniatura
         } catch {
-            erro = "I couldn't read that image. Try another photo."
+            erro = frase("I couldn't read that image. Try another photo.")
             return nil
         }
     }
@@ -430,7 +430,7 @@ private struct CompartilharCloset: View {
     }
 
     private func compartilharLinks() {
-        guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
+        guard !escolhidas.isEmpty else { erro = frase("Choose at least one item."); return }
         preparando = true
         Task { @MainActor in
             var itens: [Any] = escolhidas.compactMap { peca in
@@ -459,14 +459,14 @@ private struct CompartilharCloset: View {
     }
 
     private func exportar(mercado: Bool) {
-        guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
+        guard !escolhidas.isEmpty else { erro = frase("Choose at least one item."); return }
         preparando = true
         Task {
             let url = await ExportadorDoCloset.csv(
                 pecas: escolhidas, termos: termos, incluirMercado: mercado)
             preparando = false
             if let url { atividade = PacoteDeAtividade(itens: [url]); erro = nil }
-            else { erro = "The spreadsheet could not be created. Try again." }
+            else { erro = frase("The spreadsheet could not be created. Try again.") }
         }
     }
 }
@@ -506,16 +506,21 @@ private struct CartaoDoArmario: View {
                         pecaSalva: peca)
                 } label: {
                     VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                        ZStack {
+                        // O card é vidro sobre o céu da marca, e a miniatura
+                        // ficava direto sobre esse azul translúcido. A grade do
+                        // Closet é onde a pessoa compara peças entre si, então
+                        // é onde um fundo cromático mais atrapalha: o mesmo
+                        // azul entra em todas as fotos ao mesmo tempo. O vidro
+                        // continua sendo o card; a foto ganha a moldura neutra
+                        // por dentro dele.
+                        SubstratoDaPeca(raio: Tokens.Raio.cartao,
+                                        respiro: Tokens.Espaco.s) {
                             if let miniatura {
                                 Image(uiImage: miniatura)
                                     .resizable()
                                     .scaledToFit()
-                                    .padding(8)
                             } else {
-                                Image(systemName: "tshirt")
-                                    .font(.system(size: 46, weight: .light))
-                                    .foregroundStyle(.secondary.opacity(0.48))
+                                PecaSemFoto(simbolo: "tshirt", tamanho: 46)
                             }
                         }
                         .frame(maxWidth: .infinity)

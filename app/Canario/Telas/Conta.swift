@@ -57,7 +57,7 @@ final class GestorDaConta: NSObject, ObservableObject {
 
     func entrarComGoogle() {
         guard let apresentador = Self.controladorVisivel() else {
-            mensagemDeErro = "Google Sign-In could not be opened."
+            mensagemDeErro = frase("Google Sign-In could not be opened.")
             return
         }
         trabalhando = true
@@ -399,7 +399,7 @@ struct ContaDoMenu: View {
                         .font(.system(size: 38))
                         .foregroundStyle(Color(white: 0.15))
 
-                    Text(sessao.usuario.email ?? "Private Apple relay")
+                    Text(sessao.usuario.email ?? frase("Private Apple relay"))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(.primary)
                         .lineLimit(1)

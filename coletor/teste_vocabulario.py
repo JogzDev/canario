@@ -36,8 +36,15 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Onde os textos de interface vao morar. Varre o que existir; nao falha por
 # pasta ainda vazia, porque o app comeca depois deste teste.
+# `.xcstrings` entrou em 05/09, com a A53.
+#
+# Ate ali o texto de interface morava em `.swift`, e varrer `.swift` bastava.
+# Com a traducao, metade das frases da tela passou a existir SO dentro do
+# catalogo -- e em dois idiomas. O portao continuaria verde varrendo o codigo
+# enquanto uma frase proibida em portugues viajava intacta ate o usuario, que e
+# exatamente o buraco que a §6 manda nao ter.
 ALVOS = [
-    ("app", (".swift", ".strings")),
+    ("app", (".swift", ".strings", ".xcstrings")),
     ("coletor", (".py",)),
 ]
 
@@ -103,11 +110,43 @@ PERMITIDO = [
     "nao prevemos",
     "sem previsao de venda",
     "nunca preve",
+    # A traducao pt-BR da A53 escreve as mesmas negacoes que o ingles ja
+    # escrevia. Elas entram aqui pelo mesmo motivo da familia (2): negar a
+    # promessa e o oposto de faze-la, e e onde o documento quer a palavra.
+    "nao e previsao",
+    "nem garantia de venda",
+    "nao previsoes",
 ]
+
+
+def frases_do_catalogo(caminho):
+    """Todas as traducoes de um String Catalog, em todos os idiomas.
+
+    Le o JSON em vez de casar aspas: no `.xcstrings` a chave e o valor sao
+    ambos strings JSON, e a varredura generica confundiria nome de campo com
+    texto de tela. Aqui sai exatamente o que o usuario le -- a chave, que e o
+    ingles-fonte, e cada `stringUnit` traduzido.
+    """
+    import json
+    try:
+        catalogo = json.load(open(caminho, encoding="utf-8"))
+    except (IOError, ValueError, UnicodeDecodeError):
+        return []
+    saida = []
+    for chave, entrada in (catalogo.get("strings") or {}).items():
+        if len(chave.strip()) > 3:
+            saida.append(chave)
+        for local in (entrada.get("localizations") or {}).values():
+            valor = (local.get("stringUnit") or {}).get("value", "")
+            if len(valor.strip()) > 3:
+                saida.append(valor)
+    return saida
 
 
 def linhas_de_texto(caminho):
     """Extrai literais de string de um arquivo de codigo."""
+    if caminho.endswith(".xcstrings"):
+        return frases_do_catalogo(caminho)
     try:
         conteudo = open(caminho, encoding="utf-8").read()
     except (IOError, UnicodeDecodeError):

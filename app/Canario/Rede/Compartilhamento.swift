@@ -39,7 +39,7 @@ enum ExportadorDoCloset {
                 let leituras = peca.termoIds.compactMap { id -> String? in
                     guard let termo = porId[id], let leitura = indices[id] else { return nil }
                     let valor = leitura.indice.map { Leitura.numero($0, casas: 2, sinal: true) } ?? "unavailable"
-                    return "\(Traducao.rotuloExibido(termo)): \(valor)"
+                    return frase("\(Traducao.rotuloExibido(termo)): \(valor)")
                 }
                 let semanas = Set(peca.termoIds.compactMap { indices[$0]?.semana }).sorted()
                 linha.append(leituras.joined(separator: "; "))
@@ -153,7 +153,7 @@ struct ReceberPecaCompartilhada: View {
         }
         .task {
             do { termos = try await CatalogoDeTermos.shared.carregar() }
-            catch { erro = "The taxonomy is unavailable right now. Try again when you are online." }
+            catch { erro = frase("The taxonomy is unavailable right now. Try again when you are online.") }
             carregando = false
         }
     }
@@ -164,7 +164,7 @@ struct ReceberPecaCompartilhada: View {
                 apelido: nome.trimmingCharacters(in: .whitespacesAndNewlines),
                 termoIds: reconhecidos.map(\.id))
             if await PecasSalvas.shared.salvar(nova) { dismiss() }
-            else { erro = "Your Closet is full (\(PecasSalvas.teto))." }
+            else { erro = frase("Your Closet is full (\(String(PecasSalvas.teto))).") }
         }
     }
 }

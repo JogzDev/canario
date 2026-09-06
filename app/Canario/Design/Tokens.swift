@@ -40,6 +40,38 @@ enum Tokens {
         static let azulMarca = adaptativa(claro: (55, 74, 103),
                                           escuro: (150, 180, 215))
 
+        // MARK: - O substrato da peça (05/09)
+        //
+        // **Foto de roupa nunca é desenhada sobre cor.** A apresentação para a
+        // diretoria bateu exatamente nisto: a peça aparecia sobre o `ceu`
+        // (#BBE5ED) no herói do relatório, nas três prévias do importador, nos
+        // cards do Closet e nas miniaturas da home. Um fundo cromático desloca
+        // a cor percebida da peça na direção COMPLEMENTAR à do fundo — é
+        // indução cromática, e num azul claro isso puxa a peça para o quente.
+        // Ou seja: o app estava enviesando, contra si mesmo, justamente a
+        // dimensão que o `CorDaPeca` mede e pré-marca no formulário.
+        //
+        // O valor não é gosto. A ISO 3664 (condições de visualização para
+        // avaliação de cor) pede entorno **neutro e fosco**; para "avaliação
+        // prática" o fator de luminância recomendado é ~60%, que em L* dá
+        // 81,8 e em sRGB dá exatamente 203 — daí #CBCBCB. Neutro de verdade
+        // (R = G = B), porque qualquer resíduo de matiz reintroduz a indução
+        // que este token existe para eliminar.
+        //
+        // **É `fixa`, e nunca adaptativa.** Superfície de julgamento de cor
+        // não pode mudar com o tema do sistema: se ela escurecesse junto com
+        // o iPhone, a mesma peça leria diferente em dois aparelhos e a
+        // sugestão do formulário deixaria de ser reproduzível. É a mesma razão
+        // de `ceuFixo` e `noiteFixa` existirem, aplicada a um problema que
+        // não é de contraste, e sim de medição.
+        static let substratoDaPeca = fixa(203, 203, 203)
+
+        /// Tinta legível sobre o substrato: o estado vazio ("sem foto") e o
+        /// ícone de ausência vivem sobre ele. #4A4A4A dá 6,3:1 contra
+        /// #CBCBCB, acima do 4,5:1 da §32, e continua neutro para não pintar
+        /// de cor a moldura que existe para não ter cor.
+        static let tintaSobreSubstrato = fixa(74, 74, 74)
+
         // MARK: - O território escuro (27/08)
         //
         // O app passa a ter dois territórios, e a divisa é o ASSUNTO, não a

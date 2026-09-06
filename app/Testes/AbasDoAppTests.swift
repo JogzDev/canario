@@ -59,7 +59,7 @@ final class AbasDoAppTests: XCTestCase {
     func testOrdemDaFileiraEstavel() {
         XCTAssertEqual(AbaDoApp.principais, [.adicionar, .armario, .dados])
         XCTAssertEqual(AbaDoApp.principais.map(\.titulo),
-                       ["Add", "Closet", "Trends"])
+                       ["Studio", "Closet", "Trends"])
     }
 
     /// O `rawValue` é o que a aba usa como identidade; trocá-lo silenciosamente

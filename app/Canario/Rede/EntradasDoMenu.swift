@@ -46,16 +46,25 @@ public enum EntradaDoMenu: String, CaseIterable, Sendable {
         }
     }
 
-    /// O texto na tela. Continua sendo a chave que `TelaDoMenu` usa para
-    /// escolher o destino, então mudar aqui muda os dois lados de uma vez.
+    /// O texto na tela — **e só isso**.
+    ///
+    /// Ele era também a chave que `TelaDoMenu` usava para escolher o destino:
+    /// a navegação carregava a String "Settings" e a tela de destino fazia
+    /// `switch nome { case "Settings": ... }`. Funcionou enquanto existia um
+    /// idioma só, e teria virado defeito silencioso no primeiro toque em
+    /// português — o `switch` cairia no `default` e todo item do menu abriria
+    /// o Q&A. Nenhum teste pegaria: os dois lados liam o mesmo literal.
+    ///
+    /// Agora a identidade é o `case` (que não traduz) e o título é texto. As
+    /// duas coisas deixaram de poder divergir porque deixaram de ser a mesma.
     public var titulo: String {
         switch self {
-        case .favoritos:   return "Favorites"
-        case .conta:       return "Account"
-        case .ajustes:     return "Settings"
-        case .termos:      return "Terms"
-        case .privacidade: return "Privacy"
-        case .perguntas:   return "Q&A"
+        case .favoritos:   return frase("Favorites")
+        case .conta:       return frase("Account")
+        case .ajustes:     return frase("Settings")
+        case .termos:      return frase("Terms")
+        case .privacidade: return frase("Privacy")
+        case .perguntas:   return frase("Q&A")
         }
     }
 
@@ -69,10 +78,11 @@ public enum EntradaDoMenu: String, CaseIterable, Sendable {
         allCases.filter { $0.familia == .leitura }
     }
 
-    /// Encontra a entrada pelo título exibido. Existe porque a navegação
-    /// carrega o título como identificador; devolve `nil` para nome
-    /// desconhecido em vez de escolher um destino errado.
-    public static func pelaTitulo(_ titulo: String) -> EntradaDoMenu? {
-        allCases.first { $0.titulo == titulo }
+    /// Encontra a entrada pela chave estável, não pelo texto exibido.
+    ///
+    /// Substitui `pelaTitulo(_:)`, que casava contra o rótulo traduzível e
+    /// devolveria `nil` para todo mundo assim que a interface saísse do inglês.
+    public static func pelaChave(_ chave: String) -> EntradaDoMenu? {
+        EntradaDoMenu(rawValue: chave)
     }
 }

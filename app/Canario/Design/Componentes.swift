@@ -124,7 +124,7 @@ struct SeloEstado: View {
 /// A tela que a regra 6 exige: quando falta cobertura, o app diz o que falta e
 /// o que consegue mostrar, em vez de exibir um número plausível.
 struct CoberturaInsuficiente: View {
-    let titulo: String
+    let titulo: LocalizedStringKey
     let explicacao: String
     var oQueTem: String?
 
@@ -161,6 +161,9 @@ struct CoberturaInsuficiente: View {
 /// texto: *"olhar várias peças por dia e ter que ler tudo é maçante"*. Quem já
 /// sabe não lê; quem não sabe acha.
 struct BotaoDeAjuda: View {
+    /// Título e corpo chegam calculados (a explicação da escala vem do
+    /// `Explicacao`, já traduzida por `frase(_:)`). Ver a nota em
+    /// `LinhaInsumo` sobre por que isto é `String` e não chave de catálogo.
     let titulo: String
     let texto: String
     /// O que o VoiceOver anuncia. O ícone sozinho vira "botão de interrogação".
@@ -205,6 +208,11 @@ struct BotaoDeAjuda: View {
 // MARK: - Linha de insumo
 
 struct LinhaInsumo: View {
+    /// `String`, e não `LocalizedStringKey`: quase todo chamador passa texto
+    /// já calculado (`Similares.criterio`, `Perna.baseadoEm`), que sai de
+    /// `frase(_:)` traduzido. Tratá-lo como chave mandaria o catálogo procurar
+    /// tradução para uma frase que já é a tradução. Os poucos chamadores com
+    /// literal envolvem em `frase("...")`, e o extrator os enxerga igual.
     let texto: String
     @Environment(\.territorio) private var territorio
 
@@ -326,6 +334,7 @@ struct Carregando: View {
 /// Erro de rede é diferente de ausência de dado, e o app não pode confundir os
 /// dois: um é falha nossa, o outro é honestidade sobre o mercado.
 struct FalhaDeRede: View {
+    /// Idem `LinhaInsumo`: mensagem de erro chega pronta da camada de rede.
     let mensagem: String
     let tentarNovamente: () -> Void
 
@@ -373,5 +382,72 @@ struct BarraDePeso: View {
         }
         .frame(height: 5)
         .accessibilityHidden(true)
+    }
+}
+
+/// A moldura neutra em que TODA foto de peça é desenhada.
+///
+/// POR QUE ISTO EXISTE
+/// ===================
+///
+/// Antes de 05/09 a peça era desenhada sobre o céu da marca em seis lugares
+/// diferentes, e cada um repetia a cor na unha: o herói de 300 pt do relatório,
+/// as três prévias do importador, o card do Closet, as miniaturas da home, os
+/// favoritos do menu e as miniaturas de similares. Seis cópias da mesma decisão
+/// é como `AbaDoApp` nasceu — e é como ela divergiu.
+///
+/// Aqui a repetição custa mais caro que layout inconsistente. O fundo cromático
+/// desloca a cor percebida da peça na direção complementar; o `CorDaPeca` mede a
+/// cor dominante do MESMO pixel e pré-marca a dimensão `cor` do formulário. Um
+/// fundo azul empurra a percepção da pessoa para o quente enquanto o algoritmo
+/// mede o valor cru: os dois discordam, e quem corrige o formulário é a pessoa,
+/// que está sendo enganada pela moldura. A diretoria apontou isso olhando a
+/// tela, sem saber do `CorDaPeca` — o que confirma o tamanho do efeito.
+///
+/// Um dono só, então: mudar a moldura de julgamento de cor é mudar este
+/// arquivo, e não caçar `Tokens.Cor.ceu` por seis telas outra vez.
+///
+/// `conteudo` é a foto. Quando não há foto, use `SubstratoDaPeca` com o próprio
+/// estado vazio dentro — a moldura não vira buraco branco nem some da tela.
+struct SubstratoDaPeca<Conteudo: View>: View {
+    var raio: CGFloat = Tokens.Raio.cartaoGrande
+    /// Respiro entre a borda da moldura e a foto. Existe para a peça não
+    /// encostar no canto arredondado, não para enquadrar: a foto continua
+    /// `scaledToFit`, e o que sobra é substrato, que é justamente o ponto.
+    var respiro: CGFloat = Tokens.Espaco.m
+    @ViewBuilder var conteudo: Conteudo
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: raio, style: .continuous)
+                .fill(Tokens.Cor.substratoDaPeca)
+            conteudo
+                .padding(respiro)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: raio, style: .continuous))
+    }
+}
+
+/// O estado vazio dentro da moldura: a peça não tem foto.
+///
+/// Fica aqui, e não em cada tela, porque a tinta precisa ser medida contra o
+/// substrato — `.secondary` do sistema resolve contra o fundo da JANELA, não
+/// contra os #CBCBCB que este componente pinta, e no primeiro esboço o ícone
+/// quase sumiu por isso.
+struct PecaSemFoto: View {
+    var simbolo: String = "photo"
+    var tamanho: CGFloat = 34
+    var legenda: LocalizedStringKey?
+
+    var body: some View {
+        VStack(spacing: Tokens.Espaco.s) {
+            Image(systemName: simbolo)
+                .font(.system(size: tamanho, weight: .regular))
+            if let legenda {
+                Text(legenda).font(Tokens.Fonte.miudo)
+            }
+        }
+        .foregroundStyle(Tokens.Cor.tintaSobreSubstrato)
+        .multilineTextAlignment(.center)
     }
 }

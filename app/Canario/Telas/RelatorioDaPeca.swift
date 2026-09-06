@@ -283,23 +283,17 @@ struct RelatorioDaPeca: View {
     /// canto nenhum do app até a peça ser guardada.
     private var heroiDaPeca: some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .fill(Tokens.Cor.ceu)
+            // A moldura é NEUTRA, não o céu da marca. Este é o maior retrato
+            // de peça do app (300 pt) e era o pior caso da indução cromática
+            // apontada na revisão de 05/09; ver `SubstratoDaPeca`.
+            SubstratoDaPeca {
                 if let imagem = imagemDoHeroi {
                     Image(uiImage: imagem)
                         .resizable()
                         .scaledToFit()
-                        .padding(Tokens.Espaco.m)
                 } else {
                     // Sem foto o quadro não vira buraco: ele diz o que falta.
-                    VStack(spacing: Tokens.Espaco.s) {
-                        Image(systemName: "photo")
-                            .font(.system(size: 34, weight: .regular))
-                        Text("No photo for this item")
-                            .font(Tokens.Fonte.miudo)
-                    }
-                    .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.6))
+                    PecaSemFoto(legenda: "No photo for this item")
                 }
             }
             .frame(height: 300)
@@ -572,7 +566,7 @@ struct RelatorioDaPeca: View {
                     r, atributos: termos, descricao: descricaoAmigavel))
                 Divider()
             }
-            Text(frase).font(Tokens.Fonte.apoio)
+            Text(leituraDoConjunto).font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
         }
     }
@@ -599,26 +593,34 @@ struct RelatorioDaPeca: View {
         }
     }
 
-    private var frase: String {
+    /// Renomeada de `frase` em 05/09: o nome sombreava a função global
+    /// `frase(_:)` dentro desta View inteira.
+    private var leituraDoConjunto: String {
         let comLeitura = termos.filter {
             let indice = indices[$0.id]
             return indice?.indice != nil
                 && Elegibilidade.indice(indice, cobertura: coberturas[$0.id])
         }
+        let total = String(termos.count)
         if comLeitura.isEmpty {
-            return "You selected \(termos.count) attribute\(termos.count == 1 ? "" : "s"), but none has an available reading in this panel cut."
+            return termos.count == 1
+                ? frase("You selected 1 attribute, but it has no available reading in this panel cut.")
+                : frase("You selected \(total) attributes, but none has an available reading in this panel cut.")
         }
         let acima = comLeitura.filter { (indices[$0.id]?.indice ?? 0) >= 1 }
         let abaixo = comLeitura.filter { (indices[$0.id]?.indice ?? 0) <= -1 }
-        var partes = ["This item has \(termos.count) attribute\(termos.count == 1 ? "" : "s"), with readings for \(comLeitura.count)."]
+        let lidos = String(comLeitura.count)
+        var partes = [termos.count == 1
+            ? frase("This item has 1 attribute, with readings for \(lidos).")
+            : frase("This item has \(total) attributes, with readings for \(lidos).")]
         if !acima.isEmpty {
-            partes.append("Above the usual range: \(acima.map(Traducao.rotuloExibido).joined(separator: ", ")).")
+            partes.append(frase("Above the usual range: \(acima.map(Traducao.rotuloExibido).joined(separator: ", "))."))
         }
         if !abaixo.isEmpty {
-            partes.append("Below the usual range: \(abaixo.map(Traducao.rotuloExibido).joined(separator: ", ")).")
+            partes.append(frase("Below the usual range: \(abaixo.map(Traducao.rotuloExibido).joined(separator: ", "))."))
         }
         if acima.isEmpty && abaixo.isEmpty {
-            partes.append("All are within their usual ranges.")
+            partes.append(frase("All are within their usual ranges."))
         }
         return partes.joined(separator: " ")
     }
@@ -695,7 +697,7 @@ struct RelatorioDaPeca: View {
                              texto: Explicacao.textoDaEscala,
                              rotulo: "What this number is")
             }
-            LinhaInsumo(texto: Perna.frase(i?.pernasAtivas)
+            LinhaInsumo(texto: Perna.baseadoEm(i?.pernasAtivas)
                         + " · week of \(Formato.data(i?.semana ?? ""))")
         }
     }
@@ -720,10 +722,10 @@ struct RelatorioDaPeca: View {
             // recorte de mercado que os atributos ocupam, e que o ponto
             // marcado é semana rala. Sem a primeira, um gráfico de dois anos
             // sobre uma peça criada hoje afirma um histórico que não existe.
-            Text("The panel items that share these attributes, week by week. "
-                 + "It is not your item: DataDrobe never tracks a piece you "
-                 + "own. A marked point is a week built on fewer attributes "
-                 + "than you selected, so the line is thinner there.")
+            // Uma frase só, e não quatro literais somados: `"a" + "b"` produz
+            // uma `String`, e `Text(String)` não localiza nada. O texto
+            // funcionava e simplesmente nunca chegaria ao catálogo.
+            Text("The panel items that share these attributes, week by week. It is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there.")
                 .font(Tokens.Fonte.apoio)
                 .foregroundStyle(Tokens.Cor.tintaFraca)
             if carregandoSerie {

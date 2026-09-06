@@ -101,13 +101,13 @@ actor Supabase {
         var errorDescription: String? {
             switch self {
             case .semConfiguracao:
-                return "Config.xcconfig is missing or incomplete. Copy Config.xcconfig.example."
+                return frase("Config.xcconfig is missing or incomplete. Copy Config.xcconfig.example.")
             case .rede:
-                return "The server could not be reached."
+                return frase("The server could not be reached.")
             case .resposta(let codigo, let corpo):
                 return Falha.mensagem(codigo: codigo, corpo: corpo)
             case .urlInvalida(let caminho, _):
-                return "Malformed request for \(caminho)."
+                return frase("Malformed request for \(caminho).")
             }
         }
 
@@ -131,32 +131,27 @@ actor Supabase {
             let manual = "You can still add the item and choose its attributes yourself."
             switch Falha.codigoDoCorpo(corpo) {
             case "daily_origin_limit":
-                return "This network reached today's limit of 12 visual analyses. "
-                     + "\(reset) \(manual)"
+                return frase("This network reached today's limit of 12 visual analyses. \(reset) \(manual)")
             case "daily_project_limit":
-                return "DataDrobe reached its overall daily limit for visual "
-                     + "analysis. \(reset) \(manual)"
+                return frase("DataDrobe reached its overall daily limit for visual analysis. \(reset) \(manual)")
             case "rate_limited":
-                return "The visual analysis was refused for exceeding a daily "
-                     + "limit. \(reset) \(manual)"
+                return frase("The visual analysis was refused for exceeding a daily limit. \(reset) \(manual)")
             case "rate_limit_unavailable":
-                return "The usage check is unavailable, so nothing was sent for "
-                     + "analysis. Try again in a few minutes. \(manual)"
+                return frase("The usage check is unavailable, so nothing was sent for analysis. Try again in a few minutes. \(manual)")
             case "analysis_not_configured":
-                return "Cloud visual analysis is off in this build. \(manual)"
+                return frase("Cloud visual analysis is off in this build. \(manual)")
             case "invalid_image":
-                return "I could not read this image. Try another photo or file."
+                return frase("I could not read this image. Try another photo or file.")
             case "invalid_target_hint":
-                return "The target hint is too long. Keep it under 160 characters."
+                return frase("The target hint is too long. Keep it under 160 characters.")
             case "analysis_contract_failed":
-                return "The analysis came back in a shape I do not accept, so I "
-                     + "discarded it rather than guess. \(manual)"
+                return frase("The analysis came back in a shape I do not accept, so I discarded it rather than guess. \(manual)")
             case "BOOT_ERROR":
-                return "The visual analysis service is not responding. \(manual)"
+                return frase("The visual analysis service is not responding. \(manual)")
             default:
                 // Codigo desconhecido continua aparecendo -- some-lo esconderia
                 // um caso novo de quem pode consertar.
-                return "The analysis could not be completed (HTTP \(codigo)). \(manual)"
+                return frase("The analysis could not be completed (HTTP \(String(codigo))). \(manual)")
             }
         }
 

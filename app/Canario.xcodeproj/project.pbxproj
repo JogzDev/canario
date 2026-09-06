@@ -23,6 +23,7 @@
 		531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */; };
 		D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C677A09E80A10C666280510 /* Explicacao.swift */; };
 		2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */; };
+		478958DA0FE8C2F0E45868D4 /* Idioma.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE1F35552CBD464152AEF6C /* Idioma.swift */; };
 		BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */; };
 		D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
@@ -41,6 +42,7 @@
 		77202A27761230EA126556D7 /* BarraPrincipal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B17890751C0ECA369DC4445 /* BarraPrincipal.swift */; };
 		BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2112E929103203C6F4819581 /* BlocoDeSimilares.swift */; };
 		5FDF252206C79440DA22050B /* CapturaDeCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E96E5B513F3761978E00AECB /* CapturaDeCamera.swift */; };
+		B308022F3954205F35E36782 /* CapturaDeCorConstante.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAE21F72971442E482EEB8A1 /* CapturaDeCorConstante.swift */; };
 		88385EED03003FB44A18542E /* Comparar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4913E2A3FAD2255EF6E66096 /* Comparar.swift */; };
 		5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDF62FF20F46B96ACD76E75 /* Conta.swift */; };
 		8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */; };
@@ -79,6 +81,7 @@
 		DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntradasDoMenu.swift"; sourceTree = "<group>"; };
 		3C677A09E80A10C666280510 /* Explicacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explicacao.swift"; sourceTree = "<group>"; };
 		A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconesDaTaxonomia.swift"; sourceTree = "<group>"; };
+		3CE1F35552CBD464152AEF6C /* Idioma.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Idioma.swift"; sourceTree = "<group>"; };
 		F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Importacao.swift"; sourceTree = "<group>"; };
 		14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IntencaoDoToque.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
@@ -97,6 +100,7 @@
 		3B17890751C0ECA369DC4445 /* BarraPrincipal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BarraPrincipal.swift"; sourceTree = "<group>"; };
 		2112E929103203C6F4819581 /* BlocoDeSimilares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BlocoDeSimilares.swift"; sourceTree = "<group>"; };
 		E96E5B513F3761978E00AECB /* CapturaDeCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CapturaDeCamera.swift"; sourceTree = "<group>"; };
+		CAE21F72971442E482EEB8A1 /* CapturaDeCorConstante.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CapturaDeCorConstante.swift"; sourceTree = "<group>"; };
 		4913E2A3FAD2255EF6E66096 /* Comparar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparar.swift"; sourceTree = "<group>"; };
 		4DDF62FF20F46B96ACD76E75 /* Conta.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Conta.swift"; sourceTree = "<group>"; };
 		F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhosView.swift"; sourceTree = "<group>"; };
@@ -212,6 +216,7 @@
 				DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */,
 				3C677A09E80A10C666280510 /* Explicacao.swift */,
 				A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */,
+				3CE1F35552CBD464152AEF6C /* Idioma.swift */,
 				F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */,
 				14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
@@ -237,6 +242,7 @@
 				3B17890751C0ECA369DC4445 /* BarraPrincipal.swift */,
 				2112E929103203C6F4819581 /* BlocoDeSimilares.swift */,
 				E96E5B513F3761978E00AECB /* CapturaDeCamera.swift */,
+				CAE21F72971442E482EEB8A1 /* CapturaDeCorConstante.swift */,
 				4913E2A3FAD2255EF6E66096 /* Comparar.swift */,
 				4DDF62FF20F46B96ACD76E75 /* Conta.swift */,
 				F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */,
@@ -300,7 +306,7 @@
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (en, Base, );
+			knownRegions = (en, "pt-BR", Base, );
 			mainGroup = 017282487AEAE6079E734CB7 ;
 			productRefGroup = 5CAC9C2F49F815B0F5A5D463 ;
 			packageReferences = (
@@ -356,6 +362,7 @@
 				531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */,
 				D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */,
 				2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */,
+				478958DA0FE8C2F0E45868D4 /* Idioma.swift in Sources */,
 				BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */,
 				D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
@@ -374,6 +381,7 @@
 				77202A27761230EA126556D7 /* BarraPrincipal.swift in Sources */,
 				BB42EBFE83D672B379D08E47 /* BlocoDeSimilares.swift in Sources */,
 				5FDF252206C79440DA22050B /* CapturaDeCamera.swift in Sources */,
+				B308022F3954205F35E36782 /* CapturaDeCorConstante.swift in Sources */,
 				88385EED03003FB44A18542E /* Comparar.swift in Sources */,
 				5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */,
 				8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */,

@@ -61,23 +61,43 @@ enum Explicacao {
     static func unidade(daFonte fonte: String) -> String {
         switch fonte {
         case "editorial_br", "editorial_intl":
-            return "published articles that mentioned the term"
+            return frase("published articles that mentioned the term")
         case "busca":
-            return "Google Trends search-interest index (0 to 100)"
+            return frase("Google Trends search-interest index (0 to 100)")
         case "lyst_indice":
-            return "position in the Lyst Index"
+            return frase("position in the Lyst Index")
         case "varejo":
-            return "% of panel items with this attribute"
+            return frase("% of panel items with this attribute")
         case "lyst":
-            return "position in the Lyst Index"
+            return frase("position in the Lyst Index")
         default:
             return fonte
         }
     }
 
+    /// A mesma unidade, sem o nome da escala — para a linha que já disse
+    /// "x de 100" e só precisa dizer de qual índice.
+    ///
+    /// Existia como `unidade(daFonte:).replacingOccurrences(of: "search-interest
+    /// index ", with: "")`: recortar um pedaço do texto pelo próprio texto. Isso
+    /// funciona em exatamente um idioma. Em português a frase não contém aquele
+    /// trecho, o `replacingOccurrences` não casa nada e a linha sairia com a
+    /// unidade inteira duplicada dentro dela. É o tipo de defeito que só
+    /// aparece depois de traduzir, e por isso ele foi arrancado pela raiz em
+    /// vez de ganhar um segundo `replacingOccurrences` para o português.
+    static func unidadeCurta(daFonte fonte: String) -> String {
+        switch fonte {
+        case "busca":        return frase("Google Trends index (0 to 100)")
+        case "lyst_indice",
+             "lyst":         return frase("Lyst Index")
+        default:             return unidade(daFonte: fonte)
+        }
+    }
+
     /// A unidade do índice em si. É a resposta literal ao "1,15 o quê?".
-    static let unidadeDoIndice =
-        "distance from the usual behavior of the previous 12 weeks"
+    static var unidadeDoIndice: String {
+        frase("distance from the usual behavior of the previous 12 weeks")
+    }
 
     /// O texto do "?" ao lado do número, para quem quiser saber a escala.
     ///
@@ -85,22 +105,15 @@ enum Explicacao {
     /// esse número? 110%? 10%?"* — e as duas respostas estavam erradas, o que
     /// mostra que a tela deixava adivinhar. O primeiro trabalho deste texto é
     /// negar a leitura de porcentagem, porque é a que a pessoa tenta sozinha.
-    static let tituloDaEscala = "What this number is"
-    static let textoDaEscala = """
-        It is not a percentage. The number counts standard deviations: how far \
-        this week sits from this attribute's own average over the previous 12 \
-        weeks. Around 0 is a typical week; around 1 is an unusual one; above 2 \
-        is rare.
-
-        A percentage would need a baseline that differs for every attribute, so \
-        two attributes could not be compared directly. This standardized scale \
-        allows attributes to be compared with one another.
-        """
+    static var tituloDaEscala: String { frase("What this number is") }
+    static var textoDaEscala: String {
+        frase("It is not a percentage. The number counts standard deviations: how far this week sits from this attribute's own average over the previous 12 weeks. Around 0 is a typical week; around 1 is an unusual one; above 2 is rare.\n\nA percentage would need a baseline that differs for every attribute, so two attributes could not be compared directly. This standardized scale allows attributes to be compared with one another.")
+    }
 
     /// O valor compacto usado em comparação. A unidade/escala vem na linha de
     /// apoio imediatamente abaixo, para não transformar jargão no título.
     static func numeroComUnidade(_ indice: Double?) -> String {
-        guard let indice else { return "no index" }
+        guard let indice else { return frase("no index") }
         let n = Leitura.numero(indice, casas: 2, sinal: true)
         return "\(n)"
     }
@@ -109,7 +122,7 @@ enum Explicacao {
 
     /// "1 source", "2 sources" -- nunca "1 sources".
     private static func fontes(_ n: Int) -> String {
-        n == 1 ? "1 source" : "\(n) sources"
+        n == 1 ? frase("1 source") : frase("\(String(n)) sources")
     }
 
     /// A regra que produziu o estado, dita para quem vai decidir compra.
@@ -134,7 +147,7 @@ enum Explicacao {
     /// trilha completa continua no "Where this reading comes from".
     static func porQue(estado: String?, indice: IndiceSemanal, series: [PontoSerie]) -> String {
         guard let estado else {
-            return "Two sources do not yet agree on a direction; this update has \(indice.nPernas ?? 0)."
+            return frase("Two sources do not yet agree on a direction; this update has \(String(indice.nPernas ?? 0)).")
         }
         let editorial = series.first { $0.fonte.hasPrefix("editorial") && $0.z != nil }
         let acima = indice.meta?.pernasAcimaDe1 ?? 0
@@ -142,20 +155,19 @@ enum Explicacao {
 
         switch estado {
         case "pico":
-            let intensidade = editorial?.z.map(Leitura.emPalavras) ?? "far above the usual range"
+            let intensidade = editorial?.z.map(Leitura.emPalavras)
+                ?? frase("far above the usual range")
             let referencia = editorial?.z.map {
-                " (\(Leitura.numero($0, casas: 1)) on the statistical scale)"
+                " " + frase("(\(Leitura.numero($0, casas: 1)) on the statistical scale)")
             } ?? ""
             // Esta continua dizendo o que é: pico não é alta, e quem lê o
             // cartão precisa saber disso antes de comprar. Não é regra geral
             // do motor -- é a classificação DESTE termo nesta semana.
-            return "Press attention was \(intensidade)\(referencia) for one week, "
-                 + "and no other source followed — an isolated editorial spike, "
-                 + "not a confirmed trend."
+            return frase("Press attention was \(intensidade)\(referencia) for one week, and no other source followed — an isolated editorial spike, not a confirmed trend.")
         case "em alta":
-            return "Two consecutive weeks above the usual range, with \(fontes(acima)) agreeing."
+            return frase("Two consecutive weeks above the usual range, with \(fontes(acima)) agreeing.")
         case "em queda":
-            return "Two consecutive weeks below the usual range, with \(fontes(abaixo)) agreeing."
+            return frase("Two consecutive weeks below the usual range, with \(fontes(abaixo)) agreeing.")
         case "estavel":
             // AQUI MORAVA UMA CONTRADIÇÃO, e ela aparecia em todo cartão.
             //
@@ -190,20 +202,15 @@ enum Explicacao {
             // da faixa, e diferente de termo para termo.
             guard let z = indice.indice, Leitura.faixa(z) != .habitual else {
                 guard let z = indice.indice else {
-                    return "No index for this week. Stable is a measured "
-                         + "result, not missing data."
+                    return frase("No index for this week. Stable is a measured result, not missing data.")
                 }
                 // "+0,0" é sinal que o número não sustenta; some abaixo de 0,05.
                 let arredondado = (abs(z) * 10).rounded() / 10
                 let n = arredondado == 0
                     ? "0.0" : Leitura.numero(z, casas: 1, sinal: true)
-                return "This week reads \(n) on the statistical scale, and the "
-                     + "week before stayed in the same place. Stable is a "
-                     + "measured result, not missing data."
+                return frase("This week reads \(n) on the statistical scale, and the week before stayed in the same place. Stable is a measured result, not missing data.")
             }
-            return "This week it reads \(Leitura.numero(z, casas: 1, sinal: true)) "
-                 + "on the statistical scale, \(Leitura.emPalavras(z)) — but one week "
-                 + "is not a movement."
+            return frase("This week it reads \(Leitura.numero(z, casas: 1, sinal: true)) on the statistical scale, \(Leitura.emPalavras(z)) — but one week is not a movement.")
         default:
             return estado
         }
@@ -224,20 +231,29 @@ enum Explicacao {
                 switch p.fonte {
                 case "varejo":
                     let v = p.valorBruto.map { Leitura.numero($0, casas: 1) } ?? "—"
-                    let n = p.nAmostra.map { "\($0) panel items" } ?? "sample not recorded"
-                    linha += "\(v)% of the assortment (\(n))"
+                    // `String($0)`, e não o `Int` direto: interpolar um número
+                    // dentro de `frase(_:)` deixa a chave com `%lld` e faz o
+                    // sistema aplicar o separador de milhar do idioma — 7217
+                    // viraria "7,217" em inglês e "7.217" em português. Seria
+                    // até melhor tipografia, mas mudaria a formatação de um
+                    // número que o resto do app imprime cru, e formatação de
+                    // número neste projeto tem dono (`Formato`/`Leitura`).
+                    // Traduzir não é hora de mexer nisso pelas beiradas.
+                    let n = p.nAmostra.map { frase("\(String($0)) panel items") }
+                        ?? frase("sample not recorded")
+                    linha += frase("\(v)% of the assortment (\(n))")
                 case let f where f.hasPrefix("editorial"):
                     // Só a perna editorial trabalha em janela de 4 semanas
                     // (§18). Dizer "em 4 semanas" para a busca era colar a
                     // janela de uma perna no número de outra.
                     let n = p.nAmostra.map(String.init) ?? "—"
-                    linha += "\(n) \(unidade(daFonte: p.fonte)) over 4 weeks"
+                    linha += frase("\(n) \(unidade(daFonte: p.fonte)) over 4 weeks")
                     if let crua = p.meta?.contagemSemanaCrua {
-                        linha += ", \(crua) this week"
+                        linha += frase(", \(String(crua)) this week")
                     }
                 default:
                     let v = p.valorBruto.map { Leitura.numero($0, casas: 0) } ?? "—"
-                    linha += "\(v) out of 100 on the \(unidade(daFonte: p.fonte).replacingOccurrences(of: "search-interest index ", with: ""))"
+                    linha += frase("\(v) out of 100 on the \(unidadeCurta(daFonte: p.fonte))")
                 }
                 if let quem = p.meta?.veiculosEmTexto {
                     linha += " — \(quem)"
@@ -264,18 +280,18 @@ enum Explicacao {
     /// usuário ver uma frase estranha do que o app esconder o motivo.
     static func motivoDeExclusao(_ bruto: String?) -> String {
         guard let bruto, !bruto.trimmingCharacters(in: .whitespaces).isEmpty else {
-            return "no reason recorded"
+            return frase("no reason recorded")
         }
         let semSecao = bruto.replacingOccurrences(
             of: "\\s*\\(§\\d+[^)]*\\)", with: "",
             options: .regularExpression).trimmingCharacters(in: .whitespaces)
         switch semSecao.lowercased() {
         case "cobertura insuficiente":
-            return "not enough coverage this week"
+            return frase("not enough coverage this week")
         case "sem leitura", "sem leitura na semana":
-            return "no reading this week"
+            return frase("no reading this week")
         case "fonte unica", "fonte única":
-            return "only one source, so no directional state"
+            return frase("only one source, so no directional state")
         default:
             return semSecao
         }

@@ -23,6 +23,7 @@ import UIKit
 /// texto — "3 of 4 · no stripe" —; ícone e tom são reforço. Quem não distingue
 /// cor lê exatamente a mesma coisa.
 struct EtiquetaDeCasamento: View {
+    /// Texto calculado por `Similares.casamento`, já traduzido.
     let texto: String
     let completo: Bool
 

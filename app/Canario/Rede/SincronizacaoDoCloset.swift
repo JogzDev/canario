@@ -15,9 +15,9 @@ actor SincronizacaoDoCloset {
 
         var errorDescription: String? {
             switch self {
-            case .semConta: return "Sign in before synchronizing your Closet."
-            case .resposta: return "Closet sync is temporarily unavailable. Your local changes are safe."
-            case .dadosInvalidos: return "Closet sync returned data I could not verify. Your local copy was kept."
+            case .semConta: return frase("Sign in before synchronizing your Closet.")
+            case .resposta: return frase("Closet sync is temporarily unavailable. Your local changes are safe.")
+            case .dadosInvalidos: return frase("Closet sync returned data I could not verify. Your local copy was kept.")
             }
         }
     }

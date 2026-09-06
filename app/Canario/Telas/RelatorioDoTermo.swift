@@ -131,7 +131,7 @@ struct RelatorioDoTermo: View {
     /// parágrafo dizia *"Skirt was within the usual range and slightly under
     /// the usual range"* -- as duas leituras coladas por um "and", que é a
     /// mesma contradição que o JP mandou tirar dos cartões da Trends. O selo é
-    /// a faixa desta semana; o `estado` é movimento confirmado; e a frase que
+    /// a faixa desta semana; o `estado` é movimento confirmado; e a manchete que
     /// concilia os dois já existe, em `Explicacao.porQue`.
     ///
     /// O número fica no tom da tinta, não no vermelho do desenho: em uma
@@ -171,8 +171,8 @@ struct RelatorioDoTermo: View {
                 cartaoDaEscala
             }
 
-            Text(frase).font(Tokens.Fonte.apoio)
-            LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
+            Text(manchete).font(Tokens.Fonte.apoio)
+            LinhaInsumo(texto: Perna.baseadoEm(atual?.pernasAtivas))
         }
     }
 
@@ -205,34 +205,35 @@ struct RelatorioDoTermo: View {
         }
     }
 
-    /// A frase da semana, sem repetir o que o selo já disse.
+    /// A manchete da semana, sem repetir o que o selo já disse.
     ///
     /// Ela dizia *"was within the usual range **and** slightly under the usual
     /// range"* -- estado e faixa colados por um "and", como se fossem uma
     /// afirmação só. São duas perguntas, e `Explicacao.porQue` é quem responde
-    /// a segunda sem contradizer a primeira; é a mesma frase dos cartões da
+    /// a segunda sem contradizer a primeira; é a mesma manchete dos cartões da
     /// Trends, então as duas telas passam a falar igual.
-    private var frase: String {
+    /// Renomeada de `frase` em 05/09: o nome sombreava a função global
+    /// `frase(_:)` dentro de toda esta View, e nenhuma chamada de tradução
+    /// aqui dentro alcançava a função certa.
+    private var manchete: String {
         // O PORTÃO DA §8 VALE PARA A PROSA TAMBÉM.
         //
         // A tela escondia o número grande e o selo quando a cobertura não
-        // sustenta, e logo abaixo a frase dizia "The index is +2,14" -- eu
-        // mesmo abri esse buraco ao trazer a frase para o cabeçalho, que antes
+        // sustenta, e logo abaixo a manchete dizia "The index is +2,14" -- eu
+        // mesmo abri esse buraco ao trazer a manchete para o cabeçalho, que antes
         // só era montado do lado liberado. Recusar o número em corpo 34 e
         // sussurrá-lo em corpo 15 não é recusar.
         guard temCobertura else {
-            return "The panel does not have enough coverage this week to state "
-                 + "an index for \(Traducao.rotuloExibido(termo)). What each "
-                 + "source measured on its own is below."
+            return frase("The panel does not have enough coverage this week to state an index for \(Traducao.rotuloExibido(termo)). What each source measured on its own is below.")
         }
         guard let atual, let valor = atual.indice else {
-            return "There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet."
+            return frase("There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet.")
         }
         let quando = atual.semana == maisRecente?.semana
             ? "Latest reading, \(Formato.data(atual.semana))."
             : "Latest week when two sources overlapped, \(Formato.data(atual.semana))."
         guard atual.estado != nil else {
-            return "\(quando) The index is \(fmt(valor)), but a state requires two agreeing sources."
+            return frase("\(quando) The index is \(fmt(valor)), but a state requires two agreeing sources.")
         }
         return "\(quando) " + Explicacao.porQue(estado: atual.estado,
                                                 indice: atual, series: serie)
@@ -242,7 +243,7 @@ struct RelatorioDoTermo: View {
     private var indiceEEstado: some View {
         Cartao {
             // O selo é o título da leitura. Repeti-lo em preto ao lado fazia a
-            // mesma frase competir consigo mesma e ainda a espremia em duas linhas.
+            // mesma manchete competir consigo mesma e ainda a espremia em duas linhas.
             SeloEstado(estado: atual?.estado,
                        leitura: temCobertura ? atual?.indice : nil)
             Text(atual?.indice.map(fmt) ?? "—")
@@ -251,7 +252,7 @@ struct RelatorioDoTermo: View {
             if let z = atual?.indice {
                 LinhaInsumo(texto: Leitura.explicacao(z))
             }
-            LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
+            LinhaInsumo(texto: Perna.baseadoEm(atual?.pernasAtivas))
         }
     }
 
@@ -337,7 +338,7 @@ struct RelatorioDoTermo: View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Sources").font(.system(size: 22, weight: .bold))
-                BotaoDeAjuda(titulo: "What these percentages are",
+                BotaoDeAjuda(titulo: frase("What these percentages are"),
                              texto: Self.textoDasFontes,
                              rotulo: "What these percentages are")
             }
@@ -411,13 +412,13 @@ struct RelatorioDoTermo: View {
             let media = anteriores.isEmpty ? nil
                 : Double(anteriores.reduce(0, +)) / Double(anteriores.count)
             if let media {
-                return "0 articles in the latest 4-week window · previous-window average \(Leitura.numero(media, casas: 1))"
+                return frase("0 articles in the latest 4-week window · previous-window average \(Leitura.numero(media, casas: 1))")
             }
-            return "0 articles in the latest 4-week window"
+            return frase("0 articles in the latest 4-week window")
         }
         return Leitura.variacao(recente: pontos.first?.valorBruto,
                                 media: mediaDaJanela(pontos))
-            ?? "No comparable window yet"
+            ?? frase("No comparable window yet")
     }
 
     private func fmt(_ v: Double) -> String {
@@ -618,7 +619,7 @@ private struct DetalheDaFonteEditorial: View {
                             }
                             .contentShape(Rectangle())
                         }
-                        .accessibilityLabel("\(exemplo.titulo), \(exemplo.veiculo), opens the article")
+                        .accessibilityLabel(frase("\(exemplo.titulo), \(exemplo.veiculo), opens the article"))
                         .padding(.vertical, Tokens.Espaco.xs)
                     }
                 }
@@ -694,8 +695,8 @@ struct CartaoDaPerna: View {
                 }
                 .foregroundStyle(cores.tinta)
             } else {
-                // Perna sem janela comparável mostra a frase no lugar do
-                // número, e a frase é mais alta. Duas linhas reservadas nas
+                // Perna sem janela comparável mostra a manchete no lugar do
+                // número, e a manchete é mais alta. Duas linhas reservadas nas
                 // duas pontas mantêm o passo do cartão.
                 Text(leitura)
                     .font(Tokens.Fonte.apoio)
@@ -713,7 +714,7 @@ struct CartaoDaPerna: View {
                 // de diferença.
                 VStack(alignment: .leading, spacing: 0) {
                     Text("\(semanas) weeks")
-                    Text("to \(Formato.data(ultima))")
+                    Text(frase("to \(Formato.data(ultima))"))
                 }
                 .font(Tokens.Fonte.miudo)
                 .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
@@ -733,6 +734,6 @@ struct CartaoDaPerna: View {
         let numero = variacao.map {
             "\(Leitura.numero($0, casas: 0, sinal: true)) percent versus its own 12-week average"
         } ?? leitura
-        return "\(Perna.rotulo(fonte)), \(numero)"
+        return frase("\(Perna.rotulo(fonte)), \(numero)")
     }
 }

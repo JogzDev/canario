@@ -23,16 +23,45 @@ struct ImportarPeca: View {
 
     // MARK: - Tokens Locais
 
-    /// #BBE5ED é o céu da marca, e ele já existe em `Tokens.Cor.ceu` desde a
-    /// A18 -- foi redigitado aqui como literal fixo ao aplicar o Figma. Duas
-    /// cópias do mesmo valor significa que trocar a paleta conserta uma tela e
-    /// esquece a outra, que é exatamente o que o `Tokens.swift` foi escrito
-    /// para impedir. O valor desenhado continua idêntico no modo claro, que é
-    /// o único que o app suporta.
-    private let corDestaque = Tokens.Cor.ceu
+    /// A moldura das três prévias da peça: NEUTRA, não o céu da marca.
+    ///
+    /// Era `Tokens.Cor.ceu` (#BBE5ED) até 05/09, e este fluxo é onde o dano
+    /// era maior: a pessoa olha a prévia sobre azul, decide se a cor sugerida
+    /// pela análise está certa e confirma — ou seja, a moldura influenciava
+    /// justamente o passo em que o dado de cor entra no Closet. Um fundo
+    /// cromático desloca a percepção na direção complementar; a peça lia mais
+    /// quente do que é. Ver `SubstratoDaPeca` em `Componentes.swift`.
+    ///
+    /// Os botões desta tela (`Choose from Photos`, `BotaoDeEntrada`) continuam
+    /// no céu da marca de propósito: ali a cor é identidade, e não há nenhuma
+    /// peça dentro deles para ser julgada.
+    private let corDestaque = Tokens.Cor.substratoDaPeca
 
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
+    @State private var mostrandoCorConstante = false
+    /// Confiança que o SISTEMA reportou para a cor desta captura, 0…1.
+    ///
+    /// `nil` em todo caminho que não seja a rota de cor constante do iOS 18 —
+    /// fototeca, arquivo, PDF e a câmera comum. Escrito num lugar só, dentro
+    /// de `prepararConfirmacao`, justamente para não sobreviver de uma foto
+    /// para a seguinte: uma confiança velha grudada numa foto nova seria pior
+    /// que não medir nada.
+    @State private var confiancaDaCaptura: Double?
+    /// A foto de cor constante da captura atual, quando o enquadramento ainda é
+    /// o dela. Ver `medicaoAindaVale`.
+    @State private var imagemDeMedicao: CGImage?
+    /// A mesma foto, guardada para o "desfazer recorte" poder devolvê-la.
+    @State private var medicaoOriginal: CGImage?
+    /// A confiança original, pelo mesmo motivo de `medicaoOriginal`.
+    @State private var confiancaOriginal: Double?
+    /// O par resolvido para o alvo que a pessoa confirmou.
+    @State private var medicaoDoAlvo: CGImage?
+    @State private var confiancaDoAlvoEscolhido: Double?
+    /// A pessoa escolheu a rota de cor precisa e depois isolou a peça, o que
+    /// desfaz a medição. A tela precisa dizer isso; ficar em silêncio seria
+    /// deixá-la achar que a cor continua medida.
+    @State private var perdeuAMedicaoAoIsolar = false
     @State private var daFototeca: PhotosPickerItem?
     @State private var lendo = false
     /// O que a espera atual está fazendo. Sem isto a tela era um spinner num
@@ -48,10 +77,10 @@ struct ImportarPeca: View {
 
         var mensagem: String {
             switch self {
-            case .lendoArquivo:     return "Reading the file…"
-            case .separandoPeca:    return "Separating the garment…"
-            case .analisandoLocal:  return "Reading the garment…"
-            case .analisandoNaNuvem: return "Reading the garment…"
+            case .lendoArquivo:     return frase("Reading the file…")
+            case .separandoPeca:    return frase("Separating the garment…")
+            case .analisandoLocal:  return frase("Reading the garment…")
+            case .analisandoNaNuvem: return frase("Reading the garment…")
             }
         }
 
@@ -61,9 +90,9 @@ struct ImportarPeca: View {
             switch self {
             case .lendoArquivo, .analisandoLocal: return nil
             case .separandoPeca:
-                return "This happens on this iPhone."
+                return frase("This happens on this iPhone.")
             case .analisandoNaNuvem:
-                return "The visual analysis runs on the server and usually takes a few seconds."
+                return frase("The visual analysis runs on the server and usually takes a few seconds.")
             }
         }
 
@@ -74,9 +103,9 @@ struct ImportarPeca: View {
             switch self {
             case .lendoArquivo, .analisandoLocal: return nil
             case .separandoPeca:
-                return "Still separating the garment on this iPhone. You can close and try a tighter photo."
+                return frase("Still separating the garment on this iPhone. You can close and try a tighter photo.")
             case .analisandoNaNuvem:
-                return "This is taking longer than usual. It stops on its own after 30 seconds — you can close and read the garment on this iPhone instead."
+                return frase("This is taking longer than usual. It stops on its own after 30 seconds — you can close and read the garment on this iPhone instead.")
             }
         }
     }
@@ -236,7 +265,14 @@ struct ImportarPeca: View {
                                 Button {
                                     guard let original = imagemOriginal else { return }
                                     let nome = nomePendente ?? "photo"
-                                    Task { await prepararConfirmacao(original, nome: nome) }
+                                    Task {
+                                        // Volta ao enquadramento da captura, e
+                                        // com ele volta a medição.
+                                        await prepararConfirmacao(
+                                            original, nome: nome,
+                                            medicao: medicaoOriginal,
+                                            confianca: confiancaOriginal)
+                                    }
                                 } label: {
                                     Label("Undo crop", systemImage: "arrow.uturn.backward")
                                 }
@@ -277,13 +313,30 @@ struct ImportarPeca: View {
             }
             .ignoresSafeArea()
         }
+        .fullScreenCover(isPresented: $mostrandoCorConstante) {
+            CapturaDeCorConstante { resultado in
+                mostrandoCorConstante = false
+                guard let resultado else { return }
+                medicaoOriginal = resultado.imagemDeMedicao
+                confiancaOriginal = resultado.confianca
+                Task {
+                    await prepararConfirmacao(resultado.imagem,
+                                              nome: "color-accurate photo",
+                                              medicao: resultado.imagemDeMedicao,
+                                              confianca: resultado.confianca)
+                }
+            }
+            .ignoresSafeArea()
+        }
         .sheet(isPresented: $mostrandoEditorDeRecorte) {
             if let imagem = imagemPendente {
                 EditorDeRecorte(imagem: imagem) { recortada in
                     mostrandoEditorDeRecorte = false
-                    let nome = nomePendente ?? "cropped image"
+                    let nome = nomePendente ?? frase("cropped image")
                     let original = imagemOriginal ?? imagem
                     Task {
+                        // Sem `medicao` e sem `confianca`: o recorte mudou a
+                        // geometria, e o par deixou de se corresponder.
                         await prepararConfirmacao(recortada, nome: nome,
                                                   recorteDe: original)
                     }
@@ -605,6 +658,18 @@ struct ImportarPeca: View {
                     mostrandoCamera = true
                 }
             }
+            // A rota de cor constante é uma ESCOLHA, não o caminho padrão:
+            // ela dispara o flash sempre, e forçar isso em quem só quer
+            // registrar a peça seria trocar um incômodo garantido por um ganho
+            // que nem toda pessoa precisa. Some por completo onde não existe —
+            // iOS 17, simulador, aparelho sem câmera traseira.
+            if CapturaDeCorConstante.disponivel {
+                BotaoDeEntrada(titulo: "Color-accurate photo",
+                               simbolo: "camera.aperture") {
+                    erro = nil
+                    mostrandoCorConstante = true
+                }
+            }
             BotaoDeEntrada(titulo: "Choose a file or PDF", simbolo: "doc.badge.plus") {
                 erro = nil
                 mostrandoSeletor = true
@@ -846,7 +911,7 @@ struct ImportarPeca: View {
         erro = nil
         guard let dados = try? await item.loadTransferable(type: Data.self),
               let imagem = MiniaturaLocal.imagem(de: dados) else {
-            erro = "I couldn't open this photo."
+            erro = frase("I couldn't open this photo.")
             etapa = .entrada
             lendo = false
             return
@@ -854,8 +919,23 @@ struct ImportarPeca: View {
         await prepararConfirmacao(imagem, nome: "photo library image")
     }
 
+    /// O PAR SÓ VALE ENQUANTO O ENQUADRAMENTO NÃO MUDA.
+    ///
+    /// `medicao` é a foto de cor constante da mesma cena que `imagem`. As duas
+    /// só se correspondem pixel a pixel enquanto ninguém mexe na geometria:
+    /// recortar a exibida deixa a de medição no enquadramento antigo, e medir
+    /// cor num pedaço diferente do que a pessoa escolheu seria pior do que não
+    /// medir. Por isso o recorte entra aqui com `medicao: nil`, e o desfazer
+    /// devolve a original.
+    ///
+    /// O padrão `nil` de todos os três é o portão: quem entra por fototeca,
+    /// arquivo ou câmera comum apaga a medida anterior sem precisar lembrar.
     private func prepararConfirmacao(_ imagem: CGImage, nome: String,
-                                     recorteDe original: CGImage? = nil) async {
+                                     recorteDe original: CGImage? = nil,
+                                     medicao: CGImage? = nil,
+                                     confianca: Double? = nil) async {
+        imagemDeMedicao = medicao
+        confiancaDaCaptura = confianca
         esperaAtual = .separandoPeca
         lendo = true
         erro = nil
@@ -864,7 +944,7 @@ struct ImportarPeca: View {
         analiseConcluidaParaOAlvo = false
         let opcoes = await MiniaturaLocal.opcoesDeAlvo(de: imagem)
         guard !opcoes.isEmpty else {
-            erro = "I could not prepare this image. Choose another photo or file."
+            erro = frase("I could not prepare this image. Choose another photo or file.")
             etapa = .entrada
             lendo = false
             return
@@ -884,23 +964,45 @@ struct ImportarPeca: View {
             return
         }
         guard !termos.isEmpty else {
-            erro = "The item taxonomy is not available yet. Go back and try again; no visual-analysis credit was used."
+            erro = frase("The item taxonomy is not available yet. Go back and try again; no visual-analysis credit was used.")
             return
         }
         guard let original = imagemPendente, let escolha = opcaoEscolhida else { return }
         let imagem: CGImage?
+        // A MEDIÇÃO SÓ ACOMPANHA A FOTO INTEIRA, E ISSO É DELIBERADO.
+        //
+        // "Peça isolada" não é um recorte retangular: o Vision devolve uma
+        // máscara, e a máscara nasceu da foto natural. Aplicá-la aos pixels da
+        // foto de cor constante exigiria que o Vision achasse as MESMAS
+        // instâncias, na mesma ordem, nas duas versões da cena — e isso não é
+        // garantido por nada. Medir cor num recorte que talvez não seja o que a
+        // pessoa escolheu é pior do que não medir.
+        //
+        // Então: foto inteira mantém a cor medida; peça isolada volta ao
+        // comportamento de sempre (sugestão que a pessoa confirma). A tela diz
+        // isso em vez de deixar a diferença invisível.
+        let medicao: CGImage?
+        let confiancaDoAlvo: Double?
         switch escolha.tipo {
         case .primeiroPlano:
             imagem = MiniaturaLocal.imagem(de: escolha.dados)
+            medicao = nil
+            confiancaDoAlvo = nil
         case .fotoCompleta:
             imagem = original
+            medicao = imagemDeMedicao
+            confiancaDoAlvo = imagemDeMedicao == nil ? nil : confiancaDaCaptura
         }
         guard let imagem else {
-            erro = "I could not open the selected item. Choose another option."
+            erro = frase("I could not open the selected item. Choose another option.")
             return
         }
+        medicaoDoAlvo = medicao
+        confiancaDoAlvoEscolhido = confiancaDoAlvo
+        perdeuAMedicaoAoIsolar = escolha.tipo == .primeiroPlano
+            && imagemDeMedicao != nil
 
-        let nome = nomePendente ?? "selected image"
+        let nome = nomePendente ?? frase("selected image")
         miniaturaJPEG = escolha.dados
         if Supabase.analiseRemotaHabilitada {
             imagemConfirmadaPendente = imagem
@@ -924,7 +1026,7 @@ struct ImportarPeca: View {
 
     private func analisarPendente(usandoNuvem: Bool) async {
         guard let imagem = imagemConfirmadaPendente else { return }
-        let nome = nomeConfirmadoPendente ?? "selected image"
+        let nome = nomeConfirmadoPendente ?? frase("selected image")
         let dados = usandoNuvem ? dadosConfirmadosPendentes : nil
         let descricao = usandoNuvem ? descricaoConfirmadaPendente : nil
         imagemConfirmadaPendente = nil
@@ -938,10 +1040,10 @@ struct ImportarPeca: View {
 
     private var tituloDaEtapa: String {
         switch etapa {
-        case .entrada:       return "Analyze an item"
-        case .confirmarAlvo: return "Confirm your item"
-        case .atributos:     return "Fill the info"
-        case .painel:        return "Market panel"
+        case .entrada:       return frase("Analyze an item")
+        case .confirmarAlvo: return frase("Confirm your item")
+        case .atributos:     return frase("Fill the info")
+        case .painel:        return frase("Market panel")
         }
     }
 
@@ -1001,7 +1103,9 @@ struct ImportarPeca: View {
         erro = nil
         procedencia = []
         nomeDoArquivo = nome
-        let leitura = await LeitorDeArquivo.ler(imagem)
+        let leitura = await LeitorDeArquivo.ler(
+            imagem, imagemParaCor: medicaoDoAlvo,
+            confiancaDaCaptura: confiancaDoAlvoEscolhido)
         let marcas = Importacao.marcasNoTexto(leitura.texto)
 
         if let dadosParaNuvem {
@@ -1016,7 +1120,7 @@ struct ImportarPeca: View {
                     procedencia = analise.decisionEvidence.map {
                         "Why the target was ambiguous: \($0)"
                     }
-                    erro = "The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo."
+                    erro = frase("The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo.")
                 } else {
                     let existentes = Set(termos.map(\.id))
                     detectados = FormularioDaPeca.podar(
@@ -1038,20 +1142,20 @@ struct ImportarPeca: View {
                     ]
                     if !analise.decisionEvidence.isEmpty {
                         procedencia.append(
-                            "Visible evidence:\n"
+                            frase("Visible evidence:\n")
                             + analise.decisionEvidence
                                 .map { "•  \($0)" }
                                 .joined(separator: "\n"))
                     }
                     if !analise.additionalVisualAttributes.isEmpty {
                         procedencia.append(
-                            "Also observed, outside the market taxonomy: "
+                            frase("Also observed, outside the market taxonomy: ")
                             + analise.additionalVisualAttributes.joined(separator: ", ") + ".")
                     }
                     if !FormularioDaPeca.temCategoria(detectados, termos: termos) {
                         detectados = []
                         coresPorPrioridade = []
-                        erro = "The analysis returned an invalid category. Choose the attributes manually."
+                        erro = frase("The analysis returned an invalid category. Choose the attributes manually.")
                     }
                 }
             } catch {
@@ -1063,7 +1167,14 @@ struct ImportarPeca: View {
         }
 
         if !marcas.isEmpty {
-            procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
+            procedencia.append(frase("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material."))
+        }
+        // A pessoa pediu cor precisa e depois isolou a peça. A medição não
+        // acompanha o recorte (ver `confirmarAlvo`), e ela precisa saber disso
+        // agora, na tela onde ainda dá para voltar e escolher a foto inteira --
+        // não depois, olhando um Closet que ela acha medido e não é.
+        if perdeuAMedicaoAoIsolar {
+            procedencia.append(frase("The measured color applies to the whole photo. You isolated the item, so the color here was read the usual way — go back and pick the full photo if you want the measured one."))
         }
         etapa = .atributos
         analiseConcluidaParaOAlvo = true
@@ -1098,7 +1209,7 @@ struct ImportarPeca: View {
         lendo = true
         erro = nil
         guard let imagem = MiniaturaLocal.imagem(doArquivo: url) else {
-            erro = "I couldn't open this file. Choose a JPG, PNG, HEIC or PDF."
+            erro = frase("I couldn't open this file. Choose a JPG, PNG, HEIC or PDF.")
             etapa = .entrada
             lendo = false
             return
@@ -1295,7 +1406,10 @@ private struct PreviaDoAlvo: View {
     let id: Int
     let altura: CGFloat
     let selecionada: Bool
-    var corDeFundo: Color = Tokens.Cor.superficie
+    /// Neutro por padrão: quem esquecer de passar a cor recebe o substrato, e
+    /// não uma superfície de sistema que muda com o tema. Cor de moldura de
+    /// peça não é decoração, é condição de medição.
+    var corDeFundo: Color = Tokens.Cor.substratoDaPeca
     var raio: CGFloat = Tokens.Raio.cartao
 
     @State private var imagem: UIImage?

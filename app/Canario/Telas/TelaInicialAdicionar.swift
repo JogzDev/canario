@@ -176,7 +176,7 @@ struct TelaInicialAdicionar: View {
         do {
             termos = try await CatalogoDeTermos.shared.carregar()
         } catch {
-            self.erro = "Could not load the taxonomy."
+            self.erro = frase("Could not load the taxonomy.")
         }
     }
 

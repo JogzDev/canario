@@ -110,16 +110,22 @@ enum Formato {
     static func periodo(dias: Int) -> String {
         switch dias {
         case ..<0:   return "—"
-        case 0...13: return "\(max(dias, 1)) day\(dias == 1 ? "" : "s")"
+        // Uma chave por forma, em vez de sufixo montado por ternário: em
+        // português "1 dia"/"3 dias" mudam só no plural, mas "1 semana"/"3
+        // semanas" mudam o gênero do que vem junto, e uma tradução não
+        // consegue reordenar isso a partir de um "s" solto dentro da chave.
+        case 0...13:
+            let d = max(dias, 1)
+            return d == 1 ? frase("1 day") : frase("\(String(d)) days")
         case 14...44:
             let semanas = Int((Double(dias) / 7).rounded())
-            return "\(semanas) week\(semanas == 1 ? "" : "s")"
+            return semanas == 1 ? frase("1 week") : frase("\(String(semanas)) weeks")
         default:
             // `dias/30 + 1` e não `ceil`: com ceil, 90 dias viraria "menos de 3
             // meses", que é falso — 90 dias são três meses cravados. Somar um ao
             // piso deixa a frase sempre verdadeira, que é o que a regra 2 pede.
             let meses = dias / 30 + 1
-            return "under \(meses) months"
+            return frase("under \(String(meses)) months")
         }
     }
 
