@@ -28,7 +28,7 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google nativo e e-mail validados no iPhone** | cliente iOS, callbacks, Keychain e Supabase configurados; relogin Google aprovado |
 | Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
-| Testes | **281 Swift** · **32 portões Python** · **9 UI** | sete fluxos UI offline rodam no CI; dois usam dados reais e ficam na regressão local |
+| Testes | **302 Swift** · **38 portões Python** · **9 UI** | sete fluxos UI offline rodam no CI; dois usam dados reais e ficam na regressão local |
 
 ## 0. Trabalho ativo — conta, capacidade, privacidade declarada e 1.2
 
@@ -458,6 +458,62 @@ O portão técnico é 80%. A meta aspiracional de produto continua em 90%; abrir
 portão não apaga essa distância nem transforma sugestões em verdade automática.
 Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
+## 3.5 A revisão com a diretoria (05/09) — A53 a A56
+
+Quatro pedidos vindos da apresentação aos chefes, todos na interface. Estão
+fechados no código e conferidos no simulador; o aceite em aparelho físico
+continua pendente, como toda mudança visual deste projeto.
+
+| Pedido | O que foi feito | Onde conferir |
+|---|---|---|
+| A peça não pode aparecer sobre azul | Substrato **neutro fixo** `#CBCBCB` atrás de toda foto de peça, num componente só (`SubstratoDaPeca`) | herói do relatório, 3 prévias do importador, grade do Closet, favoritas do menu |
+| O app precisa trocar de idioma inteiro | **pt-BR e inglês**, com "acompanhar o iPhone" por padrão; 517 chaves traduzidas; troca sem fechar o app | Ajustes → Idioma |
+| A barra não pode ter verbo | `Add` virou **`Studio`** / `Estúdio` | barra de navegação |
+| Ângulo e luz alteram a cor da peça | **Cor constante** do iOS 18, opt-in explícito, com confiança medida fechando o portão da sugestão de cor | Estúdio → "Foto com cor precisa" (só em aparelho com suporte) |
+
+**Aceite em aparelho, 05/09:** o JP exercitou a captura de cor constante no
+iPhone dele e a rota respondeu. Isso fecha o único dos quatro pedidos que tinha
+saído daqui sem prova de execução — o simulador não tem câmera traseira, então
+`CapturaDeCorConstante.disponivel` é falso lá e o caminho inteiro ficava
+inalcançável por teste automatizado.
+
+**E o aceite mudou o desenho.** O JP relatou as duas coisas ao mesmo tempo:
+*"senti que o flash deixou mais difícil até de definir a cor"* e *"acertou a cor
+marcada sim"*. As duas são verdadeiras — flash no eixo cria reflexo especular e
+desbota a superfície para quem olha, mesmo com o sensor tendo medido certo. Era
+o contrário do que a A54 (fundo neutro) foi fazer.
+
+A captura **já produzia** as duas fotos da mesma cena, pela entrega de reserva,
+e a natural era descartada. Agora cada uma faz o que faz melhor: **a natural é a
+que a pessoa vê, recorta e guarda; a de cor constante só mede.** O par só vale
+enquanto a geometria não muda — recortar ou isolar a peça invalida a
+correspondência, e nesses casos a leitura volta ao comportamento de sempre, com
+a tela dizendo isso em vez de ficar calada.
+
+**O que esse aceite prova e o que não prova.** Prova que a sessão sobe, que o
+aparelho declara suporte, que o flash dispara e que a foto volta pelo mesmo
+funil das outras. **Não prova que o piso de confiança está no lugar certo:**
+`CorDaPeca.confiancaMinimaDaCaptura = 0.5` continua registrado como *não
+calibrado* e só sai desse estado com peças fotografadas sob luzes conhecidas e
+cor verdadeira anotada — ver `FILA_DO_DEPOIS.md`, seção 2.6.
+
+Três achados que só apareceram ao fazer isto, e que não eram o pedido:
+
+1. **O rótulo do menu era o identificador da navegação.** `TelaDoMenu` fazia
+   `switch nome { case "Settings": ... }` contra o texto exibido. Em português
+   nenhum caso casaria e todo item do menu abriria o Q&A — sem erro, sem crash
+   e sem teste vermelho, porque os dois lados liam o mesmo literal. A navegação
+   passou a ser pelo `case` do enum.
+2. **O portão da lista negra (§6) não enxergava o catálogo.** Ele varria
+   `.swift` e `.strings`; com a tradução, metade do texto de interface passou a
+   existir só dentro do `.xcstrings`, e em dois idiomas. Agora varre também o
+   catálogo — conferido plantando "vai vender" numa tradução e vendo o portão
+   ficar vermelho.
+3. **`Text(umaString)` não localiza.** Componentes que recebiam `String` e
+   desenhavam `Text` deixavam o texto fora do catálogo sem nenhum sinal. Foi
+   assim que "Ask me the first time" apareceu em inglês numa tela em português,
+   visto no simulador.
+
 ## 4. App e loja
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
@@ -482,6 +538,7 @@ assinatura válida. O App Store Connect aceitou o upload sem warning de pacote.
 O Archive 1.2 (1) foi criado com Xcode 26.2 e preservado no Organizer em
 `~/Library/Developer/Xcode/Archives/2026-08-31/DataDrobe 1.2 (1) 12.10.xcarchive`.
 O build, os sete fluxos UI do CI, 281 testes Swift e 32 portões Python passaram.
+(Números do corte 1.2 em 31/08; em 05/09 são 302 Swift e 38 portões — ver acima.)
 A exportação App Store não foi concluída porque o Xcode deste Mac está sem conta
 Apple ativa e o Keychain não contém uma identidade Apple Distribution; o perfil
 de loja local também antecede Sign in with Apple e Associated Domains. Entrar
@@ -512,9 +569,13 @@ catálogo.
 
 ## 5. Testes
 
-* **281** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
-* **33** suítes Python no repositório; **32** rodam no CI a cada push. A 33ª,
-  `teste_30s.py`, é a sonda manual do README e não entra no portão
+* **302** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **38** portões Python rodam no CI a cada push, contados no próprio
+  `testes.yml` em vez de estimados. `coletor/teste_30s.py` continua fora: é a
+  sonda manual do README. O portão que entrou em 05/09 é o da A53 --
+  `ferramentas/extrair_frases.py --conferir` confere que toda frase da interface
+  existe no catálogo e tem tradução pt-BR, que é uma falha invisível de outro
+  jeito: ela não quebra build, não aparece em log e não derruba teste
 * **9** testes de interface no alvo `CanarioUITests`; sete rotas offline rodam no CI
 
 > Estes três números aparecem também no resumo de 30 segundos, e em 25/08 os
