@@ -59,3 +59,13 @@ app/Canario.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 
 # Estado local da CLI Supabase (referencia do projeto e versoes remotas)
 supabase/.temp/
+
+# Dependencias locais do laboratorio descartavel da 1.3 (P1).
+#
+# `package.json` e `package-lock.json` sao versionados: eles FIXAM versao e
+# integridade, que e o que torna a suite reproduzivel. Os binarios em si nao --
+# sao ~100 MB de PostgreSQL por plataforma, baixados por `npm ci`.
+ferramentas/laboratorio_radar/node_modules/
+
+# Diagnostico preservado quando o laboratorio falha.
+ferramentas/laboratorio_radar/diagnostico-*/
