@@ -286,7 +286,12 @@ final class ControladorDeCorConstante: UIViewController {
                     // Honestidade antes de conveniência: sem suporte, a pessoa
                     // precisa saber que esta foto NÃO é a de cor medida antes
                     // de tirá-la — e não descobrir depois pelo resultado.
-                    self.aviso.text = frase("This iPhone does not support color-accurate capture. The photo will be a normal one, and no color will be pre-selected for you.")
+                    // O texto anterior prometia "nenhuma cor virá pré-marcada",
+                    // e isso era falso: sem suporte, a foto segue o caminho
+                    // normal, onde o `CorDaPeca` sugere cor como sempre sugeriu
+                    // (confiança ausente = não medida, não zero). Prometer uma
+                    // proteção que não existe é pior que não ter a proteção.
+                    self.aviso.text = frase("This iPhone does not support color-accurate capture. The photo will be a normal one, and the color will be suggested the usual way — worth checking it yourself.")
                 }
             }
         }
@@ -338,7 +343,32 @@ final class ControladorDeCorConstante: UIViewController {
 
     @objc private func desistir() { devolver(nil) }
 
+    /// O ÚNICO caminho de saída, e ele acontece na fila principal.
+    ///
+    /// Os callbacks do `AVCapturePhotoCaptureDelegate` não têm garantia de
+    /// rodar na main queue — a Apple os entrega numa fila interna. Este método
+    /// mexe em UIKit (`girando`) e dispara a mudança de estado do SwiftUI
+    /// (`aoCapturar`), e as duas coisas exigem a principal.
+    ///
+    /// Pior que a fila errada é a corrida: `jaDevolveu` era lido e escrito pelo
+    /// delegate e pelo botão de cancelar ao mesmo tempo, e é justamente ele que
+    /// impede a tela de ser fechada duas vezes. Um teste de lógica nunca pegaria
+    /// isso; ele aparece como fechamento duplo ou congelamento intermitente no
+    /// aparelho de alguém.
+    ///
+    /// `Thread.isMainThread` em vez de `async` sempre: vindo do botão, a
+    /// entrega é síncrona e a tela fecha no mesmo ciclo, sem um quadro de
+    /// atraso visível no toque.
     private func devolver(_ resultado: CapturaDeCorConstante.Resultado?) {
+        if Thread.isMainThread {
+            entregar(resultado)
+        } else {
+            DispatchQueue.main.async { [weak self] in self?.entregar(resultado) }
+        }
+    }
+
+    private func entregar(_ resultado: CapturaDeCorConstante.Resultado?) {
+        dispatchPrecondition(condition: .onQueue(.main))
         guard !jaDevolveu else { return }
         jaDevolveu = true
         girando.stopAnimating()
@@ -375,6 +405,20 @@ extension ControladorDeCorConstante: AVCapturePhotoCaptureDelegate {
                 return
             }
             if suportaCorConstante {
+                // O QUE ESTE NÚMERO MEDE, E O QUE ELE NÃO MEDE.
+                //
+                // `centerWeightedMean` é uma média do quadro inteiro ponderada
+                // ao CENTRO. Uma peça bem enquadrada cai onde o peso é maior, e
+                // aí ele descreve o que interessa; uma peça na periferia é
+                // descrita por um número que fala principalmente do fundo.
+                //
+                // A Apple entrega também `constantColorConfidenceMap`, com
+                // valor por região — que responderia a pergunta certa, "quanta
+                // confiança HÁ NA PEÇA". Usá-lo exige saber onde a peça está, e
+                // a segmentação só acontece depois, no importador. Enquanto a
+                // média ao centro for o que temos, ela é o que o portão usa, e
+                // o limite fica escrito aqui em vez de virar suposição.
+                // Registrado em `FILA_DO_DEPOIS.md`, seção 2.6.
                 let nivel = photo.constantColorCenterWeightedMeanConfidenceLevel
                 // O sistema reporta `Float`. Um valor fora de 0…1 (ou NaN) é
                 // ausência de medida, não confiança máxima: vira `nil`.
@@ -395,6 +439,15 @@ extension ControladorDeCorConstante: AVCapturePhotoCaptureDelegate {
                      error: Error?) {
         // Fim da captura inteira. Se a de cor constante já respondeu, isto não
         // faz nada; se ela falhou, é aqui que a reserva salva o enquadramento.
+        // Mesma razão de `devolver`: esta decisão lê `jaDevolveu` e mexe na
+        // interface, e o callback pode não estar na fila principal.
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.photoOutput(output, didFinishCaptureFor: resolvedSettings,
+                                  error: error)
+            }
+            return
+        }
         guard !jaDevolveu else { return }
         if let natural {
             // A de cor constante não veio: sobra a natural, sem confiança
@@ -402,10 +455,8 @@ extension ControladorDeCorConstante: AVCapturePhotoCaptureDelegate {
             // sugerir cor como sempre sugeriu.
             devolver(.init(imagem: natural, imagemDeMedicao: nil, confianca: nil))
         } else {
-            DispatchQueue.main.async { [weak self] in
-                self?.girando.stopAnimating()
-                self?.obturador.isEnabled = true
-            }
+            girando.stopAnimating()
+            obturador.isEnabled = true
         }
     }
 }

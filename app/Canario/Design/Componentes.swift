@@ -167,7 +167,7 @@ struct BotaoDeAjuda: View {
     let titulo: String
     let texto: String
     /// O que o VoiceOver anuncia. O ícone sozinho vira "botão de interrogação".
-    var rotulo: String = "What this means"
+    var rotulo: String = frase("What this means")
 
     @State private var aberto = false
 

@@ -218,9 +218,9 @@ struct RelatorioDaPeca: View {
     @ViewBuilder
     private var vitrineDeSimilares: some View {
         if carregandoSimilares {
-            secaoCarregando("Similar pieces")
+            secaoCarregando(frase("Similar pieces"))
         } else if let erroDosSimilares {
-            falhaLocal(titulo: "Similar pieces", mensagem: erroDosSimilares)
+            falhaLocal(titulo: frase("Similar pieces"), mensagem: erroDosSimilares)
         } else if let s = similares, let r = s.resumo,
                   !s.pecas.filter(Similares.podeExibir).isEmpty {
             let visiveis = s.pecas.filter(Similares.podeExibir)
@@ -446,12 +446,12 @@ struct RelatorioDaPeca: View {
                   let miniatura = await MiniaturaLocal.dados(de: imagem),
                   await PecasSalvas.shared.salvar(pecaSalva, miniaturaDados: miniatura)
             else {
-                erroDaFoto = "I couldn't save that photo. Your existing image was not changed."
+                erroDaFoto = frase("I couldn't save that photo. Your existing image was not changed.")
                 return
             }
             miniaturaDaPeca = await MiniaturaParaTela.imagem(de: miniatura)
         } catch {
-            erroDaFoto = "I couldn't read that image. Try another photo."
+            erroDaFoto = frase("I couldn't read that image. Try another photo.")
         }
     }
 
@@ -695,7 +695,7 @@ struct RelatorioDaPeca: View {
                 // dizer qual. O "?" diz.
                 BotaoDeAjuda(titulo: Explicacao.tituloDaEscala,
                              texto: Explicacao.textoDaEscala,
-                             rotulo: "What this number is")
+                             rotulo: frase("What this number is"))
             }
             LinhaInsumo(texto: Perna.baseadoEm(i?.pernasAtivas)
                         + " · week of \(Formato.data(i?.semana ?? ""))")
@@ -791,7 +791,7 @@ struct RelatorioDaPeca: View {
                 if let r = SerieDoCluster.ressalva(s) { LinhaInsumo(texto: r) }
                 if let c = s.categoriaUsada, c != "(todas)" {
                     let categoria = Traducao.rotuloExibido(id: c).lowercased()
-                    LinhaInsumo(texto: "Compared with other \(categoria) items in the current panel.")
+                    LinhaInsumo(texto: frase("Compared with other \(categoria) items in the current panel."))
                 }
             }
         }
@@ -806,9 +806,9 @@ struct RelatorioDaPeca: View {
     @ViewBuilder
     private var blocoDoCluster: some View {
         if carregandoCluster {
-            secaoCarregando("Combined reading")
+            secaoCarregando(frase("Combined reading"))
         } else if let erroDoCluster {
-            falhaLocal(titulo: "Combined reading", mensagem: erroDoCluster)
+            falhaLocal(titulo: frase("Combined reading"), mensagem: erroDoCluster)
         } else if let c = cluster, c.nAtributos > 0 {
             Cartao {
                 Text("Combined reading").font(Tokens.Fonte.secao)

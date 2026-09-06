@@ -313,10 +313,10 @@ struct Explorar: View {
 
             if movimentoVisivel == "reposicao" {
                 movimento(titulo: nil, tipo: "reposicao", limite: limite,
-                          vazio: "No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available.")
+                          vazio: frase("No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available."))
             } else {
                 movimento(titulo: nil, tipo: "remarcacao", limite: limite,
-                          vazio: "No price reduction of 5% or more was confirmed in this window.")
+                          vazio: frase("No price reduction of 5% or more was confirmed in this window."))
             }
         }
     }
@@ -380,7 +380,10 @@ struct Explorar: View {
     /// seção, ou quando ela está vazia. Chevron que não leva a lugar nenhum é
     /// pior que chevron nenhum: promete conteúdo e entrega uma volta.
     @ViewBuilder
-    private func cabecalhoDeSecao(_ titulo: String, carimbo: String?,
+    /// `LocalizedStringKey` pelo mesmo motivo das perguntas do menu: o corpo
+    /// faz `Text(titulo)`, e com `String` os cabeçalhos da Trends ("Supply
+    /// moves", "This week in fashion", "What changed?") ficavam em inglês.
+    private func cabecalhoDeSecao(_ titulo: LocalizedStringKey, carimbo: String?,
                                   porta: (() -> AnyView)?) -> some View {
         let miolo = HStack(alignment: .firstTextBaseline) {
             Text(titulo).font(Tokens.Fonte.secao)
@@ -436,7 +439,7 @@ struct Explorar: View {
                     .font(Tokens.Fonte.apoio)
                     .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
                 if let semana = buscaDaSemana.map(\.semana).max() {
-                    LinhaInsumo(texto: "Latest closed Google week: \(Formato.data(semana)).")
+                    LinhaInsumo(texto: frase("Latest closed Google week: \(Formato.data(semana))."))
                 }
                 listaDaBusca(limite: nil)
             }
@@ -448,8 +451,8 @@ struct Explorar: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    static let reguaDaBusca = "What people in Brazil searched for on Google, "
-        + "compared with each term's previous 12 weeks."
+    static let reguaDaBusca = frase("What people in Brazil searched for on Google, ")
+        + frase("compared with each term's previous 12 weeks.")
 
     private func radarDeBusca(limite: Int?) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
@@ -477,7 +480,7 @@ struct Explorar: View {
         if carregandoPulso && buscaDaSemana.isEmpty {
             ProgressView().frame(maxWidth: .infinity, alignment: .center)
         } else if buscaDaSemana.isEmpty {
-            LinhaInsumo(texto: "No current Google search reading is available.")
+            LinhaInsumo(texto: frase("No current Google search reading is available."))
         } else {
             ForEach(gruposVisiveis(limite: limite), id: \.titulo) { grupo in
                     if !grupo.pontos.isEmpty {
@@ -604,7 +607,7 @@ struct Explorar: View {
                     porta: manchetesAtuais.isEmpty
                            ? nil : { AnyView(radarEditorialCompleto) })
             } else if let semana = pulsoEditorial.map(\.semana).max() {
-                LinhaInsumo(texto: "Latest publication week: \(Formato.data(semana)).")
+                LinhaInsumo(texto: frase("Latest publication week: \(Formato.data(semana))."))
             }
             Text("Current, fashion-specific headlines from the monitored publications. They provide context; one article alone does not establish a trend.")
                 .font(Tokens.Fonte.apoio)
@@ -613,7 +616,7 @@ struct Explorar: View {
             if carregandoEditorial && manchetesAtuais.isEmpty {
                 ProgressView().frame(maxWidth: .infinity, alignment: .center)
             } else if manchetesAtuais.isEmpty {
-                LinhaInsumo(texto: "No current headline passed the fashion-context check.")
+                LinhaInsumo(texto: frase("No current headline passed the fashion-context check."))
             } else {
                 ForEach(manchetesAtuais.prefix(limite ?? manchetesAtuais.count),
                         id: \.titulo) { manchete in
@@ -676,10 +679,10 @@ struct Explorar: View {
                 // em que as duas pernas necessárias puderam ser comparadas.
                 // "updated" fazia a tela parecer congelada em 10/08 mesmo
                 // com reposições de 25/08 e editorial de 24/08 na mesma aba.
-                LinhaInsumo(texto: "Latest week when two sources overlapped: \(Formato.data(semana)).")
+                LinhaInsumo(texto: frase("Latest week when two sources overlapped: \(Formato.data(semana))."))
             }
             if mudaram.isEmpty {
-                LinhaInsumo(texto: "No movement has been confirmed by two independent sources in the last \(diasMaximosDoDigest) days.")
+                LinhaInsumo(texto: frase("No movement has been confirmed by two independent sources in the last \(String(diasMaximosDoDigest)) days."))
             } else {
                 ForEach(limite.map { Array(mudaram.prefix($0)) } ?? mudaram) { i in
                     NavigationLink {
@@ -777,7 +780,7 @@ struct Explorar: View {
         } catch is CancellationError {
             return
         } catch {
-            avisar("Search interest could not refresh; the rest of the page is available.")
+            avisar(frase("Search interest could not refresh; the rest of the page is available."))
         }
     }
 
@@ -796,7 +799,7 @@ struct Explorar: View {
         } catch is CancellationError {
             return
         } catch {
-            avisar("Fashion headlines could not refresh; the rest of the page is available.")
+            avisar(frase("Fashion headlines could not refresh; the rest of the page is available."))
         }
     }
 
@@ -821,7 +824,7 @@ struct Explorar: View {
         } catch is CancellationError {
             return
         } catch {
-            avisar("Confirmed-movement details could not refresh.")
+            avisar(frase("Confirmed-movement details could not refresh."))
         }
     }
 
@@ -845,7 +848,7 @@ struct Explorar: View {
         } catch is CancellationError {
             return
         } catch {
-            avisar("Store movements could not refresh.")
+            avisar(frase("Store movements could not refresh."))
         }
     }
 
@@ -1027,7 +1030,7 @@ struct ListaDeEventos: View {
                         }
                         // Regra 3: todo número carrega o caminho até a origem.
                         if let url = e.urlDaPeca, let link = URL(string: url) {
-                            Link("View on the brand's website", destination: link)
+                            Link(frase("View on the brand's website"), destination: link)
                                 .font(Tokens.Fonte.miudo)
                         }
                     }
@@ -1084,9 +1087,9 @@ struct CartaoDeMudanca: View {
             // veio só saber o que mudou esta semana.
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                    LinhaInsumo(texto: "Compared with this attribute's usual behavior over the previous 12 weeks.")
+                    LinhaInsumo(texto: frase("Compared with this attribute's usual behavior over the previous 12 weeks."))
                     ForEach(Explicacao.origens(series), id: \.self) { LinhaInsumo(texto: $0) }
-                    LinhaInsumo(texto: "Reading updated: \(Formato.data(indice.semana)).")
+                    LinhaInsumo(texto: frase("Reading updated: \(Formato.data(indice.semana))."))
 
                     let manchetes = Explicacao.manchetes(series)
                     if !manchetes.isEmpty {

@@ -309,7 +309,7 @@ struct ImportarPeca: View {
             CapturaDeCamera { imagem in
                 mostrandoCamera = false
                 guard let imagem else { return }
-                Task { await prepararConfirmacao(imagem, nome: "camera photo") }
+                Task { await prepararConfirmacao(imagem, nome: frase("camera photo")) }
             }
             .ignoresSafeArea()
         }
@@ -321,7 +321,7 @@ struct ImportarPeca: View {
                 confiancaOriginal = resultado.confianca
                 Task {
                     await prepararConfirmacao(resultado.imagem,
-                                              nome: "color-accurate photo",
+                                              nome: frase("color-accurate photo"),
                                               medicao: resultado.imagemDeMedicao,
                                               confianca: resultado.confianca)
                 }
@@ -584,7 +584,7 @@ struct ImportarPeca: View {
                     CoberturaInsuficiente(
                         titulo: "No attributes were read",
                         explicacao: erro,
-                        oQueTem: "You can select the attributes below and continue.")
+                        oQueTem: frase("You can select the attributes below and continue."))
                 }
                 atributos
                 precoOpcional
@@ -685,7 +685,7 @@ struct ImportarPeca: View {
     private var avisoDePrivacidade: some View {
         Text(Supabase.analiseRemotaHabilitada
              ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
-             : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
+             : frase("The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet."))
             .font(Tokens.Fonte.miudo)
             .foregroundStyle(Tokens.Cor.tintaFraca)
             .multilineTextAlignment(.center)
@@ -696,7 +696,7 @@ struct ImportarPeca: View {
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
                     ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
-                    LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
+                    LinhaInsumo(texto: frase("Review every suggestion. Your confirmed selection is what counts."))
                 }
                 .padding(.top, Tokens.Espaco.s)
             } label: {
@@ -916,7 +916,7 @@ struct ImportarPeca: View {
             lendo = false
             return
         }
-        await prepararConfirmacao(imagem, nome: "photo library image")
+        await prepararConfirmacao(imagem, nome: frase("photo library image"))
     }
 
     /// O PAR SÓ VALE ENQUANTO O ENQUADRAMENTO NÃO MUDA.
@@ -1080,6 +1080,17 @@ struct ImportarPeca: View {
         etapa = .entrada
         imagemPendente = nil
         imagemOriginal = nil
+        // A medição morre com a confirmação. Sem isto, cancelar e importar
+        // outra foto pela fototeca deixaria `medicaoOriginal` viva: um
+        // "desfazer recorte" na foto NOVA restauraria a medição da ANTIGA, e
+        // a cor da peça sairia de uma imagem de outra peça.
+        imagemDeMedicao = nil
+        medicaoOriginal = nil
+        confiancaDaCaptura = nil
+        confiancaOriginal = nil
+        medicaoDoAlvo = nil
+        confiancaDoAlvoEscolhido = nil
+        perdeuAMedicaoAoIsolar = false
         nomePendente = nil
         opcoesDeAlvo = []
         alvoEscolhido = nil
@@ -1118,14 +1129,35 @@ struct ImportarPeca: View {
                     detectados = []
                     coresPorPrioridade = []
                     procedencia = analise.decisionEvidence.map {
-                        "Why the target was ambiguous: \($0)"
+                        frase("Why the target was ambiguous: \($0)")
                     }
                     erro = frase("The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo.")
                 } else {
                     let existentes = Set(termos.map(\.id))
-                    detectados = FormularioDaPeca.podar(
+                    var sugeridos = FormularioDaPeca.podar(
                         analise.idsSugeridos(existentes: existentes),
                         termos: termos)
+                    // O PORTÃO DA A56 VALE AQUI TAMBÉM, E NÃO VALIA.
+                    //
+                    // A confiança medida bloqueava a sugestão de cor só na
+                    // leitura local. No caminho da Luna — que é o PRINCIPAL
+                    // quando a análise remota está ligada — as cores dela
+                    // entravam pré-marcadas sem ninguém consultar a confiança.
+                    // Uma foto que o próprio sistema declarou pouco confiável
+                    // terminava com cor marcada, que é exatamente o que a
+                    // emenda diz que não acontece.
+                    //
+                    // A Luna lê a MESMA imagem: se a luz enganou o pixel, ela
+                    // errou pelo mesmo motivo que o `CorDaPeca` erraria. O
+                    // portão é da captura, não do leitor.
+                    let coresDaDimensao = Set(termos.filter { $0.dimensao == "cor" }
+                                                    .map(\.id))
+                    if let confianca = confiancaDoAlvoEscolhido,
+                       confianca < CorDaPeca.confiancaMinimaDaCaptura {
+                        sugeridos.subtract(coresDaDimensao)
+                        procedencia.append(frase("The color was left unselected on purpose: this photo's lighting was not reliable enough to measure it. Pick the color below, or retake the photo with color-accurate capture."))
+                    }
+                    detectados = sugeridos
                     // A ordem vem da Luna, que ranqueia por área visível. É a
                     // única fonte de ranqueamento que existe no sistema.
                     coresPorPrioridade = analise
@@ -1138,7 +1170,7 @@ struct ImportarPeca: View {
                         .sorted { ($0.dimensao, $0.id) < ($1.dimensao, $1.id) }
                         .map(Traducao.rotuloExibido)
                     procedencia = [
-                        "Visual analysis suggested: \(lidos.joined(separator: ", ")).",
+                        frase("Visual analysis suggested: \(lidos.joined(separator: ", "))."),
                     ]
                     if !analise.decisionEvidence.isEmpty {
                         procedencia.append(
@@ -1160,7 +1192,7 @@ struct ImportarPeca: View {
                 }
             } catch {
                 aplicarLeituraLocal(leitura,
-                    mensagem: "Cloud visual analysis is unavailable right now. I kept the on-device reading; choose the missing attributes manually.")
+                    mensagem: frase("Cloud visual analysis is unavailable right now. I kept the on-device reading; choose the missing attributes manually."))
             }
         } else {
             aplicarLeituraLocal(leitura)
@@ -1198,8 +1230,8 @@ struct ImportarPeca: View {
             // parecia defeito de análise. Aqui a tela passa a dizer qual dos
             // dois aconteceu.
             erro = Supabase.analiseRemotaHabilitada
-                ? "I read what I could from the image, but not the category. Pick it below and the rest stays as read."
-                : "Cloud visual analysis is off in this build, so I only read text printed on the image — a garment photo usually has none. Pick the attributes below; nothing failed."
+                ? frase("I read what I could from the image, but not the category. Pick it below and the rest stays as read.")
+                : frase("Cloud visual analysis is off in this build, so I only read text printed on the image — a garment photo usually has none. Pick the attributes below; nothing failed.")
         }
     }
 

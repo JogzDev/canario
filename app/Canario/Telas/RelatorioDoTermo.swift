@@ -118,7 +118,7 @@ struct RelatorioDoTermo: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                LinhaInsumo(texto: "Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()). Retail context only; it does not affect the index or state.")
+                LinhaInsumo(texto: frase("Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()). Retail context only; it does not affect the index or state."))
                 Divider().overlay(Tokens.Cor.bordaDo(territorio))
             }
         }
@@ -230,8 +230,8 @@ struct RelatorioDoTermo: View {
             return frase("There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet.")
         }
         let quando = atual.semana == maisRecente?.semana
-            ? "Latest reading, \(Formato.data(atual.semana))."
-            : "Latest week when two sources overlapped, \(Formato.data(atual.semana))."
+            ? frase("Latest reading, \(Formato.data(atual.semana)).")
+            : frase("Latest week when two sources overlapped, \(Formato.data(atual.semana)).")
         guard atual.estado != nil else {
             return frase("\(quando) The index is \(fmt(valor)), but a state requires two agreeing sources.")
         }
@@ -299,7 +299,7 @@ struct RelatorioDoTermo: View {
                 }
                 .frame(height: 160)
                 .accessibilityLabel("Weekly history by source")
-                LinhaInsumo(texto: "To keep lines comparable, the chart shows only weeks measured by every displayed source. Each source's latest date remains listed below.")
+                LinhaInsumo(texto: frase("To keep lines comparable, the chart shows only weeks measured by every displayed source. Each source's latest date remains listed below."))
             }
         }
     }
@@ -340,7 +340,7 @@ struct RelatorioDoTermo: View {
                 Text("Sources").font(.system(size: 22, weight: .bold))
                 BotaoDeAjuda(titulo: frase("What these percentages are"),
                              texto: Self.textoDasFontes,
-                             rotulo: "What these percentages are")
+                             rotulo: frase("What these percentages are"))
             }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: Tokens.Espaco.s),
                                 GridItem(.flexible(), spacing: Tokens.Espaco.s)],
@@ -374,14 +374,9 @@ struct RelatorioDoTermo: View {
     /// número sem a régua não é auditável. Repetir a régua quatro vezes também
     /// não serve -- viraria a textura que o JP mandou tirar dos cartões da
     /// Trends. Então ela mora no "?" ao lado do título, uma vez.
-    static let textoDasFontes = """
-        Each card compares this source's latest measured week with its own \
-        average over the previous 12 weeks — the same window the index uses. \
-        It is the movement of that one source, not the combined index.
-
-        A source with no comparable window yet says so instead of showing a \
-        number. Tap a card for the weekly history behind it.
-        """
+    static var textoDasFontes: String {
+        frase("Each card compares this source's latest measured week with its own average over the previous 12 weeks — the same window the index uses. It is the movement of that one source, not the combined index.\n\nA source with no comparable window yet says so instead of showing a number. Tap a card for the weekly history behind it.")
+    }
 
     /// A variação em pontos percentuais, para a seta e o sinal.
     private func variacaoDaFonte(_ fonte: String, pontos: [PontoSerie]) -> Double? {
@@ -490,7 +485,7 @@ private struct DetalheDaFonteEditorial: View {
                     } else if let bruto = recente?.valorBruto {
                         Text(Leitura.numero(bruto, casas: 2)).font(Tokens.Fonte.corpo)
                     }
-                    LinhaInsumo(texto: "Latest measurement: \(Formato.data(recente?.semana ?? "—"))")
+                    LinhaInsumo(texto: frase("Latest measurement: \(Formato.data(recente?.semana ?? "—"))"))
                     // A unidade sai da TABELA do app, não do `meta` do banco.
                     //
                     // `meta.unidade` vem gravado em português -- "materias que
@@ -518,7 +513,7 @@ private struct DetalheDaFonteEditorial: View {
                                 // o gráfico virava uma faixa cheia. A linha
                                 // sozinha mostra o movimento, que é o assunto.
                                 LineMark(x: .value("Week", data),
-                                         y: .value("Measured value", valor))
+                                         y: .value(frase("Measured value"), valor))
                                 .interpolationMethod(.monotone)
                             }
                         }
@@ -536,10 +531,10 @@ private struct DetalheDaFonteEditorial: View {
                             }
                         }
                         .frame(height: 180)
-                        LinhaInsumo(texto: "Vertical axis: \(Explicacao.unidade(daFonte: fonte)).")
+                        LinhaInsumo(texto: frase("Vertical axis: \(Explicacao.unidade(daFonte: fonte))."))
                         LinhaInsumo(texto: fonte.hasPrefix("editorial")
-                            ? "This is the source's measured value, not a forecast. Article evidence appears below."
-                            : "This is the source's measured value, not a forecast. Its inputs and sample appear below.")
+                            ? frase("This is the source's measured value, not a forecast. Article evidence appears below.")
+                            : frase("This is the source's measured value, not a forecast. Its inputs and sample appear below."))
                     }
                 }
 
@@ -557,7 +552,7 @@ private struct DetalheDaFonteEditorial: View {
     private var janelaDoGrafico: String {
         let n = ordenados.count
         return n < Self.semanasNoGrafico
-            ? "\(n) weeks measured" : "last \(n) weeks"
+            ? frase("\(String(n)) weeks measured") : frase("last \(String(n)) weeks")
     }
 
     @ViewBuilder
@@ -569,10 +564,10 @@ private struct DetalheDaFonteEditorial: View {
                 Text("Google search interest")
                     .font(Tokens.Fonte.apoio)
                 if let valor = recente?.valorBruto {
-                    LinhaInsumo(texto: "Latest closed week: \(Leitura.numero(valor, casas: 0)) out of 100 for this monitored search set.")
+                    LinhaInsumo(texto: frase("Latest closed week: \(Leitura.numero(valor, casas: 0)) out of 100 for this monitored search set."))
                 }
                 let consultas = Array(termo.termosDeBusca.prefix(5))
-                LinhaInsumo(texto: "Monitored expressions: \(consultas.joined(separator: " · ")).")
+                LinhaInsumo(texto: frase("Monitored expressions: \(consultas.joined(separator: " · "))."))
             case "varejo":
                 Text("Observed panel assortment")
                     .font(Tokens.Fonte.apoio)
@@ -580,9 +575,9 @@ private struct DetalheDaFonteEditorial: View {
                 let total = recente?.meta?.nTotalSortimento.map {
                     Leitura.numero($0, casas: 0)
                 } ?? "—"
-                LinhaInsumo(texto: "\(itens) matching items among \(total) currently observed panel offers.")
+                LinhaInsumo(texto: frase("\(itens) matching items among \(total) currently observed panel offers."))
                 if let valor = recente?.valorBruto {
-                    LinhaInsumo(texto: "Measured share: \(Leitura.numero(valor, casas: 2))%.")
+                    LinhaInsumo(texto: frase("Measured share: \(Leitura.numero(valor, casas: 2))%."))
                 }
             default:
                 let meta = recente?.meta
@@ -626,8 +621,10 @@ private struct DetalheDaFonteEditorial: View {
                 if (meta?.exemplos ?? []).isEmpty {
                     let n = recente?.nAmostra ?? 0
                     LinhaInsumo(texto: n == 0
-                        ? "No qualifying fashion article matched this attribute in the latest 4-week window."
-                        : "\(n) qualifying article\(n == 1 ? "" : "s") formed this 4-week reading; the evidence list is being refreshed.")
+                        ? frase("No qualifying fashion article matched this attribute in the latest 4-week window.")
+                        : (n == 1
+                            ? frase("1 qualifying article formed this 4-week reading; the evidence list is being refreshed.")
+                            : frase("\(String(n)) qualifying articles formed this 4-week reading; the evidence list is being refreshed.")))
                 }
             }
         }
@@ -732,7 +729,7 @@ struct CartaoDaPerna: View {
 
     private var rotuloFalado: String {
         let numero = variacao.map {
-            "\(Leitura.numero($0, casas: 0, sinal: true)) percent versus its own 12-week average"
+            frase("\(Leitura.numero($0, casas: 0, sinal: true)) percent versus its own 12-week average")
         } ?? leitura
         return frase("\(Perna.rotulo(fonte)), \(numero)")
     }

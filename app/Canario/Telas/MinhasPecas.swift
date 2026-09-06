@@ -292,7 +292,7 @@ private struct FiltroDoCloset: View {
         }
         if !tricos.isEmpty {
             resultado.append(Opcao(id: "knit_and_crochet",
-                                   rotulo: "Knit & crochet",
+                                   rotulo: frase("Knit & crochet"),
                                    dimensao: "tecido", ids: tricos))
         }
         let prioridadeDeEstampa = ["animal_print", "floral", "listra", "xadrez",
@@ -409,7 +409,7 @@ private struct CompartilharCloset: View {
                         Label("Spreadsheet · include market readings", systemImage: "chart.line.uptrend.xyaxis")
                     }
                 }
-                if preparando { ProgressView("Preparing export…") }
+                if preparando { ProgressView(frase("Preparing export…")) }
                 if let erro { Text(erro).font(Tokens.Fonte.miudo).foregroundStyle(.secondary) }
             }
             .navigationTitle("Share or export")

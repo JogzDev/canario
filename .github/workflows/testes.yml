@@ -124,6 +124,13 @@ jobs:
       # Este portao le o codigo e o catalogo e exige que os dois concordem.
       - name: Toda frase da interface esta traduzida (A53)
         run: "$PY ferramentas/extrair_frases.py --conferir"
+      # O portao acima confere que a CHAVE existe e tem pt-BR. Ele nao ve a
+      # frase que a tela monta -- e foi por ai que passaram "2nd restock for
+      # size G in 2 dias", o "above" no meio de uma explicacao em portugues e a
+      # tela de Perguntas inteira em ingles, com o outro portao verde. Este aqui
+      # procura prosa que nao chega a traducao nenhuma.
+      - name: Nenhuma prosa de tela fora da traducao (A53)
+        run: "$PY ferramentas/frases_compostas.py --conferir"
       - name: Modulos compilam
         run: "$PY -m py_compile coletor/*.py"
       # `py_compile` acima confere SINTAXE. Nome usado e nunca definido passa

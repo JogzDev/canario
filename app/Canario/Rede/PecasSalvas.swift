@@ -123,7 +123,7 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
     func nome(comRotulos rotulos: [String: String]) -> String {
         if let apelido = NomeCompartilhavel.apelidoValido(apelido) { return apelido }
         let partes = termoIds.compactMap { rotulos[$0] ?? $0 }
-        return partes.isEmpty ? "Item without attributes" : partes.joined(separator: " · ")
+        return partes.isEmpty ? frase("Item without attributes") : partes.joined(separator: " · ")
     }
 
     /// Os atributos que sobram depois de tirar os que o título já mostra.

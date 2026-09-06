@@ -121,6 +121,23 @@
         }
       }
     },
+    "%@ for size %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ for size %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ no tamanho %2$@"
+          }
+        }
+      }
+    },
     "%@ had happened before": {
       "extractionState": "manual",
       "localizations": {
@@ -134,6 +151,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ já tinham acontecido antes"
+          }
+        }
+      }
+    },
+    "%@ in %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ in %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ em %2$@"
           }
         }
       }
@@ -168,6 +202,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ lidera os dois eixos: foi o que mais se moveu nos sinais externos e é o mais presente no painel (%2$@% do sortimento). Quando os dois andam juntos, lê-se como atributo estabelecido, e não como movimento novo."
+          }
+        }
+      }
+    },
+    "%@ markdown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ markdown"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ remarcação"
           }
         }
       }
@@ -240,6 +291,23 @@
         }
       }
     },
+    "%@ of %@ points have partial coverage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ of %@ points have partial coverage"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ de %2$@ pontos têm cobertura parcial"
+          }
+        }
+      }
+    },
     "%@ of %@ sizes, missing %@": {
       "extractionState": "manual",
       "localizations": {
@@ -303,6 +371,57 @@
         }
       }
     },
+    "%@ on the statistical scale, above this attribute's usual behavior over the previous 12 weeks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ on the statistical scale, above this attribute's usual behavior over the previous 12 weeks"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ na escala estatística, acima do comportamento usual deste atributo nas 12 semanas anteriores"
+          }
+        }
+      }
+    },
+    "%@ on the statistical scale, below this attribute's usual behavior over the previous 12 weeks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ on the statistical scale, below this attribute's usual behavior over the previous 12 weeks"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ na escala estatística, abaixo do comportamento usual deste atributo nas 12 semanas anteriores"
+          }
+        }
+      }
+    },
+    "%@ on the statistical scale, level with this attribute's usual behavior over the previous 12 weeks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ on the statistical scale, level with this attribute's usual behavior over the previous 12 weeks"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ na escala estatística, no mesmo nível do comportamento usual deste atributo nas 12 semanas anteriores"
+          }
+        }
+      }
+    },
     "%@ out of 100 on the %@": {
       "extractionState": "manual",
       "localizations": {
@@ -354,6 +473,23 @@
         }
       }
     },
+    "%@ percent versus its own 12-week average": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ percent versus its own 12-week average"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ por cento ante a própria média de 12 semanas"
+          }
+        }
+      }
+    },
     "%@ pieces match all %@ attributes; the rest, at least %@.": {
       "extractionState": "manual",
       "localizations": {
@@ -367,6 +503,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ peças casam com todos os %2$@ atributos; o resto, com pelo menos %3$@."
+          }
+        }
+      }
+    },
+    "%@ qualifying articles formed this 4-week reading; the evidence list is being refreshed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ qualifying articles formed this 4-week reading; the evidence list is being refreshed."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ matérias qualificadas formaram esta leitura de 4 semanas; a lista de evidências está sendo atualizada."
+          }
+        }
+      }
+    },
+    "%@ restock": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ restock"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ reposição"
           }
         }
       }
@@ -405,6 +575,57 @@
         }
       }
     },
+    "%@ standard deviations, an average of %@ attributes weighted by how uncommon each one is in the panel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ standard deviations, an average of %@ attributes weighted by how uncommon each one is in the panel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ desvios-padrão, uma média de %2$@ atributos ponderada pelo quanto cada um é incomum no painel"
+          }
+        }
+      }
+    },
+    "%@ standard deviations, an average of 1 attribute weighted by how uncommon it is in the panel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ standard deviations, an average of 1 attribute weighted by how uncommon it is in the panel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ desvios-padrão, a média de 1 atributo ponderada pelo quanto ele é incomum no painel"
+          }
+        }
+      }
+    },
+    "%@ use only one source": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ use only one source"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ usam uma fonte só"
+          }
+        }
+      }
+    },
     "%@ weeks": {
       "extractionState": "manual",
       "localizations": {
@@ -418,6 +639,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ semanas"
+          }
+        }
+      }
+    },
+    "%@ weeks measured": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ weeks measured"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ semanas medidas"
           }
         }
       }
@@ -670,7 +908,15 @@
     },
     "%lld weeks": {
       "comment": "A label that reads \"6 weeks\"",
-      "isCommentAutoGenerated": true
+      "isCommentAutoGenerated": true,
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld semanas"
+          }
+        }
+      }
     },
     "(%@ on the statistical scale)": {
       "extractionState": "manual",
@@ -837,6 +1083,23 @@
         }
       }
     },
+    "1 qualifying article formed this 4-week reading; the evidence list is being refreshed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "1 qualifying article formed this 4-week reading; the evidence list is being refreshed."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 matéria qualificada formou esta leitura de 4 semanas; a lista de evidências está sendo atualizada."
+          }
+        }
+      }
+    },
     "1 source": {
       "extractionState": "manual",
       "localizations": {
@@ -897,6 +1160,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "6M"
+          }
+        }
+      }
+    },
+    "A piece from my Closet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "A piece from my Closet"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma peça do meu Closet"
           }
         }
       }
@@ -1316,6 +1596,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Analisar esta peça"
+          }
+        }
+      }
+    },
+    "Apple authorization could not be prepared for account deletion.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Apple authorization could not be prepared for account deletion."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível preparar a autorização Apple para apagar a conta."
           }
         }
       }
@@ -1906,6 +2203,23 @@
         }
       }
     },
+    "Cloud visual analysis is off in this build, so I only read text printed on the image — a garment photo usually has none. Pick the attributes below; nothing failed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Cloud visual analysis is off in this build, so I only read text printed on the image — a garment photo usually has none. Pick the attributes below; nothing failed."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A análise visual na nuvem está desligada nesta versão, então eu só li o texto impresso na imagem — foto de roupa quase nunca tem. Escolha os atributos abaixo; nada falhou."
+          }
+        }
+      }
+    },
     "Cloud visual analysis is off in this build. %@": {
       "extractionState": "manual",
       "localizations": {
@@ -2116,6 +2430,23 @@
         }
       }
     },
+    "Confirmed-movement details could not refresh.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Confirmed-movement details could not refresh."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível atualizar os detalhes do movimento confirmado."
+          }
+        }
+      }
+    },
     "Continue with Google": {
       "comment": "A button that lets the user sign in with Google.",
       "isCommentAutoGenerated": true,
@@ -2192,6 +2523,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não consegui carregar os dados"
+          }
+        }
+      }
+    },
+    "Create account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Create account"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Criar conta"
           }
         }
       }
@@ -2336,6 +2684,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pronto"
+          }
+        }
+      }
+    },
+    "Each card compares this source's latest measured week with its own average over the previous 12 weeks — the same window the index uses. It is the movement of that one source, not the combined index.\n\nA source with no comparable window yet says so instead of showing a number. Tap a card for the weekly history behind it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Each card compares this source's latest measured week with its own average over the previous 12 weeks — the same window the index uses. It is the movement of that one source, not the combined index.\n\nA source with no comparable window yet says so instead of showing a number. Tap a card for the weekly history behind it."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada cartão compara a semana mais recente medida por esta fonte com a média dela nas 12 semanas anteriores — a mesma janela que o índice usa. É o movimento daquela fonte sozinha, não o índice combinado.\n\nUma fonte que ainda não tem janela comparável diz isso, em vez de mostrar um número. Toque num cartão para ver a história semanal por trás dele."
           }
         }
       }
@@ -2530,6 +2895,23 @@
         }
       }
     },
+    "Fashion headlines could not refresh; the rest of the page is available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Fashion headlines could not refresh; the rest of the page is available."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível atualizar as manchetes de moda; o resto da página está disponível."
+          }
+        }
+      }
+    },
     "Favorite": {
       "localizations": {
         "pt-BR": {
@@ -2627,6 +3009,40 @@
         }
       }
     },
+    "First markdown since %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "First markdown since %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1ª remarcação desde %@"
+          }
+        }
+      }
+    },
+    "First restock since %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "First restock since %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1ª reposição desde %@"
+          }
+        }
+      }
+    },
     "Forgot password?": {
       "comment": "A button that lets the user reset their password.",
       "isCommentAutoGenerated": true,
@@ -2635,6 +3051,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esqueceu a senha?"
+          }
+        }
+      }
+    },
+    "From PDF text: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "From PDF text: %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do texto do PDF: %@."
+          }
+        }
+      }
+    },
+    "From text recognized in the image: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "From text recognized in the image: %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do texto reconhecido na imagem: %@."
+          }
+        }
+      }
+    },
+    "From the image color: %@ — measured from the garment pixels, and is the suggestion that most needs your review.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "From the image color: %@ — measured from the garment pixels, and is the suggestion that most needs your review."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da cor da imagem: %@ — medida a partir dos pixels da peça, e é a sugestão que mais precisa da sua revisão."
           }
         }
       }
@@ -2750,6 +3217,23 @@
         }
       }
     },
+    "I also tried a wider match, dropping the least distinctive dimension, and that found nothing either.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I also tried a wider match, dropping the least distinctive dimension, and that found nothing either."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Também tentei um casamento mais largo, largando a dimensão menos distintiva, e isso também não achou nada."
+          }
+        }
+      }
+    },
     "I could not open the selected item. Choose another option.": {
       "extractionState": "manual",
       "localizations": {
@@ -2852,6 +3336,23 @@
         }
       }
     },
+    "I couldn't save that photo. Your existing image was not changed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I couldn't save that photo. Your existing image was not changed."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não consegui salvar essa foto. Sua imagem atual não foi alterada."
+          }
+        }
+      }
+    },
     "I couldn't save that photo. Your existing item was not changed.": {
       "extractionState": "manual",
       "localizations": {
@@ -2865,6 +3366,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não consegui salvar essa foto. Sua peça atual não foi alterada."
+          }
+        }
+      }
+    },
+    "I found no panel item with %@.%@ It may be an uncommon combination, or the panel may not cover it yet; the data cannot distinguish those cases.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I found no panel item with %@.%@ It may be an uncommon combination, or the panel may not cover it yet; the data cannot distinguish those cases."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não achei nenhuma peça do painel com %1$@.%2$@ Pode ser uma combinação incomum, ou o painel pode ainda não cobri-la; o dado não distingue os dois casos."
+          }
+        }
+      }
+    },
+    "I read what I could from the image, but not the category. Pick it below and the rest stays as read.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I read what I could from the image, but not the category. Pick it below and the rest stays as read."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Li o que deu da imagem, mas não a categoria. Escolha-a abaixo e o resto fica como foi lido."
           }
         }
       }
@@ -3007,6 +3542,23 @@
         }
       }
     },
+    "Inventory quantities are not visible. Brands often buy fewer units at the ends of a size range, which alone can make them disappear faster.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Inventory quantities are not visible. Brands often buy fewer units at the ends of a size range, which alone can make them disappear faster."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As quantidades de estoque não são visíveis. As marcas costumam comprar menos unidades nas pontas da grade, e só isso já pode fazê-las sumir mais rápido."
+          }
+        }
+      }
+    },
     "Isolated item %@": {
       "extractionState": "manual",
       "localizations": {
@@ -3037,6 +3589,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não é porcentagem. O número conta desvios-padrão: o quanto esta semana está distante da média do próprio atributo nas 12 semanas anteriores. Perto de 0 é uma semana típica; perto de 1 é incomum; acima de 2 é raro.\n\nUma porcentagem precisaria de uma base diferente para cada atributo, e aí dois atributos não poderiam ser comparados entre si. Esta escala padronizada permite comparar um atributo com o outro."
+          }
+        }
+      }
+    },
+    "It resets at midnight, São Paulo time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "It resets at midnight, São Paulo time."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ele zera à meia-noite, horário de São Paulo."
           }
         }
       }
@@ -3088,6 +3657,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Podem sincronizar: nomes das peças, ids de atributo confirmados, preço-alvo e canal opcionais, favoritas, escolhas explícitas de similares e miniaturas reduzidas sem metadados. Não sincronizam: fotos originais e leituras de mercado calculadas. Uma análise de foto na nuvem autorizada à parte não fica ligada à conta."
+          }
+        }
+      }
+    },
+    "Item without attributes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Item without attributes"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peça sem atributos"
+          }
+        }
+      }
+    },
+    "Knit & crochet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Knit & crochet"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Malha e crochê"
           }
         }
       }
@@ -3185,6 +3788,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Última semana de publicação: %@."
+          }
+        }
+      }
+    },
+    "Latest reading, %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Latest reading, %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leitura mais recente, %@."
+          }
+        }
+      }
+    },
+    "Latest week when two sources overlapped, %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Latest week when two sources overlapped, %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última semana em que duas fontes se sobrepuseram, %@."
           }
         }
       }
@@ -3616,6 +4253,40 @@
         }
       }
     },
+    "No price reduction of 5% or more was confirmed in this window.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No price reduction of 5% or more was confirmed in this window."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhuma redução de preço de 5% ou mais foi confirmada nesta janela."
+          }
+        }
+      }
+    },
+    "No qualifying fashion article matched this attribute in the latest 4-week window.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No qualifying fashion article matched this attribute in the latest 4-week window."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhuma matéria de moda qualificada casou com este atributo na janela das últimas 4 semanas."
+          }
+        }
+      }
+    },
     "No record in this window": {
       "extractionState": "manual",
       "localizations": {
@@ -3629,6 +4300,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nenhum registro nesta janela"
+          }
+        }
+      }
+    },
+    "No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No restock was confirmed in this window. Confirmation requires seeing a size disappear, return and remain available."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhuma reposição foi confirmada nesta janela. Confirmar exige ver um tamanho sumir, voltar e permanecer disponível."
           }
         }
       }
@@ -4429,6 +5117,23 @@
         }
       }
     },
+    "Search interest could not refresh; the rest of the page is available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Search interest could not refresh; the rest of the page is available."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível atualizar o interesse de busca; o resto da página está disponível."
+          }
+        }
+      }
+    },
     "Search interest now": {
       "localizations": {
         "pt-BR": {
@@ -4621,12 +5326,46 @@
         }
       }
     },
+    "Showing %@ of %@, including one of the closest matches per brand. Percentages above use all %@ matches.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Showing %@ of %@, including one of the closest matches per brand. Percentages above use all %@ matches."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrando %1$@ de %2$@, incluindo uma das peças mais próximas por marca. As porcentagens acima usam todas as %3$@ correspondências."
+          }
+        }
+      }
+    },
     "Side by side": {
       "localizations": {
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
             "value": "Lado a lado"
+          }
+        }
+      }
+    },
+    "Sign in": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Sign in"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrar"
           }
         }
       }
@@ -4917,6 +5656,23 @@
         }
       }
     },
+    "Spike": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Spike"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pico"
+          }
+        }
+      }
+    },
     "Spreadsheet · attributes only": {
       "comment": "A button that exports a spreadsheet with only the attributes of the selected items.",
       "isCommentAutoGenerated": true,
@@ -4998,6 +5754,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Informações das lojas"
+          }
+        }
+      }
+    },
+    "Store movements could not refresh.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Store movements could not refresh."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível atualizar os movimentos das lojas."
           }
         }
       }
@@ -5117,6 +5890,23 @@
         }
       }
     },
+    "The account could not be deleted. Please try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The account could not be deleted. Please try again."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível apagar a conta. Tente de novo."
+          }
+        }
+      }
+    },
     "The account service could not be reached. Your local Closet is still available.": {
       "extractionState": "manual",
       "localizations": {
@@ -5130,6 +5920,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não consegui falar com o serviço de conta. Seu Closet local continua disponível."
+          }
+        }
+      }
+    },
+    "The account service returned HTTP %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The account service returned HTTP %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O serviço de conta devolveu HTTP %@."
           }
         }
       }
@@ -5272,6 +6079,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não foi possível carregar o gráfico: %@"
+          }
+        }
+      }
+    },
+    "The color was left unselected on purpose: this photo's lighting was not reliable enough to measure it. Pick the color below, or retake the photo with color-accurate capture.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The color was left unselected on purpose: this photo's lighting was not reliable enough to measure it. Pick the color below, or retake the photo with color-accurate capture."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A cor ficou sem marcar de propósito: a iluminação desta foto não era confiável o bastante para medi-la. Escolha a cor abaixo, ou refaça a foto com cor precisa."
           }
         }
       }
@@ -5476,6 +6300,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "A medição do painel existe. Não há sinal externo combinado qualificado para esta semana."
+          }
+        }
+      }
+    },
+    "The panel measurement exists. The combined external signal is withheld: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The panel measurement exists. The combined external signal is withheld: %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A medição do painel existe. O sinal externo combinado está retido: %@."
+          }
+        }
+      }
+    },
+    "The rate counts sizes that were available and then became unavailable. It is not a sales measure; removal can mean a sale, transfer or end of line.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The rate counts sizes that were available and then became unavailable. It is not a sales measure; removal can mean a sale, transfer or end of line."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A taxa conta os tamanhos que estavam disponíveis e ficaram indisponíveis. Não é medida de venda; a remoção pode ser venda, transferência ou fim de linha."
           }
         }
       }
@@ -5786,6 +6644,23 @@
         }
       }
     },
+    "They are marked on the chart.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "They are marked on the chart."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eles estão marcados no gráfico."
+          }
+        }
+      }
+    },
     "They spread %@ deviations around that average — more than the average moves away from zero. That is why no direction is stated": {
       "extractionState": "manual",
       "localizations": {
@@ -5859,6 +6734,23 @@
         }
       }
     },
+    "This iPhone does not support color-accurate capture. The photo will be a normal one, and the color will be suggested the usual way — worth checking it yourself.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This iPhone does not support color-accurate capture. The photo will be a normal one, and the color will be suggested the usual way — worth checking it yourself."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este iPhone não suporta captura com cor precisa. A foto será normal, e a cor virá sugerida do jeito de sempre — vale conferir você mesmo."
+          }
+        }
+      }
+    },
     "This is taking longer than usual. It stops on its own after 30 seconds — you can close and read the garment on this iPhone instead.": {
       "extractionState": "manual",
       "localizations": {
@@ -5872,6 +6764,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Isto está demorando mais que o normal. Ele para sozinho depois de 30 segundos — você pode fechar e ler a peça neste iPhone."
+          }
+        }
+      }
+    },
+    "This is the source's measured value, not a forecast. Article evidence appears below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This is the source's measured value, not a forecast. Article evidence appears below."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este é o valor medido da fonte, não uma previsão. A evidência das matérias aparece abaixo."
+          }
+        }
+      }
+    },
+    "This is the source's measured value, not a forecast. Its inputs and sample appear below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This is the source's measured value, not a forecast. Its inputs and sample appear below."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este é o valor medido da fonte, não uma previsão. Os insumos e a amostra dela aparecem abaixo."
           }
         }
       }
@@ -6434,6 +7360,23 @@
         }
       }
     },
+    "Visual analysis suggested: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Visual analysis suggested: %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A análise visual sugeriu: %@."
+          }
+        }
+      }
+    },
     "Waist": {
       "extractionState": "manual",
       "localizations": {
@@ -6540,6 +7483,23 @@
         }
       }
     },
+    "What people in Brazil searched for on Google, ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What people in Brazil searched for on Google, "
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que as pessoas no Brasil buscaram no Google, "
+          }
+        }
+      }
+    },
     "What people in Brazil searched for on Google, compared with each term's previous 12 weeks.": {
       "extractionState": "stale",
       "localizations": {
@@ -6608,6 +7568,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "O que isto compara"
+          }
+        }
+      }
+    },
+    "What this means": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What this means"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que isto significa"
           }
         }
       }
@@ -6726,6 +7703,23 @@
         }
       }
     },
+    "Why the target was ambiguous: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Why the target was ambiguous: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por que o alvo ficou ambíguo: %@"
+          }
+        }
+      }
+    },
     "With one attribute, the combined reading is that attribute's own reading: ": {
       "extractionState": "manual",
       "localizations": {
@@ -6780,6 +7774,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Você pode selecionar os atributos abaixo e continuar."
+          }
+        }
+      }
+    },
+    "You can still add the item and choose its attributes yourself.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "You can still add the item and choose its attributes yourself."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você ainda pode adicionar a peça e escolher os atributos dela."
           }
         }
       }
@@ -6898,6 +7909,23 @@
         }
       }
     },
+    "Your brand's audience is not the panel's average audience. Fit and customer mix are yours; this is market context, not a prescription.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Your brand's audience is not the panel's average audience. Fit and customer mix are yours; this is market context, not a prescription."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O público da sua marca não é o público médio do painel. A modelagem e o mix de clientes são seus; isto é contexto de mercado, não prescrição."
+          }
+        }
+      }
+    },
     "Your intended price": {
       "localizations": {
         "pt-BR": {
@@ -7010,6 +8038,74 @@
         }
       }
     },
+    "camera photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "camera photo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "foto da câmera"
+          }
+        }
+      }
+    },
+    "color-accurate photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "color-accurate photo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "foto com cor precisa"
+          }
+        }
+      }
+    },
+    "compared with each term's previous 12 weeks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "compared with each term's previous 12 weeks."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "comparado com as 12 semanas anteriores de cada termo."
+          }
+        }
+      }
+    },
+    "coverage below the minimum": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "coverage below the minimum"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cobertura abaixo do mínimo"
+          }
+        }
+      }
+    },
     "cropped image": {
       "extractionState": "manual",
       "localizations": {
@@ -7057,6 +8153,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "distância do comportamento usual das 12 semanas anteriores"
+          }
+        }
+      }
+    },
+    "during the window, versus %@% for %@ — %@ times its rate.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "during the window, versus %@% for %@ — %@ times its rate."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "durante a janela, ante %1$@% de %2$@ — %3$@ vezes a taxa dele."
           }
         }
       }
@@ -7163,6 +8276,23 @@
         }
       }
     },
+    "last %@ weeks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "last %@ weeks"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "últimas %@ semanas"
+          }
+        }
+      }
+    },
     "marked down %@%": {
       "extractionState": "manual",
       "localizations": {
@@ -7176,6 +8306,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "remarcada em %@%"
+          }
+        }
+      }
+    },
+    "most recent event: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "most recent event: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "evento mais recente: %@"
           }
         }
       }
@@ -7350,6 +8497,23 @@
         }
       }
     },
+    "photo library image": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "photo library image"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "imagem da fototeca"
+          }
+        }
+      }
+    },
     "position in the Lyst Index": {
       "extractionState": "manual",
       "localizations": {
@@ -7448,6 +8612,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "imagem selecionada"
+          }
+        }
+      }
+    },
+    "this dimension labels %.1f%% of current offers, minimum %.0f%%": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "this dimension labels %.1f%% of current offers, minimum %.0f%%"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "esta dimensão rotula %.1f%% das ofertas atuais, mínimo %.0f%%"
           }
         }
       }

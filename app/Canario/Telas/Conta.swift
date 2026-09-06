@@ -513,9 +513,23 @@ private struct NovaSenha: View {
 
 private struct EntradaPorEmail: View {
     enum Modo: String, CaseIterable, Identifiable {
-        case entrar = "Sign in"
-        case criar = "Create account"
+        // O `rawValue` volta a ser identidade estável, e o texto sai daqui.
+        //
+        // Ele era o próprio rótulo em inglês, e o `Picker` desenhava
+        // `Text($0.rawValue)` — de novo o padrão de misturar identidade com
+        // texto de tela, o mesmo que já tinha custado a navegação do menu.
+        // Aqui o compilador impôs a separação: `rawValue` de enum precisa ser
+        // literal, e uma frase traduzida nunca é literal.
+        case entrar
+        case criar
         var id: String { rawValue }
+
+        var titulo: String {
+            switch self {
+            case .entrar: return frase("Sign in")
+            case .criar: return frase("Create account")
+            }
+        }
     }
 
     @EnvironmentObject private var conta: GestorDaConta
@@ -531,7 +545,7 @@ private struct EntradaPorEmail: View {
         NavigationStack {
             Form {
                 Picker("Action", selection: $modo) {
-                    ForEach(Modo.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(Modo.allCases) { Text($0.titulo).tag($0) }
                 }
                 .pickerStyle(.segmented)
 
@@ -554,7 +568,7 @@ private struct EntradaPorEmail: View {
                 }
 
                 Section {
-                    Button(modo.rawValue) {
+                    Button(modo.titulo) {
                         enviar()
                     }
                     .disabled(email.isEmpty || senha.isEmpty || conta.trabalhando)

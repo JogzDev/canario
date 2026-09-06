@@ -124,7 +124,9 @@ enum Estado: String {
         switch self {
         case .emAlta: return frase("Trending up")
         case .emQueda: return frase("Trending down")
-        case .pico: return "Spike"
+        // Ficou de fora do primeiro passe de tradução e ninguém acusou: o
+        // portão confere as chaves que EXISTEM, não as que faltaram nascer.
+        case .pico: return frase("Spike")
         case .estavel: return frase("Within the usual range")
         }
     }
@@ -274,12 +276,12 @@ struct Cobertura: Decodable, Hashable {
            let minimo = minimoCoberturaDimensaoPct,
            pct < minimo {
             partes.append(
-                String(format: "this dimension labels %.1f%% of current offers, minimum %.0f%%",
+                String(format: frase("this dimension labels %.1f%% of current offers, minimum %.0f%%"),
                        pct, minimo))
         } else if coberturaDimensaoPct == nil {
             partes.append(frase("dimension-level coverage has not been measured"))
         }
-        return partes.isEmpty ? "coverage below the minimum" : partes.joined(separator: "; ")
+        return partes.isEmpty ? frase("coverage below the minimum") : partes.joined(separator: "; ")
     }
 }
 
@@ -491,37 +493,34 @@ enum LeituraDoEvento {
     /// "1ª reposição" com oito dias de coleta afirmaria que nunca houve outra
     /// antes, que é coisa que não medimos — e a regra 2 proíbe afirmar o que não
     /// foi medido.
+    /// **ESTA FRASE ERA METADE EM CADA IDIOMA.** O ordinal e cada fragmento
+    /// passam pela localização; caso contrário surgiam frases como
+    /// "2nd restock for size G in 2 dias".
     static func repeticao(tipo: String, ordinal: Int?,
                           detalhe: EventoVarejo.Detalhe?,
                           diasDesdeAPrimeira: Int?,
                           desde inicioDaColeta: String) -> String? {
         guard let ordinal else { return nil }
-        let coisa = tipo == "reposicao" ? "restock" : (tipo == "remarcacao" ? "markdown" : nil)
-        guard let coisa else { return nil }
+        let ehReposicao = tipo == "reposicao"
+        guard ehReposicao || tipo == "remarcacao" else { return nil }
 
         if ordinal == 1 {
-            return frase("First \(coisa) since \(Formato.data(inicioDaColeta))")
+            let quando = Formato.data(inicioDaColeta)
+            return ehReposicao
+                ? frase("First restock since \(quando)")
+                : frase("First markdown since \(quando)")
         }
-        let mod100 = ordinal % 100
-        let suffix: String
-        if 11...13 ~= mod100 {
-            suffix = "th"
-        } else {
-            switch ordinal % 10 {
-            case 1: suffix = "st"
-            case 2: suffix = "nd"
-            case 3: suffix = "rd"
-            default: suffix = "th"
-            }
-        }
-        var frase = "\(ordinal)\(suffix) \(coisa)"
-        if tipo == "reposicao", let t = detalhe?.tamanhos, !t.isEmpty {
-            frase += " for size \(t.joined(separator: "/"))"
+
+        let ordem = Leitura.ordinalFeminino(ordinal)
+        var texto = ehReposicao ? frase("\(ordem) restock")
+                                : frase("\(ordem) markdown")
+        if ehReposicao, let t = detalhe?.tamanhos, !t.isEmpty {
+            texto = frase("\(texto) for size \(t.joined(separator: "/"))")
         }
         if let dias = diasDesdeAPrimeira {
-            frase += " in \(Formato.periodo(dias: dias))"
+            texto = frase("\(texto) in \(Formato.periodo(dias: dias))")
         }
-        return frase
+        return texto
     }
 
     static func icone(tipo: String) -> String {
@@ -600,6 +599,24 @@ enum Leitura {
         return frase.prefix(1).uppercased() + frase.dropFirst()
     }
 
+    /// "2nd" em inglês, "2ª" em português.
+    ///
+    /// `NumberFormatter` com estilo ordinal resolve o sufixo de cada idioma —
+    /// escrever `st/nd/rd/th` no código é escrever inglês. Em português ele
+    /// devolve a forma masculina ("2º"); as duas palavras que esta frase
+    /// qualifica são femininas (reposição, remarcação), então o gênero é
+    /// ajustado aqui. É um caso pequeno o bastante para não merecer uma API de
+    /// gênero, e explícito o bastante para não virar armadilha.
+    static func ordinalFeminino(_ n: Int) -> String {
+        let formatador = NumberFormatter()
+        formatador.numberStyle = .ordinal
+        formatador.locale = GestorDeIdioma.idiomaResolvido.locale
+        let base = formatador.string(from: NSNumber(value: n)) ?? String(n)
+        return GestorDeIdioma.idiomaResolvido == .portugues
+            ? base.replacingOccurrences(of: "º", with: "ª")
+            : base
+    }
+
     /// O que o número é, dito por extenso. Vai na letra miúda, sempre.
     ///
     /// A direção sai do valor EXIBIDO, não do bruto. Com `z >= 0 ? above :
@@ -609,11 +626,22 @@ enum Leitura {
     /// em 19/08/2026. Duas frases sobre o mesmo número, uma contradizendo a
     /// outra, e a errada era a que afirmava direção que o número não sustenta.
     static func explicacao(_ z: Double) -> String {
+        // TRÊS FRASES INTEIRAS, E NÃO UM FRAGMENTO INTERPOLADO.
+        //
+        // Isto era `\(lado)` com "above"/"below"/"level with" crus por dentro
+        // de uma chave traduzida. A frase de fora ia para o português e o
+        // miolo ficava em inglês: "0,4 na escala estatística, **above** o
+        // comportamento usual". O portão de tradução não pega esse caso por
+        // construção — para ele a chave existe e está traduzida; o que ele não
+        // sabe é que um dos argumentos nunca passou por tradução nenhuma.
         let exibido = (abs(z) * 10).rounded() / 10
-        let lado = exibido == 0
-            ? "level with"
-            : (z > 0 ? "above" : "below")
-        return frase("\(numero(exibido, casas: 1)) on the statistical scale, \(lado) this attribute's usual behavior over the previous 12 weeks")
+        let valor = numero(exibido, casas: 1)
+        if exibido == 0 {
+            return frase("\(valor) on the statistical scale, level with this attribute's usual behavior over the previous 12 weeks")
+        }
+        return z > 0
+            ? frase("\(valor) on the statistical scale, above this attribute's usual behavior over the previous 12 weeks")
+            : frase("\(valor) on the statistical scale, below this attribute's usual behavior over the previous 12 weeks")
     }
 
     /// Variação percentual entre o valor mais recente e a média da janela.

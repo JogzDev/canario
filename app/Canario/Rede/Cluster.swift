@@ -102,9 +102,11 @@ enum Cluster {
         // para zero saía como "-0.00 standard deviations" -- um menos na frente
         // de zero, anunciando uma direção que a própria frase abaixo diz não
         // existir. Zero não tem lado.
-        var partes = ["\(Leitura.numero(indice, casas: 2, sinal: abs(indice) >= 0.005)) standard deviations, "
-                    + "an average of \(r.nAtributos) attribute\(r.nAtributos == 1 ? "" : "s") "
-                    + "weighted by how uncommon each one is in the panel"]
+        let desvios = Leitura.numero(indice, casas: 2, sinal: abs(indice) >= 0.005)
+        let quantos = String(r.nAtributos)
+        var partes = [r.nAtributos == 1
+            ? frase("\(desvios) standard deviations, an average of 1 attribute weighted by how uncommon it is in the panel")
+            : frase("\(desvios) standard deviations, an average of \(quantos) attributes weighted by how uncommon each one is in the panel")]
         if !r.haDirecao, let d = r.dispersao {
             partes.append(frase("They spread \(Leitura.numero(d, casas: 2)) deviations around that average — more than the average moves away from zero. That is why no direction is stated"))
         }
