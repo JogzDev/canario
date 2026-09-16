@@ -404,7 +404,10 @@ struct Explorar: View {
         if let porta {
             NavigationLink { porta() } label: { miolo }
                 .buttonStyle(.plain)
-                .accessibilityLabel("\(titulo), see all")
+                // O proprio NavigationLink anuncia a acao. O rotulo deve
+                // identificar a secao sem interpolar LocalizedStringKey, que
+                // no Xcode 27 gera uma descricao de debug nao localizada.
+                .accessibilityLabel(Text(titulo))
         } else {
             miolo
         }
