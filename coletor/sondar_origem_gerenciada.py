@@ -14,8 +14,10 @@ a próxima prova, que continua separada e sem escrita.
 
 import argparse
 import datetime as dt
+import http.client
 import http.cookiejar
 import json
+import math
 import os
 import socket
 import sys
@@ -23,7 +25,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from urllib.robotparser import RobotFileParser
 from xml.etree import ElementTree
 
 
@@ -72,6 +73,129 @@ ALVOS = (
 )
 
 VALIDACOES = frozenset({"vtex", "shopify", "wp_json", "xml", "trends"})
+
+
+def _normalizar_caminho_robots(texto, padrao=False):
+    """Preserva escapes reservados; decodifica somente ASCII não reservado."""
+    nao_reservados = frozenset(
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+    partes = []
+    indice = 0
+    while indice < len(texto):
+        caractere = texto[indice]
+        if caractere == "%" and indice + 2 < len(texto):
+            try:
+                byte = int(texto[indice + 1:indice + 3], 16)
+            except ValueError:
+                pass
+            else:
+                partes.append(chr(byte) if chr(byte) in nao_reservados else
+                              "%{:02X}".format(byte))
+                indice += 3
+                continue
+        if caractere in "*$" and not padrao:
+            partes.append("%{:02X}".format(ord(caractere)))
+        elif ord(caractere) > 127 or caractere in " %":
+            partes.extend("%{:02X}".format(byte)
+                          for byte in caractere.encode("utf-8"))
+        else:
+            partes.append(caractere)
+        indice += 1
+    return "".join(partes)
+
+
+def _combina_padrao_robots(padrao, caminho):
+    """Glob ancorado no início, sem regex com backtracking exponencial."""
+    padrao = padrao[:-1] if padrao.endswith("$") else padrao + "*"
+    i = j = 0
+    estrela = -1
+    retomada = 0
+    while i < len(caminho):
+        if j < len(padrao) and padrao[j] == "*":
+            estrela = j
+            j += 1
+            retomada = i
+        elif j < len(padrao) and padrao[j] == caminho[i]:
+            i += 1
+            j += 1
+        elif estrela >= 0:
+            retomada += 1
+            i = retomada
+            j = estrela + 1
+        else:
+            return False
+    return all(caractere == "*" for caractere in padrao[j:])
+
+
+class PoliticaRobots:
+    """Regras RFC 9309 para o produto CanarioBot, mais cadência conservadora.
+
+    Combina grupos do mesmo agente, usa o caminho mais específico, desempata
+    com Allow e suporta * e $. Diretivas de cadência inválidas fazem a sonda
+    parar, em vez de assumir permissão para uma frequência maior.
+    """
+
+    def __init__(self, linhas):
+        grupos = []
+        grupo = None
+        corpo_iniciado = False
+        for linha in linhas:
+            linha = linha.split("#", 1)[0].strip()
+            if ":" not in linha:
+                continue
+            chave, valor = (parte.strip() for parte in linha.split(":", 1))
+            chave = chave.lower()
+            if chave == "user-agent":
+                if not valor:
+                    raise ValueError("agente vazio")
+                if grupo is None or corpo_iniciado:
+                    grupo = {"agentes": [], "regras": [], "atrasos": [], "taxas": []}
+                    grupos.append(grupo)
+                    corpo_iniciado = False
+                grupo["agentes"].append(valor.lower())
+            elif grupo is not None and chave in {
+                    "allow", "disallow", "crawl-delay", "request-rate"}:
+                corpo_iniciado = True
+                if chave in {"allow", "disallow"}:
+                    if valor:
+                        if not valor.startswith(("/", "*")):
+                            raise ValueError("padrão robots não suportado")
+                        grupo["regras"].append(
+                            (chave == "allow", _normalizar_caminho_robots(valor, True)))
+                elif chave == "crawl-delay":
+                    grupo["atrasos"].append(valor)
+                else:
+                    grupo["taxas"].append(valor)
+        if not grupos:
+            raise ValueError("robots sem grupo")
+        produto = UA.split("/", 1)[0].lower()
+        escolhidos = [g for g in grupos if produto in g["agentes"]]
+        if not escolhidos:
+            escolhidos = [g for g in grupos if "*" in g["agentes"]]
+        self.regras = [r for g in escolhidos for r in g["regras"]]
+        atrasos = [float(v) for g in escolhidos for v in g["atrasos"]]
+        if any(not math.isfinite(v) or v < 0 for v in atrasos):
+            raise ValueError("crawl-delay inválido")
+        self.atraso = max(atrasos) if atrasos else None
+        taxas = []
+        for grupo in escolhidos:
+            for valor in grupo["taxas"]:
+                pedidos, segundos = (parte.strip() for parte in valor.split("/"))
+                if not pedidos.isdigit() or not segundos.isdigit() or int(pedidos) <= 0:
+                    raise ValueError("request-rate inválido")
+                taxas.append(float(segundos) / int(pedidos))
+        self.intervalo_taxa = max(taxas) if taxas else None
+
+    def can_fetch(self, agente, url):
+        if agente != UA:
+            raise ValueError("política restrita ao agente configurado")
+        partes = urllib.parse.urlsplit(url)
+        caminho = _normalizar_caminho_robots(
+            (partes.path or "/") + ("?" + partes.query if partes.query else ""))
+        candidatas = [(len(padrao.rstrip("$").replace("*", "").encode("utf-8")), permitir)
+                      for permitir, padrao in self.regras
+                      if _combina_padrao_robots(padrao, caminho)]
+        return max(candidatas)[1] if candidatas else True
 
 
 class SemRedirecionamento(urllib.request.HTTPRedirectHandler):
@@ -159,7 +283,7 @@ def _abrir(url, dominio, cadencia, opener, clock, limite_bytes,
             "corpo": b"",
             "truncado": False,
         }
-    except Exception as erro:  # DNS, TLS, timeout e conexão recusada.
+    except (urllib.error.URLError, OSError, http.client.HTTPException) as erro:
         return {
             "http": None,
             "erro": _tipo_de_erro(erro),
@@ -187,21 +311,17 @@ def _avaliar_robots(resposta, alvo_url):
                      resposta["erro"] or "robots_acima_do_limite"})
         return base, None
     try:
-        texto = resposta["corpo"].decode("utf-8")
+        texto = resposta["corpo"].decode("utf-8-sig")
     except UnicodeDecodeError:
         base.update({"decisao": "nao_verificado", "motivo": "robots_invalido"})
         return base, None
     linhas = texto.splitlines()
-    if not any(linha.strip().lower().startswith("user-agent:") for linha in linhas):
-        base.update({"decisao": "nao_verificado", "motivo": "robots_invalido"})
-        return base, None
-    parser = RobotFileParser()
     try:
-        parser.parse(linhas)
+        parser = PoliticaRobots(linhas)
         permitido = parser.can_fetch(UA, alvo_url)
-        atraso = parser.crawl_delay(UA)
-        taxa = parser.request_rate(UA)
-    except Exception:
+        atraso = parser.atraso
+        intervalo_taxa = parser.intervalo_taxa
+    except (ValueError, OverflowError):
         base.update({"decisao": "nao_verificado", "motivo": "robots_invalido"})
         return base, None
 
@@ -209,8 +329,7 @@ def _avaliar_robots(resposta, alvo_url):
     if isinstance(atraso, (int, float)) and atraso >= 0:
         base["crawl_delay_segundos"] = float(atraso)
         intervalos.append(float(atraso))
-    if taxa is not None and taxa.requests > 0 and taxa.seconds >= 0:
-        intervalo_taxa = float(taxa.seconds) / float(taxa.requests)
+    if intervalo_taxa is not None:
         base["request_rate_intervalo_segundos"] = intervalo_taxa
         intervalos.append(intervalo_taxa)
     base["intervalo_minimo_segundos"] = max(intervalos)
@@ -240,7 +359,10 @@ def _carregar_json(corpo, xssi=False):
 
 
 def _validar_corpo_generico(tipo, resposta):
-    if resposta["http"] != 200:
+    # VTEX documenta 206 como página válida de produtos, não JSON cortado.
+    # https://github.com/vtex/openapi-schemas/blob/master/VTEX%20-%20Search%20API.json
+    codigos_validos = {200, 206} if tipo == "vtex" else {200}
+    if resposta["http"] not in codigos_validos:
         return False, _situacao_http(resposta)
     if resposta["truncado"]:
         return False, "corpo_acima_do_limite"
@@ -352,9 +474,21 @@ def _timeline_valida(corpo):
         dados = _carregar_json(corpo, xssi=True)
         padrao = dados.get("default") if isinstance(dados, dict) else None
         pontos = padrao.get("timelineData") if isinstance(padrao, dict) else None
-        return (isinstance(pontos, list) and bool(pontos) and
-                isinstance(pontos[0], dict) and
-                isinstance(pontos[0].get("value"), list))
+        if not isinstance(pontos, list) or not pontos:
+            return False
+        for ponto in pontos:
+            if not isinstance(ponto, dict):
+                return False
+            instante, valores = ponto.get("time"), ponto.get("value")
+            if (not isinstance(instante, str) or not instante.isascii() or
+                    not instante.isdigit() or int(instante) <= 0 or
+                    not isinstance(valores, list) or len(valores) != 1):
+                return False
+            valor = valores[0]
+            if (isinstance(valor, bool) or not isinstance(valor, (int, float)) or
+                    not math.isfinite(valor) or not 0 <= valor <= 100):
+                return False
+        return True
     except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
         return False
 
@@ -462,6 +596,7 @@ def _validar_alvos(alvos):
 def sondar(alvos=ALVOS, opener=None, trends_opener=None, clock=None,
            sleep=None, agora=None):
     """Executa a sonda e devolve somente metadados permitidos no artefato."""
+    alvos = tuple(alvos)
     _validar_alvos(alvos)
     clock = clock or time.monotonic
     agora = agora or (lambda: dt.datetime.now(dt.timezone.utc))

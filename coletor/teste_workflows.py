@@ -133,6 +133,31 @@ def checar_com_pyyaml(arquivos):
             if not checar_inventario_i7(copia):
                 falhas.append(("inventariar-i7.yml",
                                "verificador aceitou defeito plantado: " + mutacao))
+    preservacao = carregados.get("preservar-i7.yml", {})
+    if not checar_preservacao_i7(preservacao):
+        mutacoes = [
+            (("permissions", "contents"), "write"),
+            (("jobs", "preservar", "runs-on"), ["self-hosted", "macOS"]),
+            (("jobs", "preservar", "permissions", "issues"), "write"),
+            (("jobs", "preservar", "env"), {"GH_TOKEN": "${{ github.token }}"}),
+            (("jobs", "preservar", "steps", 0, "with", "clean"), True),
+            (("jobs", "preservar", "steps", 0, "with", "persist-credentials"), True),
+            (("jobs", "preservar", "steps", 1, "run"), 'find "$HOME"'),
+            (("jobs", "preservar", "steps", 2, "env", "GH_TOKEN"), "${{ secrets.PAT }}"),
+            (("jobs", "preservar", "steps", 3, "with", "path"), "${{ runner.temp }}/**"),
+        ]
+        for caminho, valor in mutacoes:
+            copia = copy.deepcopy(preservacao)
+            destino = copia
+            for chave in caminho[:-1]:
+                destino = destino[chave]
+            destino[caminho[-1]] = valor
+            if not checar_preservacao_i7(copia):
+                falhas.append(("preservar-i7.yml", "verificador aceitou mutacao: " + str(caminho)))
+        copia = copy.deepcopy(preservacao)
+        _gatilhos(copia)["push"] = {"branches": ["main"]}
+        if not checar_preservacao_i7(copia):
+            falhas.append(("preservar-i7.yml", "verificador aceitou bootstrap na main"))
     return falhas
 
 
@@ -361,6 +386,68 @@ def checar_inventario_i7(workflow):
     return falhas
 
 
+def checar_preservacao_i7(workflow):
+    """Limita a cópia autorizada ao cache, ao i7 e a um recibo pequeno."""
+    falhas = []
+    bootstrap = {"branches": ["codex/produto-pos-challenge"], "paths": [
+        ".github/workflows/preservar-i7.yml", "ferramentas/preservar_cache_luna.py",
+        "ferramentas/enviar_snapshot_luna.py"]}
+    if (set(workflow) != {"name", True, "permissions", "concurrency", "jobs"} or
+            _gatilhos(workflow) not in ({"workflow_dispatch": None},
+                                      {"workflow_dispatch": None, "push": bootstrap}) or
+            workflow.get("permissions") != {"contents": "read"} or
+            workflow.get("concurrency") != {"group": "canario-dados", "cancel-in-progress": False}):
+        falhas.append("preservacao exige bootstrap isolado, permissao minima e serializacao com os dados")
+    jobs = workflow.get("jobs", {})
+    if set(jobs) != {"preservar"}:
+        return falhas + ["preservacao deve ter somente o job preservar"]
+    job = jobs["preservar"]
+    if (set(job) != {"runs-on", "timeout-minutes", "permissions", "steps"} or
+            job.get("runs-on") != ["self-hosted", "macOS", "X64", "sempre-ligado"] or
+            job.get("timeout-minutes") != 45 or job.get("permissions") != {"contents": "write"}):
+        falhas.append("preservacao exige i7 exato, teto de 45 minutos e somente contents write no job")
+    passos = job.get("steps", [])
+    if len(passos) != 4:
+        return falhas + ["preservacao deve ter somente checkout, criacao, upload e recibo"]
+    checkout, criar, enviar, artefato = passos
+    if (set(checkout) != {"uses", "with"} or checkout.get("uses") != CHECKOUT_SHA or
+            checkout.get("with") != {"persist-credentials": False, "clean": False,
+                                     "path": "preservacao-i7", "set-safe-directory": False}):
+        falhas.append("checkout de preservacao deve ser isolado e sem limpeza ou credenciais persistentes")
+    comandos = [(criar, {"name", "run"}, r'''
+        set -euo pipefail
+        umask 077
+        PY_LEGADO="$HOME/.canario-python/bin/python3"
+        test -x "$PY_LEGADO"
+        "$PY_LEGADO" preservacao-i7/ferramentas/preservar_cache_luna.py create \
+          --cache "$HOME/canario-imagens-treino" \
+          --output-dir "$RUNNER_TEMP/luna-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+          --expected-count 5289 --expected-bytes 1988815984
+    '''), (enviar, {"name", "run", "env"}, r'''
+        set -euo pipefail
+        umask 077
+        PY_LEGADO="$HOME/.canario-python/bin/python3"
+        "$PY_LEGADO" preservacao-i7/ferramentas/enviar_snapshot_luna.py \
+          --output-dir "$RUNNER_TEMP/luna-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+          --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" \
+          --receipt "$RUNNER_TEMP/luna-upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+    ''')]
+    for passo, chaves, comando in comandos:
+        if set(passo) != chaves or _comando_normalizado(passo.get("run")) != _comando_normalizado(comando):
+            falhas.append("comando de preservacao diverge do cache, totais ou destinos autorizados")
+    sem_token = copy.deepcopy(workflow)
+    sem_token["jobs"]["preservar"]["steps"][2].pop("env", None)
+    if enviar.get("env") != {"GH_TOKEN": "${{ github.token }}"} or _tem_ambiente_ou_segredo(sem_token):
+        falhas.append("somente o upload pode receber o token efemero; outros ambientes e segredos sao proibidos")
+    if (set(artefato) != {"name", "uses", "with"} or artefato.get("uses") != UPLOAD_SHA or
+            artefato.get("with") != {
+                "name": "luna-upload-${{ github.run_id }}-${{ github.run_attempt }}",
+                "path": "${{ runner.temp }}/luna-upload-${{ github.run_id }}-${{ github.run_attempt }}.json",
+                "if-no-files-found": "error", "retention-days": 14}):
+        falhas.append("artefato deve conter somente o recibo JSON da transferencia por catorze dias")
+    return falhas
+
+
 def checar_orquestracao(workflows):
     """Impede cron concorrente e regressão na ordem coleta -> saúde -> motor."""
     falhas = []
@@ -383,6 +470,9 @@ def checar_orquestracao(workflows):
     for mensagem in checar_inventario_i7(
             workflows.get("inventariar-i7.yml", {})):
         falhar("inventariar-i7.yml", mensagem)
+    for mensagem in checar_preservacao_i7(
+            workflows.get("preservar-i7.yml", {})):
+        falhar("preservar-i7.yml", mensagem)
 
     # Um workflow chamador mantém o próprio grupo ocupado durante toda a run.
     # Se chamar um workflow reutilizável que pede o mesmo grupo literal, o

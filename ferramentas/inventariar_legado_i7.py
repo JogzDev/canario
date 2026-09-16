@@ -94,7 +94,17 @@ def inventariar(cache, clock=None, max_entradas=MAX_ENTRADAS,
         resultado["motivo_incompleto"] = "erro_de_leitura"
 
     try:
-        dispositivo_da_raiz = os.fstat(descritor_raiz).st_dev
+        raiz_aberta = os.fstat(descritor_raiz)
+        if (not stat.S_ISDIR(raiz_aberta.st_mode) or
+                (raiz_aberta.st_dev, raiz_aberta.st_ino) !=
+                (estado_raiz.st_dev, estado_raiz.st_ino)):
+            # O_NOFOLLOW impede um link no último componente, mas não a troca
+            # por outro diretório regular entre lstat e open.
+            resultado["estado"] = "inacessivel"
+            resultado["motivo_incompleto"] = "raiz_trocada"
+            resultado["erros_de_leitura"] = 1
+            return resultado
+        dispositivo_da_raiz = raiz_aberta.st_dev
         for _caminho, diretorios, arquivos, dirfd in os.fwalk(
                 ".", topdown=True, onerror=falha_de_leitura,
                 follow_symlinks=False, dir_fd=descritor_raiz):

@@ -113,6 +113,10 @@ jobs:
         run: "$PY coletor/teste_sonda_origem_gerenciada.py"
       - name: Inventario seguro do legado do i7 (sem rede)
         run: "$PY coletor/teste_inventariar_legado_i7.py"
+      - name: Backup e restauração íntegros da Luna (sem rede)
+        run: "$PY coletor/teste_preservar_cache_luna.py"
+      - name: Transporte privado do snapshot Luna (sem rede)
+        run: "$PY coletor/teste_enviar_snapshot_luna.py"
       # Alarme que dispara todo dia deixa de ser lido: este confere que o
       # alerta agrupa noites seguidas numa issue so e fecha sozinho no verde.
       - name: Alerta do pipeline nao vira ruido (sem rede)

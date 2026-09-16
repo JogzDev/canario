@@ -185,13 +185,12 @@ class SondaGerenciadaTests(unittest.TestCase):
         self.assertTrue(resultado["nao_autoriza_migracao"])
         self.assertFalse(resultado["politica"]["supabase_consultado"])
 
-    def test_200_incompativel_204_206_e_truncamento_nunca_passam(self):
+    def test_200_incompativel_204_e_truncamento_nunca_passam(self):
         casos = [
             (200, b"<html>waf</html>", "resposta_incompativel"),
             (200, b"[]", "resposta_incompativel"),
             (200, b"\xff", "resposta_incompativel"),
             (204, b"", "http_204"),
-            (206, CORPOS_VALIDOS["vtex"], "http_206"),
             (200, b"x" * (sonda.MAX_BYTES_ENDPOINT + 1), "corpo_acima_do_limite"),
         ]
         for indice, (status, corpo, situacao) in enumerate(casos):
@@ -206,6 +205,24 @@ class SondaGerenciadaTests(unittest.TestCase):
                 self.assertFalse(endpoint["protocolo_valido"])
                 self.assertEqual(endpoint["situacao"], situacao)
                 self.assertEqual(resultado["veredito"], "inconclusivo_ou_bloqueado")
+
+    def test_206_so_e_valido_para_pagina_vtex_integra(self):
+        for tipo, corpo, valido in (
+            ("vtex", CORPOS_VALIDOS["vtex"], True),
+            ("vtex", b"<html>waf</html>", False),
+            ("vtex", b'[{"productId":"1","items":[]}', False),
+            ("vtex", b"x" * (sonda.MAX_BYTES_ENDPOINT + 1), False),
+            ("shopify", CORPOS_VALIDOS["shopify"], False),
+        ):
+            with self.subTest(tipo=tipo, valido=valido, tamanho=len(corpo)):
+                item = alvo("loja", "https://loja.example/catalogo", tipo)
+                resultado, _, _ = executar([item], {
+                    url_robots(item["url"]): RespostaFalsa(200, ROBOTS_LIBERADO),
+                    item["url"]: RespostaFalsa(206, corpo),
+                })
+                endpoint = resultado["alvos"][0]["endpoint"]
+                self.assertEqual(endpoint["protocolo_valido"], valido)
+                self.assertEqual(endpoint["http"], 206)
 
     def test_xml_com_doctype_ou_sem_item_falha_fechado(self):
         for indice, corpo in enumerate((
@@ -261,6 +278,7 @@ class SondaGerenciadaTests(unittest.TestCase):
     def test_crawl_delay_e_request_rate_usam_o_maior_intervalo(self):
         casos = [
             (b"User-agent: CanarioBot\nAllow: /\nCrawl-delay: 3\n", 3.0),
+            (b"User-agent: CanarioBot\nAllow: /\nCrawl-delay: 3.5\n", 3.5),
             (b"User-agent: CanarioBot\nAllow: /\nRequest-rate: 2/10\n", 5.0),
             (b"User-agent: CanarioBot\nAllow: /\nCrawl-delay: 3\nRequest-rate: 2/10\n",
              5.0),
@@ -277,6 +295,60 @@ class SondaGerenciadaTests(unittest.TestCase):
                 self.assertEqual(
                     resultado["alvos"][0]["robots"]["intervalo_minimo_segundos"],
                     espera)
+
+    def test_robots_mais_especifico_curingas_grupos_e_escapes(self):
+        casos = [
+            ("User-agent: *\nAllow: /\nDisallow: /api/", "/api/catalogo", False),
+            ("User-agent: *\nDisallow: /\nAllow: /api/", "/api/catalogo", True),
+            ("User-agent: *\nDisallow: /*api/", "/v1/api/catalogo", False),
+            ("User-agent: *\nDisallow: /api$", "/api", False),
+            ("User-agent: *\nDisallow: /api$", "/api/catalogo", True),
+            ("User-agent: *\nDisallow: /*?token=*", "/api?token=x", False),
+            ("User-agent: *\nDisallow: /api\nAllow: /api", "/api", True),
+            ("User-agent: CanarioBot\nAllow: /\n\nUser-agent: CanarioBot\n"
+             "Disallow: /api/", "/api/catalogo", False),
+            ("User-agent: OtherBot\nDisallow: /\nUser-agent: *\nAllow: /",
+             "/api", True),
+            ("User-agent: *\nDisallow: /\nUser-agent: canariobot\nAllow: /",
+             "/api", True),
+            ("User-agent: *\nDisallow: /caf%C3%A9", "/café", False),
+            ("User-agent: *\nDisallow: /caf%C3%A9", "/caf%c3%a9", False),
+            ("User-agent: *\nDisallow: /%61pi", "/api", False),
+            ("User-agent: *\nDisallow: /a%2Fb", "/a/b", True),
+            ("User-agent: *\nDisallow: /a%2Fb", "/a%2fb", False),
+            ("User-agent: *\nDisallow: /a%2Ab", "/a*b", False),
+            ("User-agent: *\nDisallow: /a%24b", "/a$b", False),
+            ("User-agent : CanarioBot\nDisallow: /api", "/api", False),
+        ]
+        for regras, caminho, permitido in casos:
+            with self.subTest(regras=regras, caminho=caminho):
+                politica = sonda.PoliticaRobots(regras.splitlines())
+                self.assertEqual(politica.can_fetch(
+                    sonda.UA, "https://example.test" + caminho), permitido)
+
+    def test_robots_merge_cadencia_usa_maior_valor_e_invalida_falha_fechada(self):
+        politica = sonda.PoliticaRobots([
+            "User-agent: CanarioBot", "Crawl-delay: 2", "Request-rate: 2/10",
+            "User-agent: CanarioBot", "Crawl-delay: 4", "Request-rate: 1/8",
+        ])
+        self.assertEqual(politica.atraso, 4)
+        self.assertEqual(politica.intervalo_taxa, 8)
+        for diretiva in ("Crawl-delay: nan", "Crawl-delay: -1",
+                         "Request-rate: 0/5", "Request-rate: nope",
+                         "Disallow: api"):
+            with self.subTest(diretiva=diretiva):
+                item = alvo("loja", "https://loja.example/catalogo")
+                resultado, opener, _ = executar([item], {
+                    url_robots(item["url"]): RespostaFalsa(
+                        200, ("User-agent: *\n" + diretiva).encode()),
+                })
+                self.assertEqual(len(opener.requisicoes), 1)
+                self.assertFalse(resultado["alvos"][0]["endpoint"]["executado"])
+
+    def test_erro_de_programacao_nao_vira_falha_de_rede(self):
+        item = alvo("loja", "https://loja.example/catalogo")
+        with self.assertRaises(KeyError):
+            executar([item], {})
 
     def test_intervalo_robots_acima_do_teto_nao_e_burlado(self):
         item = alvo("lenta", "https://lenta.example/catalogo")
@@ -352,6 +424,22 @@ class SondaGerenciadaTests(unittest.TestCase):
         })
         self.assertEqual(resultado["alvos"][0]["endpoint"]["situacao"],
                          "resposta_incompativel")
+
+    def test_trends_exige_timestamp_e_um_valor_numerico_por_ponto(self):
+        for ponto in (
+            {"value": [42]}, {"time": "0", "value": [42]},
+            {"time": "1", "value": []}, {"time": "1", "value": ["42"]},
+            {"time": "1", "value": [True]}, {"time": "1", "value": [101]},
+            {"time": "1", "value": [-1]}, {"time": "1", "value": [float("nan")]},
+            {"time": "1", "value": [42, 43]},
+        ):
+            with self.subTest(ponto=ponto):
+                corpo = json.dumps({"default": {"timelineData": [ponto]}}).encode()
+                self.assertFalse(sonda._timeline_valida(corpo))
+        for valor in (0, 42, 100):
+            corpo = json.dumps({"default": {
+                "timelineData": [{"time": "1", "value": [valor]}]}}).encode()
+            self.assertTrue(sonda._timeline_valida(corpo))
 
     def test_conjunto_vazio_nunca_e_apto(self):
         resultado, opener, _ = executar([], {})

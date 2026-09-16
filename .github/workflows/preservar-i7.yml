@@ -1,0 +1,65 @@
+name: Preservar cache Luna do i7
+
+# Cópia única autorizada pelo proprietário em 16/09/2026. Não publica release,
+# não toca no banco e não remove a origem. A restauração fora do i7 é obrigatória.
+on:
+  workflow_dispatch:
+  # Bootstrap restrito; remover depois de verificar a cópia fora do laboratório.
+  push:
+    branches: [codex/produto-pos-challenge]
+    paths:
+      - .github/workflows/preservar-i7.yml
+      - ferramentas/preservar_cache_luna.py
+      - ferramentas/enviar_snapshot_luna.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canario-dados
+  cancel-in-progress: false
+
+jobs:
+  preservar:
+    runs-on: [self-hosted, macOS, X64, sempre-ligado]
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          clean: false
+          path: preservacao-i7
+          set-safe-directory: false
+
+      - name: Criar snapshot do cache inventariado sem modificar a origem
+        run: |
+          set -euo pipefail
+          umask 077
+          PY_LEGADO="$HOME/.canario-python/bin/python3"
+          test -x "$PY_LEGADO"
+          "$PY_LEGADO" preservacao-i7/ferramentas/preservar_cache_luna.py create \
+            --cache "$HOME/canario-imagens-treino" \
+            --output-dir "$RUNNER_TEMP/luna-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --expected-count 5289 --expected-bytes 1988815984
+
+      - name: Enviar somente TAR e recibo ao rascunho privado autorizado
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          umask 077
+          PY_LEGADO="$HOME/.canario-python/bin/python3"
+          "$PY_LEGADO" preservacao-i7/ferramentas/enviar_snapshot_luna.py \
+            --output-dir "$RUNNER_TEMP/luna-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" \
+            --receipt "$RUNNER_TEMP/luna-upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+
+      - name: Guardar recibo pequeno da transferência
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: luna-upload-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/luna-upload-${{ github.run_id }}-${{ github.run_attempt }}.json
+          if-no-files-found: error
+          retention-days: 14

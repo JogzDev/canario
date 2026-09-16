@@ -132,6 +132,42 @@ class InventarioLegadoTests(unittest.TestCase):
         self.assertNotEqual(medida["bytes_regulares"], 777)
         self.assertEqual(medida["links_ignorados"], 1)
 
+    def test_troca_da_raiz_por_outro_diretorio_e_rejeitada_sem_varredura(self):
+        with tempfile.TemporaryDirectory(prefix="inventario-i7-") as pasta:
+            pasta = Path(pasta)
+            raiz = pasta / "cache"
+            raiz.mkdir()
+            (raiz / "esperado.jpg").write_bytes(b"123")
+            substituto = pasta / "substituto"
+            substituto.mkdir()
+            (substituto / "inesperado.jpg").write_bytes(b"x" * 777)
+            open_original = inventario.os.open
+            descritores = []
+
+            def abrir_apos_troca(caminho, flags, *args, **kwargs):
+                if str(caminho) == str(raiz) and not descritores:
+                    raiz.rename(pasta / "cache-original")
+                    substituto.rename(raiz)
+                    descritor = open_original(caminho, flags, *args, **kwargs)
+                    descritores.append(descritor)
+                    return descritor
+                return open_original(caminho, flags, *args, **kwargs)
+
+            with mock.patch.object(inventario.os, "open", side_effect=abrir_apos_troca):
+                medida = inventario.inventariar(raiz)
+
+            self.assertEqual(len(descritores), 1)
+            with self.assertRaises(OSError):
+                os.fstat(descritores[0])
+
+        self.assertEqual(medida["estado"], "inacessivel")
+        self.assertFalse(medida["completo"])
+        self.assertEqual(medida["motivo_incompleto"], "raiz_trocada")
+        self.assertEqual(medida["erros_de_leitura"], 1)
+        self.assertEqual(medida["diretorios"], 0)
+        self.assertEqual(medida["arquivos_regulares"], 0)
+        self.assertEqual(medida["bytes_regulares"], 0)
+
     def test_erro_de_stat_limites_e_fifo_falham_fechado(self):
         with tempfile.TemporaryDirectory(prefix="inventario-i7-") as pasta:
             raiz = Path(pasta) / "cache"
