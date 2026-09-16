@@ -79,7 +79,7 @@ O inventário encontrou estas implementações. Elas não anulam as lacunas da f
 essa lacuna. `ESTADO.md`, fichas de release e relatórios antigos contêm fotografias
 datadas: não reabrir como pendência atual um certificado ou envio já resolvido.
 
-## 4. Inventário executável — 60 itens
+## 4. Inventário executável — 62 itens
 
 ### 4.1 Operação, capacidade e continuidade
 
@@ -121,21 +121,111 @@ limpeza ao cancelar.
 
 | ID | Entrega | Grau / urgência | Estado | Dependência | Critério de feito |
 |---|---|---|---|---|---|
-| DAT-01 | Separar autobenchmark do mercado externo | M / U2 | aberto | Versão nova de método e ambiente isolado | `papel=grupo` não entra em numerador/denominador externos; teste sintético e comparação com baseline; impacto histórico declarado |
-| DAT-02 | Tornar categoria exclusiva com precedência verificável | L / U2 | aberto | Rubrica e conjunto de avaliação | Cada produto elegível recebe no máximo uma categoria principal; casos ambíguos explícitos; precedência não inventada para apagar divergências |
-| DAT-03 | Corrigir vocabulário de malharia e auditar blusa/top/camiseta | M / U2 | aberto | DAT-02; taxonomia revisada | Suéter/pullover/blusão e fronteiras visuais avaliados; definição exclusiva, exemplos, volume e concordância; não criar categoria por dois exemplos |
-| DAT-04 | Avaliar viés de tamanho de marca no painel | L / U2 | aberto | População atual medida | Comparar SKU versus pesos por marca/papel, sensibilidade e cobertura; metodologia escolhida e versionada antes de substituir shares |
-| DAT-05 | Executar virada versionada e avaliar candidatas | L / U2 | condicionado | DAT-01/02/03/04, OP-04/06 | Coorte/método explícitos, replay e comparação, rollback lógico; só promover candidatas com acesso/capacidade; não misturar cauda nova com série velha |
+| DAT-01 | Separar autobenchmark do mercado externo | M / U1 | aberto | Versão nova de método e ambiente isolado | `papel=grupo` não entra em numerador/denominador externos; teste sintético e comparação com baseline; impacto histórico declarado |
+| DAT-02 | Tornar categoria exclusiva com precedência verificável | L / U1 | aberto | Rubrica e conjunto de avaliação | Cada produto elegível recebe no máximo uma categoria principal; casos ambíguos explícitos; precedência não inventada para apagar divergências |
+| DAT-03 | Corrigir vocabulário de malharia e auditar blusa/top/camiseta | M / U1 | aberto | DAT-02; taxonomia revisada | Suéter/pullover/blusão e fronteiras visuais avaliados; definição exclusiva, exemplos, volume e concordância; não criar categoria por dois exemplos |
+| DAT-04 | Avaliar viés de tamanho de marca no painel | L / U1 | aberto | População atual medida | Comparar SKU versus pesos por marca/papel, sensibilidade e cobertura; metodologia escolhida e versionada antes de substituir shares |
+| DAT-05 | Executar virada versionada e avaliar candidatas | L / U1 | condicionado | DAT-01/02/03/04/07/10/11, OP-04/06 | Coorte, taxonomia e método explícitos; replay/comparação e rollback; clientes antigos isolados; retirar exceções do Demo Day com teste; série nova só entra com história comparável e cobertura suficiente |
 | DAT-06 | Calibrar similares por dimensão, cor principal e relaxamento | L / U2 | aberto | Dataset de avaliação e versão de RPC | OR entre alternativas da mesma dimensão, AND entre dimensões quando cabível; categoria preservada, relaxamento explicado, relevância medida sem regressão publicada |
-| DAT-07 | Melhorar cobertura semântica de estampa, cintura e tecido | M / U2 | aberto | Taxonomia aprovada e amostra atual | Precisão/recall e observabilidade por dimensão; não trocar ausência por “liso”; ganho de cobertura sem inflar fatos falsos |
+| DAT-07 | Melhorar cobertura semântica de estampa, cintura e tecido | M / U1 | aberto | Taxonomia aprovada e amostra atual | Precisão/recall e observabilidade por dimensão; não trocar ausência por “liso”; ganho de cobertura sem inflar fatos falsos |
 | DAT-08 | Curadoria visual e diversidade dos similares | M / U2 | aberto | DAT-06; UX-01 | Critérios de imagem/relevância/diversidade e rejeição explícita; amostra visual não se passa por população; consulta cabe no orçamento medido |
 | DAT-09 | Reavaliar a entrada por URL | M / U3 | condicionado | Decisão de UX; backend existente | Reconstruir entrada apenas se escolhida; validar URL exata, limites, erro e privacidade; registrar que a porta foi retirada a pedido do JP, não esquecida |
+| DAT-10 | Revisar corpus e método do editorial existente | L / U1 | aberto | Inventário datado, direitos, rubrica e baseline isolada | Fontes BR/internacionais separadas, contagem independente, denominadores e cobertura comparáveis; teste de entrada/saída de veículo sem falso pico; avaliação de contagem esparsa/rajadas e mínimo temporal pós-Demo Day; nenhuma fórmula escolhida só por deixar a tela mais cheia |
+| DAT-11 | Compatibilizar taxonomia e séries de busca | M / U1 | aberto | DAT-02/03/07; consultas e metadados existentes | Mapa de termo→query exata, geo, janela, escala e âncora; query nova não herda série incompatível; nenhum degrau metodológico vira tendência; histórico/coleta só quando tecnicamente disponível e permitido |
 
 Origem: `PENDENCIAS.md` §§fila/virada; `FILA_DO_DEPOIS.md` §§2.2–2.4;
 `CANARIO.md` §§8/11/13/A20/A49. Percentuais e contagens de agosto são evidência
 histórica para investigar, não medição do painel de setembro. DAT-01 a DAT-05
 compõem uma virada coordenada: adicionar vocabulário sozinho pode aumentar
 marcações duplicadas e distorcer a série.
+
+#### Pacote prioritário: virada metodológica pós-Challenge
+
+**Confirmação e ajuste de 16/09, solicitado pelo JP.** A virada já existia na
+regra 5 e no §13 do `CANARIO.md`, em `PENDENCIAS.md` §“Para a virada de
+temporada” e em `FILA_DO_DEPOIS.md` §2.2. O roteiro inicial incluía marcas e
+taxonomia em DAT-01–05, mas não explicitava a revisão coordenada do editorial
+legado e do Trends; DAT-10/11 fecham essa lacuna. Não confundir RAD-07, direitos
+de fontes externas do novo radar, com o corpus editorial que já alimenta índices.
+
+“Temporada” aqui é uma **nova versão declarada da medição**, com data de corte e
+universo definido. Não é obrigação de esperar a primavera/verão ou apagar a
+temporada anterior. Datas de coleção exibidas no app continuam distintas da
+versão de painel/método. A preparação começa nesta fase, em paralelo à recuperação
+operacional; publicação da nova medição depende dos aceites abaixo.
+
+**Escopo coordenado:**
+
+- **Marcas:** revisar representação, papéis e disponibilidade; separar grupo de
+  mercado externo; avaliar as 13 candidatas historicamente listadas, sem promoção
+  automática. Comparar pesos por SKU/marca/papel com critério anterior ao resultado.
+- **Taxonomia:** categorias exclusivas, malharia, blusa/top/camiseta, vocabulário
+  de estampa/cintura/tecido e distinção entre ausência e desconhecido. IDs estáveis;
+  significado novo exige revisão/mapeamento, não reaproveitamento silencioso de ID.
+  Formulário, Luna, matcher, similares, editorial e Trends precisam do mesmo contrato.
+- **Editorial:** revisar relevância em moda feminina, veículos ativos, cobertura,
+  origem/republicação, BR versus internacional e denominador da janela. O histórico
+  de 02/08 registra quatro picos que eram a entrada de três revistas, não movimento
+  das fontes comparáveis. Avaliar também contagem esparsa e rajadas: binomial
+  negativa aparece como hipótese histórica, não como escolha validada neste pacote.
+- **Busca:** revalidar o significado das queries e sua escala. Já houve costura
+  incompatível de janelas de Trends (migration `20260805180000`); uma taxonomia nova
+  não pode repetir o defeito. Corrigir consulta sem versão seria mudar a régua no
+  meio da comparação.
+- **Índices e estados:** recomputar cobertura, raridade, z-scores e elegibilidade
+  somente no destino da nova versão. O radar e a Luna recebem a versão e os limites,
+  não misturam conceitos amplos do radar com termos aprovados do motor antigo.
+
+A recomposição feminina A41 e os pares compactos A43 já foram implementados;
+as fontes femininas acrescentadas em agosto já constam no anexo. Esta entrega
+revisa método e qualidade a partir dessa base, não apresenta o trabalho herdado
+como uma nova implementação.
+
+**Duas pendências pós-Demo Day encontradas no código versionado:**
+
+1. A exceção editorial de seis semanas expirava em 24/08 (`CANARIO.md`, registro
+   de 30/07), mas a última definição de `computar_z()` ainda usa seis, sem data de
+   expiração. Preparar retorno ao contrato normal de oito semanas, com teste do
+   impacto e sem usar semanas de falha como observações válidas.
+2. A mesma definição força `z = NULL` para varejo, apesar de A9 prever ativação
+   ao acumular história suficiente. Remover a restrição não é ligar o varejo por
+   calendário: exigir oito semanas comparáveis, cobertura e compatibilidade da
+   coorte/taxonomia, considerando a lacuna de setembro.
+
+Referência: `supabase/migrations/20260802070027_f7_portao_de_cobertura_da_perna_editorial.sql`.
+São constatações do repositório; a função vigente no servidor precisa ser
+conferida antes da migration. Nenhuma alteração no motor foi executada nesta revisão.
+
+**Execução e portas de saída:**
+
+1. **Congelar a referência:** identificar composição, taxonomia, queries, métodos,
+   data de corte dos dados e contagens atuais; preservar artefatos e commit. Não usar
+   contagens de agosto como se fossem medidas novas.
+2. **Especificar a versão nova:** inventário de alterações e motivos, mapa de
+   compatibilidade, critérios de admissão e decisão sobre comparações possíveis.
+   Termos/fontes propostos não passam a aprovados por estarem no roteiro.
+3. **Preparar armazenamento e contratos versionados:** provar que escrever a versão
+   nova não substitui a velha. As séries legadas são únicas por termo/segmento/
+   fonte/semana e a RPC editorial pode substituir uma perna inteira; Git branch
+   isolada não isola essas escritas. Usar destino de laboratório e contrato novo.
+4. **Reclassificar/recalcular em paralelo:** aplicar ambos os métodos ao mesmo
+   conjunto permitido; medir mudanças por marca, categoria, fonte e semana.
+   Reprocessamento só onde a evidência conservada permitir. Um artigo sem conteúdo
+   suficiente ou uma marca sem snapshots antigos não ganha passado inventado.
+5. **Aceite metodológico e de produto:** amostra revisada, exemplos adversos,
+   fronteiras/denominadores consistentes, explicação das divergências, performance
+   e tamanho do banco. Interrupção/retry/rollback testados sem contaminar o legado.
+6. **Transição explícita:** preservar API/dados lidos pelo app entregue, expor nova
+   versão ao cliente compatível e anunciar corte/comparabilidade. Se faltar história
+   comparável, mostrar nova série sem z/estado em vez de emendar artificialmente.
+7. **Acompanhar:** observar ciclos completos, qualidade e crescimento; ligar novas
+   pernas somente quando os requisitos forem atingidos, não por uma data prometida.
+
+A preparação não espera o Radar pronto. A recomputação real exige OP-04/05/06
+(capacidade, retenção e restauração); a promoção pública continua separada da
+autorização de construir. Fontes históricas não são apagadas; retirada da coorte
+ativa e exceções às regras editoriais anteriores exigem decisão explícita no
+manifesto da virada e changelog. Não há contratação ou corte de produção aqui.
 
 ### 4.4 Radar, fontes, Luna e validação
 
@@ -255,12 +345,12 @@ Esta é a ordenação de esforço pedida pelo JP; a execução começa pelos inc
 U0, mesmo que sejam mais difíceis. Detalhes e dependências estão nas linhas de
 cada ID acima.
 
-| Grau | IDs (60 itens, sem duplicação) |
+| Grau | IDs (62 itens, sem duplicação) |
 |---|---|
 | XS — 1 | APP-06 |
 | S — 6 | OP-04; APP-01/02/03/07; UX-07 |
-| M — 27 | OP-01/02/03/05/09; APP-04/05; DAT-01/03/07/08/09; RAD-01/02/06/07/08; UX-01/04/05/06; SEC-01/02/03/04; EXP-07/09 |
-| L — 21 | OP-06/07; APP-08/09; DAT-02/04/05/06; RAD-03/04/05/09/10/11/12; UX-02/03; EXP-01/02/06/08 |
+| M — 28 | OP-01/02/03/05/09; APP-04/05; DAT-01/03/07/08/09/11; RAD-01/02/06/07/08; UX-01/04/05/06; SEC-01/02/03/04; EXP-07/09 |
+| L — 22 | OP-06/07; APP-08/09; DAT-02/04/05/06/10; RAD-03/04/05/09/10/11/12; UX-02/03; EXP-01/02/06/08 |
 | XL — 5 | OP-08; EXP-03/04/05/10 |
 
 ### Sequência de implementação por risco e dependência
@@ -269,10 +359,11 @@ cada ID acima.
 |---|---|---|
 | 1 — operação visível | OP-01 a OP-04 | Saber por que parou, recuperar dentro do escopo e detectar a próxima ausência; métricas atuais de capacidade |
 | 2 — integridade e continuidade | APP-01 a APP-07, OP-06/09, SEC-01/02/03 | Resultados de preço/cor corretos, fallback explicado, sem regressão de conta/dados e prova de restore isolado |
+| 2B — virada metodológica prioritária | DAT-01 a DAT-05, DAT-07/10/11 | Preparação começa junto da operação; método/taxonomia/painéis versionados e comparação isolada após OP-04/05/06; promoção não altera o app entregue silenciosamente |
 | 3 — base contínua da 1.3 | RAD-01/02, EXP-07 | Caminho inteiro local e CI reproduzíveis, documentação condizente com a prova |
 | Paralela — aprender desde cedo | RAD-07, UX-01, piloto inicial de RAD-12 | Fonte autorizada ou restrição específica; teste de tarefa; design guiado pelo trabalho do usuário |
 | 4 — produto rastreável | RAD-03 a RAD-11, UX-02/03/04 | Edição e conversa privadas, verificáveis e capazes de se abster |
-| 5 — qualidade do mercado | DAT-01 a DAT-08, APP-08 | Melhora medida; virada coordenada e versionada, sem mistura silenciosa do histórico |
+| 5 — refinamento sobre a nova medição | DAT-06/08, APP-08 | Similares e cor calibrados com avaliação independente, depois da fundação metodológica da etapa 2B |
 | 6 — escala justificada | OP-07/08, EXP-01 a EXP-10, SEC-04 | Acesso, economia, demanda, privacidade e rollback demonstrados para cada expansão |
 
 Não esperar o fim da etapa 4 para ouvir alguém. Também não usar um piloto de

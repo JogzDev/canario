@@ -33,7 +33,7 @@ ou remoção de dados nesta retomada.
 | Causas estruturais | Retenção só roda após motor dependente da coleta; logs do cron crescem mesmo bloqueado | Retenção independente, fronteiras seguras e menos reescritas |
 | Correção operacional | JSON de capacidade e recuperação Shopify condicionada à leitura válida; testes locais passaram | Ainda não aplicada ao workflow da branch padrão |
 | Radar | A51/A52 e laboratório herdados; `npm test` agora roda admissão e concorrência | P1 continua parcial: conectar parser/materializador/consolidador reais; integrar suíte ao CI |
-| Produto | 60 itens com dificuldade, urgência, dependências e aceite em `ROADMAP_PRODUTO.md` | Executar por fatias, sem recomeçar a blueprint a cada sessão |
+| Produto | 62 itens com dificuldade, urgência, dependências e aceite em `ROADMAP_PRODUTO.md` | Virada metodológica antecipada; executar por fatias, sem recomeçar a blueprint a cada sessão |
 | iOS | iOS 27 lançado; Xcode local ainda 26.2 (17C52) | SDK/runtime 27 e matriz de compatibilidade; não houve teste em 27 nesta rodada |
 | Entrega/App Store | Challenge concluído conforme JP | Situação atual da loja não foi consultada; o bloqueio de certificado de agosto abaixo é histórico |
 
@@ -65,6 +65,15 @@ OP-06: preparar restauração isolada. A recuperação de produção depende de 
 margem sustentável: plano gerenciado com custo explicitamente aprovado ou
 manutenção delimitada com backup e ganho medido. Não basta excluir snapshots
 por idade nem aumentar o limite no código sem mudar a capacidade real.
+
+**Prioridade confirmada pelo JP em 16/09:** a virada de temporada/metodologia
+entra neste pacote e sua preparação pode avançar junto da operação. DAT-01–05
+e DAT-07 foram antecipados para U1; DAT-10/11 explicitam editorial legado e Trends,
+que o roteiro anterior não cobria suficientemente. Plano no §4.3 do roteiro.
+Revisão local também encontrou a exceção editorial de seis semanas sem expiração
+e o z-score de varejo desativado incondicionalmente na última migration de
+`computar_z`. Verificação do servidor e correção versionada continuam pendentes;
+não houve troca de painel/taxonomia, recomputação ou deploy nesta revisão.
 
 ## Registro anterior — fotografia de 31/08/2026
 

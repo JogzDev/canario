@@ -979,3 +979,26 @@ aprovada, direito de fonte ou qualquer regra da PARTE 0.
   partes da operação; não se resolve afrouxando o portão de saúde/capacidade.
   O limite codificado não é prova do plano contratado. Procedimento e limites
   da evidência ficam em `RUNBOOK_CAPACIDADE.md`.
+
+### 16/09/2026 — virada metodológica entra no pacote pós-Challenge (A58)
+
+- `ADITIVA` | **A58 — o adiamento da virada termina no planejamento ativo.** O
+  JP confirmou que agora é o momento de remodelar marcas, editorial e taxonomia.
+  A preparação da nova versão de medição passa a U1, com escopo e aceite em
+  `ROADMAP_PRODUTO.md` §4.3. Inclui painel e pesos, categorias/vocabulário,
+  corpus/método editorial e compatibilidade de consultas do Trends.
+- `ADITIVA` | **Virada não é apagar nem costurar séries incompatíveis.** A regra
+  de painel congelado permanece: cada versão declara composição, método e corte.
+  Desenvolver/testar em paralelo não altera o app entregue. Dados insuficientes
+  não são reconstruídos por inferência; preservação do legado, capacidade,
+  restauração e contratos versionados precedem qualquer promoção em produção.
+- `CORREÇÃO` | **Exceções acadêmicas precisam de encerramento verificável.**
+  Revisar a exceção editorial de seis semanas (válida só até 24/08) e a trava
+  incondicional de varejo em `computar_z`. Oito semanas decorridas não comprovam
+  oito observações comparáveis; lacuna, cobertura e mudança de método precisam
+  ser consideradas. Este registro abre a correção/testes, não afirma deploy.
+- `ADITIVA` | **Nenhuma fórmula ou fonte é aprovada implicitamente.** Pesos,
+  estatística editorial, taxonomia proposta e entrada/retirada de fontes exigem
+  comparação documentada e decisões no manifesto da versão. A hipótese histórica
+  de binomial negativa será avaliada, não instalada como certeza por constar em
+  um comentário antigo. Custos e publicação mantêm seus controles próprios.
