@@ -21,20 +21,24 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 O JP informou a conclusão do Challenge 3. O trabalho novo está isolado em
 `codex/produto-pos-challenge`, checkout `Canario-produto`, a partir de `d85fbaa`.
-`main` (`b01a159`), a versão entregue e as alterações preexistentes dos outros
-checkouts não foram modificadas. Não houve push, merge, deploy, mudança de plano
-ou remoção de dados nesta retomada.
+`main` (`b01a159`), produção e a versão 1.2 não foram modificadas. A branch de
+produto recebeu somente preparação, provas e correções encontradas pelos próprios
+portões; não houve merge ou deploy de dados.
 
 | Frente | Evidência atual | O que falta |
 |---|---|---|
-| Pipeline diário | 14 execuções agendadas falharam de 03 a 16/09; último verde 02/09; capacidade bloqueia a coleta | Recuperar margem e observar ciclo completo real e próximo agendamento |
+| Retirada dos Macs | GitHub lista zero runners; IDs 21 (i7) e 22 (Mac pessoal) foram revogados; LaunchAgent local desinstalado; `RUNNER_COLETA` removida; zero job em fila | Nenhum host pessoal permanece autorizado; pasta do runner pessoal está na Lixeira, recuperável |
+| Cache Luna do i7 | 5.289 JPG, 1.988.815.984 bytes e 9 diretórios preservados num draft release privado; TAR baixado e restauração externa verificada | Definir retenção do snapshot; não apagar antes de decidir o destino durável do dataset |
+| CI Apple | Xcode Cloud `DataDrobe — CI isolado`; build 2 verde no Xcode 27 para `335f576`; o build 1 revelou e o código corrigiu uma dupla conclusão real do OCR | Acompanhar quota; Archive/TestFlight continuam deliberadamente fora deste workflow de Test |
+| CI Python | `testes.yml` migrado para `ubuntu-latest`, Python 3.11 e action fixada por SHA; Swift saiu do Actions e pertence ao Xcode Cloud | Prova remota do commit final da transição |
+| Pipeline diário | 14 execuções agendadas falharam de 03 a 16/09; as três agendas dependentes do i7 estão desabilitadas; capacidade bloqueia a coleta | OP-04/05/06 e OP-12: recuperar margem e criar executor de dados gerenciado antes de reativar qualquer agenda |
 | Banco | 485.174.419 / 500.000.000 bytes, 97,03%, em 16/09 13:40 UTC | Limite é da RPC; confirmar billing/disco e executar recuperação com backup |
 | Storage | 18 miniaturas, 7.472.925 bytes | Não é o gargalo; nenhuma migração justificada por essa medição |
 | Causas estruturais | Retenção só roda após motor dependente da coleta; logs do cron crescem mesmo bloqueado | Retenção independente, fronteiras seguras e menos reescritas |
 | Correção operacional | JSON de capacidade e recuperação Shopify condicionada à leitura válida; testes locais passaram | Ainda não aplicada ao workflow da branch padrão |
 | Radar | A51/A52 e laboratório herdados; `npm test` agora roda admissão e concorrência | P1 continua parcial: conectar parser/materializador/consolidador reais; integrar suíte ao CI |
 | Produto | 62 itens com dificuldade, urgência, dependências e aceite em `ROADMAP_PRODUTO.md` | Virada metodológica antecipada; executar por fatias, sem recomeçar a blueprint a cada sessão |
-| iOS | iOS 27 lançado; Xcode local ainda 26.2 (17C52) | SDK/runtime 27 e matriz de compatibilidade; não houve teste em 27 nesta rodada |
+| iOS | iOS 27 lançado; Xcode Cloud compilou e testou o app no Xcode 27 | Matriz física e mínimo suportado continuam em UX-04/05/06; um CI verde não substitui teste físico |
 | Entrega/App Store | Challenge concluído conforme JP | Situação atual da loja não foi consultada; o bloqueio de certificado de agosto abaixo é histórico |
 
 Diagnóstico reproduzível e recuperação: [`RUNBOOK_CAPACIDADE.md`](RUNBOOK_CAPACIDADE.md).
@@ -44,24 +48,28 @@ tem prova transacional, mas não prova ponta a ponta pelo caminho de extração 
 
 ### Verificação desta fatia
 
-- `python3 coletor/teste_capacidade_banco.py`: 9 testes, incluindo subcasos de
-  fronteira, RPC inválida, falha fechada e compatibilidade da CLI.
-- `python3 coletor/teste_workflows.py`: 19 workflows, zero falhas; verificador
-  também rejeita seis defeitos plantados somente em memória.
-- Os 38 scripts `coletor/teste_*.py` enumerados no workflow `testes.yml`
-  foram executados localmente nesta fatia e passaram; os dois portões de
-  tradução (`extrair_frases` e `frases_compostas`) também passaram. Isso não inclui build/UI
-  Swift nem equivale à execução remota completa do CI.
+- Os 43 scripts `coletor/teste_*.py` enumerados no workflow `testes.yml`, os
+  dois portões de tradução e a compilação dos módulos passaram localmente.
+- `swift test --package-path app`: 307 testes, zero falha, depois da correção
+  do portão thread-safe de continuação do OCR.
+- GitHub Actions: inventário `35138670263`, sonda `35138670304` e preservação
+  `35138670359` concluíram verdes no commit `d9a1800`. A sonda validou VTEX,
+  Shopify, FFW e Trends; Business of Fashion recusou `robots.txt` com 403, então
+  o veredito correto foi `inconclusivo_ou_bloqueado`, sem autorizar migração.
+- Xcode Cloud: build 1 (`a597ab65-7f88-4326-acbf-8d5ef8d03ffa`) encontrou a
+  dupla conclusão do OCR no Xcode 27; build 2
+  (`864b4d08-d0ae-400e-b8c6-7cb22c1c98b3`) ficou verde após `335f576`.
 - `npm test` em `ferramentas/laboratorio_radar`: SQL de admissão e 17 verificações
   do harness aprovados em PostgreSQL 17.10 descartável, socket privado, dados
   sintéticos, sem conexão com produção. `npm run test:smoke` também aprovado.
-- Nenhum teste remoto pago, novo build iOS, teste físico ou deploy foi feito
-  nesta fatia. Teste local verde não encerra o incidente de capacidade.
+- Não houve teste físico novo, escrita em produção ou deploy nesta fatia. Os
+  três cron jobs de dados continuam pausados por desenho.
 
 ### Próximo ponto de execução
 
-OP-05: desenhar e testar retenção independente com watermark e fronteira semanal;
-OP-06: preparar restauração isolada. A recuperação de produção depende de escolher
+Esta fatia termina na transição de infraestrutura; não inicia automaticamente a
+seguinte. Quando o JP autorizar o próximo pacote, OP-04/05/06 e OP-12 recuperam
+capacidade e substituem a coleta. A recuperação de produção depende de escolher
 margem sustentável: plano gerenciado com custo explicitamente aprovado ou
 manutenção delimitada com backup e ganho medido. Não basta excluir snapshots
 por idade nem aumentar o limite no código sem mudar a capacidade real.

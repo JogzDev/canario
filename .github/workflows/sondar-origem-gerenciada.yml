@@ -6,12 +6,6 @@ name: Sondar origem gerenciada
 # escreve no repositório.
 on:
   workflow_dispatch:
-  # Bootstrap temporário e autocontido; remover depois da primeira prova.
-  push:
-    branches: [codex/produto-pos-challenge]
-    paths:
-      - .github/workflows/sondar-origem-gerenciada.yml
-      - coletor/sondar_origem_gerenciada.py
 
 permissions:
   contents: read

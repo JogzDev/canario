@@ -33,27 +33,61 @@ Referências oficiais: [Xcode Cloud](https://developer.apple.com/xcode-cloud/get
 [Cloud Run pricing](https://cloud.google.com/run/pricing) e
 [Cloud Scheduler pricing](https://cloud.google.com/scheduler/pricing).
 
+## Registro do corte — 16/09/2026
+
+- inventário real: run `35138670263`, commit `d9a1800`, 5.289 JPG,
+  1.988.815.984 bytes e 9 diretórios;
+- preservação real: run `35138670359`, draft release privado `390176961`,
+  TAR asset `568607223` (1.993.523.200 bytes), SHA-256
+  `c8d6e57e8fb086b2fa5124f6295f3b7fbdcdfb53c61be7067b98383d8aab8ab8`;
+- restauração fora do i7 em
+  `/Users/jpscoliveira/DataDrobe-Backups/i7-luna-2026-09-16`: manifesto
+  `datadrobe_luna_cache_v1`, 5.289 arquivos, 1.988.815.984 bytes, 9 diretórios e
+  `verified: true`;
+- sonda Linux real: run `35138670304`; VTEX, Shopify, FFW e Google Trends
+  válidos; Business of Fashion devolveu 403 em `robots.txt`; veredito
+  `inconclusivo_ou_bloqueado` e `nao_autoriza_migracao: true`;
+- workflows `325762843` (pipeline diário), `341813672` (catálogo candidato) e
+  `337501439` (sonda Luna) desabilitados manualmente antes do corte;
+- runner 21 do i7 removido; runner 22 do Mac pessoal removido depois do verde
+  da Apple; a API passou a listar zero runners, zero job em fila e a variável
+  `RUNNER_COLETA` foi removida;
+- LaunchAgent `actions.runner.JogzDev-canario.mac-do-jp-xcode` desinstalado; o
+  diretório do runner pessoal foi movido para a Lixeira, operação recuperável;
+- Xcode Cloud: produto `4D171683-CA40-4771-BABB-23BD98D5EF61`, workflow
+  `FA4DAB2E-0C26-4347-9BA7-8AD47D7C8902`. O build 1 encontrou no Xcode 27 uma
+  dupla conclusão da continuação do OCR; o commit `335f576` corrigiu o defeito
+  com portão thread-safe e o build 2
+  (`864b4d08-d0ae-400e-b8c6-7cb22c1c98b3`) passou;
+- `testes.yml` deixou de usar ambos os Macs: Python 3.11 roda em
+  `ubuntu-latest`; Swift, build e UI pertencem ao Xcode Cloud.
+
+O corte não rotacionou cegamente `SUPABASE_SECRET_KEY` ou `OPENAI_API_KEY`.
+Remover os runners revogou as credenciais persistentes e impede novas entregas
+de secrets, mas não prova que uma chave de job jamais foi copiada. A rotação
+continua sendo defesa em profundidade; só deve ocorrer com inventário de todos
+os consumidores, dupla chave, atualização verificada e revogação da antiga,
+para não derrubar produção ao devolver o host.
+
 ## Fatos verificados em 16/09
 
-- runner `10-46-53-103`, ID 21: macOS/X64, rótulo exclusivo
-  `sempre-ligado`, online e ocioso às 12:08 BRT; é o i7 a devolver;
-- runner `mac-do-jp-xcode`, ID 22: macOS/ARM64, rótulo `xcode`, online e
-  ocioso; roda como serviço no Mac pessoal;
-- a variável `RUNNER_COLETA` aponta para `sempre-ligado`;
+- os runners 21 e 22 e a variável `RUNNER_COLETA` existiam no início da
+  transição; foram removidos na ordem registrada acima;
 - `pipeline-diario.yml`, `coleta-catalogo-candidato.yml` e
-  `sonda-edge-luna.yml` têm agendas que ainda dependem direta ou indiretamente
-  do i7;
-- o cache `$HOME/canario-imagens-treino`, fora do Git, alimenta a revisão cega
-  e partes da avaliação da Luna; sua existência, tamanho e conteúdo ainda
-  precisam ser preservados antes de remover o runner;
+  `sonda-edge-luna.yml` dependiam direta ou indiretamente do i7; suas agendas
+  permanecem desabilitadas enquanto não existir OP-12;
+- o cache `$HOME/canario-imagens-treino`, fora do Git, alimentava a revisão
+  cega e partes da avaliação da Luna; agora possui snapshot privado e
+  restauração verificada fora do laboratório;
 - o banco mediu 485.174.419 / 500.000.000 bytes (97,03%) em 16/09 e o portão
   bloqueia novas escritas. Não há motivo seguro para transferir uma coleta
   escrevente para outro host antes de recuperar capacidade;
-- o Mac pessoal não apresenta cron do DataDrobe, mas o runner do GitHub está
-  instalado como serviço e mantém credencial operacional persistente;
+- o Mac pessoal não apresentava cron do DataDrobe; o único serviço encontrado
+  era o runner do GitHub, agora revogado e desinstalado;
 - os sites não tratam todas as nuvens da mesma forma: Shopify, FFW, Business
   of Fashion e Google Trends já apresentaram recusas dependentes da origem.
-  Nenhuma troca de executor é aceita sem sonda por classe de fonte.
+  A sonda hospedada confirmou quatro classes e bloqueou BoF de modo seguro;
+  nenhuma troca de executor é aceita sem repetir a prova no destino.
 
 ## Portões obrigatórios
 
@@ -209,15 +243,20 @@ dados, mas exige registrar outro executor para voltar a rodar. Rotação de chav
 é revertida atualizando consumidores para a nova chave — a antiga não deve ser
 reativada depois que o computador sai do controle do proprietário.
 
-A transição só termina quando:
+O **corte dos hosts**, que era o pacote com prazo de 17/09, termina quando:
 
 - GitHub não lista runner do laboratório nem runner pessoal;
-- nenhum workflow ou variável aponta para `sempre-ligado`, `xcode`, `X64` ou
-  um `self-hosted` genérico;
-- coleta e Apple CI executam em serviços gerenciados, a partir de checkout
-  limpo e sem arquivo secreto local;
-- falha de executor gera alerta fora do próprio executor;
+- nenhuma agenda dependente desses rótulos permanece ativa e nenhuma variável
+  envia trabalho a eles;
+- Apple CI executa em serviço gerenciado, a partir de checkout limpo e sem
+  arquivo secreto local;
 - cache da Luna tem origem, manifesto, política de retenção e restauração
   testada;
-- custos, quotas, timeouts e responsáveis estão documentados;
 - uma máquina desligada não altera a saúde do produto.
+
+Esses critérios foram atendidos em 16/09, ressalvada a decisão futura de
+retenção do snapshot. A **substituição integral da operação de dados** continua
+aberta e não deve ser confundida com o corte físico: OP-04/05/06/12 ainda
+precisam entregar coleta gerenciada, alerta externo, rotação segura de secrets,
+custos e quotas. Até lá, coleta pausada é o estado correto; reativar cron num
+runner improvisado seria regressão, não rollback.

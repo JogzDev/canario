@@ -6,14 +6,6 @@ name: Inventariar legado do i7
 # checkout de dados, segredo, escrita em banco ou limpeza do host.
 on:
   workflow_dispatch:
-  # Bootstrap temporário: workflow_dispatch só fica disponível depois que o
-  # arquivo alcança a branch padrão. Este gatilho é restrito à branch de
-  # transição e será removido assim que o primeiro inventário terminar.
-  push:
-    branches: [codex/produto-pos-challenge]
-    paths:
-      - .github/workflows/inventariar-i7.yml
-      - ferramentas/inventariar_legado_i7.py
 
 permissions:
   contents: read

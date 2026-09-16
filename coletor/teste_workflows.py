@@ -231,18 +231,9 @@ def checar_sonda_origem_gerenciada(workflow):
     falhas = []
     if set(workflow) != {"name", True, "permissions", "concurrency", "jobs"}:
         falhas.append("sonda gerenciada ganhou chave de topo não auditada")
-    gatilhos_esperados = {
-        "workflow_dispatch": None,
-        "push": {
-            "branches": ["codex/produto-pos-challenge"],
-            "paths": [
-                ".github/workflows/sondar-origem-gerenciada.yml",
-                "coletor/sondar_origem_gerenciada.py",
-            ],
-        },
-    }
+    gatilhos_esperados = {"workflow_dispatch": None}
     if _gatilhos(workflow) != gatilhos_esperados:
-        falhas.append("sonda gerenciada deve ter somente o bootstrap exato da transicao")
+        falhas.append("sonda gerenciada deve ser somente manual depois da prova inicial")
     if workflow.get("permissions") != {"contents": "read"}:
         falhas.append("sonda gerenciada deve ter somente contents: read")
     concorrencia = workflow.get("concurrency") or {}
@@ -303,18 +294,9 @@ def checar_inventario_i7(workflow):
     falhas = []
     if set(workflow) != {"name", True, "permissions", "concurrency", "jobs"}:
         falhas.append("inventario do i7 ganhou chave de topo não auditada")
-    gatilhos_esperados = {
-        "workflow_dispatch": None,
-        "push": {
-            "branches": ["codex/produto-pos-challenge"],
-            "paths": [
-                ".github/workflows/inventariar-i7.yml",
-                "ferramentas/inventariar_legado_i7.py",
-            ],
-        },
-    }
+    gatilhos_esperados = {"workflow_dispatch": None}
     if _gatilhos(workflow) != gatilhos_esperados:
-        falhas.append("inventario do i7 deve ter somente o bootstrap exato da transicao")
+        falhas.append("inventario do i7 deve ser somente manual depois da prova inicial")
     if workflow.get("permissions") != {"contents": "read"}:
         falhas.append("inventario do i7 deve ter somente contents: read")
     concorrencia = workflow.get("concurrency") or {}
@@ -860,41 +842,24 @@ def checar_orquestracao(workflows):
     if passo_backfill.get("env", {}).get("BACKFILL_SOMENTE_ARQUIVO") != "1":
         falhar("motor.yml", "backfill completo pode publicar serie intermediaria")
 
-    testes = workflows.get("testes.yml", {}).get("jobs", {}).get("app", {})
-    comandos_app = [str(p.get("run", ""))
-                    for p in testes.get("steps", [])]
-    ui = [c for c in comandos_app
-          if "xcodebuild test" in c and "CanarioUITests" in c]
-    if len(ui) != 1:
+    testes = workflows.get("testes.yml", {}).get("jobs", {})
+    if set(testes) != {"coletores"}:
         falhar("testes.yml",
-               "alvo CanarioUITests existe, mas nao roda uma vez no CI")
-
-    # `-only-testing` com nome ERRADO nao falha: o xcodebuild roda zero testes e
-    # devolve `** TEST SUCCEEDED **`. Foi assim que
-    # `testFillInfoAbreClothingDetailsForaDaSheet` -- um nome que nunca existiu
-    # -- ficou listado como um dos cinco fluxos offline protegidos e nunca
-    # rodou, com o CI verde o tempo todo. Verde por ausencia e pior que
-    # vermelho: ele afirma cobertura que nao existe.
-    if ui:
-        fonte_ui = os.path.join(RAIZ, "app", "CanarioUITests",
-                                "CanarioUITests.swift")
-        try:
-            texto_ui = open(fonte_ui, encoding="utf-8").read()
-        except OSError as ex:
-            falhar("testes.yml", "CanarioUITests.swift ilegivel: {}".format(ex))
-        else:
-            existentes = set(re.findall(r"func (test[A-Za-z0-9_]*)", texto_ui))
-            pedidos = set(re.findall(
-                r"-only-testing:CanarioUITests/CanarioUITests/([A-Za-z0-9_]+)",
-                ui[0]))
-            if not pedidos:
-                falhar("testes.yml",
-                       "o passo de UI nao seleciona nenhum teste por nome")
-            for nome in sorted(pedidos - existentes):
-                falhar("testes.yml",
-                       "-only-testing pede {} , que nao existe em "
-                       "CanarioUITests.swift: o CI passa rodando zero testes"
-                       .format(nome))
+               "GitHub deve executar somente Python; Swift pertence ao Xcode Cloud")
+    job_python = testes.get("coletores", {})
+    if (job_python.get("runs-on") != "ubuntu-latest" or
+            job_python.get("env") != {"PY": "python3"}):
+        falhar("testes.yml",
+               "suite Python deve usar runner Linux efemero com interpretador explicito")
+    passos_python = job_python.get("steps", [])
+    setup_python = [p for p in passos_python
+                    if str(p.get("uses", "")).startswith("actions/setup-python@")]
+    if (len(setup_python) != 1 or
+            setup_python[0].get("uses") !=
+            "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1" or
+            setup_python[0].get("with") != {"python-version": "3.11"}):
+        falhar("testes.yml",
+               "suite Python perdeu o setup 3.11 fixado por commit")
 
     sonda = workflows.get("sonda.yml", {}).get("jobs", {}).get("sondar", {})
     passos_sonda = sonda.get("steps", [])
@@ -966,7 +931,7 @@ o notebook acordado -- e nao mandar trabalho de madrugada para ele. O rotulo
 JOBS_QUE_NAO_PODEM_DEPENDER_DE_NOTEBOOK = {
     "pipeline-diario.yml", "coleta-shopify.yml", "coleta-trends.yml",
     "motor.yml", "recuperar-pipeline.yml", "sonda.yml",
-    "sonda-edge-luna.yml", "testes.yml",
+    "sonda-edge-luna.yml",
 }
 # Estes precisam do Xcode do Mac do JP (Vision, XCTest, xcodebuild) e por isso
 # sao disparados a mao, com alguem olhando.

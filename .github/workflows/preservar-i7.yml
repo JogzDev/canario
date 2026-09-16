@@ -4,13 +4,6 @@ name: Preservar cache Luna do i7
 # não toca no banco e não remove a origem. A restauração fora do i7 é obrigatória.
 on:
   workflow_dispatch:
-  # Bootstrap restrito; remover depois de verificar a cópia fora do laboratório.
-  push:
-    branches: [codex/produto-pos-challenge]
-    paths:
-      - .github/workflows/preservar-i7.yml
-      - ferramentas/preservar_cache_luna.py
-      - ferramentas/enviar_snapshot_luna.py
 
 permissions:
   contents: read
