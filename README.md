@@ -56,6 +56,11 @@ Os coletores rodam em Python 3.11 no GitHub Actions. O código evita sintaxe de
 3.10+ para continuar executável no Python 3.9 que vem com o macOS, de modo que
 dá para testar localmente sem instalar nada.
 
+Os runners macOS self-hosted são legado em retirada, não parte da arquitetura
+alvo. A preservação do i7, a substituição gerenciada dos coletores e a migração
+do CI Apple estão em
+[`TRANSICAO_INFRAESTRUTURA.md`](TRANSICAO_INFRAESTRUTURA.md).
+
 ## Configuração do app
 
 O app lê o Supabase com a chave **publishable**, que é pública por design e vai

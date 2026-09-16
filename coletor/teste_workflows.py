@@ -70,6 +70,69 @@ def checar_com_pyyaml(arquivos):
             if not checar_capacidade_da_recuperacao(copia):
                 falhas.append(("pipeline-diario.yml",
                                "verificador aceitou defeito plantado: " + mutacao))
+
+    sonda = carregados.get("sondar-origem-gerenciada.yml", {})
+    if not checar_sonda_origem_gerenciada(sonda):
+        for mutacao in ("cron", "runner_pessoal", "permissao_escrita", "segredo",
+                        "passo_extra", "comando_anexado"):
+            copia = copy.deepcopy(sonda)
+            if mutacao == "cron":
+                _gatilhos(copia)["schedule"] = [{"cron": "0 0 * * *"}]
+            elif mutacao == "runner_pessoal":
+                copia["jobs"]["sondar"]["runs-on"] = ["self-hosted", "macOS"]
+            elif mutacao == "permissao_escrita":
+                copia["permissions"]["contents"] = "write"
+            elif mutacao == "segredo":
+                copia["jobs"]["sondar"]["env"] = {
+                    "TOKEN": "${{ secrets.SUPABASE_SECRET_KEY }}"}
+            elif mutacao == "passo_extra":
+                copia["jobs"]["sondar"]["steps"].append(
+                    {"run": 'ls -la "$HOME"'})
+            else:
+                copia["jobs"]["sondar"]["steps"][1]["run"] += "\nls -la"
+            if not checar_sonda_origem_gerenciada(copia):
+                falhas.append(("sondar-origem-gerenciada.yml",
+                               "verificador aceitou defeito plantado: " + mutacao))
+
+    inventario = carregados.get("inventariar-i7.yml", {})
+    if not checar_inventario_i7(inventario):
+        for mutacao in ("cron", "runner_generico", "segredo", "home_inteiro",
+                        "passo_extra", "limpeza_checkout", "safe_directory",
+                        "artefato_amplo", "artefato_opcional", "comando_anexado"):
+            copia = copy.deepcopy(inventario)
+            if mutacao == "cron":
+                _gatilhos(copia)["schedule"] = [{"cron": "0 0 * * *"}]
+            elif mutacao == "runner_generico":
+                copia["jobs"]["inventariar"]["runs-on"] = [
+                    "self-hosted", "macOS"]
+            elif mutacao == "segredo":
+                copia["jobs"]["inventariar"]["env"] = {
+                    "TOKEN": "${{ secrets.OPENAI_API_KEY }}"}
+            elif mutacao == "home_inteiro":
+                passo = next(
+                    p for p in copia["jobs"]["inventariar"]["steps"]
+                    if "inventariar_legado_i7.py" in str(p.get("run", "")))
+                passo["run"] = passo["run"].replace(
+                    '$HOME/canario-imagens-treino', '$HOME')
+            elif mutacao == "passo_extra":
+                copia["jobs"]["inventariar"]["steps"].append(
+                    {"run": 'ls -la "$HOME"'})
+            elif mutacao == "limpeza_checkout":
+                copia["jobs"]["inventariar"]["steps"][0]["with"]["clean"] = True
+            elif mutacao == "safe_directory":
+                copia["jobs"]["inventariar"]["steps"][0]["with"][
+                    "set-safe-directory"] = True
+            elif mutacao == "artefato_amplo":
+                copia["jobs"]["inventariar"]["steps"][2]["with"]["path"] = (
+                    "${{ runner.temp }}/*.json")
+            elif mutacao == "artefato_opcional":
+                copia["jobs"]["inventariar"]["steps"][2]["with"][
+                    "if-no-files-found"] = "warn"
+            else:
+                copia["jobs"]["inventariar"]["steps"][1]["run"] += "\nfind \"$HOME\""
+            if not checar_inventario_i7(copia):
+                falhas.append(("inventariar-i7.yml",
+                               "verificador aceitou defeito plantado: " + mutacao))
     return falhas
 
 
@@ -108,6 +171,196 @@ def checar_capacidade_da_recuperacao(pipeline):
     return falhas
 
 
+def _gatilhos(dados):
+    """PyYAML 1.1 lê `on` como True; centraliza a compatibilidade."""
+    return dados.get("on", dados.get(True, {})) or {}
+
+
+def _passos_com_acao(passos, acao):
+    return [passo for passo in passos
+            if str(passo.get("uses", "")).startswith(acao + "@")]
+
+
+def _tem_ambiente_ou_segredo(dados):
+    """Percorre a árvore inteira; job-level env não pode escapar pelo formato."""
+    if isinstance(dados, dict):
+        if any(chave in dados for chave in ("env", "environment", "secrets")):
+            return True
+        return any(_tem_ambiente_ou_segredo(valor)
+                   for valor in dados.values())
+    if isinstance(dados, (list, tuple)):
+        return any(_tem_ambiente_ou_segredo(valor) for valor in dados)
+    return isinstance(dados, str) and "${{ secrets." in dados
+
+
+def _comando_normalizado(valor):
+    return " ".join(str(valor).split())
+
+
+CHECKOUT_SHA = "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+UPLOAD_SHA = "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+
+
+def checar_sonda_origem_gerenciada(workflow):
+    """Contrato de uma prova de egresso: manual, hospedada e sem escrita."""
+    falhas = []
+    if set(workflow) != {"name", True, "permissions", "concurrency", "jobs"}:
+        falhas.append("sonda gerenciada ganhou chave de topo não auditada")
+    gatilhos_esperados = {
+        "workflow_dispatch": None,
+        "push": {
+            "branches": ["codex/produto-pos-challenge"],
+            "paths": [
+                ".github/workflows/sondar-origem-gerenciada.yml",
+                "coletor/sondar_origem_gerenciada.py",
+            ],
+        },
+    }
+    if _gatilhos(workflow) != gatilhos_esperados:
+        falhas.append("sonda gerenciada deve ter somente o bootstrap exato da transicao")
+    if workflow.get("permissions") != {"contents": "read"}:
+        falhas.append("sonda gerenciada deve ter somente contents: read")
+    concorrencia = workflow.get("concurrency") or {}
+    if (concorrencia.get("group") != "sonda-origem-gerenciada" or
+            concorrencia.get("cancel-in-progress") is not False):
+        falhas.append("sonda gerenciada perdeu sua concorrencia exclusiva")
+    jobs = workflow.get("jobs") or {}
+    if set(jobs) != {"sondar"}:
+        falhas.append("sonda gerenciada deve ter somente o job sondar")
+        return falhas
+    job = jobs["sondar"]
+    if set(job) != {"runs-on", "timeout-minutes", "steps"}:
+        falhas.append("job da sonda gerenciada ganhou capacidade não auditada")
+    if job.get("runs-on") != "ubuntu-latest":
+        falhas.append("sonda gerenciada deve provar um runner hospedado Linux")
+    if job.get("timeout-minutes") != 5:
+        falhas.append("sonda gerenciada deve ter teto de cinco minutos")
+    if _tem_ambiente_ou_segredo(workflow) or "permissions" in job:
+        falhas.append("sonda gerenciada nao pode receber ambiente, segredo ou permissao do job")
+    texto = str(workflow)
+    for proibido in ("SUPABASE", "OPENAI", "secrets.", "supabase_rest",
+                     "git push", "commitar.sh", "GITHUB_STEP_SUMMARY",
+                     "GITHUB_OUTPUT", "sonda_actions.py",
+                     "pente_fino_datacenter.py"):
+        if proibido.lower() in texto.lower():
+            falhas.append("sonda gerenciada contem operacao proibida `{}`".format(
+                proibido))
+    passos = job.get("steps") or []
+    if len(passos) != 3:
+        falhas.append("sonda gerenciada deve ter exatamente tres passos")
+        return falhas
+    checkout, execucao, artefato = passos
+    if (set(checkout) != {"uses", "with"} or
+            checkout.get("uses") != CHECKOUT_SHA or
+            checkout.get("with") != {"persist-credentials": False}):
+        falhas.append("sonda gerenciada deve fazer checkout sem credencial persistente")
+    comando_esperado = (
+        'python3 coletor/sondar_origem_gerenciada.py '
+        '--saida "$RUNNER_TEMP/sonda-origem-gerenciada.json"')
+    if (set(execucao) != {"name", "run"} or
+            _comando_normalizado(execucao.get("run")) != comando_esperado):
+        falhas.append("sonda gerenciada deve gravar apenas seu JSON no RUNNER_TEMP")
+    with_esperado = {
+        "name": "sonda-origem-gerenciada-${{ github.run_id }}-${{ github.run_attempt }}",
+        "path": "${{ runner.temp }}/sonda-origem-gerenciada.json",
+        "if-no-files-found": "error",
+        "retention-days": 14,
+    }
+    if (set(artefato) != {"name", "uses", "with"} or
+            artefato.get("uses") != UPLOAD_SHA or
+            artefato.get("with") != with_esperado):
+        falhas.append("sonda gerenciada deve publicar um unico artefato temporario")
+    return falhas
+
+
+def checar_inventario_i7(workflow):
+    """Contrato de preservação: mede um cache conhecido sem inspecionar o host."""
+    falhas = []
+    if set(workflow) != {"name", True, "permissions", "concurrency", "jobs"}:
+        falhas.append("inventario do i7 ganhou chave de topo não auditada")
+    gatilhos_esperados = {
+        "workflow_dispatch": None,
+        "push": {
+            "branches": ["codex/produto-pos-challenge"],
+            "paths": [
+                ".github/workflows/inventariar-i7.yml",
+                "ferramentas/inventariar_legado_i7.py",
+            ],
+        },
+    }
+    if _gatilhos(workflow) != gatilhos_esperados:
+        falhas.append("inventario do i7 deve ter somente o bootstrap exato da transicao")
+    if workflow.get("permissions") != {"contents": "read"}:
+        falhas.append("inventario do i7 deve ter somente contents: read")
+    concorrencia = workflow.get("concurrency") or {}
+    if (concorrencia.get("group") != "canario-dados" or
+            concorrencia.get("cancel-in-progress") is not False):
+        falhas.append("inventario do i7 deve serializar com tarefas antigas de dados")
+    jobs = workflow.get("jobs") or {}
+    if set(jobs) != {"inventariar"}:
+        falhas.append("inventario do i7 deve ter somente o job inventariar")
+        return falhas
+    job = jobs["inventariar"]
+    if set(job) != {"runs-on", "timeout-minutes", "steps"}:
+        falhas.append("job do inventario ganhou capacidade não auditada")
+    if job.get("runs-on") != ["self-hosted", "macOS", "X64", "sempre-ligado"]:
+        falhas.append("inventario deve rodar somente no i7 legado")
+    if job.get("timeout-minutes") != 20:
+        falhas.append("inventario do i7 deve ter teto de vinte minutos")
+    if _tem_ambiente_ou_segredo(workflow) or "permissions" in job:
+        falhas.append("inventario do i7 nao pode receber ambiente, segredo ou permissao do job")
+    texto = str(workflow)
+    for proibido in ("SUPABASE", "OPENAI", "secrets.", "git push",
+                     "commitar.sh", "RUNNER_WORKSPACE", "Config.xcconfig",
+                     ".credentials", "find ", " du ", "GITHUB_STEP_SUMMARY",
+                     "GITHUB_OUTPUT"):
+        if proibido.lower() in texto.lower():
+            falhas.append("inventario do i7 tenta inspecionar ou expor `{}`".format(
+                proibido))
+    passos = job.get("steps") or []
+    if len(passos) != 3:
+        falhas.append("inventario do i7 deve ter exatamente tres passos")
+        return falhas
+    checkout, execucao, artefato = passos
+    if (set(checkout) != {"uses", "with"} or
+            checkout.get("uses") != CHECKOUT_SHA or
+            checkout.get("with") != {
+                "persist-credentials": False,
+                "clean": False,
+                "path": "transicao-i7",
+                "set-safe-directory": False,
+            }):
+        falhas.append("inventario deve usar checkout isolado, sem limpeza ou credencial")
+    comando_esperado = _comando_normalizado(r"""
+        set -euo pipefail
+        PY_LEGADO="$HOME/.canario-python/bin/python3"
+        if [[ ! -x "$PY_LEGADO" ]]; then
+          echo 'Python portátil verificado ausente; inventário abortado sem instalar nada.' >&2
+          exit 1
+        fi
+        SAIDA="$RUNNER_TEMP/inventario-i7-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+        "$PY_LEGADO" transicao-i7/ferramentas/inventariar_legado_i7.py \
+          --cache "$HOME/canario-imagens-treino" \
+          --saida "$SAIDA" \
+          --referencia-do-workflow "$GITHUB_SHA"
+    """)
+    if (set(execucao) != {"name", "run"} or
+            _comando_normalizado(execucao.get("run")) != comando_esperado):
+        falhas.append("inventario deve medir somente o cache conhecido e gerar JSON temporario")
+    with_esperado = {
+        "name": "inventario-i7-${{ github.run_id }}-${{ github.run_attempt }}",
+        "path": "${{ runner.temp }}/inventario-i7-${{ github.run_id }}-${{ github.run_attempt }}.json",
+        "if-no-files-found": "error",
+        "retention-days": 14,
+    }
+    if (set(artefato) != {"name", "if", "uses", "with"} or
+            artefato.get("if") != "always()" or
+            artefato.get("uses") != UPLOAD_SHA or
+            artefato.get("with") != with_esperado):
+        falhas.append("inventario deve publicar um unico artefato agregado temporario")
+    return falhas
+
+
 def checar_orquestracao(workflows):
     """Impede cron concorrente e regressão na ordem coleta -> saúde -> motor."""
     falhas = []
@@ -123,6 +376,13 @@ def checar_orquestracao(workflows):
         if isinstance(concorrencia, dict):
             return concorrencia.get("group")
         return None
+
+    for mensagem in checar_sonda_origem_gerenciada(
+            workflows.get("sondar-origem-gerenciada.yml", {})):
+        falhar("sondar-origem-gerenciada.yml", mensagem)
+    for mensagem in checar_inventario_i7(
+            workflows.get("inventariar-i7.yml", {})):
+        falhar("inventariar-i7.yml", mensagem)
 
     # Um workflow chamador mantém o próprio grupo ocupado durante toda a run.
     # Se chamar um workflow reutilizável que pede o mesmo grupo literal, o

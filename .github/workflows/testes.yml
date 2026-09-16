@@ -72,6 +72,8 @@ jobs:
       # duas o sintoma so apareceu na hora de assinar para a loja.
       - name: Identidade do app e uma so
         run: "$PY coletor/teste_identidade_do_app.py"
+      - name: Preparação reproduzível do Xcode Cloud
+        run: "$PY coletor/teste_xcode_cloud.py"
       # A44 sincronizou miniatura e dois documentos publicos ficaram dizendo o
       # contrario -- inclusive a etiqueta de privacidade enviada a Apple. Este
       # confere codigo, manifesto, ficha, politica e exclusao de conta juntos.
@@ -107,6 +109,10 @@ jobs:
       # pergunta ao servidor, que e a unica que separa os dois casos.
       - name: Classificacao da sonda da rota paga (sem rede)
         run: "$PY coletor/teste_sonda_edge_luna.py"
+      - name: Sonda segura de origem gerenciada (sem rede)
+        run: "$PY coletor/teste_sonda_origem_gerenciada.py"
+      - name: Inventario seguro do legado do i7 (sem rede)
+        run: "$PY coletor/teste_inventariar_legado_i7.py"
       # Alarme que dispara todo dia deixa de ser lido: este confere que o
       # alerta agrupa noites seguidas numa issue so e fecha sozinho no verde.
       - name: Alerta do pipeline nao vira ruido (sem rede)

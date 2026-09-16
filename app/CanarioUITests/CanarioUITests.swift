@@ -141,8 +141,9 @@ final class CanarioUITests: XCTestCase {
     }
 
     func testCompareNaoFicaReduzidoAUmAtributo() throws {
-        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] == "true",
-                      "este teste valida o recorte real e o CI usa Config de exemplo sem rede")
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["CANARIO_REAL_DATA_UI_TESTS"] == "1",
+            "teste com dados reais exige opt-in explícito")
         let app = aplicativo(argumentos: ["-CanarioUITestCompare"])
         app.launch()
 
@@ -153,8 +154,9 @@ final class CanarioUITests: XCTestCase {
     }
 
     func testStripesMostraCurvaDeTamanhosReal() throws {
-        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] == "true",
-                      "este teste valida o recorte real e o CI usa Config de exemplo sem rede")
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["CANARIO_REAL_DATA_UI_TESTS"] == "1",
+            "teste com dados reais exige opt-in explícito")
         let app = aplicativo(argumentos: ["-CanarioUITestSizesStripes"])
         app.launch()
 

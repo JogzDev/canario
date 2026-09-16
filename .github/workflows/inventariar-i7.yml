@@ -1,0 +1,61 @@
+name: Inventariar legado do i7
+
+# Preparação para devolver o computador do laboratório. É manual porque este
+# artefato não é telemetria contínua: ele só mede, em agregado, o cache externo
+# ao repositório que a revisão da Luna ainda usa. Não há varredura do HOME,
+# checkout de dados, segredo, escrita em banco ou limpeza do host.
+on:
+  workflow_dispatch:
+  # Bootstrap temporário: workflow_dispatch só fica disponível depois que o
+  # arquivo alcança a branch padrão. Este gatilho é restrito à branch de
+  # transição e será removido assim que o primeiro inventário terminar.
+  push:
+    branches: [codex/produto-pos-challenge]
+    paths:
+      - .github/workflows/inventariar-i7.yml
+      - ferramentas/inventariar_legado_i7.py
+
+permissions:
+  contents: read
+
+concurrency:
+  # Não disputa o cache enquanto uma tarefa antiga ainda o usa.
+  group: canario-dados
+  cancel-in-progress: false
+
+jobs:
+  inventariar:
+    runs-on: [self-hosted, macOS, X64, sempre-ligado]
+    timeout-minutes: 20
+    steps:
+      # Usa um subdiretório dedicado e não limpa o workspace persistente. A
+      # retirada não pode apagar arquivo ignorado ou não versionado do host.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          clean: false
+          path: transicao-i7
+          set-safe-directory: false
+
+      - name: Medir somente o cache conhecido da Luna
+        run: |
+          set -euo pipefail
+          PY_LEGADO="$HOME/.canario-python/bin/python3"
+          if [[ ! -x "$PY_LEGADO" ]]; then
+            echo 'Python portátil verificado ausente; inventário abortado sem instalar nada.' >&2
+            exit 1
+          fi
+          SAIDA="$RUNNER_TEMP/inventario-i7-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          "$PY_LEGADO" transicao-i7/ferramentas/inventariar_legado_i7.py \
+            --cache "$HOME/canario-imagens-treino" \
+            --saida "$SAIDA" \
+            --referencia-do-workflow "$GITHUB_SHA"
+
+      - name: Guardar inventário agregado por quatorze dias
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: inventario-i7-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/inventario-i7-${{ github.run_id }}-${{ github.run_attempt }}.json
+          if-no-files-found: error
+          retention-days: 14

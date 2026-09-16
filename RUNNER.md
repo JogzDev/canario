@@ -1,4 +1,10 @@
-# Runner residencial — o Mac i7 como servidor de coleta
+# Runner legado — histórico do Mac i7 como servidor de coleta
+
+> **Documento histórico desde 16/09/2026.** O i7 será devolvido em 17/09 e este
+> desenho não deve ser reproduzido em outra máquina pessoal. O plano de saída,
+> portões de preservação e arquitetura gerenciada estão em
+> [`TRANSICAO_INFRAESTRUTURA.md`](TRANSICAO_INFRAESTRUTURA.md). As instruções
+> abaixo servem apenas para entender e desmontar o legado com segurança.
 
 **Resposta curta: dá, e resolve o problema sem gastar um centavo.**
 

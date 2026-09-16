@@ -79,7 +79,7 @@ O inventário encontrou estas implementações. Elas não anulam as lacunas da f
 essa lacuna. `ESTADO.md`, fichas de release e relatórios antigos contêm fotografias
 datadas: não reabrir como pendência atual um certificado ou envio já resolvido.
 
-## 4. Inventário executável — 62 itens
+## 4. Inventário executável — 67 itens
 
 ### 4.1 Operação, capacidade e continuidade
 
@@ -94,9 +94,15 @@ datadas: não reabrir como pendência atual um certificado ou envio já resolvid
 | OP-07 | Decidir permanência ou migração do Supabase | L / U1 | condicionado | OP-04, OP-06 | Comparar opções pelo gargalo e custo total; incluir Auth, RLS, RPC, Storage e funções; decisão escrita com critérios de saída, não só preço de PostgreSQL |
 | OP-08 | Executar eventual migração com compatibilidade | XL / U3 | condicionado | OP-07; destino e custo aprovados | Ensaio, paridade, identidade de usuários, dados/objetos, cutover e rollback testados; app publicado continua suportado; nenhuma troca cega de URL |
 | OP-09 | Tornar CI e execução reproduzíveis e isolados | M / U1 | aberto | Inventário de workflows/runners | Dependências fixadas, cache, permissões mínimas, secrets só no ambiente correto, jobs sem dependência acidental da sessão pessoal; fila e cancelamentos testados |
+| OP-10 | Preservar o legado do i7 antes da devolução | M / U0 | implementado local | Acesso ao runner `sempre-ligado`; destino privado depois do inventário | Inventário agregado sem conteúdo/segredo; cache externo copiado com manifesto e extração testada; último SHA e artefatos registrados antes de revogar o host |
+| OP-11 | Provar egresso de executor gerenciado por classe de fonte | M / U0 | implementado local | Runner Linux hospedado disponível | Sonda manual, sem segredo/escrita, respeita robots e cadência global; VTEX, Shopify, editorial e Trends classificados; recusa não vira bypass |
+| OP-12 | Substituir a coleta por job Linux gerenciado | L / U0 | condicionado | OP-04/05/06/11; provedor e eventual billing aprovados | Imagem reprodutível, segredos gerenciados, capacidade antes da escrita, pipeline/rollback em ambiente isolado, agenda e alerta independentes; nenhum computador pessoal |
+| OP-13 | Migrar build/testes Apple para Xcode Cloud | M / U0 | aberto | Conta/equipe Apple e quota Xcode Cloud | Scheme e config de CI, Swift/build/UI offline verdes num commit sem o Mac pessoal; consumo observado; carga Vision manual separada |
+| OP-14 | Desativar runners legados e rotacionar credenciais | M / U0 | condicionado | OP-10 e pausa segura; OP-12/13 para retomada completa | Agendas dependentes pausadas, runner i7 removido antes da devolução, segredos entregues a ele rotacionados; runner pessoal removido após OP-13; API e fila confirmam corte |
 
 Origem: `PENDENCIAS.md` operacional; `ESTADO.md` banco/pipeline; `FILA_DO_DEPOIS.md`
-§2.5; `RUNNER.md`; blueprint §16; incidente relatado pelo JP em 16/09.
+§2.5; `RUNNER.md`; blueprint §16; incidente relatado pelo JP em 16/09;
+[`TRANSICAO_INFRAESTRUTURA.md`](TRANSICAO_INFRAESTRUTURA.md).
 
 ### 4.2 Defeitos e qualidade do app atual
 
@@ -345,19 +351,20 @@ Esta é a ordenação de esforço pedida pelo JP; a execução começa pelos inc
 U0, mesmo que sejam mais difíceis. Detalhes e dependências estão nas linhas de
 cada ID acima.
 
-| Grau | IDs (62 itens, sem duplicação) |
+| Grau | IDs (67 itens, sem duplicação) |
 |---|---|
 | XS — 1 | APP-06 |
 | S — 6 | OP-04; APP-01/02/03/07; UX-07 |
-| M — 28 | OP-01/02/03/05/09; APP-04/05; DAT-01/03/07/08/09/11; RAD-01/02/06/07/08; UX-01/04/05/06; SEC-01/02/03/04; EXP-07/09 |
-| L — 22 | OP-06/07; APP-08/09; DAT-02/04/05/06/10; RAD-03/04/05/09/10/11/12; UX-02/03; EXP-01/02/06/08 |
+| M — 32 | OP-01/02/03/05/09/10/11/13/14; APP-04/05; DAT-01/03/07/08/09/11; RAD-01/02/06/07/08; UX-01/04/05/06; SEC-01/02/03/04; EXP-07/09 |
+| L — 23 | OP-06/07/12; APP-08/09; DAT-02/04/05/06/10; RAD-03/04/05/09/10/11/12; UX-02/03; EXP-01/02/06/08 |
 | XL — 5 | OP-08; EXP-03/04/05/10 |
 
 ### Sequência de implementação por risco e dependência
 
 | Etapa | IDs principais | Porta de saída |
 |---|---|---|
-| 1 — operação visível | OP-01 a OP-04 | Saber por que parou, recuperar dentro do escopo e detectar a próxima ausência; métricas atuais de capacidade |
+| 0 — retirar hosts legados | OP-10/11/13/14; preparar OP-12 | Preservar o i7 e revogar acesso até 17/09; provar origem gerenciada; CI e coleta não dependem de Mac pessoal ou emprestado; pausa explícita vale mais que execução não comprovada |
+| 1 — operação visível | OP-01 a OP-05, OP-12 | Saber por que parou, recuperar dentro do escopo e detectar a próxima ausência; métricas atuais de capacidade; executor de dados gerenciado |
 | 2 — integridade e continuidade | APP-01 a APP-07, OP-06/09, SEC-01/02/03 | Resultados de preço/cor corretos, fallback explicado, sem regressão de conta/dados e prova de restore isolado |
 | 2B — virada metodológica prioritária | DAT-01 a DAT-05, DAT-07/10/11 | Preparação começa junto da operação; método/taxonomia/painéis versionados e comparação isolada após OP-04/05/06; promoção não altera o app entregue silenciosamente |
 | 3 — base contínua da 1.3 | RAD-01/02, EXP-07 | Caminho inteiro local e CI reproduzíveis, documentação condizente com a prova |
@@ -417,6 +424,9 @@ permanece em `ESTADO.md`.
 |---|---|
 | OP-01 | Causa do incidente medida; diagnóstico JSON e elegibilidade de recuperação corrigidos/testados localmente. Incidente continua aberto: nenhum deploy nem ciclo real recuperado. |
 | OP-04 | Banco, relações, cron, Storage e watermarks medidos por leitura. Faltam confirmação de billing, espaço físico e projeção de crescimento após recuperação; não há número provado de bloat recuperável. |
+| OP-10 | Inventário agregado do cache e workflow isolado implementados/testados localmente. Ainda faltam execução no i7, destino da cópia, manifesto e teste de extração. |
+| OP-11 | Sonda sem segredo/escrita, allowlist de cinco fontes, robots e cadência global implementados/testados localmente. Ainda falta execução real no runner hospedado. |
+| OP-13/14 | Arquitetura e ordem de corte documentadas; runners 21/22 e variável `RUNNER_COLETA` conferidos. Nenhum runner, agenda ou segredo foi alterado nesta etapa local. |
 | RAD-02 | `npm test` passou a executar admissão e concorrência; smoke separado. Testes aprovados em PostgreSQL 17.10 isolado. CI, novos casos e caminho real P1 continuam pendentes. |
 | UX-05 | Pesquisa oficial inicial acima; Xcode/runtime 27 e testes ainda pendentes. |
 | EXP-07 | README corrigido quanto a imagens, RLS, coleta e links; roteiro e runbook criados. Case público, vídeo e demonstração não foram produzidos. |
