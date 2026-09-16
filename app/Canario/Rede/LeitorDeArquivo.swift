@@ -34,6 +34,23 @@ import Vision
 /// reamostrada e sem metadados. Câmera e fototeca continuam em memória.
 enum LeitorDeArquivo {
 
+    /// `VNImageRequestHandler.perform` pode chamar o callback com erro e ainda
+    /// lançar esse mesmo erro. Uma checked continuation não aceita duas
+    /// conclusões; o portão torna os dois caminhos idempotentes e é protegido
+    /// porque callbacks do Vision não têm garantia de executor.
+    final class PortaoDaContinuacao: @unchecked Sendable {
+        private let trava = NSLock()
+        private var concluida = false
+
+        func assumir() -> Bool {
+            trava.lock()
+            defer { trava.unlock() }
+            guard !concluida else { return false }
+            concluida = true
+            return true
+        }
+    }
+
     /// Tudo que o arquivo entregou, com a procedência de cada parte.
     struct Leitura {
         var texto: String = ""
@@ -198,8 +215,14 @@ enum LeitorDeArquivo {
 
     private static func ocr(_ imagem: CGImage) async throws -> String {
         try await withCheckedThrowingContinuation { cont in
+            let portao = PortaoDaContinuacao()
             let pedido = VNRecognizeTextRequest { req, erro in
-                if let erro { cont.resume(throwing: erro); return }
+                if let erro {
+                    guard portao.assumir() else { return }
+                    cont.resume(throwing: erro)
+                    return
+                }
+                guard portao.assumir() else { return }
                 let linhas = (req.results as? [VNRecognizedTextObservation] ?? [])
                     .compactMap { $0.topCandidates(1).first?.string }
                 cont.resume(returning: linhas.joined(separator: "\n"))
@@ -213,6 +236,7 @@ enum LeitorDeArquivo {
             do {
                 try VNImageRequestHandler(cgImage: imagem, options: [:]).perform([pedido])
             } catch {
+                guard portao.assumir() else { return }
                 cont.resume(throwing: error)
             }
         }
