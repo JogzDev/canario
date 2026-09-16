@@ -58,7 +58,10 @@ Referências oficiais: [Xcode Cloud](https://developer.apple.com/xcode-cloud/get
   `FA4DAB2E-0C26-4347-9BA7-8AD47D7C8902`. O build 1 encontrou no Xcode 27 uma
   dupla conclusão da continuação do OCR; o commit `335f576` corrigiu o defeito
   com portão thread-safe e o build 2
-  (`864b4d08-d0ae-400e-b8c6-7cb22c1c98b3`) passou;
+  (`864b4d08-d0ae-400e-b8c6-7cb22c1c98b3`) passou. O build 3
+  (`5524278d-8452-49f8-a99e-57a983718dbd`) validou o commit de corte `4b0093c`
+  depois da remoção dos runners: 7/9 fluxos UI passaram, 2 testes de dados reais
+  foram pulados por desenho e zero teste falhou;
 - `testes.yml` deixou de usar ambos os Macs: Python 3.11 roda em
   `ubuntu-latest`; Swift, build e UI pertencem ao Xcode Cloud.
 

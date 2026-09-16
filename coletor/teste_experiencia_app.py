@@ -92,6 +92,12 @@ def main():
     assert '"updated \\(Formato.data($0))"' not in explorar
     assert 'Latest week when two sources overlapped:' in explorar
 
+    # Xcode 27 avisa que interpolar LocalizedStringKey produz uma descricao de
+    # debug nao localizada. O link ja anuncia a acao; o label identifica a
+    # secao usando o recurso localizado diretamente.
+    assert '.accessibilityLabel(Text(titulo))' in explorar
+    assert '.accessibilityLabel("\\(titulo)' not in explorar
+
     # As telas completas já têm título na barra. Estes parâmetros mantêm o
     # cabeçalho de seção só no painel e evitam títulos duplicados no destino.
     for chamada in (

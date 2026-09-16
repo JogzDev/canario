@@ -29,8 +29,8 @@ portões; não houve merge ou deploy de dados.
 |---|---|---|
 | Retirada dos Macs | GitHub lista zero runners; IDs 21 (i7) e 22 (Mac pessoal) foram revogados; LaunchAgent local desinstalado; `RUNNER_COLETA` removida; zero job em fila | Nenhum host pessoal permanece autorizado; pasta do runner pessoal está na Lixeira, recuperável |
 | Cache Luna do i7 | 5.289 JPG, 1.988.815.984 bytes e 9 diretórios preservados num draft release privado; TAR baixado e restauração externa verificada | Definir retenção do snapshot; não apagar antes de decidir o destino durável do dataset |
-| CI Apple | Xcode Cloud `DataDrobe — CI isolado`; build 2 verde no Xcode 27 para `335f576`; o build 1 revelou e o código corrigiu uma dupla conclusão real do OCR | Acompanhar quota; Archive/TestFlight continuam deliberadamente fora deste workflow de Test |
-| CI Python | `testes.yml` migrado para `ubuntu-latest`, Python 3.11 e action fixada por SHA; Swift saiu do Actions e pertence ao Xcode Cloud | Prova remota do commit final da transição |
+| CI Apple | Xcode Cloud `DataDrobe — CI isolado`; builds 2 e 3 verdes no Xcode 27; o build 3 provou o commit final com zero runner próprio e revelou um único aviso de localização, corrigido na branch | Acompanhar quota; Archive/TestFlight continuam deliberadamente fora deste workflow de Test |
+| CI Python | `testes.yml` migrado para `ubuntu-latest`, Python 3.11 e action fixada por SHA; run final `35148677665` verde; Swift saiu do Actions e pertence ao Xcode Cloud | Manter esse isolamento nos próximos PRs |
 | Pipeline diário | 14 execuções agendadas falharam de 03 a 16/09; as três agendas dependentes do i7 estão desabilitadas; capacidade bloqueia a coleta | OP-04/05/06 e OP-12: recuperar margem e criar executor de dados gerenciado antes de reativar qualquer agenda |
 | Banco | 485.174.419 / 500.000.000 bytes, 97,03%, em 16/09 13:40 UTC | Limite é da RPC; confirmar billing/disco e executar recuperação com backup |
 | Storage | 18 miniaturas, 7.472.925 bytes | Não é o gargalo; nenhuma migração justificada por essa medição |
@@ -58,7 +58,11 @@ tem prova transacional, mas não prova ponta a ponta pelo caminho de extração 
   o veredito correto foi `inconclusivo_ou_bloqueado`, sem autorizar migração.
 - Xcode Cloud: build 1 (`a597ab65-7f88-4326-acbf-8d5ef8d03ffa`) encontrou a
   dupla conclusão do OCR no Xcode 27; build 2
-  (`864b4d08-d0ae-400e-b8c6-7cb22c1c98b3`) ficou verde após `335f576`.
+  (`864b4d08-d0ae-400e-b8c6-7cb22c1c98b3`) ficou verde após `335f576`; build 3
+  (`5524278d-8452-49f8-a99e-57a983718dbd`) validou `4b0093c` sem runners
+  próprios: 7/9 fluxos de UI passaram e os 2 que exigem dados reais foram
+  pulados por desenho. O único aviso, interpolação não localizada de
+  `LocalizedStringKey` em `Explorar.swift`, foi removido e ganhou portão.
 - `npm test` em `ferramentas/laboratorio_radar`: SQL de admissão e 17 verificações
   do harness aprovados em PostgreSQL 17.10 descartável, socket privado, dados
   sintéticos, sem conexão com produção. `npm run test:smoke` também aprovado.
