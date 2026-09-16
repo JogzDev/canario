@@ -51,12 +51,23 @@ jobs:
     needs: [varejo-vtex, varejo-shopify, editorial, busca]
     outputs:
       saudavel: ${{ steps.resultado.outputs.saudavel }}
+      capacidade_permite_escrita: ${{ steps.capacidade.outcome == 'success' && steps.capacidade.outputs.escrita_permitida == 'true' }}
     runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/python-mac
+
+      # Recuperacao de fonte nao resolve banco cheio. Medicao ausente ou
+      # falha fecha a permissao; nenhum retry contorna o portao de 96%.
+      - name: Medir capacidade antes de considerar recuperacao
+        id: capacidade
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: "$PY coletor/verificar_capacidade_banco.py --json --github-output"
 
       - name: Consolidar fontes e aplicar portao de saude
         id: portao
@@ -84,7 +95,12 @@ jobs:
 
   recuperar-shopify:
     needs: saude-inicial
-    if: ${{ needs.saude-inicial.outputs.saudavel != 'true' }}
+    # always remove o success implicito dos ancestrais falhos/pulados.
+    # Saidas ausentes nao autorizam retry; cancelamento tambem nao.
+    if: >-
+      ${{ always() && !cancelled() &&
+          needs.saude-inicial.outputs.saudavel == 'false' &&
+          needs.saude-inicial.outputs.capacidade_permite_escrita == 'true' }}
     uses: ./.github/workflows/coleta-shopify.yml
     secrets: inherit
 

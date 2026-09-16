@@ -13,6 +13,7 @@ Rodar: python3 coletor/teste_workflows.py
 """
 
 import glob
+import copy
 import os
 import re
 import sys
@@ -43,6 +44,67 @@ def checar_com_pyyaml(arquivos):
         carregados[os.path.basename(f)] = dados
 
     falhas.extend(checar_orquestracao(carregados))
+    # Os defeitos plantados ficam apenas em memoria. Verifica que este
+    # proprio portao rejeita as regressoes que ja passaram despercebidas.
+    pipeline = carregados.get("pipeline-diario.yml", {})
+    if not checar_capacidade_da_recuperacao(pipeline):
+        for mutacao in ("sem_always", "sem_capacidade", "saida_sem_outcome",
+                        "sem_medicao", "sem_json", "sem_cancelamento"):
+            copia = copy.deepcopy(pipeline)
+            jobs = copia["jobs"]
+            if mutacao == "sem_always":
+                jobs["recuperar-shopify"]["if"] = jobs["recuperar-shopify"]["if"].replace("always()", "true")
+            elif mutacao == "sem_capacidade":
+                jobs["recuperar-shopify"]["if"] = jobs["recuperar-shopify"]["if"].replace("capacidade_permite_escrita == 'true'", "capacidade_permite_escrita != 'false'")
+            elif mutacao == "saida_sem_outcome":
+                jobs["saude-inicial"]["outputs"]["capacidade_permite_escrita"] = "${{ steps.capacidade.outputs.escrita_permitida }}"
+            elif mutacao == "sem_cancelamento":
+                jobs["recuperar-shopify"]["if"] = jobs["recuperar-shopify"]["if"].replace("!cancelled()", "true")
+            else:
+                passo = next(p for p in jobs["saude-inicial"]["steps"]
+                             if p.get("id") == "capacidade")
+                if mutacao == "sem_medicao":
+                    passo["run"] = "echo escrita_permitida=true"
+                else:
+                    passo["run"] = passo["run"].replace("--json", "")
+            if not checar_capacidade_da_recuperacao(copia):
+                falhas.append(("pipeline-diario.yml",
+                               "verificador aceitou defeito plantado: " + mutacao))
+    return falhas
+
+
+def checar_capacidade_da_recuperacao(pipeline):
+    """Contrato estrito: ausencia, erro e cancelamento nunca autorizam retry."""
+    falhas = []
+    jobs = pipeline.get("jobs", {})
+    inicial = jobs.get("saude-inicial", {})
+
+    def normalizar(valor):
+        return "".join(str(valor).split())
+
+    condicao = """${{ always() && !cancelled() &&
+        needs.saude-inicial.outputs.saudavel == 'false' &&
+        needs.saude-inicial.outputs.capacidade_permite_escrita == 'true' }}"""
+    if normalizar(jobs.get("recuperar-shopify", {}).get("if")) != normalizar(condicao):
+        falhas.append("recuperacao deve ignorar ancestrais pulados, mas exigir "
+                      "saude falsa, capacidade explicita e ausencia de cancelamento")
+    saida = """${{ steps.capacidade.outcome == 'success' &&
+        steps.capacidade.outputs.escrita_permitida == 'true' }}"""
+    if normalizar(inicial.get("outputs", {}).get(
+            "capacidade_permite_escrita")) != normalizar(saida):
+        falhas.append("capacidade so pode autorizar com leitura bem sucedida "
+                      "e escrita_permitida=true")
+    passos = [p for p in inicial.get("steps", []) if p.get("id") == "capacidade"]
+    if len(passos) != 1:
+        falhas.append("saude inicial deve medir capacidade uma vez")
+    else:
+        passo = passos[0]
+        if (passo.get("run") != "$PY coletor/verificar_capacidade_banco.py --json --github-output"
+                or passo.get("continue-on-error") is not True
+                or not {"SUPABASE_URL", "SUPABASE_SECRET_KEY"}.issubset(
+                    passo.get("env", {}))):
+            falhas.append("medicao de capacidade deve preservar diagnostico, "
+                          "saidas e leitura autenticada sem interromper a saude")
     return falhas
 
 
@@ -194,6 +256,8 @@ def checar_orquestracao(workflows):
                "coleta direcionada nao deve repetir o pente fino inteiro")
 
     pipeline = workflows.get("pipeline-diario.yml", {})
+    for mensagem in checar_capacidade_da_recuperacao(pipeline):
+        falhar("pipeline-diario.yml", mensagem)
     gatilhos = pipeline.get("on", pipeline.get(True, {})) or {}
     if "schedule" not in gatilhos:
         falhar("pipeline-diario.yml", "pipeline unico sem `schedule`")

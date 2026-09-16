@@ -14,7 +14,7 @@ não é codificado no projeto.
 ```sh
 cd ferramentas/laboratorio_radar
 npm ci --no-audit --no-fund
-node executar.mjs
+npm test
 ```
 
 `npm ci` é a única etapa que precisa baixar dependências. `package-lock.json`
@@ -31,8 +31,15 @@ Atualização de dependência exige mudar o lock e conferir de novo a versão re
 
 ## Interface da suíte
 
+`npm test` executa os testes SQL de admissão e o harness de concorrência com
+fixture sintética. `npm run test:smoke` verifica somente bootstrap e A51; não
+serve como prova de admissão. O comando padrão não fecha sozinho o P1: a fixture
+ainda não atravessa o parser/materializador/consolidador reais, e a integração
+ao CI e os casos adicionais constam em RAD-01/02 do roteiro de produto.
+
 As entradas são caminhos relativos à raiz deste checkout, mesmo quando o comando
-é iniciado neste diretório:
+é iniciado neste diretório. Para a forma explícita abaixo, partir da raiz do
+checkout:
 
 ```sh
 node ferramentas/laboratorio_radar/executar.mjs \

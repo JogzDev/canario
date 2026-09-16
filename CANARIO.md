@@ -960,3 +960,22 @@ aprovada, direito de fonte ou qualquer regra da PARTE 0.
   recortar ou isolar a peça invalida a correspondência, e a leitura volta ao
   comportamento de sempre. A tela declara essa perda em vez de deixá-la
   invisível.]`
+
+### 16/09/2026 — produto pós-Challenge, com execução isolada (A57)
+
+- `REVOGATÓRIA` | **A57 — o anti-escopo acadêmico não é o teto do produto.**
+  Após a entrega do Challenge, o JP pediu evolução comercial, Android, revisão
+  de design, melhor uso da Luna e resolução da operação. Essas frentes passam a
+  ter fila explícita em `ROADMAP_PRODUTO.md`; não significam implementação
+  simultânea nem revogam rastreabilidade, direitos de fonte, privacidade,
+  taxonomia versionada ou proibição de inventar evidência.
+- `ADITIVA` | **Execução nova fica fora da versão entregue.** O checkout
+  `Canario-produto`, branch `codex/produto-pos-challenge`, parte de `d85fbaa`.
+  A `main`, alterações do usuário e dados de produção são preservados. Custos,
+  migração, exclusão material e publicação continuam decisões específicas.
+- `CORREÇÃO` | **Capacidade precisa ter caminho de recuperação independente.**
+  O incidente de setembro demonstrou coleta bloqueada a 96% e manutenção
+  dependente da coleta concluída. Medir, reter logs e ensaiar recuperação são
+  partes da operação; não se resolve afrouxando o portão de saúde/capacidade.
+  O limite codificado não é prova do plano contratado. Procedimento e limites
+  da evidência ficam em `RUNBOOK_CAPACIDADE.md`.

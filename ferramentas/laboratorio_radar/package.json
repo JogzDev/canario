@@ -7,7 +7,8 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "test": "node executar.mjs"
+    "test": "node executar.mjs --fixture ferramentas/laboratorio_radar/gerar_fixture.py --sql ferramentas/laboratorio_radar/schema_admissao.sql --sql ferramentas/laboratorio_radar/teste_admissao.sql --harness ferramentas/laboratorio_radar/teste_concorrencia.mjs",
+    "test:smoke": "node executar.mjs"
   },
   "dependencies": {
     "pg": "8.23.0"

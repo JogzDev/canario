@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 31/08/2026, 12:12 em São Paulo
+**Última atualização:** 16/09/2026 — retomada pós-Challenge.
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -17,7 +17,62 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 
 ---
 
-## Como ler em 30 segundos
+## Como ler em 30 segundos — 16/09/2026
+
+O JP informou a conclusão do Challenge 3. O trabalho novo está isolado em
+`codex/produto-pos-challenge`, checkout `Canario-produto`, a partir de `d85fbaa`.
+`main` (`b01a159`), a versão entregue e as alterações preexistentes dos outros
+checkouts não foram modificadas. Não houve push, merge, deploy, mudança de plano
+ou remoção de dados nesta retomada.
+
+| Frente | Evidência atual | O que falta |
+|---|---|---|
+| Pipeline diário | 14 execuções agendadas falharam de 03 a 16/09; último verde 02/09; capacidade bloqueia a coleta | Recuperar margem e observar ciclo completo real e próximo agendamento |
+| Banco | 485.174.419 / 500.000.000 bytes, 97,03%, em 16/09 13:40 UTC | Limite é da RPC; confirmar billing/disco e executar recuperação com backup |
+| Storage | 18 miniaturas, 7.472.925 bytes | Não é o gargalo; nenhuma migração justificada por essa medição |
+| Causas estruturais | Retenção só roda após motor dependente da coleta; logs do cron crescem mesmo bloqueado | Retenção independente, fronteiras seguras e menos reescritas |
+| Correção operacional | JSON de capacidade e recuperação Shopify condicionada à leitura válida; testes locais passaram | Ainda não aplicada ao workflow da branch padrão |
+| Radar | A51/A52 e laboratório herdados; `npm test` agora roda admissão e concorrência | P1 continua parcial: conectar parser/materializador/consolidador reais; integrar suíte ao CI |
+| Produto | 60 itens com dificuldade, urgência, dependências e aceite em `ROADMAP_PRODUTO.md` | Executar por fatias, sem recomeçar a blueprint a cada sessão |
+| iOS | iOS 27 lançado; Xcode local ainda 26.2 (17C52) | SDK/runtime 27 e matriz de compatibilidade; não houve teste em 27 nesta rodada |
+| Entrega/App Store | Challenge concluído conforme JP | Situação atual da loja não foi consultada; o bloqueio de certificado de agosto abaixo é histórico |
+
+Diagnóstico reproduzível e recuperação: [`RUNBOOK_CAPACIDADE.md`](RUNBOOK_CAPACIDADE.md).
+Fila pós-Challenge: [`ROADMAP_PRODUTO.md`](ROADMAP_PRODUTO.md).
+O estado da 1.3 não deve ser inferido dos rótulos antigos de “fechado”: o P1
+tem prova transacional, mas não prova ponta a ponta pelo caminho de extração real.
+
+### Verificação desta fatia
+
+- `python3 coletor/teste_capacidade_banco.py`: 9 testes, incluindo subcasos de
+  fronteira, RPC inválida, falha fechada e compatibilidade da CLI.
+- `python3 coletor/teste_workflows.py`: 19 workflows, zero falhas; verificador
+  também rejeita seis defeitos plantados somente em memória.
+- Os 38 scripts `coletor/teste_*.py` enumerados no workflow `testes.yml`
+  foram executados localmente nesta fatia e passaram; os dois portões de
+  tradução (`extrair_frases` e `frases_compostas`) também passaram. Isso não inclui build/UI
+  Swift nem equivale à execução remota completa do CI.
+- `npm test` em `ferramentas/laboratorio_radar`: SQL de admissão e 17 verificações
+  do harness aprovados em PostgreSQL 17.10 descartável, socket privado, dados
+  sintéticos, sem conexão com produção. `npm run test:smoke` também aprovado.
+- Nenhum teste remoto pago, novo build iOS, teste físico ou deploy foi feito
+  nesta fatia. Teste local verde não encerra o incidente de capacidade.
+
+### Próximo ponto de execução
+
+OP-05: desenhar e testar retenção independente com watermark e fronteira semanal;
+OP-06: preparar restauração isolada. A recuperação de produção depende de escolher
+margem sustentável: plano gerenciado com custo explicitamente aprovado ou
+manutenção delimitada com backup e ganho medido. Não basta excluir snapshots
+por idade nem aumentar o limite no código sem mudar a capacidade real.
+
+## Registro anterior — fotografia de 31/08/2026
+
+**Tudo abaixo é histórico datado**, conservado para rastreabilidade. Valores de
+capacidade, versão da loja, certificados e totais de testes abaixo não descrevem
+automaticamente a situação de setembro. A seção de 16/09 acima prevalece.
+
+### Resumo registrado em agosto
 
 | Frente | Estado | Número que importa |
 |---|---|---|
