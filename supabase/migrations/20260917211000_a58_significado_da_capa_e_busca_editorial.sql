@@ -31,6 +31,32 @@
 -- ranking: devolve as duas leituras e a ordenacao por contagem; qual vira
 -- manchete e decisao de produto, tomada com o numero na mao.
 --
+-- O DENOMINADOR E OBSERVADO, NAO O ESTADO DE HOJE
+-- ===============================================
+--
+-- A primeira versao desta funcao contava `estado_dos_produtos` no momento da
+-- consulta e chamava isso de "sortimento da janela". Funciona por coincidencia
+-- enquanto o banco esta congelado perto da data da janela, e passa a mentir no
+-- dia em que a coleta voltar: a taxa de uma semana de agosto sairia dividida
+-- pelo sortimento de hoje.
+--
+-- O denominador passa a ser o SORTIMENTO OBSERVADO NO FIM DA JANELA,
+-- reconstruido dos snapshots e materializado em `sortimento_diario`. Duas
+-- razoes para materializar em vez de reconstruir a cada consulta, as duas
+-- medidas em 17/09/2026 contra o banco de producao:
+--
+--   lateral por produto (77.465 lookups) ....... 9,9 s
+--   distinct on sobre 241 mil snapshots ........ 2,7 s
+--   leitura de sortimento_diario ............... indice, milissegundos
+--
+-- O teto do papel `anon` e 3 s. Materializar tambem torna o denominador
+-- auditavel e historico: 15 linhas por dia coletado, ~5,5 mil por ano.
+--
+-- Quando nao ha linha para a data da janela, `pecas_ofertadas` e
+-- `por_mil_ofertadas` voltam nulos e `denominador_em` vem nulo. Sem
+-- denominador a tela mostra contagem absoluta e cala a taxa -- nunca
+-- substitui o denominador da janela pelo de hoje.
+--
 -- POR QUE (2): "NAPOLEON JACKET" JA ESTAVA NO BANCO
 -- =================================================
 --
@@ -49,6 +75,80 @@
 -- Sem indice de texto: `ilike` em 172 mil titulos custa uma varredura, medida
 -- em ~0,1 s, e o teto do papel `anon` e 3 s. `pg_trgm` entra depois da folga
 -- de espaco, se a medicao pedir.
+
+create table if not exists public.sortimento_diario (
+  data date not null,
+  marca_id bigint not null references public.marcas(id) on delete cascade,
+  segmento text not null,
+  pecas_ofertadas integer not null,
+  primary key (data, marca_id, segmento)
+);
+
+comment on table public.sortimento_diario is
+  'A58: sortimento ofertavel por marca no fim de cada dia observado, reconstruido dos snapshots. Denominador auditavel das comparacoes entre marcas.';
+
+alter table public.sortimento_diario enable row level security;
+revoke all on table public.sortimento_diario from anon, authenticated;
+
+-- Reconstroi um dia. Roda com a chave de servico, no fim da coleta; nunca no
+-- caminho da consulta.
+create or replace function public.computar_sortimento_diario(dia date default null)
+returns integer
+language plpgsql
+security definer
+set search_path to 'public', 'pg_temp'
+as $function$
+declare
+  alvo date;
+  gravadas integer;
+begin
+  alvo := coalesce(dia, (select max(s.data) from public.snapshots s));
+  if alvo is null then
+    return 0;
+  end if;
+
+  with ultimo as (
+    -- Snapshot e diferencial: o estado de um produto no dia `alvo` e o ultimo
+    -- snapshot dele em `alvo` ou antes.
+    select distinct on (s.produto_id) s.produto_id, s.ofertavel
+    from public.snapshots s
+    where s.data <= alvo
+    order by s.produto_id, s.data desc
+  ), contagem as (
+    select p.marca_id, p.segmento, count(*)::int as pecas_ofertadas
+    from ultimo u
+    join public.produtos p on p.id = u.produto_id
+    where u.ofertavel is true
+      and p.segmento is not null
+    group by p.marca_id, p.segmento
+  )
+  insert into public.sortimento_diario (data, marca_id, segmento, pecas_ofertadas)
+  select alvo, c.marca_id, c.segmento, c.pecas_ofertadas
+  from contagem c
+  on conflict (data, marca_id, segmento) do update
+    set pecas_ofertadas = excluded.pecas_ofertadas
+    -- P11: escrever so o que mudou.
+    where public.sortimento_diario.pecas_ofertadas
+          is distinct from excluded.pecas_ofertadas;
+
+  get diagnostics gravadas = row_count;
+  return gravadas;
+end;
+$function$;
+
+revoke all on function public.computar_sortimento_diario(date) from public, anon, authenticated;
+
+-- Historico disponivel: a retencao de snapshots cobre 22 dias (12/08 a 02/09
+-- em 17/09/2026). Fora dessa janela nao existe denominador, e a funcao de
+-- consulta declara isso em vez de inventar.
+do $$
+declare
+  d date;
+begin
+  for d in select distinct s.data from public.snapshots s order by 1 loop
+    perform public.computar_sortimento_diario(d);
+  end loop;
+end $$;
 
 create or replace function public.resumo_de_eventos(tipo_evento text,
                                                     dias integer default 7,
@@ -91,17 +191,14 @@ as $function$
     join public.marcas m on m.id = p.marca_id
     join public.estado_dos_produtos ep on ep.produto_id = p.id
   ), sortimento as (
-    -- Denominador da MESMA janela: produtos que a marca tinha ofertaveis
-    -- quando a janela foi observada. Sem isso, "quem repos mais" premia
-    -- automaticamente o maior catalogo.
-    select m.nome as marca, count(*)::int as pecas_ofertadas
+    -- Denominador OBSERVADO no fim da janela, nunca o estado de hoje. Sem
+    -- linha para aquele dia, a marca sai sem denominador e a taxa nao e
+    -- calculada.
+    select m.nome as marca, sd.pecas_ofertadas
     from janela j
-    join public.estado_dos_produtos ep
-      on ep.ofertavel is true and ep.ultimo_avistamento_em >= j.de
-    join public.produtos p
-      on p.id = ep.produto_id and p.segmento = 'feminino_casual_br'
-    join public.marcas m on m.id = p.marca_id
-    group by m.nome
+    join public.sortimento_diario sd
+      on sd.data = j.ate and sd.segmento = 'feminino_casual_br'
+    join public.marcas m on m.id = sd.marca_id
   ), tamanhos as (
     select np.marca, tam.valor as tamanho, count(*) as n
     from no_periodo np
@@ -152,6 +249,10 @@ as $function$
     'dias', (select janela from janela),
     'dias_desde_o_fim', (select current_date - ate from janela),
     'unidade', 'produtos distintos com evento na janela',
+    'denominador_em', (select j.ate from janela j
+                        where exists (select 1 from public.sortimento_diario sd
+                                       where sd.data = j.ate
+                                         and sd.segmento = 'feminino_casual_br')),
     'total_pecas', (select count(distinct produto_id)::int from no_periodo),
     'total_eventos', (select count(*)::int from no_periodo),
     'marcas', coalesce((
@@ -174,7 +275,7 @@ as $function$
 $function$;
 
 comment on function public.resumo_de_eventos(text, integer, integer) is
-  'A58: agregacao da janela inteira em produtos distintos, com denominador por marca; exemplos limitados nunca viram contagem.';
+  'A58: agregacao da janela inteira em produtos distintos, com denominador observado no fim da janela; exemplos limitados nunca viram contagem.';
 
 revoke all on function public.resumo_de_eventos(text, integer, integer) from public;
 grant execute on function public.resumo_de_eventos(text, integer, integer)

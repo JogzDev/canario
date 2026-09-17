@@ -63,8 +63,10 @@ def main():
         "least(greatest(coalesce($2, 12), 1), 24)",
         "ep.ofertavel is true",
         # A57 trocou a ancora: o frescor e medido contra o ultimo dia
-        # observado do painel, nao contra o calendario.
-        "ep.ultimo_avistamento_em >= (select observado_em from painel) - 7",
+        # observado DO PROPRIO SEGMENTO, nao contra o calendario e nao contra
+        # uma data unica para as duas coortes.
+        "join painel pa on pa.segmento = p.segmento",
+        "ep.ultimo_avistamento_em >= pa.observado_em - 7",
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
         "cardinality(par.categorias) = 0",
@@ -78,9 +80,11 @@ def main():
     # 17/09/2026, com a coleta parada desde 02/09: similares devolvia 0 para
     # `vestido + preto` num painel com 12.496 vestidos.
     exigencias_frescor = [
-        "(select observado_em from painel) - 7",
-        "'observado_em', (select observado_em from painel)",
-        "'dias_desde_a_observacao'",
+        "group by p.segmento",
+        "'visto_em', visto_em",
+        "'observado_em', max(visto_em)",
+        "'observado_mais_antigo_em', min(visto_em)",
+        "'dias_desde_a_observacao', (current_date - max(visto_em))",
     ]
     for trecho in exigencias_frescor:
         if trecho not in similares:
@@ -172,7 +176,11 @@ def main():
         # Janela explicita e ancorada no dado, nunca em current_date.
         "lim.ate - (par.janela - 1) as de",
         # Denominador por marca: sem ele, "quem repos mais" premia catalogo.
-        "pecas_ofertadas",
+        # Denominador observado no fim da janela, materializado; nunca o
+        # estado do momento da consulta.
+        "join public.sortimento_diario sd",
+        "on sd.data = j.ate and sd.segmento = 'feminino_casual_br'",
+        "'denominador_em'",
         "por_mil_ofertadas",
         # Exemplos sao amostra e nao podem voltar a alimentar contagem.
         "x.posicao <= j.teto",
@@ -221,6 +229,11 @@ def main():
         "('claudia', 'editorial_br')",
         "('fashion gone rogue', 'editorial_intl')",
         "('red carpet fashion awards', 'editorial_intl')",
+        # A58: a tabela do denominador nao e legivel por anon -- entra pela
+        # RPC -- e a reconstrucao diaria escreve so o que mudou (P11).
+        "revoke all on table public.sortimento_diario from anon, authenticated",
+        "revoke all on function public.computar_sortimento_diario(date) from public, anon, authenticated",
+        "is distinct from excluded.pecas_ofertadas",
     ]
     for trecho in exigencias_finais:
         if trecho not in estado_final:

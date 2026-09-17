@@ -1,0 +1,44 @@
+{
+  "medido_em": "2026-09-17T21:00:18Z",
+  "origem": "projeto tbluoqpnjqsflfoclmms, leitura somente",
+  "bytes_do_banco": 485649555,
+  "limite_do_plano_bytes": 500000000,
+  "funcoes_no_public": 36,
+  "politicas_rls_no_public": 11,
+  "extensoes": [
+    "pg_cron",
+    "pg_stat_statements",
+    "pgcrypto",
+    "plpgsql",
+    "supabase_vault",
+    "unaccent",
+    "uuid-ossp"
+  ],
+  "extensoes_que_nao_restauram_fora_do_supabase": [
+    "pg_cron",
+    "supabase_vault"
+  ],
+  "linhas_por_tabela": {
+    "produtos": 111390,
+    "estado_dos_produtos": 111390,
+    "produto_termos": 270443,
+    "snapshots": 254736,
+    "artigos": 172649,
+    "eventos": 70909,
+    "series_semanais": 29047,
+    "indices_semanais": 9897,
+    "artigo_termos": 17410,
+    "curva_tamanhos": 5034,
+    "saude": 643,
+    "raridade_do_atributo": 459,
+    "termos": 51,
+    "marcas": 49,
+    "veiculo_da_perna": 29,
+    "closet_items": 27,
+    "motor_execucoes": 18,
+    "_limites_analise_visual": 10,
+    "apple_refresh_tokens": 1,
+    "motor_termos_stage": 0,
+    "motor_produtos_stage": 0
+  }
+}

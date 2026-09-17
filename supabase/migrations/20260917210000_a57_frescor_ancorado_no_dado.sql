@@ -15,7 +15,9 @@
 -- afirmacao sobre o MERCADO quando a verdade e uma afirmacao sobre a NOSSA
 -- COLETA. Pausa de coleta nao e ausencia de mercado.
 --
--- A janela passa a ser ancorada no ultimo dia observado do painel. Com coleta
+-- A janela passa a ser ancorada no ultimo dia observado de CADA SEGMENTO
+-- (`feminino_casual_br` e `catalogo_candidato_br` tem cadencias diferentes, e
+-- uma data unica deixaria a mais nova reprovar a coorte da outra). Com coleta
 -- saudavel, ancorar no dado e ancorar em `current_date` dao o mesmo conjunto;
 -- com coleta parada, o app recebe o painel da ultima observacao E A IDADE
 -- DELE, em vez de receber vazio. `observado_em` e `dias_desde_a_observacao`
@@ -48,13 +50,16 @@ stable security definer
 set search_path to 'public', 'pg_temp'
 as $function$
   with painel as (
-    -- A ancora: ultimo dia em que o painel foi observado. Uma linha, lida uma
-    -- vez, e a mesma para todos os produtos da resposta.
-    select max(ep.ultimo_avistamento_em) as observado_em
+    -- A ancora e POR SEGMENTO. Uma data unica para os dois misturava coortes:
+    -- se o catalogo candidato fosse observado depois, a data mais nova dele
+    -- reprovaria o painel medido de novo -- o mesmo defeito que esta migration
+    -- existe para corrigir, com outro disfarce.
+    select p.segmento, max(ep.ultimo_avistamento_em) as observado_em
     from public.estado_dos_produtos ep
     join public.produtos p on p.id = ep.produto_id
     where p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')
       and ep.ofertavel is true
+    group by p.segmento
   ), entrada as (
     select e.termo_id, min(e.posicao) as primeira_posicao,
            min(t.dimensao) as dimensao
@@ -82,14 +87,14 @@ as $function$
     join entrada e on e.termo_id = pt.termo_id
     group by pt.produto_id
   ), elegiveis as (
-    select c.*
+    select c.*, ep.ultimo_avistamento_em as visto_em
     from casamentos c
     join public.produtos p on p.id = c.produto_id
     join public.estado_dos_produtos ep on ep.produto_id = p.id
+    join painel pa on pa.segmento = p.segmento
     cross join parametros par
-    where p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')
-      and ep.ofertavel is true
-      and ep.ultimo_avistamento_em >= (select observado_em from painel) - 7
+    where ep.ofertavel is true
+      and ep.ultimo_avistamento_em >= pa.observado_em - 7
       and (cardinality(par.categorias) = 0 or c.tem_categoria)
   ), nivel_escolhido as (
     select coalesce(max(nivel) filter (where existe), 1)::int as minimo
@@ -111,6 +116,7 @@ as $function$
            p.ultimo_preco_original as preco_de, p.ultima_grade,
            m.nome as marca, m.papel as papel_da_marca,
            c.em_comum, c.dimensoes_em_comum, c.termos_em_comum,
+           c.visto_em,
            p.ultima_grade is not null as tem_grade,
            g.quebrada, g.esgotada
     from candidatos c
@@ -149,12 +155,14 @@ as $function$
         else round(100.0 * count(*) filter (where preco is not null and preco <= $3)
              / count(*) filter (where preco is not null), 0) end,
       'exibidos', least((select teto from parametros), count(*)),
-      -- A idade do painel viaja com a resposta: a tela precisa poder dizer
-      -- "sortimento observado em 02/09, 15 dias atras" em vez de deixar o
-      -- leitor supor que e de hoje.
-      'observado_em', (select observado_em from painel),
-      'dias_desde_a_observacao',
-        (current_date - (select observado_em from painel))
+      -- A idade viaja com a resposta, medida NAS PECAS QUE ELA DEVOLVE: a
+      -- tela precisa poder dizer "visto em 02/09, 15 dias atras" em vez de
+      -- deixar o leitor supor que e de hoje. `observado_em` e a observacao
+      -- mais nova entre as pecas mostradas, e `observado_mais_antigo_em` a
+      -- mais velha -- as duas sustentam a frase, nenhuma data solta sustenta.
+      'observado_em', max(visto_em),
+      'observado_mais_antigo_em', min(visto_em),
+      'dias_desde_a_observacao', (current_date - max(visto_em))
     ) as j from sim
   ), ordenado as (
     select *, row_number() over (
@@ -171,6 +179,7 @@ as $function$
                     then round(100.0 * (preco_de - preco) / preco_de, 1) end,
       'em_comum', em_comum,
       'termos_em_comum', to_jsonb(termos_em_comum),
+      'visto_em', visto_em,
       'grade', public.grade_em_texto(ultima_grade))
       order by dimensoes_em_comum desc, em_comum desc, posicao_na_marca, id) as j
     from (
@@ -185,7 +194,7 @@ as $function$
 $function$;
 
 comment on function public.similares_da_peca(text[], integer, numeric) is
-  'A57: A40 com frescor ancorado no ultimo dia observado do painel; a resposta declara observado_em e dias_desde_a_observacao.';
+  'A57: A40 com frescor ancorado no ultimo dia observado de cada segmento; cada peca carrega visto_em e o resumo declara a idade do que devolveu.';
 
 revoke all on function public.similares_da_peca(text[], integer, numeric)
   from public;
