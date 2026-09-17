@@ -62,7 +62,9 @@ def main():
         "p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')",
         "least(greatest(coalesce($2, 12), 1), 24)",
         "ep.ofertavel is true",
-        "ep.ultimo_avistamento_em >= current_date - 7",
+        # A57 trocou a ancora: o frescor e medido contra o ultimo dia
+        # observado do painel, nao contra o calendario.
+        "ep.ultimo_avistamento_em >= (select observado_em from painel) - 7",
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
         "cardinality(par.categorias) = 0",
@@ -71,6 +73,20 @@ def main():
     for trecho in exigencias_similares:
         if trecho not in similares:
             return falhar("similares final nao garante: {}".format(trecho))
+
+    # A57: pausa de coleta nao pode virar "nao existe peca parecida". Medido em
+    # 17/09/2026, com a coleta parada desde 02/09: similares devolvia 0 para
+    # `vestido + preto` num painel com 12.496 vestidos.
+    exigencias_frescor = [
+        "(select observado_em from painel) - 7",
+        "'observado_em', (select observado_em from painel)",
+        "'dias_desde_a_observacao'",
+    ]
+    for trecho in exigencias_frescor:
+        if trecho not in similares:
+            return falhar("similares nao ancora frescor no dado: {}".format(trecho))
+    if "ep.ultimo_avistamento_em >= current_date - 7" in similares:
+        return falhar("similares ainda ancora frescor em current_date")
 
     _, similares_amplos = ultima_definicao(
         arquivos, "create or replace function public.similares_da_peca_amplo(")
@@ -137,6 +153,50 @@ def main():
         arquivos, "create or replace function public.eventos_recentes")
     if "public.url_publica_produto(p.url, m.nome)" not in eventos_recentes:
         return falhar("eventos recentes ainda devolvem host administrativo")
+    # A57: o link e decidido pelo estado que o coletor escreve. A coluna
+    # `produtos.ultimo_snapshot_em` congelou em 24/08/2026, quando a A27 moveu
+    # o estado para `estado_dos_produtos` -- o link teria sumido em 07/09
+    # mesmo com a coleta de pe.
+    if "ep.ultimo_snapshot_em" not in eventos_recentes:
+        return falhar("link da loja ainda le a coluna congelada de produtos")
+    if "current_date - 14" in eventos_recentes:
+        return falhar("link da loja ainda ancora frescor em current_date")
+
+    _, resumo_eventos = ultima_definicao(
+        arquivos, "create or replace function public.resumo_de_eventos")
+    exigencias_resumo = [
+        # A unidade da manchete e produto distinto. A capa contava EVENTOS de
+        # uma amostra de 120: em 01/09 deu a capa a C&A com 52 enquanto a Le
+        # Lis Blanc tinha 289 na populacao inteira do dia.
+        "count(distinct np.produto_id)::int as pecas",
+        # Janela explicita e ancorada no dado, nunca em current_date.
+        "lim.ate - (par.janela - 1) as de",
+        # Denominador por marca: sem ele, "quem repos mais" premia catalogo.
+        "pecas_ofertadas",
+        "por_mil_ofertadas",
+        # Exemplos sao amostra e nao podem voltar a alimentar contagem.
+        "x.posicao <= j.teto",
+        "grant execute on function public.resumo_de_eventos(text, integer, integer)",
+    ]
+    for trecho in exigencias_resumo:
+        if trecho not in resumo_eventos:
+            return falhar("resumo de eventos nao garante: {}".format(trecho))
+
+    _, referencia = ultima_definicao(
+        arquivos,
+        "create or replace function public.buscar_referencia_editorial")
+    exigencias_referencia = [
+        # Expressao do usuario e dado, nao padrao de LIKE.
+        "replace(replace(replace(termo, '\\', '\\\\'), '%', '\\%'), '_', '\\_')",
+        # Mesmo recorte de publico que o painel admite.
+        "a.publico_editorial <> 'masculino'",
+        # Sem select geral em artigos: a funcao devolve titulo/veiculo/data/URL.
+        "security definer",
+        "grant execute on function public.buscar_referencia_editorial(text, integer)",
+    ]
+    for trecho in exigencias_referencia:
+        if trecho not in referencia:
+            return falhar("busca editorial nao garante: {}".format(trecho))
 
     _, produto_por_url = ultima_definicao(
         arquivos, "create or replace function public.produto_do_painel_por_url")
