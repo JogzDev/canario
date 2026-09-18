@@ -41,22 +41,65 @@ function installSignalCleanup() {
   process.on('SIGTERM', cleanup);
 }
 
-function run(bin, args, { env = {}, input, stream, timeout = 900_000 } = {}) {
+export function resumirErro(stderr) {
+  // Só categorias conhecidas saem no Terminal: CONTEXT/DETAIL podem conter linhas.
+  const causes = [
+    [/password authentication failed/i, 'O servidor recusou a autenticação.'],
+    [/statement timeout/i, 'O servidor cancelou a consulta por statement_timeout.'],
+    [/idle-in-transaction timeout/i, 'O servidor encerrou uma transação ociosa.'],
+    [/transaction timeout/i, 'O servidor encerrou a transação por limite de duração.'],
+    [/terminating connection due to administrator command/i, 'O servidor encerrou a conexão por comando administrativo.'],
+    [/SSL connection has been closed unexpectedly|server closed the connection unexpectedly|connection reset by peer|SSL SYSCALL error|unexpected EOF/i, 'A conexão foi interrompida durante a leitura.'],
+    [/no space left on device|disk full/i, 'Foi reportada falta de espaço.'],
+    [/permission denied/i, 'Foi reportada falta de permissão.'],
+    [/invalid page|invalid memory alloc|missing chunk|unexpected chunk|compressed data is corrupt/i, 'Foi reportado um erro de integridade/leitura de dados.'],
+    [/PQgetCopyData\(\) failed/i, 'A transferência COPY não foi concluída.'],
+  ];
+  return causes.filter(([pattern]) => pattern.test(stderr)).map(([, label]) => label).join(' ') || 'Falha sem categoria reconhecida; consulte o diagnóstico protegido.';
+}
+
+export function run(bin, args, { env = {}, input, stream, timeout = 900_000, diagnosticsFile } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, { env: { PATH: '/usr/bin:/bin', LC_ALL: 'C', TZ: 'UTC', ...env }, stdio: ['pipe', 'pipe', 'pipe'] });
     localChildren.add(child);
-    let out = '', err = '';
-    const timer = setTimeout(() => child.kill('SIGTERM'), timeout);
+    let out = '', err = '', truncated = false, timedOut = false, spawnError, killTimer;
+    const startedAt = new Date().toISOString();
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+      killTimer = setTimeout(() => child.kill('SIGKILL'), 2000);
+    }, timeout);
     child.stdout.on('data', d => { if (stream) stream(d); else out += d; });
-    child.stderr.on('data', d => { err = (err + d).slice(-16000); });
-    child.on('error', e => { clearTimeout(timer); localChildren.delete(child); reject(e); });
-    child.on('close', code => {
-      clearTimeout(timer); localChildren.delete(child);
-      if (code === 0) resolve(out);
+    child.stderr.on('data', d => {
+      err += d;
+      if (err.length > 1_000_000) { err = err.slice(-1_000_000); truncated = true; }
+    });
+    // Node emite close também depois de error. Finalizar uma única vez permite
+    // que o diagnóstico exista antes de o chamador receber a rejeição.
+    child.on('error', e => { clearTimeout(timer); spawnError = e; });
+    child.on('close', async (code, signal) => {
+      clearTimeout(timer); clearTimeout(killTimer); localChildren.delete(child);
+      // Arquivo privado, separado do resumo público. Nunca salva ambiente,
+      // argumentos, stdin ou stdout; remove a senha até se um filho a emitir.
+      for (const secret of new Set([env.PGPASSWORD, env.PGPASSWORD && encodeURIComponent(env.PGPASSWORD)])) {
+        if (secret) err = err.replaceAll(secret, '[credencial redigida]');
+      }
+      err = err.replace(/(postgres(?:ql)?:\/\/[^:\s]+:)[^@\s]+@/gi, '$1[redigido]@');
+      let logSaved = false;
+      if (diagnosticsFile) {
+        try {
+          await save(diagnosticsFile, { program:path.basename(bin), started_at:startedAt,
+            finished_at:new Date().toISOString(), exit_code:code, signal, local_timeout:timedOut,
+            spawn_error_code:spawnError?.code,
+            stderr_truncated:truncated, stderr:err });
+          logSaved = true;
+        } catch { /* A falha original não pode ser escondida por falha do log. */ }
+      }
+      if (spawnError) reject(spawnError);
+      else if (code === 0 && !timedOut) resolve(out);
       else {
-        // DETAIL/CONTEXT de COPY podem conter dados pessoais da linha rejeitada.
-        const headline = err.split('\n').find(s => /(?:ERROR|FATAL|error|fatal):/.test(s)) || err.split('\n')[0] || '';
-        reject(new Error(`${path.basename(bin)} falhou (${code}). ${headline.replace(/password=[^\s]+/gi, 'password=[redigido]').trim()}`));
+        const cause = timedOut ? `Limite local de ${timeout / 1000}s atingido; processo interrompido.` : resumirErro(err);
+        reject(new Error(`${path.basename(bin)} falhou (${code ?? signal}). ${cause}${logSaved ? ` Diagnóstico protegido: ${diagnosticsFile}` : ''}`));
       }
     });
     child.stdin.on('error', () => {});
@@ -158,8 +201,17 @@ export async function capture(bin, c, dest) {
     console.log(`Snapshot aberto; ${tables.length} tabelas. Timeout de leitura desta sessão: 10 minutos por consulta.`);
     const archive = path.join(dest, 'banco.dump');
     await save(path.join(dest,'captura-inicial.json'),{bootstrap,catalog,tables,sequences:seqBefore,status:'CAPTURA_EM_ANDAMENTO_NAO_VERIFICADA'});
-    console.log('Gerando arquivo lógico completo com pg_dump (somente leitura).');
-    await run(path.join(bin, 'pg_dump'), ['--format=custom', '--compress=gzip:6', '--no-password', '--lock-wait-timeout=10s', `--snapshot=${snap.id}`, '--file', archive], { env: connEnv(c) });
+    // Reproduz primeiro a etapa que falhou, sem gravar dados da tabela no disco.
+    // pg_dump redefine seus timeouts SQL para zero; o teto é do processo local.
+    if (tables.some(t => t.schema === 'public' && t.name === 'artigos')) {
+      console.log('Teste focal de leitura de artigos (até 6 minutos; sem alterar o banco).');
+      await run(path.join(bin, 'pg_dump'), ['--data-only', '--table=public.artigos', '--no-password', '--verbose', '--lock-wait-timeout=10s', `--snapshot=${snap.id}`, '--file=/dev/null'],
+        { env:connEnv(c), timeout:360_000, diagnosticsFile:path.join(dest,'diagnostico-artigos.json') });
+      console.log('Leitura de artigos concluída. Prosseguindo com o backup completo.');
+    }
+    console.log('Gerando arquivo lógico completo com pg_dump (somente leitura; teto local de 15 minutos).');
+    await run(path.join(bin, 'pg_dump'), ['--format=custom', '--compress=gzip:6', '--no-password', '--verbose', '--lock-wait-timeout=10s', `--snapshot=${snap.id}`, '--file', archive],
+      { env: connEnv(c), diagnosticsFile:path.join(dest,'diagnostico-pg_dump.json') });
     await chmod(archive, 0o600);
     console.log('Arquivo do dump gerado. Conferindo conteúdo no mesmo snapshot.');
     for (const [i,t] of tables.entries()) {
@@ -342,7 +394,7 @@ export async function main(argv = process.argv.slice(2)) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(e => {
     console.error(`FALHOU: ${e.message}`);
-    if (/password authentication failed/i.test(e.message)) {
+    if (/password authentication failed|recusou a autenticação/i.test(e.message)) {
       console.error('O servidor recusou esta senha. Copie novamente a senha do banco que funcionou antes e cole uma única vez no próximo prompt. Não cole a senha no chat.');
     }
     process.exitCode = 1;

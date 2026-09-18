@@ -43,6 +43,8 @@ try {
     INSERT INTO storage.objects VALUES ('00000000-0000-0000-0000-000000000002','fixture/foto.jpg','00000000-0000-0000-0000-000000000001');
     CREATE TABLE supabase_migrations.schema_migrations (version text PRIMARY KEY);
     INSERT INTO supabase_migrations.schema_migrations VALUES ('fixture-1');
+    CREATE TABLE public.artigos (id bigint PRIMARY KEY, titulo text);
+    INSERT INTO public.artigos VALUES (1,'Leitura focal — somente fixture');
     -- Reproduz um default curto; somente as conexões do backup devem sobrepô-lo.
     ALTER ROLE postgres SET statement_timeout = '1ms';
   `);
@@ -63,6 +65,10 @@ try {
   assert.equal(manifest.bootstrap.read_session.transaction_read_only,'on');
   assert.equal((await stat(path.join(dest,'banco.dump'))).mode & 0o777, 0o600);
   assert.equal((await stat(dest)).mode & 0o777, 0o700);
+  const focal = JSON.parse(await readFile(path.join(dest,'diagnostico-artigos.json'),'utf8'));
+  assert.equal(focal.exit_code,0);
+  assert.equal(focal.local_timeout,false);
+  assert.equal((await stat(path.join(dest,'diagnostico-artigos.json'))).mode & 0o777,0o600);
   const report = await restore(bin, dest);
   assert.equal(report.result, 'VERIFICADO_NO_ESCOPO_DECLARADO');
   console.log('ok 1: dump real + restore real + Unicode/COPY + FKs/RLS/índices/funções');
