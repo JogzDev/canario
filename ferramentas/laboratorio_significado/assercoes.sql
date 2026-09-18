@@ -463,5 +463,7 @@ declare g jsonb; primeiro jsonb; begin
       || coalesce(primeiro->>'ordinal', 'nulo');
   assert (primeiro->>'dias_desde_a_primeira')::int > 0,
     'o exemplo deveria carregar a distancia da primeira vez';
-  raise notice 'ok 22 exemplos carregam ordinal e distancia da primeira vez';
+  assert primeiro->'detalhe'->'tamanhos' is not null,
+    'o exemplo deveria carregar o detalhe inteiro, que e o que a frase le';
+  raise notice 'ok 22 exemplos carregam ordinal, distancia e detalhe inteiro';
 end $$;

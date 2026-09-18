@@ -366,10 +366,14 @@ as $function$
              'url_da_peca', e.url_da_peca,
              'data', e.data,
              'repetida', e.repetida,
-             'queda_pct', e.queda_pct,
              'ordinal', h.ordinal,
              'dias_desde_a_primeira', h.dias_desde_a_primeira,
-             'tamanhos', coalesce(e.detalhe->'tamanhos', '[]'::jsonb))
+             -- O `detalhe` inteiro, e nao campos escolhidos a dedo: e o mesmo
+             -- objeto que `eventos_recentes` ja entrega, com `preco_de`,
+             -- `preco_para`, `queda_pct` e `tamanhos`. A tela le os quatro
+             -- para escrever "50% abaixo do preco anterior: R$ 799 -> R$ 400",
+             -- e achatar aqui seria perder metade da frase.
+             'detalhe', e.detalhe)
              order by e.posicao) as exemplos
     from escolhidos e
     cross join lateral (
