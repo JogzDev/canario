@@ -269,6 +269,20 @@ export async function restore(bin, dest) {
   } finally { await cluster.close(); }
 }
 
+export function normalizarEntradaSenha(answer) {
+  // Remove somente o envelope de bracketed paste do terminal, nunca espaços
+  // ou símbolos da senha. readline terminal:false não interpreta esse protocolo.
+  let value = answer;
+  if (value.startsWith('\u001b[200~') && value.endsWith('\u001b[201~')) {
+    value = value.slice(6, -6);
+  }
+  if (/[\u0000-\u001f\u007f]/.test(value)) {
+    throw new Error('A colagem contém caracteres de controle. Copie novamente somente a senha no gerenciador e tente outra vez. Nenhuma conexão foi feita.');
+  }
+  if (!value) throw new Error('Senha vazia; nenhuma conexão efetuada.');
+  return value;
+}
+
 async function passwordPrompt() {
   if (process.env.PGPASSWORD) return process.env.PGPASSWORD;
   const key = spawnSync('/usr/bin/security', ['find-generic-password', '-s', 'Supabase CLI', '-a', PROJETO, '-w'], { encoding: 'utf8', timeout: 10000 });
@@ -283,10 +297,10 @@ async function passwordPrompt() {
   const cancel = () => { reset(); process.exit(130); };
   process.once('SIGINT', cancel);
   process.once('SIGTERM', cancel);
-  try { return await new Promise((resolve, reject) => {
+  try { const answer = await new Promise((resolve, reject) => {
     rl.once('line', resolve);
     rl.once('close', () => reject(new Error('Entrada de senha encerrada.')));
-  }); }
+  }); return normalizarEntradaSenha(answer); }
   finally { rl.close(); reset(); process.removeListener('SIGINT', cancel); process.removeListener('SIGTERM', cancel); }
 }
 
@@ -326,5 +340,11 @@ export async function main(argv = process.argv.slice(2)) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch(e => { console.error(`FALHOU: ${e.message}`); process.exitCode = 1; });
+  main().catch(e => {
+    console.error(`FALHOU: ${e.message}`);
+    if (/password authentication failed/i.test(e.message)) {
+      console.error('O servidor recusou esta senha. Copie novamente a senha do banco que funcionou antes e cole uma única vez no próximo prompt. Não cole a senha no chat.');
+    }
+    process.exitCode = 1;
+  });
 }
