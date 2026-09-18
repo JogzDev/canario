@@ -1,97 +1,178 @@
-# Backup lógico e restauração isolada
+# Backup nativo e restauração verificada
 
-**Porta de saída da etapa 1 do plano fechado.** Nenhuma migration é aplicada em
-produção antes deste procedimento terminar verde.
+O trabalho de backup está isolado na branch `codex/backup-verificado`, em
+`/Users/jpscoliveira/Canario-backup-codex`. A branch de implementação do Claude
+permanece independente. Não aplicar migrations nem fazer manutenção em produção
+antes de verificar um dump real e avaliar as limitações abaixo.
 
-O plano gratuito do Supabase não oferece backup baixável pelo painel; o caminho
-documentado é o dump lógico pelo CLI, restaurado em destino isolado
-([backups](https://supabase.com/docs/guides/platform/backups),
-[dump e restauração](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore)).
+## Prova real concluída em 18/09/2026
 
-## A senha é sua e não passa por mim
+Às 08:59:35 BRT, a restauração do backup real terminou com exit 0 e resultado
+`VERIFICADO_NO_ESCOPO_DECLARADO`: 57 tabelas nos schemas `auth`, `public`, `storage`
+e `supabase_migrations`, com conteúdo, catálogo, permissões e sequences conferidos.
 
-Nenhum comando aqui recebe senha em argumento, em URI ou em variável escrita em
-arquivo: o CLI pergunta no prompt e o `psql`/`pg_dump` leem de `PGPASSWORD`
-exportado pela sua própria sessão. Não cole a senha no chat, no histórico do
-shell nem na URI de conexão.
+- Destino: `/Users/jpscoliveira/backups/datadrobe-2026-09-18T02-14-22.054Z-6b15f9`.
+- Relatório: `restauracao-1789732775050.json` dentro desse destino.
+- Archive: `banco.dump`, 27.774.292 bytes.
+- SHA-256: `6906927eb188658d4e1b6880672d3b324afe757df66d798baa035abaaf357686`.
 
-## 0. Ferramentas (esta máquina não tem `brew`, `pg_dump` nem Docker)
+A verificação usou o modo `verify-existing`, comparando o conteúdo restaurado
+com um snapshot único posterior ao dump (11:54:32 UTC), como declarado no
+relatório. As assinaturas de todas as tabelas coincidiram. Nenhuma alteração
+foi feita em produção. O backup não libera espaço nem autoriza manutenção:
+capacidade e dependências fora da prova ainda precisam do roteiro revisado.
+Não iniciar nova exportação para retomar as tentativas antigas já superadas.
 
-O `gh` já vive em `~/.local/bin`; o CLI do Supabase entra do mesmo jeito, por
-binário solto, sem gerenciador de pacotes:
+## Ferramentas preparadas
 
-```bash
-mkdir -p ~/.local/bin && cd /tmp && \
-curl -fsSL -o supabase.tar.gz "https://github.com/supabase/cli/releases/latest/download/supabase_darwin_arm64.tar.gz" && \
-tar -xzf supabase.tar.gz supabase && mv supabase ~/.local/bin/ && \
-chmod +x ~/.local/bin/supabase && ~/.local/bin/supabase --version
+Postgres.app 2.9.6, PostgreSQL **17.11**, instalado para este usuário em:
+
+`~/.local/share/datadrobe-tools/Postgres.app/Contents/Versions/17/bin`
+
+Origem: [release oficial](https://github.com/PostgresApp/PostgresApp/releases/tag/v2.9.6).
+O asset `Postgres-2.9.6-17.dmg` teve seu SHA-256 comparado com o digest publicado
+pela API do GitHub:
+
+`b38bb00b8c8702a568270aab85995c550f7f93d1503b818efdc5ff9a519b7168`
+
+Assinatura verificada com `codesign --verify --deep --strict`; Gatekeeper aceitou
+como `Notarized Developer ID`, equipe `ZF84SJ5A3G`. Não é necessário Homebrew,
+Docker, abrir o app gráfico ou iniciar um serviço permanente.
+
+## Executar
+
+Abra `iniciar_backup.command` no Terminal. Ele usa a conexão sem senha já salva
+no projeto original em `supabase/.temp/pooler-url`, limitada ao session pooler
+5432 do projeto esperado. Digite a senha atual do banco no prompt sem eco.
+
+O procedimento não solicita senha no chat nem a grava em URI, argumentos do processo, arquivos ou histórico.
+É mantida em memória e passada aos filhos PostgreSQL por ambiente. Não é
+recuperável da chave publicável do aplicativo. A ferramenta não troca a senha.
+
+O processo:
+
+1. abre uma transação de leitura com snapshot exportado;
+2. captura o catálogo e configura somente sua sessão de leitura para até dez minutos por consulta;
+3. testa a leitura de `public.artigos` (a tabela em que a exportação real falhou),
+   com teto local de seis minutos; só prossegue se o teste concluir;
+4. executa `pg_dump --format=custom` antes das verificações de conteúdo e depois
+   captura contagens/assinaturas SHA-256 no mesmo snapshot, com progresso por tabela;
+5. preserva archive, inventário e manifesto fora do Git, em `~/backups/datadrobe-*`;
+6. cria um cluster PostgreSQL descartável, acessível apenas por socket local;
+7. restaura os schemas presentes entre `public`, `auth`, `storage` e
+   `supabase_migrations`, preservando papéis/owners/ACLs, mas sem permitir login;
+8. compara catálogo e dados e encerra o cluster local.
+
+Diretório de backup: `0700`. Arquivos: `0600`. O dump contém dados pessoais e
+credenciais de aplicação existentes nas tabelas; não compartilhar nem versionar.
+O dump original é preservado se a restauração falhar. Não há filtragem silenciosa
+de erros SQL. Qualquer dependência ausente reprova o ensaio para investigação.
+
+O timeout é ajustado com `SET` apenas nas conexões desta ferramenta. Defaults de
+produção e papéis `anon`/`authenticated` permanecem intactos. A primeira tentativa
+de 17/09 falhou na verificação anterior ao dump por `statement_timeout`; a pasta
+daquela tentativa ficou vazia. O ensaio agora inclui um default local de 1 ms
+para verificar a sobreposição da sessão antes de tentar produção novamente.
+
+A segunda tentativa foi interrompida pela checagem de configuração da sessão,
+ainda antes do dump. O modo somente leitura agora também é configurado por
+`SET` explícito, além de `PGOPTIONS`, e o timeout é comparado numericamente em
+milissegundos. O ensaio passou sem opções de inicialização, reproduzindo um
+pooler que não as propaga. Falhas futuras deixam `falha-*.json` com mensagem
+sanitizada no destino; não é necessário expor o Terminal ou credenciais.
+
+A quarta tentativa autenticou e confirmou a sessão de leitura, mas falhou
+durante `COPY` de `public.artigos`. O archive parcial não é restaurável e não
+constitui backup. A versão antiga perdeu a linha seguinte do erro. Agora os
+diagnósticos privados `diagnostico-artigos.json` e `diagnostico-pg_dump.json`
+preservam stderr (até 1 MB, com truncamento declarado), horários e motivo de
+interrupção local, sem salvar senha, ambiente, argumentos, stdin ou stdout.
+Podem conter contexto de linhas do banco: não compartilhar esses logs brutos.
+
+Importante: os dez minutos de `statement_timeout` se aplicam às consultas psql
+desta ferramenta. O próprio `pg_dump` redefine os timeouts SQL para zero; para
+ele o limite é **local**, seis minutos no teste focal e quinze no dump completo.
+Isso não altera defaults da produção. Não atribuir a falha anterior a timeout
+ou ao pooler sem a mensagem do servidor ou os logs correspondentes.
+
+Para repetir apenas a restauração:
+
+```sh
+node ferramentas/backup/backup_nativo.mjs restore --dest /caminho/absoluto/do/backup
 ```
 
-O destino da restauração **não precisa de instalação**: é o PostgreSQL 17.10 do
-pacote `@embedded-postgres`, a mesma versão maior da produção, que já roda neste
-projeto no laboratório do radar. Cluster descartável, socket próprio, sem porta
-de rede.
+Se o dump terminou com exit0, mas a verificação de conteúdo perdeu a conexão,
+não é necessário exportar tudo novamente:
 
-## 1. Dump (você roda, com a senha no prompt)
-
-A string de conexão está no painel do Supabase em *Project Settings → Database →
-Connection string → URI*. Copie a URI **sem** a senha, deixando `[YOUR-PASSWORD]`
-no lugar; o CLI pergunta.
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-cd ~/Canario
-mkdir -p ~/backups/datadrobe-$(date +%F) && cd ~/backups/datadrobe-$(date +%F)
-
-supabase db dump --db-url "postgresql://postgres.tbluoqpnjqsflfoclmms:[YOUR-PASSWORD]@<HOST>:5432/postgres" -f papeis.sql --role-only
-supabase db dump --db-url "postgresql://postgres.tbluoqpnjqsflfoclmms:[YOUR-PASSWORD]@<HOST>:5432/postgres" -f schema.sql
-supabase db dump --db-url "postgresql://postgres.tbluoqpnjqsflfoclmms:[YOUR-PASSWORD]@<HOST>:5432/postgres" -f dados.sql --use-copy --data-only
+```sh
+node ferramentas/backup/backup_nativo.mjs verify-existing --dest /caminho/absoluto/do/backup
 ```
 
-Confira o tamanho antes de seguir: o banco tem **485.649.555 bytes** medidos em
-17/09/2026, então os três arquivos somam centenas de MB. Dump de poucos KB é
-dump falhado.
+Esse modo valida a leitura integral do archive, confirma que a estrutura e as
+sequences não mudaram e calcula SHA-256 de cada linha no próprio servidor. Só
+transfere contagem, quatro somas exatas e quatro XORs dos segmentos64bits dos
+hashes. A representação usada é `record_out` (`r::text`), que distingue SQL NULL
+de JSON null e preserva limites inferiores de arrays, diferente de row_to_json.
+Isso evita reenviar centenas deMB pela conexão instável. Não usa sort
+nem CTE materializado; a mesma assinatura é calculada no restore local. Todas
+as leituras compartilham um único snapshot novo, limitado a60min. O manifesto
+declara explicitamente que a comparação usou um snapshot **posterior ao dump**;
+só há aprovação se todas as assinaturas forem iguais. Divergência não é
+ignorada ou atribuída automaticamente a "mudanças normais". Logs privados e
+hashes parciais não constituem aprovação. O método anterior em blocosctid
+continua testado, mas não é o caminho padrão dessa recuperação.
 
-```bash
-ls -lh papeis.sql schema.sql dados.sql
+`restaurar_isolado.mjs` é um alias para o modo `restore`; o parser antigo de SQL/COPY foi
+retirado. O formato esperado agora é `banco.dump` + `manifesto.json`, não três
+arquivos SQL avulsos.
+
+## O que a prova significa
+
+Um resultado `VERIFICADO_NO_ESCOPO_DECLARADO` prova conteúdo e definições dos
+schemas declarados restaurados do arquivo real. Compara tabelas, colunas,
+constraints, índices, views, funções, triggers, políticas RLS e ACLs catalogadas.
+O conteúdo de cada tabela usa contagem e soma/XOR de SHA-256 por linha, sem
+ordenação pesada em produção. O hash do archive também é verificado. O estado
+das sequences/identity é comparado; se mudar durante a captura (não é MVCC), o
+processo preserva o dump e reprova a prova para repetição sem gravações.
+
+A comparação usa a ordem lógica das colunas ativas, não as lacunas físicas de
+`attnum` deixadas por `DROP COLUMN`/`DROP ATTRIBUTE`. O dump lógico não preserva
+essas lacunas. Nomes, ordem efetiva, tipos, defaults e permissões continuam
+comparados; teste negativo confirma que trocar a ordem lógica reprova o ensaio.
+
+Continuam fora da prova operacional:
+
+- bytes das imagens e demais objetos do Storage (o dump contém metadados);
+- funcionamento de Auth, PostgREST, provedores Apple/e-mail e Edge Functions;
+- execução de cron e leitura de segredos Vault/extensões indisponíveis localmente;
+- configurações de plataforma e senhas de login dos papéis;
+- recuperação completa do projeto Supabase e cópia em outra máquina.
+
+As extensões indisponíveis aparecem no relatório. Funções que dependam delas
+podem ser preservadas como definição sem terem sua execução comprovada. Nunca
+interpretar o ensaio como autorização automática para produção.
+
+## Ensaio sem credencial de produção
+
+```sh
+node ferramentas/backup/testar_backup.mjs
 ```
 
-## 2. Restauração isolada e verificação (eu rodo)
+Cria origem e destino locais reais; exercita dump/restauração, Unicode e COPY,
+chaves estrangeiras, índices, RLS, funções, triggers e ACLs. Também prova que
+conteúdo divergente e hash adulterado são rejeitados. Não lê produção.
 
-```bash
-node ferramentas/backup/restaurar_isolado.mjs \
-  --dump ~/backups/datadrobe-AAAA-MM-DD \
-  --modulos ~/Canario-produto/ferramentas/laboratorio_radar/node_modules
-```
+Em 17/09/2026, o ensaio passou em PostgreSQL 17.11: seis tabelas, 12 mil linhas
+de peças fictícias, catálogo/dados/sequences iguais; os dois casos negativos
+também foram rejeitados. Esse ensaio usa fixtures; a prova real está registrada
+separadamente no início deste documento.
 
-O script:
+`node ferramentas/backup/testar_diagnostico.mjs` usa processos e credenciais
+fictícios para provar preservação de stderr multilinha, redação de senha,
+permissão0600 e identificação do timeout local. O teste focal de `artigos`
+também faz parte do ensaio integral com PostgreSQL real local.
 
-1. sobe um PostgreSQL 17.10 descartável, só com socket local;
-2. cria os papéis do Supabase que o dump espera (`anon`, `authenticated`,
-   `service_role`, `supabase_admin`) e os esquemas de plataforma;
-3. aplica `papeis.sql`, `schema.sql` e `dados.sql`, ignorando **apenas** o que
-   não existe fora do Supabase (as extensões `pg_cron` e `supabase_vault`, e o
-   que depende delas) — cada linha ignorada é impressa, nunca escondida;
-4. compara o resultado com `anexos/contagens_producao_2026-09-17.json`: linha
-   por linha das 21 tabelas, número de funções e de políticas de RLS;
-5. termina em `RESTAURACAO VERDE` ou lista a primeira divergência.
-
-Exceção conhecida e declarada: `pg_cron` e `supabase_vault` são objetos de
-plataforma, não dados. Eles não restauram num PostgreSQL comum e, por isso, o
-agendamento do cron e os segredos do vault **não** fazem parte desta prova. O
-que a prova cobre é schema, dados, funções e políticas do `public`.
-
-## 3. Só então
-
-Com a restauração verde, a ordem do plano fechado é:
-
-1. purgar `cron.job_run_details` (~15 MB, 64.789 linhas de log);
-2. `reindex` do `artigos_url_key` (40 MB medidos contra ~19 MB de um índice
-   novo);
-3. compactar da menor para a maior (`series_semanais` 70 MB → 21 MB de dado
-   vivo; `produtos` 73 → 45; `artigos` 53 → 40; `snapshots` 48 → 35);
-4. impedir a reescrita sem mudança em `computar_z`;
-5. medir de novo e observar o crescimento por sete dias.
-
-As migrations A57 e A58 entram na mesma janela do aplicativo que as consome,
-depois disso — nunca antes.
+Referências: [pg_dump 17](https://www.postgresql.org/docs/17/app-pgdump.html),
+[pg_restore 17](https://www.postgresql.org/docs/17/app-pgrestore.html),
+[limites dos backups Supabase](https://supabase.com/docs/guides/platform/backups).
