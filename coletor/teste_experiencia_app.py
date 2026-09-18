@@ -124,6 +124,26 @@ def main():
         "o + do Add está em x={:.3f} e o centro do quadro em x={:.3f}: "
         "{:.3f} unidades fora".format(botao, centro, abs(botao - centro)))
 
+    # A57/A58: o app consome as funcoes NOVAS, e as antigas ficam no banco
+    # servindo os aparelhos que ninguem atualizou. Se a tela voltasse a chamar
+    # a versao sem sufixo, a v2 existiria sem consumidor e a correcao de
+    # frescor nao chegaria a tela nenhuma.
+    peca = ler("Telas/RelatorioDaPeca.swift")
+    assert '"similares_da_peca_amplo_v2"' in peca, (
+        "a tela da peca precisa chamar o envelope v2")
+    assert '"similares_da_peca_amplo"' not in peca.replace(
+        '"similares_da_peca_amplo_v2"', ""), (
+        "sobrou chamada ao envelope antigo na tela da peca")
+
+    # A capa deixou de contar pelos 120 exemplos: a contagem vem da agregacao
+    # da janela inteira, em produtos distintos.
+    assert '"resumo_de_eventos"' in explorar, (
+        "a capa precisa consumir a agregacao, nao a amostra")
+    assert '"eventos_recentes"' not in explorar, (
+        "a capa voltou a contar pelos exemplos de eventos_recentes")
+    assert "Text(\"\\(marca.pecas)\")" in explorar, (
+        "o numero da linha de marca precisa ser pecas distintas")
+
     print("UX físico: ausência silenciosa, ajuda adaptativa, teclado com saída "
           "e o + do Add a {:.3f} unidade do centro".format(abs(botao - centro)))
     return 0

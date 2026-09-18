@@ -53,6 +53,93 @@ final class CanarioUITests: XCTestCase {
         }
     }
 
+    // MARK: O bloco editorial da busca (A58)
+    //
+    // A RPC `buscar_referencia_editorial` ainda não está publicada, e os
+    // fluxos do CI rodam sem rede. `-CanarioUITestImprensa <caso>` troca a
+    // fonte da resposta por uma fixture em memória: nada aqui fala com o
+    // servidor, e os quatro estados que interessam são todos de tela.
+
+    private func abrirBusca(_ caso: String) -> XCUIApplication {
+        let app = aplicativo(argumentos: ["-CanarioAbrirBusca",
+                                          "-CanarioUITestImprensa", caso])
+        app.launch()
+        let campo = app.searchFields.firstMatch
+        XCTAssertTrue(campo.waitForExistence(timeout: 10),
+                      "a busca deveria abrir direto com -CanarioAbrirBusca")
+        campo.tap()
+        return app
+    }
+
+    func testImprensaMostraAMateriaQueContemAExpressao() {
+        let app = abrirBusca("sucesso")
+        app.searchFields.firstMatch.typeText("Napoleon Jacket")
+
+        XCTAssertTrue(app.staticTexts["In the press"].waitForExistence(timeout: 10),
+                      "o bloco editorial deveria aparecer com a matéria")
+        XCTAssertTrue(
+            app.staticTexts.containing(NSPredicate(
+                format: "label CONTAINS 'Napoleon Jacket Is Making A Comeback'"))
+                .firstMatch.exists,
+            "o título gravado precisa aparecer inteiro, não reduzido a taxonomia")
+    }
+
+    func testImprensaSemMateriaNaoAbreBlocoVazio() {
+        let app = abrirBusca("vazio")
+        app.searchFields.firstMatch.typeText("Napoleon Jacket")
+
+        // Dois segundos são mais que a pausa de 350 ms: se o bloco fosse
+        // aparecer, já teria aparecido.
+        XCTAssertFalse(app.staticTexts["In the press"].waitForExistence(timeout: 2),
+                       "cabeçalho com 'nada encontrado' embaixo ocupa a tela para não dizer nada")
+        XCTAssertFalse(app.staticTexts["imprensa-falhou"].exists)
+    }
+
+    func testImprensaDeclaraFalhaDeRedeEmVozBaixa() {
+        let app = abrirBusca("erro")
+        app.searchFields.firstMatch.typeText("Napoleon Jacket")
+
+        XCTAssertTrue(app.staticTexts["imprensa-falhou"].waitForExistence(timeout: 10),
+                      "falha de rede é declarada, não engolida")
+        XCTAssertFalse(app.staticTexts["In the press"].exists)
+    }
+
+    func testImprensaCalaQuandoAFuncaoAindaNaoExiste() {
+        let app = abrirBusca("ausente")
+        app.searchFields.firstMatch.typeText("Napoleon Jacket")
+
+        // PGRST202 é "a A58 ainda não subiu". Nesse caso, e só nesse, o bloco
+        // não existe e não avisa nada: o app é publicado depois do banco, e
+        // durante a janela de um aparelho adiantado o aviso seria ruído.
+        XCTAssertFalse(app.staticTexts["imprensa-falhou"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.staticTexts["In the press"].exists)
+    }
+
+    /// A pergunta A responde DEPOIS da B. A tela tem de mostrar a B.
+    func testRespostaLentaNaoSobrescreveAPerguntaNova() {
+        let app = abrirBusca("troca")
+        let campo = app.searchFields.firstMatch
+        campo.typeText("lenta")
+        // A resposta de "lenta" leva 1,5 s. A troca acontece dentro disso.
+        campo.typeText(XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue
+                       + XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue
+                       + XCUIKeyboardKey.delete.rawValue)
+        campo.typeText("rapida")
+
+        let rapida = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS 'Resposta rapida'")).firstMatch
+        XCTAssertTrue(rapida.waitForExistence(timeout: 10),
+                      "a resposta da pergunta atual deveria estar na tela")
+
+        // E continua sendo a B depois que a A chega: 3 s cobre o 1,5 s da
+        // resposta lenta com folga.
+        let lenta = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS 'Resposta lenta'")).firstMatch
+        XCTAssertFalse(lenta.waitForExistence(timeout: 3),
+                       "resposta antiga não pode sobrescrever a nova")
+        XCTAssertTrue(rapida.exists)
+    }
+
     func testQEAAbreLegivelSobreATrends() {
         let app = aplicativo(argumentos: ["-CanarioAbrirTrends"])
         app.launch()

@@ -414,7 +414,31 @@ struct EventoVarejo: Codable, Identifiable, Hashable {
     }
 
     /// Uma linha de leitura humana. Fato observado, nunca projeção.
-    var resumo: String {
+    var resumo: String { LeituraDoEvento.resumo(tipo: tipo, detalhe: detalhe) }
+
+    /// A repetição, que é onde mora o sinal.
+    func repeticao(desde inicioDaColeta: String) -> String? {
+        LeituraDoEvento.repeticao(tipo: tipo, ordinal: ordinal, detalhe: detalhe,
+                                  diasDesdeAPrimeira: diasDesdeAPrimeira,
+                                  desde: inicioDaColeta)
+    }
+
+    var icone: String { LeituraDoEvento.icone(tipo: tipo) }
+}
+
+// MARK: - Leitura humana de um evento de varejo
+
+/// As frases de um evento, escritas uma vez só.
+///
+/// Existem duas fontes para o mesmo evento: `eventos_recentes`, peça a peça, e
+/// os exemplos de `resumo_de_eventos`, amostra por marca. Enquanto as frases
+/// moravam dentro de `EventoVarejo`, a segunda fonte só teria como usá-las
+/// copiando — e a cópia que divergisse primeiro seria justamente a da tela que
+/// ninguém abre para conferir.
+enum LeituraDoEvento {
+
+    /// Fato observado, nunca projeção.
+    static func resumo(tipo: String, detalhe: EventoVarejo.Detalhe?) -> String {
         switch tipo {
         case "reposicao":
             let t = detalhe?.tamanhos?.joined(separator: ", ") ?? "—"
@@ -458,7 +482,10 @@ struct EventoVarejo: Codable, Identifiable, Hashable {
     /// "1ª reposição" com oito dias de coleta afirmaria que nunca houve outra
     /// antes, que é coisa que não medimos — e a regra 2 proíbe afirmar o que não
     /// foi medido.
-    func repeticao(desde inicioDaColeta: String) -> String? {
+    static func repeticao(tipo: String, ordinal: Int?,
+                          detalhe: EventoVarejo.Detalhe?,
+                          diasDesdeAPrimeira: Int?,
+                          desde inicioDaColeta: String) -> String? {
         guard let ordinal else { return nil }
         let coisa = tipo == "reposicao" ? "restock" : (tipo == "remarcacao" ? "markdown" : nil)
         guard let coisa else { return nil }
@@ -488,7 +515,7 @@ struct EventoVarejo: Codable, Identifiable, Hashable {
         return frase
     }
 
-    var icone: String {
+    static func icone(tipo: String) -> String {
         switch tipo {
         case "reposicao": return "arrow.clockwise"
         case "remarcacao": return "tag"

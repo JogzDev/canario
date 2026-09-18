@@ -28,6 +28,24 @@ final class SerieDoClusterTests: XCTestCase {
         XCTAssertNotNil(r.pontos.first?.data)
     }
 
+    /// A borda direita do gráfico é lida como "agora". Com a série publicada
+    /// há semanas, a tela precisa dizer onde a linha termina de verdade.
+    func testSerieParadaDeclaraOndeALinhaTermina() throws {
+        let hoje = try XCTUnwrap(Formato.dataISO("2026-09-17"))
+        let texto = try XCTUnwrap(SerieDoCluster.ateQuando(resposta(8), hoje: hoje))
+        XCTAssertTrue(texto.contains("week of 08/06/2026"))
+        XCTAssertTrue(texto.contains("ago"))
+        XCTAssertTrue(texto.contains("No newer week has been published."))
+    }
+
+    /// Série em dia não ganha carimbo de idade: uma semana de atraso é a
+    /// cadência normal de uma série semanal, não uma ressalva.
+    func testSerieEmDiaNaoViraRessalva() throws {
+        let hoje = try XCTUnwrap(Formato.dataISO("2026-06-12"))
+        let texto = try XCTUnwrap(SerieDoCluster.ateQuando(resposta(8), hoje: hoje))
+        XCTAssertEqual(texto, "The line ends on the week of 08/06/2026.")
+    }
+
     func testGraficoExigeOitoSemanas() {
         XCTAssertTrue(SerieDoCluster.porQueNaoDesenha(resposta(7))?
             .contains("at least 8") == true)

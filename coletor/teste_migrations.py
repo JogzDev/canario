@@ -54,15 +54,35 @@ def main():
         if trecho not in cluster:
             return falhar("cluster final nao garante: {}".format(trecho))
 
-    _, similares = ultima_definicao(
+    # A57 NAO substitui as funcoes antigas: quem decide a versao do app
+    # instalada e a pessoa, e trocar o comportamento por baixo de um aparelho
+    # que ninguem atualizou muda a tela de quem nao pediu para mudar. A v1
+    # fica congelada na A40 -- inclusive com o defeito da ancora de
+    # calendario, que e o que o app ja instalado espera receber.
+    arquivo_v1, similares_v1 = ultima_definicao(
         arquivos, "create or replace function public.similares_da_peca(")
+    if "20260917210000_a57" in arquivo_v1:
+        return falhar("a A57 voltou a substituir similares_da_peca no lugar")
+    if "ep.ultimo_avistamento_em >= current_date - 7" not in similares_v1:
+        return falhar("a v1 de similares deixou de ser a da A40")
+    for proibido in ("join painel pa", "'visto_em', visto_em"):
+        if proibido in similares_v1:
+            return falhar(
+                "a v1 de similares ganhou contrato novo: {}".format(proibido))
+
+    _, similares = ultima_definicao(
+        arquivos, "create or replace function public.similares_da_peca_v2(")
     exigencias_similares = [
         "t.status = 'aprovado'",
         "limit 12",
         "p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')",
         "least(greatest(coalesce($2, 12), 1), 24)",
         "ep.ofertavel is true",
-        "ep.ultimo_avistamento_em >= current_date - 7",
+        # A57 trocou a ancora: o frescor e medido contra o ultimo dia
+        # observado DO PROPRIO SEGMENTO, nao contra o calendario e nao contra
+        # uma data unica para as duas coortes.
+        "join painel pa on pa.segmento = p.segmento",
+        "ep.ultimo_avistamento_em >= pa.observado_em - 7",
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
         "cardinality(par.categorias) = 0",
@@ -71,6 +91,30 @@ def main():
     for trecho in exigencias_similares:
         if trecho not in similares:
             return falhar("similares final nao garante: {}".format(trecho))
+
+    # A57: pausa de coleta nao pode virar "nao existe peca parecida". Medido em
+    # 17/09/2026, com a coleta parada desde 02/09: similares devolvia 0 para
+    # `vestido + preto` num painel com 12.496 vestidos.
+    exigencias_frescor = [
+        "group by p.segmento",
+        "'visto_em', visto_em",
+        "'observado_em', max(visto_em)",
+        "'observado_mais_antigo_em', min(visto_em)",
+        "'dias_desde_a_observacao', (current_date - max(visto_em))",
+        # A ponta VELHA e quem decide se o conjunto pode ser chamado de
+        # "agora": uma peca vista ontem nao pode carimbar de atual outra
+        # vista ha oito dias na mesma resposta.
+        "'dias_desde_a_observacao_mais_antiga', (current_date - min(visto_em))",
+        # Zero resultado tambem tem periodo: a data do painel consultado nao
+        # depende de ter havido casamento.
+        "'painel_observado_em', (select observado_em from painel",
+        "'painel_dias_desde_a_observacao'",
+    ]
+    for trecho in exigencias_frescor:
+        if trecho not in similares:
+            return falhar("similares nao ancora frescor no dado: {}".format(trecho))
+    if "ep.ultimo_avistamento_em >= current_date - 7" in similares:
+        return falhar("similares ainda ancora frescor em current_date")
 
     _, similares_amplos = ultima_definicao(
         arquivos, "create or replace function public.similares_da_peca_amplo(")
@@ -84,6 +128,20 @@ def main():
     for trecho in exigencias_amostra_util:
         if trecho not in similares_amplos:
             return falhar("amostra ampliada nao garante: {}".format(trecho))
+
+    # O envelope e o que o app chama de verdade. Se ele continuasse caindo na
+    # v1, a v2 existiria sem ninguem para consumi-la.
+    _, amplo_v2 = ultima_definicao(
+        arquivos, "create or replace function public.similares_da_peca_amplo_v2(")
+    exigencias_amplo_v2 = [
+        "public.similares_da_peca_v2(termos, limite, preco_alvo)",
+        "public.similares_da_peca_v2(termos_reduzidos",
+        "dimensao_relaxada",
+        "grant execute on function public.similares_da_peca_amplo_v2",
+    ]
+    for trecho in exigencias_amplo_v2:
+        if trecho not in amplo_v2:
+            return falhar("envelope v2 nao garante: {}".format(trecho))
 
     _, serie_varejo = ultima_definicao(
         arquivos, "create or replace function public.computar_serie_varejo")
@@ -185,6 +243,70 @@ def main():
         arquivos, "create or replace function public.eventos_recentes")
     if "public.url_publica_produto(p.url, m.nome)" not in eventos_recentes:
         return falhar("eventos recentes ainda devolvem host administrativo")
+    # A57: o link e decidido pelo estado que o coletor escreve. A coluna
+    # `produtos.ultimo_snapshot_em` congelou em 24/08/2026, quando a A27 moveu
+    # o estado para `estado_dos_produtos` -- o link teria sumido em 07/09
+    # mesmo com a coleta de pe.
+    if "ep.ultimo_snapshot_em" not in eventos_recentes:
+        return falhar("link da loja ainda le a coluna congelada de produtos")
+    if "current_date - 14" in eventos_recentes:
+        return falhar("link da loja ainda ancora frescor em current_date")
+
+    _, resumo_eventos = ultima_definicao(
+        arquivos, "create or replace function public.resumo_de_eventos")
+    exigencias_resumo = [
+        # A unidade da manchete e produto distinto. A capa contava EVENTOS de
+        # uma amostra de 120: em 01/09 deu a capa a C&A com 52 enquanto a Le
+        # Lis Blanc tinha 289 na populacao inteira do dia.
+        "count(distinct np.produto_id)::int as pecas",
+        # Janela explicita e ancorada no dado, nunca em current_date.
+        "lim.ate - (par.janela - 1) as de",
+        # Denominador por marca: sem ele, "quem repos mais" premia catalogo.
+        # Denominador observado no fim da janela, materializado; nunca o
+        # estado do momento da consulta.
+        "join public.sortimento_diario sd",
+        "on sd.data = j.ate and sd.segmento = 'feminino_casual_br'",
+        "'denominador_em'",
+        "por_mil_ofertadas",
+        # Exemplos sao amostra e nao podem voltar a alimentar contagem, nem
+        # gastar dois cartoes com a mesma peca que repos duas vezes.
+        "x.posicao <= j.teto",
+        "select distinct on (np.produto_id) np.*",
+        # O sinal de repeticao que o JP pediu em 31/07 ("3a reposicao dos
+        # tamanhos PP/P em menos de 2 meses") viajava em `eventos_recentes`.
+        # Como a tela deixa de contar por ali, ele passa a viajar no exemplo.
+        "'ordinal', h.ordinal",
+        "'dias_desde_a_primeira', h.dias_desde_a_primeira",
+        "'detalhe', e.detalhe",
+        # Janela COMUM aos tres tipos, ancorada na observacao do painel ou num
+        # `ate` explicito de quem pergunta.
+        "ate date default null",
+        "max(ep.ultimo_avistamento_em)",
+        "grant execute on function public.resumo_de_eventos(text, integer, integer, date)",
+    ]
+    for trecho in exigencias_resumo:
+        if trecho not in resumo_eventos:
+            return falhar("resumo de eventos nao garante: {}".format(trecho))
+    # Ancorar no ultimo evento DE CADA TIPO fazia "nenhuma remarcacao nesta
+    # semana" recuar ate a ultima remarcacao e apresenta-la como atual.
+    if "max(e.data)" in resumo_eventos:
+        return falhar("a janela voltou a seguir o ultimo evento do tipo")
+
+    _, referencia = ultima_definicao(
+        arquivos,
+        "create or replace function public.buscar_referencia_editorial")
+    exigencias_referencia = [
+        # Expressao do usuario e dado, nao padrao de LIKE.
+        "replace(replace(replace(termo, '\\', '\\\\'), '%', '\\%'), '_', '\\_')",
+        # Mesmo recorte de publico que o painel admite.
+        "a.publico_editorial <> 'masculino'",
+        # Sem select geral em artigos: a funcao devolve titulo/veiculo/data/URL.
+        "security definer",
+        "grant execute on function public.buscar_referencia_editorial(text, integer)",
+    ]
+    for trecho in exigencias_referencia:
+        if trecho not in referencia:
+            return falhar("busca editorial nao garante: {}".format(trecho))
 
     _, produto_por_url = ultima_definicao(
         arquivos, "create or replace function public.produto_do_painel_por_url")
@@ -215,6 +337,24 @@ def main():
         "('claudia', 'editorial_br')",
         "('fashion gone rogue', 'editorial_intl')",
         "('red carpet fashion awards', 'editorial_intl')",
+        # A58: a tabela do denominador nao e legivel por anon -- entra pela
+        # RPC -- e a reconstrucao diaria escreve so o que mudou (P11).
+        "revoke all on table public.sortimento_diario from anon, authenticated",
+        "revoke all on function public.computar_sortimento_diario(date) from public, anon, authenticated",
+        "is distinct from excluded.pecas_ofertadas",
+        # P17: o snapshot vale sete dias. Sem o piso, catalogo morto contava
+        # como oferta para sempre e o denominador inchava.
+        "where s.data between alvo - 6 and alvo",
+        # Recomputar um dia tambem corrige para baixo: grupo que sumiu do
+        # calculo sai da tabela, em vez de virar denominador fantasma.
+        "delete from public.sortimento_diario sd",
+        "not exists (select 1 from pg_temp.sortimento_calculado c",
+        # A coleta e o motor chamam com a chave de servico. Sem o grant a
+        # funcao existe e nao roda.
+        "grant execute on function public.computar_sortimento_diario(date) to service_role",
+        # Sem argumento, alcanca o dia que uma noite vermelha deixou para tras:
+        # depois da poda aquele dia nao existe mais.
+        "or not exists (select 1 from public.sortimento_diario sd",
     ]
     for trecho in exigencias_finais:
         if trecho not in estado_final:
@@ -271,6 +411,9 @@ def main():
         "r_indice := public.computar_indice()",
         "r_curva := public.computar_curva_tamanhos()",
         "r_raridade := public.computar_raridade()",
+        # A58: ultima leitura do cru antes da poda. Dia podado e dia
+        # irreconstruivel -- esta ordem e uma porta de sentido unico.
+        "r_sortimento := public.computar_sortimento_diario()",
         "r_snapshots_removidos := public.podar_snapshots(21)",
     ]
     posicoes = [motor.find(p) for p in passos_motor]

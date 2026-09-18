@@ -13,6 +13,9 @@ struct Analisar: View {
     @State private var indices: [String: IndiceSemanal] = [:]
     @State private var carregando = true
     @State private var erro: String?
+    /// A58: as matérias que contêm a expressão literal, e não a tradução dela.
+    @State private var imprensa: ReferenciaEditorial.Resposta?
+    @State private var imprensaFalhou = false
 
     /// A tradução vive em `Traducao`, que é testada. Aqui a tela só consome.
     private var casados: [Termo] {
@@ -75,6 +78,10 @@ struct Analisar: View {
             }
         }
         .task { await carregar() }
+        // Reroda a cada mudança do texto, com uma pausa antes: a busca é um
+        // `ilike` sobre 172 mil títulos, e disparar uma por tecla digitada
+        // gastaria o banco para jogar 19 respostas fora.
+        .task(id: texto) { await procurarNaImprensa() }
         // A busca é `fullScreenCover` da `Raiz` e abre de QUALQUER aba,
         // inclusive da Trends -- e a Trends deixa a cena em escuro. Como esta
         // tela pinta o próprio fundo em #BBE5ED, sem declarar o esquema ela
@@ -90,11 +97,18 @@ struct Analisar: View {
             abertura
         } else if casados.isEmpty {
             ScrollView {
-                CoberturaInsuficiente(
-                    titulo: "This term isn't tracked yet",
-                    explicacao: "“\(texto)” is outside the reviewed vocabulary, so there is no market reading for it yet.",
-                    oQueTem: "Try: " + sugestoes.joined(separator: ", ")
-                )
+                VStack(spacing: 20) {
+                    CoberturaInsuficiente(
+                        titulo: "This term isn't tracked yet",
+                        explicacao: "“\(texto)” is outside the reviewed vocabulary, so there is no market reading for it yet.",
+                        oQueTem: "Try: " + sugestoes.joined(separator: ", ")
+                    )
+                    // O vocabulário não cobre a expressão, mas a imprensa pode
+                    // tê-la escrito -- foi exatamente o caso de "Napoleon
+                    // Jacket". Este é o lugar onde a busca deixa de terminar
+                    // em "não temos isso".
+                    cardDaImprensa
+                }
                 .padding(Tokens.Espaco.m)
             }
         } else {
@@ -105,6 +119,9 @@ struct Analisar: View {
                     }
 
                     cardAtributos
+                    // Depois dos atributos, e não antes: a leitura de mercado
+                    // é o que o app mede; a matéria é referência de fora.
+                    cardDaImprensa
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -221,6 +238,163 @@ struct Analisar: View {
         .background(cardBackground)
     }
 
+    /// **In the press**: as matérias cujo TÍTULO contém o que foi digitado.
+    ///
+    /// O bloco só existe quando há matéria. Um cabeçalho "In the press" com
+    /// "nada encontrado" embaixo ocupa a tela para não dizer nada -- e a
+    /// revisão de UX já apontou excesso de texto duas vezes.
+    @ViewBuilder
+    private var cardDaImprensa: some View {
+        if let r = imprensa, let manchete = ReferenciaEditorial.manchete(r) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("In the press")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.primary)
+                Text(manchete)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.primary.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(spacing: 0) {
+                    ForEach(Array(r.materias.enumerated()), id: \.element.id) { i, materia in
+                        materiaEmLinha(materia)
+                        if i < r.materias.count - 1 {
+                            Rectangle().fill(corLinha).frame(height: 1)
+                        }
+                    }
+                }
+
+                if let recorte = ReferenciaEditorial.recorte(r) {
+                    Text(recorte)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary.opacity(0.70))
+                }
+                Text(ReferenciaEditorial.ondeEstaOTexto)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.primary.opacity(0.70))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(cardBackground)
+        } else if imprensaFalhou {
+            // Falha declarada, em voz baixa: este bloco é referência de fora,
+            // não o resultado da busca, e não pode virar alarme vermelho no
+            // meio de uma tela que respondeu o que sabia.
+            Text("Press references could not be loaded.")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.primary.opacity(0.70))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("imprensa-falhou")
+        }
+    }
+
+    /// Uma matéria: título, procedência e o link que abre a fonte.
+    @ViewBuilder
+    private func materiaEmLinha(_ materia: ReferenciaEditorial.Materia) -> some View {
+        let conteudo = VStack(alignment: .leading, spacing: 4) {
+            Text(materia.titulo)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            if !materia.procedencia.isEmpty {
+                Text(materia.procedencia)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.primary.opacity(0.70))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 10)
+
+        if let endereco = materia.endereco {
+            Link(destination: endereco) {
+                HStack(alignment: .top, spacing: 10) {
+                    conteudo
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .padding(.top, 12)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(materia.titulo), \(materia.procedencia), opens the article")
+        } else {
+            conteudo
+        }
+    }
+
+    /// Pergunta ao banco pela expressão LITERAL, em paralelo com a tradução.
+    ///
+    /// Silêncio em dois casos, e só nestes dois: quando a RPC ainda não existe
+    /// no servidor (a A58 é publicada junto com esta versão do app, então um
+    /// aparelho atualizado antes do banco receberia 404 a cada tecla) e quando
+    /// a própria tarefa foi cancelada pela tecla seguinte.
+    private func procurarNaImprensa() async {
+        let expressao = texto.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard expressao.count >= 3 else {
+            imprensa = nil
+            imprensaFalhou = false
+            return
+        }
+        // A pausa é a primeira proteção: se a pessoa continuar digitando, esta
+        // tarefa é cancelada antes de chegar ao banco.
+        do { try await Task.sleep(nanoseconds: 350_000_000) } catch { return }
+        guard !Task.isCancelled else { return }
+        do {
+            let r = try await buscar(expressao)
+            guard aindaVale(expressao) else { return }
+            imprensa = r
+            imprensaFalhou = false
+        } catch {
+            guard aindaVale(expressao) else { return }
+            imprensa = nil
+            imprensaFalhou = !aFalhaEEsperada(error)
+        }
+    }
+
+    /// A resposta só escreve na tela se a pergunta ainda for esta.
+    ///
+    /// Duas condições, e as duas são necessárias. O cancelamento cobre a
+    /// tarefa que o SwiftUI já derrubou; a identidade cobre a janela em que
+    /// ela ainda não foi derrubada — uma consulta lenta de "lenta" respondendo
+    /// depois da resposta rápida de "rapida" apagaria a segunda com a
+    /// primeira, e a tela mostraria a matéria de uma pergunta que a pessoa já
+    /// abandonou.
+    private func aindaVale(_ expressao: String) -> Bool {
+        !Task.isCancelled
+            && expressao == texto.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func buscar(_ expressao: String) async throws
+    -> ReferenciaEditorial.Resposta {
+        if ImprensaDeTeste.ativa { return try await ImprensaDeTeste.responder(expressao) }
+        return try await Supabase.shared.chamar(
+            "buscar_referencia_editorial", ["expressao": expressao, "limite": 5])
+    }
+
+    /// Duas falhas não viram aviso: a função que ainda não existe no servidor
+    /// e o cancelamento pela tecla seguinte.
+    ///
+    /// O 404 é restrito ao **PGRST202**, que é o código do PostgREST para
+    /// função inexistente. Calar em qualquer 404 esconderia um caminho errado,
+    /// uma rota removida ou um proxy fora do ar — falhas reais, com a mesma
+    /// aparência e outra causa.
+    private func aFalhaEEsperada(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let erro = error as? Supabase.Falha {
+            switch erro {
+            case .resposta(let codigo, let corpo):
+                return codigo == 404
+                    && Supabase.Falha.codigoDoCorpo(corpo) == "PGRST202"
+            case .rede(let causa): return (causa as? URLError)?.code == .cancelled
+            default: return false
+            }
+        }
+        return (error as? URLError)?.code == .cancelled
+    }
+
     private var leituraCombinadaFormatada: String {
         let leituras = casados.compactMap { indices[$0.id]?.indice }
         guard !leituras.isEmpty else { return "--" }
@@ -256,6 +430,8 @@ struct Analisar: View {
             carregando = false
             let recentes = try await i
             indices = SelecaoDeEstado.porTermo(recentes)
+        } catch is CancellationError {
+            return
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

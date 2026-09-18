@@ -28,7 +28,12 @@ struct Explorar: View {
     @State private var series: [String: [PontoSerie]] = [:]
     @State private var pulsoBusca: [PontoSerie] = []
     @State private var pulsoEditorial: [PontoSerie] = []
-    @State private var eventos: [EventoVarejo] = []
+    /// A58: a agregação da janela inteira, por tipo de movimento.
+    ///
+    /// Era `[EventoVarejo]` vindo de `eventos_recentes(tipo, 120)`, e a tela
+    /// contava o que dava para mostrar. Em 01/09 isso deu a capa à C&A com 52
+    /// reposições quando a Le Lis Blanc tinha 289 na população inteira do dia.
+    @State private var resumos: [String: ResumoDeEventos.Resposta] = [:]
     @State private var inicioDaColeta = "2026-07-24"
     @State private var carregando = true
     @State private var carregandoPulso = true
@@ -317,42 +322,51 @@ struct Explorar: View {
     }
 
     private func movimento(titulo: String?, tipo: String, limite: Int?, vazio: String) -> some View {
-        let doTipo = eventos.filter { $0.tipo == tipo }
-        let porMarca = Dictionary(grouping: doTipo, by: \.marca)
-            .sorted { ($0.value.count, $1.key) > ($1.value.count, $0.key) }
-        let maisRecente = doTipo.map(\.data).max()
+        // A ordenação vem do banco, por peças distintas. Reordenar aqui
+        // reintroduziria o critério que a A58 tirou: a tela ordenava pelo que
+        // coube na amostra.
+        let resposta = resumos[tipo]
+        let marcas = resposta?.marcas ?? []
 
         return VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
             HStack(alignment: .firstTextBaseline) {
                 if let titulo { Text(titulo).font(Tokens.Fonte.secao) }
                 Spacer()
-                if let maisRecente {
-                    // O carimbo que faltava: o usuário vê a data do dado sem
-                    // precisar deduzi-la de um cartão.
-                    Text(carimbo(maisRecente))
+                if let r = resposta, let janela = ResumoDeEventos.janela(r) {
+                    // A janela inteira, e a idade dela. "Esta semana" sobre um
+                    // dado de quinze dias foi o defeito que abriu a A58.
+                    Text(janela)
                         .font(Tokens.Fonte.miudo)
                         .foregroundStyle(Tokens.Cor.tintaFraca)
                 }
             }
-            if carregandoEventos && porMarca.isEmpty {
+            if let r = resposta, !marcas.isEmpty {
+                LinhaInsumo(texto: ResumoDeEventos.total(r))
+            }
+            if carregandoEventos && resposta == nil {
                 ProgressView().frame(maxWidth: .infinity, alignment: .center)
-            } else if porMarca.isEmpty {
+            } else if resposta == nil {
+                // Não é a mesma coisa que uma janela vazia, e dizer que é
+                // seria transformar falha nossa em afirmação sobre o mercado.
+                CoberturaInsuficiente(
+                    titulo: "Supply moves could not be read",
+                    explicacao: "The panel did not answer this time. Nothing here says the brands stood still.",
+                    oQueTem: nil)
+            } else if marcas.isEmpty {
                 CoberturaInsuficiente(titulo: "No record in this window",
                                       explicacao: vazio, oQueTem: nil)
             } else {
-                ForEach(limite.map { Array(porMarca.prefix($0)) } ?? porMarca,
-                        id: \.key) { marca, lista in
+                ForEach(limite.map { Array(marcas.prefix($0)) } ?? marcas) { m in
                     NavigationLink {
                         // O título saiu do cabeçalho quando as duas seções
                         // viraram um cartão com segmento, mas a tela de
                         // destino ainda precisa dizer de qual movimento ela
                         // é -- lá não há segmento nenhum à vista.
-                        ListaDeEventos(marca: marca,
+                        ListaDeEventos(marca: m, tipo: tipo,
                                        titulo: titulo ?? rotuloDoMovimento(tipo),
-                                       eventos: lista,
                                        inicioDaColeta: inicioDaColeta)
                     } label: {
-                        LinhaDeMarca(marca: marca, eventos: lista)
+                        LinhaDeMarca(marca: m)
                     }
                     .buttonStyle(.plain)
                 }
@@ -399,10 +413,6 @@ struct Explorar: View {
     /// além de serem linguagem de engajamento, elas somem justamente no dia em
     /// que o usuário mais precisa saber se o número envelheceu. A data resolve
     /// as duas coisas de uma vez.
-    private func carimbo(_ data: String) -> String {
-        "most recent event: \(Formato.data(data))"
-    }
-
     // MARK: Radares atuais
 
     /// Google é uma fonte, não um veredito. Mostrá-lo separadamente resolve o
@@ -724,6 +734,8 @@ struct Explorar: View {
             todos = try await i.filter { $0.estado != nil }
             termos = try await t
             carregando = false
+        } catch is CancellationError {
+            return
         } catch {
             let mensagem = (error as? LocalizedError)?.errorDescription ?? "\(error)"
             if mostrouCache {
@@ -748,7 +760,7 @@ struct Explorar: View {
         await CacheDoExplorar.shared.salvar(SnapshotDoExplorar(
             todos: todos, termos: termos, series: series,
             pulsoBusca: pulsoBusca, pulsoEditorial: pulsoEditorial,
-            eventos: eventos, salvoEm: Date()))
+            resumos: resumos, salvoEm: Date()))
     }
 
     @MainActor
@@ -762,6 +774,8 @@ struct Explorar: View {
                 "select=*&segmento=eq.\(Recorte.segmento)&fonte=eq.busca"
                 + "&semana=gte.\(corte)&order=semana.desc&limit=250")
             pulsoBusca = novos
+        } catch is CancellationError {
+            return
         } catch {
             avisar("Search interest could not refresh; the rest of the page is available.")
         }
@@ -779,6 +793,8 @@ struct Explorar: View {
                 + "&fonte=in.(editorial_br,editorial_intl)&semana=gte.\(corte)"
                 + "&order=semana.desc&limit=250")
             pulsoEditorial = novos
+        } catch is CancellationError {
+            return
         } catch {
             avisar("Fashion headlines could not refresh; the rest of the page is available.")
         }
@@ -802,6 +818,8 @@ struct Explorar: View {
                 mapa[p.termoId, default: []].append(p)
             }
             series = mapa
+        } catch is CancellationError {
+            return
         } catch {
             avisar("Confirmed-movement details could not refresh.")
         }
@@ -812,11 +830,20 @@ struct Explorar: View {
         carregandoEventos = true
         defer { carregandoEventos = false }
         do {
-            async let rep: [EventoVarejo] = Supabase.shared.chamar(
-                "eventos_recentes", ["tipo_evento": "reposicao", "limite": 120])
-            async let rem: [EventoVarejo] = Supabase.shared.chamar(
-                "eventos_recentes", ["tipo_evento": "remarcacao", "limite": 120])
-            eventos = try await rep + (try await rem)
+            // `resumo_de_eventos` e não `eventos_recentes(tipo, 120)`: a
+            // contagem vem da população inteira da janela, em produtos
+            // distintos, e os exemplos vêm limitados por marca sem nunca
+            // alimentar contagem. Doze por marca porque é o teto da RPC e é
+            // o que a lista da marca mostra.
+            async let rep: ResumoDeEventos.Resposta = Supabase.shared.chamar(
+                "resumo_de_eventos",
+                ["tipo_evento": "reposicao", "dias": 7, "exemplos_por_marca": 12])
+            async let rem: ResumoDeEventos.Resposta = Supabase.shared.chamar(
+                "resumo_de_eventos",
+                ["tipo_evento": "remarcacao", "dias": 7, "exemplos_por_marca": 12])
+            resumos = ["reposicao": try await rep, "remarcacao": try await rem]
+        } catch is CancellationError {
+            return
         } catch {
             avisar("Store movements could not refresh.")
         }
@@ -834,7 +861,7 @@ struct Explorar: View {
         series = salvo.series
         pulsoBusca = salvo.pulsoBusca
         pulsoEditorial = salvo.pulsoEditorial
-        eventos = salvo.eventos
+        resumos = salvo.resumos
         carregandoPulso = false
         carregandoEditorial = false
         carregandoEventos = false
@@ -859,7 +886,7 @@ struct SnapshotDoExplorar: Codable {
     let series: [String: [PontoSerie]]
     let pulsoBusca: [PontoSerie]
     let pulsoEditorial: [PontoSerie]
-    let eventos: [EventoVarejo]
+    let resumos: [String: ResumoDeEventos.Resposta]
     let salvoEm: Date
 }
 
@@ -870,11 +897,11 @@ actor CacheDoExplorar {
     private var arquivo: URL {
         FileManager.default.urls(for: .cachesDirectory,
                                  in: .userDomainMask)[0]
-            // v3 desde 29/08. O nome ficou: um arquivo v3 gravado com o
-            // campo `curva`, que existiu por algumas horas, decodifica sem ele
-            // (chave desconhecida é ignorada), e voltar para `v2` só faria
-            // ressuscitar um cache mais velho ainda parado em disco.
-            .appendingPathComponent("canario-explorar-v3.json")
+            // v4 desde 18/09: os movimentos deixaram de ser uma lista de
+            // eventos e passaram a ser a agregação por marca. Um arquivo v3
+            // não decodifica na forma nova, e reaproveitar o nome faria a aba
+            // abrir vazia uma vez sem que nada explicasse por quê.
+            .appendingPathComponent("canario-explorar-v4.json")
     }
 
     func carregar() -> SnapshotDoExplorar? {
@@ -898,15 +925,14 @@ actor CacheDoExplorar {
 /// "Maria Filó · 12 peças com queda de preço". O número na frente, porque é ele
 /// que faz o comprador decidir se abre.
 struct LinhaDeMarca: View {
-    let marca: String
-    let eventos: [EventoVarejo]
+    let marca: ResumoDeEventos.Marca
 
     var body: some View {
         Cartao {
             HStack(alignment: .center, spacing: Tokens.Espaco.s) {
                 HStack(spacing: -10) {
-                    ForEach(Array(eventos.compactMap(\.imagem).prefix(3).enumerated()),
-                            id: \.offset) { _, endereco in
+                    ForEach(Array(marca.exemplos.compactMap(\.imagem)
+                        .prefix(3).enumerated()), id: \.offset) { _, endereco in
                         ZStack {
                             Circle().fill(Tokens.Cor.superficie)
                             Image(systemName: "tshirt")
@@ -920,11 +946,15 @@ struct LinhaDeMarca: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                    Text(NomeDeMarca.exibido(marca)).font(Tokens.Fonte.corpo)
-                    LinhaInsumo(texto: resumo)
+                    Text(NomeDeMarca.exibido(marca.marca)).font(Tokens.Fonte.corpo)
+                    if !apoio.isEmpty { LinhaInsumo(texto: apoio) }
                 }
                 Spacer()
-                Text("\(eventos.count)")
+                // Peças distintas, e não eventos: a mesma peça que repôs duas
+                // vezes na semana é uma peça. O número que a tela mostrava
+                // antes não era nem um nem outro -- era o que coube na
+                // amostra de 120.
+                Text("\(marca.pecas)")
                     .font(Tokens.Fonte.numero)
                 Image(systemName: "chevron.right")
                     .font(Tokens.Fonte.miudo)
@@ -932,32 +962,32 @@ struct LinhaDeMarca: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(NomeDeMarca.exibido(marca)), \(eventos.count) items. \(resumo)")
+        .accessibilityLabel("\(NomeDeMarca.exibido(marca.marca)), "
+            + "\(marca.pecas) items. \(apoio)")
     }
 
-    private var resumo: String {
-        let repetidas = eventos.filter { ($0.ordinal ?? 1) > 1 }.count
-        var partes: [String] = []
-        // Estava em português numa interface inteiramente em inglês, e só
-        // apareceu quando o fundo escuro parou de esconder o texto de apoio.
-        if let d = eventos.map(\.data).max() { partes.append("most recent on \(Formato.data(d))") }
-        if repetidas > 0 { partes.append("\(repetidas) had happened before") }
-        return partes.joined(separator: " · ")
-    }
+    private var apoio: String { ResumoDeEventos.apoio(marca) }
 }
 
 // MARK: - Lista de peças de uma marca
 
 struct ListaDeEventos: View {
-    let marca: String
+    let marca: ResumoDeEventos.Marca
+    let tipo: String
     let titulo: String
-    let eventos: [EventoVarejo]
     let inicioDaColeta: String
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                ForEach(eventos) { e in
+                // A lista é amostra e precisa dizer de quantas. Sem esta
+                // linha, doze cartões afirmam "doze peças" quando a marca tem
+                // seiscentas -- o defeito que a A58 corrigiu no banco,
+                // voltando pela tela.
+                if let recorte = ResumoDeEventos.recorte(marca) {
+                    LinhaInsumo(texto: recorte)
+                }
+                ForEach(marca.exemplos) { e in
                     Cartao {
                         HStack(alignment: .top, spacing: Tokens.Espaco.m) {
                             ZStack {
@@ -974,20 +1004,23 @@ struct ListaDeEventos: View {
                                 style: .continuous))
                             VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
                                 HStack(alignment: .firstTextBaseline) {
-                                    Label(NomeDeMarca.exibido(e.marca), systemImage: e.icone)
+                                    Label(NomeDeMarca.exibido(marca.marca),
+                                          systemImage: LeituraDoEvento.icone(tipo: tipo))
                                         .font(Tokens.Fonte.apoio.weight(.semibold))
                                     Spacer()
-                                    Text(Formato.data(e.data)).font(Tokens.Fonte.miudo)
-                                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                                    if let data = e.data {
+                                        Text(Formato.data(data)).font(Tokens.Fonte.miudo)
+                                            .foregroundStyle(Tokens.Cor.tintaFraca)
+                                    }
                                 }
                                 Text(e.peca ?? "—").font(Tokens.Fonte.corpo)
-                                Text(e.resumo).font(Tokens.Fonte.apoio)
+                                Text(e.resumo(tipo: tipo)).font(Tokens.Fonte.apoio)
                                     .foregroundStyle(Tokens.Cor.tintaFraca)
                             }
                         }
                         // A repetição em destaque: é ela que separa um evento
                         // isolado de um padrão de reposição.
-                        if let r = e.repeticao(desde: inicioDaColeta) {
+                        if let r = e.repeticao(tipo: tipo, desde: inicioDaColeta) {
                             Text(r)
                                 .font(Tokens.Fonte.miudo.weight(.semibold))
                                 .foregroundStyle((e.ordinal ?? 1) > 1 ? Tokens.Cor.alta : Tokens.Cor.tintaFraca)

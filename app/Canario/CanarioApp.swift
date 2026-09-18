@@ -63,7 +63,11 @@ struct Raiz: View {
         }
         return .adicionar
     }()
-    @State private var buscaAberta = false
+    /// A busca abre direto em teste de interface. Ela é `fullScreenCover` da
+    /// raiz e depende de um toque na barra; sem este atalho, um teste do
+    /// bloco editorial gastaria metade do tempo chegando até a tela.
+    @State private var buscaAberta = ProcessInfo.processInfo.arguments.contains(
+        "-CanarioAbrirBusca")
     @State private var menuAberto = ProcessInfo.processInfo.arguments.contains(
         "-CanarioMenuAberto")
     @State private var itemDoMenu: ItemDoMenu? = {

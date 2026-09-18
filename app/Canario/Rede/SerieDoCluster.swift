@@ -90,6 +90,33 @@ enum SerieDoCluster {
         return causas.joined(separator: "; ") + ". They are marked on the chart."
     }
 
+    /// Onde a linha termina, e há quanto tempo.
+    ///
+    /// **Por que isto precisa estar escrito.** O último ponto de um gráfico é
+    /// lido como "agora" — é o que a borda direita significa em todo gráfico
+    /// de linha que a pessoa já viu. Aqui ele é a última SEMANA COM LEITURA,
+    /// que é outra coisa: a série é publicada pelo motor, e o motor só publica
+    /// quando a coleta passa no portão de saúde. Com a coleta parada em
+    /// 02/09/2026, a linha termina semanas atrás e o desenho não muda de
+    /// aparência por isso.
+    ///
+    /// A idade só entra quando há idade. Série que termina na semana passada é
+    /// uma série em dia, e carimbar "7 dias atrás" nela seria transformar
+    /// funcionamento normal em ressalva.
+    static func ateQuando(_ r: Resposta, hoje: Date = Date()) -> String? {
+        guard let ultima = r.pontos.filter({ $0.data != nil })
+            .map(\.semana).max() else { return nil }
+        let dias = Formato.diasDesde(ultima, hoje: hoje)
+        let fim = "The line ends on the week of \(Formato.data(ultima))"
+        guard dias >= diasParaCarimbarIdade else { return fim + "." }
+        return fim + " — \(Formato.periodo(dias: dias)) ago. "
+             + "No newer week has been published."
+    }
+
+    /// Duas semanas: uma semana de atraso é a cadência normal de uma série
+    /// semanal, duas já é dado parado.
+    static let diasParaCarimbarIdade = 14
+
     /// Por que o gráfico não aparece, quando não aparece. Sempre uma frase que
     /// diz o que falta — nunca um espaço em branco.
     static func porQueNaoDesenha(_ r: Resposta?) -> String? {
