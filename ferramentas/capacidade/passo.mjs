@@ -33,6 +33,16 @@
  *     --host <host do pooler de SESSÃO> --porta 5432 \
  *     --usuario <usuario> [--banco postgres] [--executar]
  *
+ *   node ferramentas/capacidade/passo.mjs --migracao <arquivo de migration> \
+ *     --host ... --porta 5432 --usuario ... [--executar]
+ *
+ * MODO MIGRATION
+ * ==============
+ *
+ * Aplica UM arquivo canônico de `supabase/migrations/` numa transação única
+ * e registra sua versão no ledger `supabase_migrations.schema_migrations`
+ * na MESMA transação. Sem `--executar`, só valida e descreve a ação.
+ *
  * A porta 6543 (pooler de TRANSAÇÃO) é recusada: ali `set lock_timeout` não
  * sobrevive até o comando seguinte.
  *
@@ -45,6 +55,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
+const REPOSITORIO = path.resolve(AQUI, '../..');
+const MIGRATIONS = path.join(REPOSITORIO, 'supabase/migrations');
 const CANDIDATOS = [
   path.join(os.homedir(), '.canario/laboratorio-capacidade/node_modules'),
   path.join(os.homedir(), '.canario/laboratorio-significado/node_modules'),
@@ -67,17 +79,33 @@ const SESSAO = [
 
 export function opcoes(argv) {
   const o = { arquivo: null, executar: false, banco: 'postgres', porta: 5432,
-    senhaVazia: false };
+    senhaVazia: false, migracao: null, definir: [] };
+  const valorSeguinte = (nome, i) => {
+    const valor = argv[i + 1];
+    if (!valor || valor.startsWith('--')) throw new Error(`Falta valor para ${nome}.`);
+    return valor;
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--executar') o.executar = true;
     else if (a === '--senha-vazia') o.senhaVazia = true;
+    else if (a === '--migracao') { o.migracao = valorSeguinte(a, i); i += 1; }
+    else if (a === '--definir') { o.definir.push(valorSeguinte(a, i)); i += 1; }
     else if (['--host', '--porta', '--usuario', '--banco', '--socket', '--modulos']
-      .includes(a)) { o[a.slice(2)] = argv[i + 1]; i += 1; }
+      .includes(a)) { o[a.slice(2)] = valorSeguinte(a, i); i += 1; }
     else if (!a.startsWith('--') && !o.arquivo) o.arquivo = a;
     else throw new Error(`Opção desconhecida: ${a}`);
   }
-  if (!o.arquivo) throw new Error('Informe o arquivo do passo.');
+  if (!o.arquivo && !o.migracao) throw new Error('Informe o arquivo do passo ou --migracao.');
+  if (o.arquivo && o.migracao) throw new Error('Informe um passo OU uma migration por vez.');
+  if (o.definir.length && !o.socket) {
+    throw new Error('--definir só existe no laboratório (--socket).');
+  }
+  for (const d of o.definir) {
+    if (!/^datadrobe\.[a-z_]+=\d+$/.test(d)) {
+      throw new Error(`--definir aceita só datadrobe.<nome>=<número>: ${d}`);
+    }
+  }
   if (!o.usuario) throw new Error('Informe --usuario.');
   if (!o.socket && !o.host) throw new Error('Informe --host (ou --socket no laboratório).');
   if (Number(o.porta) === 6543) {
@@ -166,9 +194,68 @@ async function medir(cliente, alvo) {
   }
 }
 
+async function aplicarMigracao(cliente, o) {
+  const caminho = path.resolve(o.migracao);
+  const relativo = path.relative(MIGRATIONS, caminho);
+  if (relativo.startsWith('..') || path.isAbsolute(relativo)) {
+    throw new Error('A migration precisa estar no diretório canônico supabase/migrations.');
+  }
+  const nome = path.basename(caminho);
+  const m = nome.match(/^(\d{14})_([a-z0-9_]+)\.sql$/);
+  if (!m) throw new Error(`Nome de migration fora do formato: ${nome}`);
+  const [, versao, rotulo] = m;
+  const sql = await readFile(caminho, 'utf8');
+
+  await cliente.query('begin transaction read only');
+  let jaAplicada;
+  try {
+    const { rows: [l] } = await cliente.query(
+      "select to_regclass('supabase_migrations.schema_migrations') is not null as existe");
+    if (!l.existe) throw new Error('o ledger supabase_migrations.schema_migrations não existe');
+    const { rows } = await cliente.query(
+      'select 1 from supabase_migrations.schema_migrations where version = $1', [versao]);
+    jaAplicada = rows.length > 0;
+  } finally {
+    await cliente.query('commit');
+  }
+  if (jaAplicada) throw new Error(`a versão ${versao} já está no ledger: nada foi feito`);
+
+  console.log(`migration: ${nome}`);
+  const antes = await medir(cliente, null);
+  console.log(`antes: cota ${mb(antes.cota)} · principal ${mb(antes.principal)}`
+    + ` · somente-leitura ${antes.somente_leitura}`);
+  if (!o.executar) {
+    console.log(`ENSAIO: ${nome} seria aplicada numa transação única, com a versão `
+      + `${versao} registrada no ledger na mesma transação. Nada foi enviado.`);
+    return;
+  }
+
+  await cliente.query('set session characteristics as transaction read write');
+  // Só a A58 reconstrói o denominador histórico dentro da migration. As
+  // demais conservam o teto curto usado pelos passos de manutenção.
+  await cliente.query(versao === '20260917211000'
+    ? "set statement_timeout = '600s'"
+    : "set statement_timeout = '180s'");
+  const t0 = Date.now();
+  await cliente.query('begin');
+  try {
+    await cliente.query(sql);
+    await cliente.query(
+      'insert into supabase_migrations.schema_migrations (version, name, statements) '
+      + 'values ($1, $2, array[$3])', [versao, rotulo, sql]);
+    await cliente.query('commit');
+  } catch (erro) {
+    await cliente.query('rollback').catch(() => {});
+    throw new Error(`a migration falhou e foi desfeita inteira -- nada ficou: ${erro.message}`);
+  }
+  const depois = await medir(cliente, null);
+  console.log(`aplicada em ${((Date.now() - t0) / 1000).toFixed(1)} s e registrada como ${versao}. `
+    + `Cota ${mb(depois.cota)} (${mb(depois.cota - antes.cota)}).`);
+}
+
 async function main() {
   const o = opcoes(process.argv.slice(2));
-  const texto = await readFile(o.arquivo, 'utf8');
+  const texto = o.arquivo ? await readFile(o.arquivo, 'utf8') : '';
   const lista = comandos(texto);
   const alvo = (texto.match(/^\s*--\s*@alvo\s+(\S+)/m) || [])[1] || null;
   // Passo que devolve espaco e nao encolhe o alvo falhou em silencio: VACUUM
@@ -195,6 +282,15 @@ async function main() {
   cliente.on('notice', n => console.log(`  aviso: ${n.message}`));
   try {
     for (const s of SESSAO) await cliente.query(s);
+    for (const d of o.definir) {
+      const [chave, valor] = d.split('=');
+      await cliente.query(`set ${chave} = '${valor}'`);
+      console.log(`LABORATORIO: ${chave} = ${valor}`);
+    }
+    if (o.migracao) {
+      await aplicarMigracao(cliente, o);
+      return;
+    }
     if (o.executar && acao) {
       // A documentação do Supabase manda fazer isto quando o projeto já está
       // em somente-leitura: sem, a ação que libera espaço seria recusada.

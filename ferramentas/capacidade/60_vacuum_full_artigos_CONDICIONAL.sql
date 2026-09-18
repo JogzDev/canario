@@ -5,11 +5,9 @@
 --
 -- Alvo exato: a tabela `public.artigos`, o TOAST dela e os indices dela.
 --
--- CAMINHO NORMAL DEPOIS DO PASSO 50. Meça a cota; se ela ainda estiver acima
--- de 400 MB, pule o passo 40 e rode este arquivo diretamente. `VACUUM FULL`
--- reescreve a tabela e reconstroi todos os seus indices, portanto executar o
--- 40 antes repetiria a reconstrucao de `artigos_url_key`, o lock e o WAL.
--- Os passos 40 e 60 sao ramos mutuamente exclusivos.
+-- CONDICIONAL E EXCLUSIVO COM O 40 (ver passo 55). `VACUUM FULL` reescreve
+-- a tabela e reconstroi todos os seus indices, portanto executar o 40 antes
+-- repetiria a reconstrucao de `artigos_url_key`, o lock e o WAL.
 --
 -- O que faz: reescreve a tabela so com as linhas vivas, no fillfactor dela
 -- (100), e reconstroi os indices. Nenhuma linha e apagada ou alterada.
@@ -30,10 +28,29 @@
 --
 -- Abortar se: o executor acusar lock ou tempo; o tamanho nao cair.
 
--- PRE: so e necessario se a cota ainda estiver acima de 400 MB (80%).
-do $$ begin
-  if (select sum(pg_database_size(oid)) from pg_database) <= 400000000 then
-    raise exception 'ABORTAR: a folga de 20%% ja foi atingida; este passo nao e necessario';
+-- PRE: aplica a decisao do passo 55. O 60 so roda se a cota estiver acima do
+-- teto, o indice ainda estiver inchado e o ganho do 40 NAO bastar sozinho.
+do $$
+declare
+  teto bigint := coalesce(nullif(current_setting('datadrobe.teto_bytes', true), '')::bigint,
+                          400000000);
+  cota bigint := (select sum(pg_database_size(oid)) from pg_database);
+  url_atual bigint := pg_relation_size('public.artigos_url_key');
+  url_recem bigint := (select round(sum(((8 + pg_column_size(url) + 7) / 8) * 8 + 4)
+                                    / 0.90 * 1.01)
+                         from public.artigos);
+  ganho_40 bigint := greatest(url_atual - url_recem, 0);
+begin
+  if cota <= teto then
+    raise exception 'ABORTAR: a folga de 20%% ja foi atingida (cota % <= teto %); este passo nao e necessario',
+      cota, teto;
+  end if;
+  if url_atual <= url_recem * 1.10 then
+    raise exception 'ABORTAR: artigos_url_key ja foi reconstruido (% contra % estimados); o 40 ou o 60 ja rodou -- parar e revisar',
+      url_atual, url_recem;
+  end if;
+  if cota - ganho_40 <= teto then
+    raise exception 'ABORTAR: o 40 sozinho basta (% - % <= %); use o 40', cota, ganho_40, teto;
   end if;
 end $$;
 

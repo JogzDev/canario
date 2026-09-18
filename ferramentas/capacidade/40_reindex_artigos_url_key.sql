@@ -1,20 +1,13 @@
--- PASSO 40 · ALTERNATIVA PARCIAL; NAO FAZ PARTE DA SEQUENCIA NORMAL.
+-- PASSO 40 · DEVOLVE ESPACO FISICO. EXCLUSIVO COM O 60 (ver passo 55).
 --
 -- @espera_encolher
 -- @alvo public.artigos_url_key
 --
 -- Alvo exato: o indice `public.artigos_url_key` e nada mais.
 --
--- MUTUAMENTE EXCLUSIVO COM O PASSO 60. O caminho normal mede depois do 50
--- e, se a cota ainda estiver acima de 400 MB, pula este arquivo e vai direto
--- ao `VACUUM FULL artigos`: ele ja reconstroi este indice. Rodar 40 e depois
--- 60 repetiria o mesmo trabalho, o lock e o WAL sem recuperar um byte a mais.
---
--- Este arquivo so existe como recuperacao PARCIAL se o 60 tiver sido
--- descartado por sua janela de lock ou pelo espaco temporario. Pelas medidas
--- de 18/09, sozinho ele levaria a cota esperada de ~427,2 para ~407,3 MB, sem
--- atingir a meta de 400 MB. Depois dele, rode o 70; se falhar, pare e revise.
--- Nao prossiga para o 60 na mesma execucao.
+-- MUTUAMENTE EXCLUSIVO COM O PASSO 60. A medicao do passo 55 escolhe o 40
+-- somente quando o reindex sozinho basta para chegar a 400 MB. Se nao basta,
+-- escolhe o 60, que reconstroi este indice junto com heap e chave primaria.
 --
 -- O que faz: reconstroi o indice do zero. O dado da tabela nao muda.
 -- Medido em 18/09: 41.951.232 bytes; um btree recem-construido com as mesmas entradas
@@ -31,6 +24,31 @@
 -- falhar, deixa um indice invalido `*_ccnew` que precisa ser apagado a mao.
 --
 -- Abortar se: o executor acusar lock; o indice nao encolher.
+
+-- PRE: aplica a decisao do passo 55. O 40 so roda se a cota estiver acima
+-- do teto, o indice ainda estiver inchado e seu ganho estimado bastar sozinho.
+do $$
+declare
+  teto bigint := coalesce(nullif(current_setting('datadrobe.teto_bytes', true), '')::bigint,
+                          400000000);
+  cota bigint := (select sum(pg_database_size(oid)) from pg_database);
+  url_atual bigint := pg_relation_size('public.artigos_url_key');
+  url_recem bigint := (select round(sum(((8 + pg_column_size(url) + 7) / 8) * 8 + 4)
+                                    / 0.90 * 1.01)
+                         from public.artigos);
+  ganho_40 bigint := greatest(url_atual - url_recem, 0);
+begin
+  if cota <= teto then
+    raise exception 'ABORTAR: a cota (%) ja esta dentro do teto (%): nem 40 nem 60', cota, teto;
+  end if;
+  if url_atual <= url_recem * 1.10 then
+    raise exception 'ABORTAR: artigos_url_key ja foi reconstruido (% contra % estimados); o 40 ou o 60 ja rodou -- parar e revisar',
+      url_atual, url_recem;
+  end if;
+  if cota - ganho_40 > teto then
+    raise exception 'ABORTAR: o 40 sozinho nao basta (% - % > %); use o 60', cota, ganho_40, teto;
+  end if;
+end $$;
 
 -- PRE: nenhuma publicacao do motor em andamento. A coleta esta parada; se
 -- alguem disparou o motor na mao, o passo espera.

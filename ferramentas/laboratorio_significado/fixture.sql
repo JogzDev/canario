@@ -34,6 +34,13 @@ create role authenticated nologin;
 -- da mesma transacao dos demais calculos.
 create role service_role nologin bypassrls;
 
+create schema supabase_migrations;
+create table supabase_migrations.schema_migrations (
+  version text primary key,
+  statements text[],
+  name text
+);
+
 create table public.marcas (
   id bigint primary key,
   nome text not null unique,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Laboratório de significado: roda a A57 e a A58 num PostgreSQL 17.10 real,
+ * Laboratório de significado: roda P24, A57 e A58 num PostgreSQL 17.10 real,
  * descartável, acessível somente pelo socket deste processo.
  *
  * POR QUE NÃO BASTA O PORTÃO DE TEXTO
@@ -43,6 +43,9 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORIO = path.resolve(AQUI, '../..');
 const VERSAO_ESPERADA = '17.10';
 const MIGRATIONS = [
+  // Ordem real do rollout: a guarda transitória entra antes de a A58 criar e
+  // preencher `sortimento_diario`; só então a poda volta a agir normalmente.
+  'supabase/migrations/20260917203000_p24_poda_espera_o_denominador.sql',
   'supabase/migrations/20260917210000_a57_frescor_ancorado_no_dado.sql',
   'supabase/migrations/20260917211000_a58_significado_da_capa_e_busca_editorial.sql',
 ];
@@ -182,6 +185,7 @@ async function main() {
     const arquivos = [
       path.join(AQUI, 'fixture.sql'),
       ...MIGRATIONS.map(m => path.join(REPOSITORIO, m)),
+      path.join(REPOSITORIO, 'ferramentas/capacidade/87_confere_depois_da_a57_a58.sql'),
       path.join(AQUI, 'assercoes.sql'),
     ];
     cliente.on('notice', aviso => {
@@ -190,6 +194,13 @@ async function main() {
     for (const arquivo of arquivos) {
       const sql = await readFile(arquivo, 'utf8');
       await cliente.query(sql);
+      const nome = path.basename(arquivo);
+      const migration = nome.match(/^(\d{14})_([a-z0-9_]+)\.sql$/);
+      if (migration) {
+        await cliente.query(
+          'insert into supabase_migrations.schema_migrations(version,name,statements) '
+          + 'values ($1,$2,array[$3])', [migration[1], migration[2], sql]);
+      }
       console.log(`aplicado ${path.relative(REPOSITORIO, arquivo)}`);
     }
     console.log('LABORATORIO VERDE');

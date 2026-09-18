@@ -60,23 +60,31 @@ por si. As migrations P21 a P25.
 
 ## 3. A ordem, e três dependências que ela precisa respeitar
 
-A ordem é a aprovada:
+A ordem operacional fechada é:
 
-1. medir de novo em leitura (`00_inventario.sql`);
-2. revisar com vocês o roteiro e os alvos;
-3. executar a recuperação com 10, 11, 20, 21, 30 e 50; medir; se a cota ainda
-   estiver acima de 400 MB, ir **direto ao 60**, sem executar o 40 antes;
-4. confirmar escrita liberada e pelo menos 20% de folga (passo 70);
-5. passar pelo portão 80 e aplicar P21, P22, P23, P24 e P25, nessa ordem,
-   pelo executor de migrations e com o papel canônico `postgres`;
-6. aplicar A57 e depois A58, no mesmo rollout de backend e antes de retomar a
+1. integrar a branch, enviar pelo fluxo autorizado e exigir todos os jobs do
+   GitHub Actions verdes;
+2. desativar os dois workflows agendados que escrevem
+   (`pipeline-diario.yml` e `coleta-catalogo-candidato.yml`) e confirmar que
+   ficaram desativados — hoje a coleta está barrada pelo portão, não pausada;
+3. medir de novo em leitura (`00_inventario.sql`);
+4. executar 10 e 11; imediatamente rodar o preflight 13, aplicar P23 pelo
+   executor de migrations e conferir a pós-condição 14, para o log não voltar
+   a crescer;
+5. executar 20, 21, 30 e 50; rodar o passo 55 e seguir exatamente um ramo:
+   nenhum, somente 40, ou somente 60;
+6. confirmar escrita liberada e pelo menos 20% de folga (passo 70);
+7. passar pelo portão 80 e aplicar P21, P22, P24 e P25, nessa ordem. Rodar 82;
+8. rodar 85, aplicar A57 e depois A58 e rodar 87, no mesmo rollout de backend
+   e antes de retomar a
    coleta. A58 depende do marcador criado pela A57; não são opcionais entre
    si. A P24 é apenas a guarda temporária até a A58 materializar o denominador
    e reativar a poda com segurança;
-7. executar a sonda pública das RPCs depois do refresh do schema do PostgREST;
-8. rotacionar a senha administrativa pelo procedimento da seção 8;
-9. retomar a coleta e observar por sete dias (passo 90, uma vez por dia);
-10. só então publicar o app consumidor.
+9. executar a sonda pública das RPCs depois do refresh do schema do PostgREST;
+10. rotacionar a senha administrativa pelo procedimento da seção 8;
+11. reativar os dois workflows, disparar/acompanhar a primeira coleta saudável
+    e observar por sete dias (passo 90, uma vez por dia);
+12. só então publicar o app consumidor.
 
 **P22 não precisa vir antes da compactação — mas precisa vir antes da
 retomada.** Com a coleta parada o motor não roda, e nada reescreve
@@ -93,13 +101,14 @@ publicação. O laboratório prova reexecução idêntica com zero updates, muda
 real restrita às linhas afetadas, remoção da leitura sem base e equivalência
 do recálculo completo.
 
-**P23 entra com as demais migrations, depois do passo 70.** O intervalo entre
-a compactação e a prevenção custa ~360 KB por dia; este roteiro é uma única
-janela operacional, não uma pausa de dias. Preservar a ordem cronológica das
-migrations mantém o ledger coerente e evita tentar escrever antes de o passo
-70 confirmar que o banco saiu do modo somente leitura. A P23 recusa execução
-fora do papel `postgres`, que enxerga o catálogo inteiro e impede um job
-homônimo de outro papel.
+**P23 entra imediatamente depois do passo 11.** Depois de apagar e compactar
+o log não faz sentido deixá-lo voltar a crescer ~360 KB por dia enquanto o
+restante da recuperação acontece. Os passos 13 e 14 mostram o antes e o
+depois; a própria migration repete as travas e faz agendamento, reativação,
+pós-condição e ledger na mesma transação. Ela recusa execução fora do papel
+`postgres`, que enxerga o catálogo inteiro e impede um job homônimo de outro
+papel. Se o banco ainda recusar escrita nesse ponto, o roteiro para; não se
+contorna o bloqueio.
 
 **P24 é uma guarda temporária até a A58.** A primeira publicação do motor
 chama `podar_snapshots(21)`, cujo corte é de calendário: medido em
@@ -122,31 +131,34 @@ vem, espaço temporário, lock, duração esperada e critério de abortamento.
 | `10` | remove linhas | `cron.job_run_details` | 0 | 0 | row exclusive | segundos |
 | `11` | devolve espaço | `cron.job_run_details` | ~14,1 MB | ~3 MB | access exclusive | 1–3 s |
 | `12` | alternativa desarmada | `cron.job_run_details` | ~16,6 MB | 0 | access exclusive | instante |
+| `13/14` | leitura | preflight/pós-condição P23 | — | — | nenhum | segundos |
 | `20` | devolve espaço | `estado_produtos_oferta_recente` | ~7,2 MB | ~2 MB | índice + share | 1–3 s |
 | `21` | devolve espaço (opcional) | `estado_dos_produtos_pkey` | ~2,0 MB | ~3 MB | índice + share | 1–3 s |
 | `30` | devolve espaço | `indices_semanais` | ~7,3 MB | ~11 MB | access exclusive | 2–8 s |
-| `40` | alternativa parcial, não sequencial | `artigos_url_key` | ~19,9 MB | ~22 MB | índice + share | 3–15 s |
+| `40` | ramo condicional | `artigos_url_key` | ~19,9 MB | ~22 MB | índice + share | 3–15 s |
 | `50` | devolve espaço | `series_semanais` | ~43,4 MB | ~36 MB | access exclusive | 5–20 s |
+| `55` | leitura | decide nenhum/40/60 | — | — | nenhum | segundos |
 | `60` | devolve espaço (condicional) | `artigos` + índices | ~35,7 MB | ~70 MB | access exclusive | 10–40 s |
 | `70` | leitura | folga ≥ 20% e escrita livre | — | — | nenhum | segundos |
 | `80` | leitura | funções = as de 18/09 | — | — | nenhum | segundos |
+| `82` | leitura | P21–P25 + job + ledger | — | — | nenhum | segundos |
+| `85/87` | leitura | antes/depois de A57/A58 | — | — | nenhum | segundos |
 | `90` | leitura | observação diária | — | — | nenhum | segundos |
 
 **Acumulado estimado do caminho normal** a partir de 501,2 MB: 487,1 depois do
 11 · 479,9 do 20 · 477,9 do 21 · 470,6 do 30 · **427,2 do 50 (85,4%)**. Meça
-nesse ponto. Se a cota estiver acima de 400 MB, pule o 40 e rode o 60
-diretamente: ele reescreve `artigos` e reconstrói, uma única vez,
-`artigos_pkey` e `artigos_url_key`. O ganho direto estimado é ~35,7 MB e o
-resultado, **391,5 MB (78,3%)**. O passo 60 recusa rodar se a meta já tiver
-sido atingida.
+nesse ponto. O passo 55 mede de verdade: se já houver ≤400 MB, nenhum ramo;
+se o ganho estimado do índice bastar, somente 40; caso contrário, somente 60.
+Pelas medidas de 18/09, a decisão esperada é 60: ele reescreve `artigos` e
+reconstrói, uma única vez, `artigos_pkey` e `artigos_url_key`, levando a cota
+estimada a **391,5 MB (78,3%)**.
 
-**40 e 60 são ramos mutuamente exclusivos.** O 40 existe apenas como
-alternativa parcial quando o 60 tiver sido descartado por sua janela de lock
-ou por seu espaço temporário. Pelas medidas de 18/09, o 40 sozinho levaria
-427,2 a ~407,3 MB e não atingiria os 20% de folga. Se ele for escolhido, rode o
-70 em seguida; se o 70 falhar, pare e revise. Não execute o 60 depois: um
-`VACUUM FULL artigos` reconstruiria de novo o índice que o 40 acabou de
-reconstruir.
+**40 e 60 são ramos mutuamente exclusivos por código, não só por instrução.**
+Cada arquivo recalcula a decisão e recusa o ramo incorreto; ambos também
+recusam se o índice já carrega o rastro de uma reconstrução. O 60 conserva
+ainda um segundo freio: ganho físico total estimado abaixo de 15% exige nova
+decisão. Se o resultado real não alcançar 400 MB, pare e revise; não rode o
+outro ramo em seguida.
 
 **Duração** é estimativa: a leitura sequencial medida foi de 73,8 MB em 0,42 s
 (`series_semanais`) e 55,9 MB em 1,8 s (`artigos`); reescrever custa algumas
@@ -185,8 +197,70 @@ mkdir -p "$LAB" && cp ferramentas/laboratorio_capacidade/package*.json "$LAB/"
 (cd "$LAB" && npm install --no-audit --no-fund)
 ```
 
+Depois de integrar/enviar a branch e ver todos os jobs verdes, congele as duas
+fontes agendadas de escrita. Isso é obrigatório: hoje elas estão **barradas**
+pela capacidade, não desativadas, e voltariam sozinhas assim que a folga
+aparecesse.
+
 ```bash
-node ferramentas/capacidade/passo.mjs ferramentas/capacidade/00_inventario.sql --host <HOST DO POOLER DE SESSAO> --porta 5432 --usuario postgres.tbluoqpnjqsflfoclmms
+gh workflow disable pipeline-diario.yml
+gh workflow disable coleta-catalogo-candidato.yml
+gh workflow list --all
+```
+
+Prepare apenas endereço e usuário; a senha continua sendo pedida sem eco a
+cada comando e não entra em variável nem histórico.
+
+```bash
+CAP_HOST='<HOST DO POOLER DE SESSAO>'
+CAP_USER='postgres.tbluoqpnjqsflfoclmms'
+CAP=(node ferramentas/capacidade/passo.mjs --host "$CAP_HOST" --porta 5432 --usuario "$CAP_USER")
+```
+
+Sequência exata da janela:
+
+```bash
+"${CAP[@]}" ferramentas/capacidade/00_inventario.sql
+
+"${CAP[@]}" ferramentas/capacidade/10_log_do_cron_apagar_antigos.sql --executar
+"${CAP[@]}" ferramentas/capacidade/11_log_do_cron_compactar.sql --executar
+"${CAP[@]}" ferramentas/capacidade/13_confere_p23_antes.sql
+"${CAP[@]}" --migracao supabase/migrations/20260917202000_p23_retencao_do_log_do_cron.sql --executar
+"${CAP[@]}" ferramentas/capacidade/14_confere_p23_depois.sql
+
+"${CAP[@]}" ferramentas/capacidade/20_reindex_estado_produtos_oferta_recente.sql --executar
+"${CAP[@]}" ferramentas/capacidade/21_reindex_estado_dos_produtos_pkey.sql --executar
+"${CAP[@]}" ferramentas/capacidade/30_vacuum_full_indices_semanais.sql --executar
+"${CAP[@]}" ferramentas/capacidade/50_vacuum_full_series_semanais.sql --executar
+"${CAP[@]}" ferramentas/capacidade/55_decide_40_ou_60.sql
+```
+
+Leia a linha `DECISAO 40/60` e execute **uma só** das alternativas indicadas:
+
+```bash
+# somente se a decisão disser PASSO 40
+"${CAP[@]}" ferramentas/capacidade/40_reindex_artigos_url_key.sql --executar
+
+# OU somente se a decisão disser PASSO 60
+"${CAP[@]}" ferramentas/capacidade/60_vacuum_full_artigos_CONDICIONAL.sql --executar
+```
+
+Depois do ramo (ou de `NENHUM`):
+
+```bash
+"${CAP[@]}" ferramentas/capacidade/70_confere_folga.sql
+"${CAP[@]}" ferramentas/capacidade/80_confere_antes_das_migrations.sql
+
+"${CAP[@]}" --migracao supabase/migrations/20260917200000_p21_uso_do_banco_mede_a_cota.sql --executar
+"${CAP[@]}" --migracao supabase/migrations/20260917201000_p22_series_sem_reescrita_identica.sql --executar
+"${CAP[@]}" --migracao supabase/migrations/20260917203000_p24_poda_espera_o_denominador.sql --executar
+"${CAP[@]}" --migracao supabase/migrations/20260917204000_p25_indices_sem_reescrita_identica.sql --executar
+"${CAP[@]}" ferramentas/capacidade/82_confere_prevencao.sql
+
+"${CAP[@]}" ferramentas/capacidade/85_confere_antes_da_a57_a58.sql
+"${CAP[@]}" --migracao supabase/migrations/20260917210000_a57_frescor_ancorado_no_dado.sql --executar
+"${CAP[@]}" --migracao supabase/migrations/20260917211000_a58_significado_da_capa_e_busca_editorial.sql --executar
+"${CAP[@]}" ferramentas/capacidade/87_confere_depois_da_a57_a58.sql
 ```
 
 O host está no painel em *Connect → Session pooler*. A porta 6543 (pooler de
@@ -200,13 +274,11 @@ t;` falha inteiro (medido no PostgreSQL 17.10 do laboratório). Sem
 `lock_timeout` na mesma sessão, um `VACUUM FULL` esperando lock entra na fila
 e trava todas as leituras que chegam depois dele.
 
-As migrations P21 a P25 são SQL comum, sem `VACUUM`. Aplique **uma por vez,
-só estes cinco arquivos e na ordem dos timestamps**, pelo executor de
-migrations que registra o ledger e executa como `postgres`. Não use o editor
-como atalho (ele deixa o histórico divergente) nem `supabase db push` (ele
-empurraria também tudo o que ainda não foi aprovado). Se qualquer migration
-encontrar o projeto em somente leitura apesar do passo 70, pare: não contorne
-o erro nem aplique fora do ledger.
+O executor aceita somente arquivos canônicos de `supabase/migrations`, aplica
+um por vez e grava SQL + versão no ledger na mesma transação. Não use o editor
+como atalho nem `supabase db push`, que empurraria também o que não faz parte
+desta janela. Se qualquer migration encontrar somente-leitura, pare: não
+contorne o erro nem aplique fora do ledger.
 
 Depois da P23, confira em `cron.job` que existe exatamente uma linha ativa
 chamada `canario-retencao-do-log-do-cron`, no banco atual e sob `postgres`.
@@ -222,11 +294,31 @@ app, faz três leituras mínimas e exige os contratos de
 `buscar_referencia_editorial`. Qualquer 404/PGRST202 ou campo ausente bloqueia
 a retomada; não espere o app publicado descobrir uma migration incompleta.
 
+```bash
+gh workflow run sonda-significado.yml
+SONDA_RUN_ID="$(gh run list --workflow sonda-significado.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+gh run watch "$SONDA_RUN_ID" --exit-status
+```
+
+Só depois da sonda verde, rotacione a senha conforme a seção 8. Em seguida:
+
+```bash
+gh workflow enable pipeline-diario.yml
+gh workflow enable coleta-catalogo-candidato.yml
+gh workflow run pipeline-diario.yml
+```
+
+Acompanhe a primeira execução até o fim. Durante sete dias, uma vez por dia:
+
+```bash
+"${CAP[@]}" ferramentas/capacidade/90_observacao.sql
+```
+
 ## 7. O que está provado, e onde
 
 - **`node ferramentas/laboratorio_capacidade/rodar.mjs`** — P21, P22, P24 e
-  P25 num
-  PostgreSQL 17.10. As funções "de antes" são extraídas das migrations e o
+  P25 num PostgreSQL 17.10. As funções "de antes" vêm das migrations e, quando
+  produção diverge do histórico, de uma captura explícita em `producao/`; o
   hash de cada uma é conferido contra o medido em produção; a linha de base
   prova que o código de hoje reescreve 100% das linhas; as asserções provam,
   caminho por caminho, primeira escrita, reexecução com zero linhas
@@ -237,12 +329,14 @@ a retomada; não espere o app publicado descobrir uma migration incompleta.
   executor que rodaria em produção, conectado como um papel sem superusuário
   no formato do `postgres` do Supabase: ensaio não escreve; cada ação encolhe
   o alvo sem perder linha; cada pré-condição aborta antes da ação; `VACUUM`
-  sem MAINTAIN é pego; o TRUNCATE vem desarmado; os snapshots não são tocados.
-  Como o cluster descartável tem menos de 400 MB, a ação do 60 é extraída do
-  arquivo e executada sem alteração: a prova confere que ela encolhe o heap,
-  `artigos_pkey` e `artigos_url_key` de uma vez. A guarda real de 400 MB é
-  testada separadamente pelo executor, e o 70 cobre tanto aprovação quanto
-  rejeição da meta.
+  sem MAINTAIN é pego; o TRUNCATE vem desarmado; os snapshots não são tocados;
+  os três ramos de 55/40/60 são exercitados pelo próprio executor; migration e
+  ledger entram juntos ou não entram; ensaio não grava e reaplicação é
+  recusada.
+- **`node ferramentas/laboratorio_significado/rodar.mjs`** — executa P24,
+  A57 e A58 na ordem real, roda o passo 87 e depois as 24 asserções de
+  significado. Isso prova também os hashes por assinatura, a convivência v1/v2,
+  o backfill do denominador, o marcador publicado e os privilégios públicos.
 - **Não provado:** tempo e espaço reais de produção (as tabelas do
   laboratório são pequenas e o disco é outro) e a execução da P23, porque o
   pg_cron não existe no PostgreSQL embutido. A P23 tem portão estrutural que

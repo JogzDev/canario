@@ -33,7 +33,10 @@ select now() as medido_em,
          where relid = 'public.series_semanais'::regclass) as updates_acumulados_series,
        (select n_tup_upd from pg_stat_all_tables
          where relid = 'public.indices_semanais'::regclass) as updates_acumulados_indices,
-       (select count(*) from cron.job_run_details) as linhas_do_log;
+       (select count(*) from cron.job_run_details) as linhas_do_log,
+       (select count(distinct data) from public.sortimento_diario) as dias_de_denominador,
+       (select max(data) from public.sortimento_diario) as ultimo_denominador,
+       (select min(data) from public.snapshots) as snapshot_mais_antigo;
 
 -- A prova de que P22 e P25 estao funcionando: o que a ultima publicacao do motor
 -- escreveu em cada caminho. Numeros proximos do tamanho da serie inteira

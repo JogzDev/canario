@@ -46,9 +46,44 @@
     "computar_serie_editorial": "a56488dcf1e732973339e50442882c5e",
     "computar_z": "a84c63a5c5acd5fa95a25fe7fd0df120",
     "uso_do_banco": "7c6355a6bd043f9d01108f01d465bc39",
-    "podar_snapshots": "c9b22fd0cc607449cbbf7b5aef7c77cf"
+    "podar_snapshots": "c9b22fd0cc607449cbbf7b5aef7c77cf",
+    "computar_indice": "ce2ffa99841a237ee1001071b46ee772"
   },
   "sessoes": {"outras_ativas": 0, "locks_esperando": 0, "motor_em_andamento": 0, "idade_xid": 512267},
   "leitura_sequencial": {"series_semanais_73_8_mb_ms": 419, "artigos_55_9_mb_ms": 1797},
-  "configuracao": {"maintenance_work_mem_kb": 32768, "max_wal_size_mb": 1024, "checkpoint_timeout_s": 300, "statement_timeout_ms_do_papel": 120000, "lock_timeout": "0"}
+  "configuracao": {"maintenance_work_mem_kb": 32768, "max_wal_size_mb": 1024, "checkpoint_timeout_s": 300, "statement_timeout_ms_do_papel": 120000, "lock_timeout": "0"},
+  "deriva_repositorio_x_producao": {
+    "medido_em": "2026-09-18 (tarde)",
+    "metodo": "hash normalizado de pg_get_functiondef em producao contra a ultima definicao no repositorio carregada num PostgreSQL 17.10",
+    "computar_indice": {
+      "producao": "ce2ffa99841a237ee1001071b46ee772",
+      "repositorio_p1": "19eed500e061e0cbd91ea95836de498b",
+      "diferenca": "meta.por_que em producao nao tem a frase de medicao acrescentada depois ao arquivo"
+    },
+    "grade_em_texto": {
+      "producao": "beb9abbb0e43ab144708d237b51d7b88",
+      "repositorio_f5": "1019ce4be509fc229fa89de38d31389f",
+      "efeito": "nenhuma migration deste pacote a substitui; registrada"
+    },
+    "iguais": ["computar_curva_tamanhos", "computar_eventos", "computar_motor", "computar_raridade", "eventos_recentes", "executar_publicacao_motor", "publicar_motor", "similares_da_peca", "similares_da_peca_amplo", "url_publica_produto", "computar_serie_varejo", "computar_serie_editorial", "computar_z", "uso_do_banco", "podar_snapshots"]
+  },
+  "indices_semanais": {
+    "linhas": 9897, "termos": 42, "semanas": 261, "com_estado": 554,
+    "updates_desde_15_07": 610443, "updates_por_dia": 9391,
+    "estatisticas_zeradas_em": "2026-07-15T13:16:47Z"
+  },
+  "backlog": {
+    "curva_tamanhos": {"total": 5726208, "heap": 4726784, "bytes_vivos": 3536352, "linhas": 5034, "updates_por_dia": 379, "reescritas_por_linha": 4.9, "linhas_com_o_ultimo_carimbo": 1303, "carimbos_distintos": 7},
+    "raridade_do_atributo": {"total": 253952, "bytes_vivos": 70557, "linhas": 459, "updates_por_dia": 207, "reescritas_por_linha": 29.5, "carimbos_distintos": 1}
+  },
+  "coleta": {
+    "estado": "barrada pelo portao de capacidade, nao pausada",
+    "evidencia": "pipeline-diario agendado 06:00 UTC; execucoes de 11 a 16/09 falharam no portao de capacidade",
+    "workflows_agendados_que_escrevem": ["pipeline-diario.yml", "coleta-catalogo-candidato.yml"]
+  },
+  "permissoes": {
+    "postgres_bypassrls": true,
+    "cron_job_com_rls": true,
+    "ledger_colunas": ["version", "statements", "name", "created_by", "idempotency_key", "rollback"]
+  }
 }

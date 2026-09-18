@@ -7,9 +7,10 @@
  * ===============
  *
  * 1. Que o "antes" é o código de produção. As definições atuais de
- *    `computar_serie_varejo`, `computar_serie_editorial`, `computar_z`,
- *    `computar_indice` e `uso_do_banco` são extraídas das migrations no momento da
- *    execução -- nunca copiadas à mão -- e o hash de `pg_get_functiondef` de
+ *    `computar_serie_varejo`, `computar_serie_editorial`, `computar_z` e
+ *    `uso_do_banco` são extraídas das migrations. Divergências medidas entre
+ *    repositório e produção ficam em `producao/`, com origem documentada. O
+ *    hash de `pg_get_functiondef` de
  *    cada uma é comparado com o medido em produção (`hashes_de_producao.json`).
  *    Hash divergente é falha: o laboratório estaria testando outra coisa.
  *
@@ -65,17 +66,6 @@ const P22 = '20260917201000_p22_series_sem_reescrita_identica.sql';
 const P24 = '20260917203000_p24_poda_espera_o_denominador.sql';
 const P25 = '20260917204000_p25_indices_sem_reescrita_identica.sql';
 
-// O backup restaurável de 18/09 mostrou uma divergência de uma linha entre a
-// migration histórica e a função realmente ativa. O cálculo é idêntico; só a
-// prosa de `meta.por_que` é curta em produção. A linha de base precisa carregar
-// o que estava no banco, não uma reconstrução que nunca rodou lá.
-const PORQUE_NO_REPOSITORIO = 'o app posiciona peca no mercado brasileiro; '
-  + 'quem confirma direcao daqui e sinal daqui. Medido em 06/08: '
-  + 'busca x editorial_br r=0,235 e 67,7% de mesmo sinal; '
-  + 'busca x editorial_intl r=-0,070, dentro de um erro-padrao de zero';
-const PORQUE_EM_PRODUCAO = 'o app posiciona peca no mercado brasileiro; '
-  + 'quem confirma direcao daqui e sinal daqui';
-
 const CANDIDATOS = [
   path.join(AQUI, 'node_modules'),
   path.join(os.homedir(), '.canario/laboratorio-capacidade/node_modules'),
@@ -125,9 +115,20 @@ function executar(binario, args, { timeout = 120_000 } = {}) {
   });
 }
 
-/** A última definição de `public.<nome>` nas migrations anteriores à P21. */
+/** A definição ativa: captura de produção quando existe, migration nos demais casos. */
 async function definicaoAtual(nome) {
   const { readdir } = await import('node:fs/promises');
+  const capturada = path.join(AQUI, 'producao', `${nome}.sql`);
+  try {
+    const texto = await readFile(capturada, 'utf8');
+    const inicio = texto.toLowerCase().indexOf(`create or replace function public.${nome}(`);
+    const corpo = texto.indexOf('$function$', inicio);
+    const fim = texto.indexOf('$function$;', corpo + 10);
+    if (inicio < 0 || corpo < 0 || fim < 0) throw new Error('captura incompleta');
+    return { arquivo: `producao/${nome}.sql`, sql: texto.slice(inicio, fim + '$function$;'.length) };
+  } catch (erro) {
+    if (erro?.code !== 'ENOENT') throw erro;
+  }
   const arquivos = (await readdir(MIGRATIONS))
     .filter(a => a.endsWith('.sql') && a < P21)
     .sort()
@@ -139,17 +140,7 @@ async function definicaoAtual(nome) {
     if (inicio < 0) continue;
     const corpo = texto.indexOf('$function$', inicio);
     const fim = texto.indexOf('$function$;', corpo + 10);
-    let sql = texto.slice(inicio, fim + '$function$;'.length);
-    let origem = arquivo;
-    if (nome === 'computar_indice') {
-      const ocorrencias = sql.split(PORQUE_NO_REPOSITORIO).length - 1;
-      if (ocorrencias !== 1) {
-        throw new Error(`computar_indice: esperava uma prosa histórica e achei ${ocorrencias}.`);
-      }
-      sql = sql.replace(PORQUE_NO_REPOSITORIO, PORQUE_EM_PRODUCAO);
-      origem += ' + prosa curta capturada no backup de 18/09';
-    }
-    return { arquivo: origem, sql };
+    return { arquivo, sql: texto.slice(inicio, fim + '$function$;'.length) };
   }
   throw new Error(`Não achei a definição atual de ${nome}.`);
 }

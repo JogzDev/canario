@@ -9,11 +9,11 @@
 -- (70), e reconstroi os indices. Nenhuma linha e apagada ou alterada.
 -- Medido em 18/09: heap de 17,17 MB com 7,26 MB de dado vivo. Reescrito:
 -- ~10,6 MB (inventario, consulta 3). Indices: 1,5 MB hoje. Ganho estimado total: ~7,5 MB.
--- `indices_semanais` tem o mesmo padrao de reescrita da `series_semanais`
--- (610.443 updates em 9.897 linhas) e NAO esta coberta pela P22: o ganho
--- aqui volta aos poucos quando o motor voltar a rodar. Fica no roteiro porque
--- e barato e porque a meta de 20% precisa dele; a prevencao dele e a proxima
--- rodada.
+-- `indices_semanais` tinha o mesmo padrao de reescrita da `series_semanais`
+-- (610.443 updates em 9.897 linhas desde 15/07). A P25 corrige a causa: sem
+-- ela, este ganho seria temporario e nao poderia contar como folga. A P25 entra
+-- depois do passo 70 e antes da retomada; com os workflows desativados, nada
+-- reescreve a tabela entre a compactacao e a prevencao.
 --
 -- Lock: ACCESS EXCLUSIVE durante toda a reescrita -- ninguem le nem escreve
 -- na tabela ate o fim. Duracao esperada: 2 a 8 s. `statement_timeout` de 180 s

@@ -7,33 +7,29 @@
 
 do $$
 declare
-  f record;
-  esperado jsonb := jsonb_build_object(
-    'computar_serie_varejo', '4a1b76d8d0b9d81086474a563006d6b5',
-    'computar_serie_editorial', 'a56488dcf1e732973339e50442882c5e',
-    'computar_z', 'a84c63a5c5acd5fa95a25fe7fd0df120',
-    'computar_indice', 'ce2ffa99841a237ee1001071b46ee772',
-    'uso_do_banco', '7c6355a6bd043f9d01108f01d465bc39',
-    'podar_snapshots', 'c9b22fd0cc607449cbbf7b5aef7c77cf');
-  encontradas int := 0;
+  e record;
+  oid regprocedure;
+  obtido text;
 begin
-  for f in
-    select p.proname,
-           md5(regexp_replace(pg_get_functiondef(p.oid), '\s+', ' ', 'g')) as hash
-    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and esperado ? p.proname
+  for e in select * from (values
+    ('public.computar_serie_varejo()', '4a1b76d8d0b9d81086474a563006d6b5'),
+    ('public.computar_serie_editorial()', 'a56488dcf1e732973339e50442882c5e'),
+    ('public.computar_z()', 'a84c63a5c5acd5fa95a25fe7fd0df120'),
+    ('public.computar_indice()', 'ce2ffa99841a237ee1001071b46ee772'),
+    ('public.uso_do_banco()', '7c6355a6bd043f9d01108f01d465bc39'),
+    ('public.podar_snapshots(integer)', 'c9b22fd0cc607449cbbf7b5aef7c77cf')
+  ) as x(assinatura, hash)
   loop
-    encontradas := encontradas + 1;
-    if f.hash <> esperado->>f.proname then
+    oid := to_regprocedure(e.assinatura);
+    if oid is null then
+      raise exception 'ABORTAR: funcao ausente: %', e.assinatura;
+    end if;
+    select md5(regexp_replace(pg_get_functiondef(oid), '\s+', ' ', 'g')) into obtido;
+    if obtido <> e.hash then
       raise exception 'ABORTAR: % mudou desde 18/09 (hash %, esperado %)',
-        f.proname, f.hash, esperado->>f.proname;
+        e.assinatura, obtido, e.hash;
     end if;
   end loop;
-  -- Funcao ausente tambem e divergencia: sem esta conta o laco passaria
-  -- vazio e o passo sairia verde sem ter conferido nada.
-  if encontradas <> 6 then
-    raise exception 'ABORTAR: esperava 6 funcoes e achei %', encontradas;
-  end if;
 
   if exists (select 1 from public.motor_execucoes
               where status in ('queued', 'running')) then

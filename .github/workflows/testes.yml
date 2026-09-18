@@ -159,9 +159,9 @@ jobs:
     #
     # `coletor/teste_migrations.py` (no job de cima) le as migrations como
     # TEXTO: pega contrato apagado, nao pega `join` errado nem denominador
-    # tirado da data errada. Este job executa a A57 e a A58 num PostgreSQL
-    # real, sobre dados desenhados para que cada defeito conhecido apareca
-    # como falha.
+    # tirado da data errada. Este job executa P24, A57 e A58 na ordem real,
+    # confere o portao 87 e roda os dados desenhados para que cada defeito
+    # conhecido apareca como falha.
     runs-on: [self-hosted, macOS, xcode]
     timeout-minutes: 15
     steps:
@@ -179,7 +179,7 @@ jobs:
           cp ferramentas/laboratorio_significado/package-lock.json "$LAB/"
           cd "$LAB" && npm install --no-audit --no-fund
 
-      - name: A57 e A58 num banco de verdade
+      - name: P24, A57, A58 e portao final num banco de verdade
         run: caffeinate -dimsu node ferramentas/laboratorio_significado/rodar.mjs
 
   app:
