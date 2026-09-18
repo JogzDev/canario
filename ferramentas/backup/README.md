@@ -97,6 +97,11 @@ ordenação pesada em produção. O hash do archive também é verificado. O est
 das sequences/identity é comparado; se mudar durante a captura (não é MVCC), o
 processo preserva o dump e reprova a prova para repetição sem gravações.
 
+A comparação usa a ordem lógica das colunas ativas, não as lacunas físicas de
+`attnum` deixadas por `DROP COLUMN`/`DROP ATTRIBUTE`. O dump lógico não preserva
+essas lacunas. Nomes, ordem efetiva, tipos, defaults e permissões continuam
+comparados; teste negativo confirma que trocar a ordem lógica reprova o ensaio.
+
 Continuam fora da prova operacional:
 
 - bytes das imagens e demais objetos do Storage (o dump contém metadados);

@@ -1,6 +1,8 @@
 O Codex revisou os commits até f2f8e7e: laboratório SQL 18/18 e 45 testes selecionados do app passaram. As correções anteriores do denominador, materialização, janela e exemplos estão aceitas. Pode seguir com a integração de resumo_de_eventos em Explorar, eliminando a contagem baseada nos 120 exemplos. Trate denominador e taxa de cada marca como opcionais.
 
-Feche também estes pontos na mesma etapa, sem reabrir planejamento/design:
+Recuperar capacidade do banco continua sendo a etapa 1 do plano e precisa de entrega explícita sua. A medição do Codex em 18/09 às 02:15 UTC foi 485.747.859 bytes; o portão existente bloqueia coleta a partir de 96%. O backup não libera espaço por si só. Prepare em paralelo, sem executar produção, a migration que evita reescritas idênticas em computar_z/series_semanais (varejo e editorial) e um roteiro de manutenção com alvos exatos, retenção explícita dos logs de cron, medição antes/depois, locks, espaço temporário necessário e critérios de interrupção. Repetir a mesma entrada deve preservar resultados sem atualizações desnecessárias. Não confunda DELETE com redução imediata do tamanho físico; REINDEX e VACUUM FULL precisam de margem e janela avaliadas por alvo. Preserve dados de negócio, histórico semanal e snapshots necessários ao backfill de sortimento_diario antes de qualquer poda. A ordem de publicação é backup restaurado e escopo conferido → revisão/autorização do roteiro → recuperação medida e prevenção de crescimento → pacote de produto. Critérios já fechados: escrita liberada, pelo menos 20% de folga real e sete dias de crescimento observado. Sem plano pago, exclusão arbitrária ou promessa de recuperar 150 MB sem medir.
+
+Feche também estes pontos do pacote de produto, sem reabrir planejamento/design:
 
 1. Compatibilidade de versões: a orientação anterior de publicar A57 junto com o app era insuficiente, porque usuários continuam com versões antigas instaladas. A57 substitui similares_da_peca e afeta o wrapper já usado por elas. Crie similares_da_peca_v2 e similares_da_peca_amplo_v2, com o comportamento novo e datas, preservando o contrato/comportamento das RPCs antigas. Teste clientes novos e antigos. O rollout será backend v2 primeiro e app consumidor depois, quando o portão de produção for liberado.
 
@@ -11,6 +13,8 @@ Feche também estes pontos na mesma etapa, sem reabrir planejamento/design:
 4. Cubra o bloco editorial com respostas injetadas/fixtures offline; depender da RPC real não impede teste de interface. Exercite sucesso, vazio, erro e troca rápida de expressão. Inclua fixtures para coortes com idades mistas, zero resultados com painel antigo e compatibilidade v1/v2.
 
 Localizable.xcstrings: preserve mudanças anteriores; inclua apenas os ajustes comprovadamente relacionados ao pacote, sem arrastar o arquivo inteiro por conveniência. pg_trgm continua condicionado à medição e à folga de espaço.
+
+Segurança: a senha administrativa do banco foi compartilhada para esta execução de backup. Não a copie para código, documentação ou logs. Inclua a rotação no checklist operacional, depois de inventariar os consumidores e com execução coordenada pelo JP; não altere a senha unilateralmente durante a recuperação.
 
 O backup permanece com o Codex, em worktree separada. A tentativa mais recente autenticou e iniciou o dump, mas a conexão foi encerrada durante a exportação de artigos. Isso foi confirmado no Pooler Logs às 22:49:30 de 17/09; a causa original ainda está sendo investigada. O arquivo é parcial, não restaurável, e não há backup de produção validado. Migrations, manutenção e retomada da coleta em produção continuam aguardando essa prova e a revisão do pacote final. Isso não impede a implementação e os testes locais descritos acima.
 

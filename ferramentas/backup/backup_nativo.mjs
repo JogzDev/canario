@@ -126,6 +126,20 @@ function stable(value) {
 }
 function equal(a, b) { return JSON.stringify(stable(a)) === JSON.stringify(stable(b)); }
 
+export function normalizarCatalogo(catalog) {
+  // attnum é um slot físico: DROP COLUMN deixa lacunas na origem, mas pg_dump
+  // restaura apenas as colunas ativas, sem essas lacunas. Comparamos a ordem
+  // lógica preservando nomes, tipos, defaults, ACLs e todos os demais campos.
+  const copy = structuredClone(catalog);
+  for (const relation of copy.relations ?? []) {
+    if (relation.columns) relation.columns = relation.columns.map((column, i) => ({ ...column, position:i + 1 }));
+  }
+  for (const type of copy.types ?? []) {
+    if (type.attributes) type.attributes = type.attributes.map((attribute, i) => ({ ...attribute, position:i + 1 }));
+  }
+  return copy;
+}
+
 async function snapshotOpen(bin, c) {
   const child = spawn(path.join(bin, 'psql'), ['-X', '-qAt', '--no-password', '-v', 'ON_ERROR_STOP=1'],
     { env: { PATH: '/usr/bin:/bin', ...connEnv(c) }, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -300,7 +314,7 @@ export async function restore(bin, dest) {
     // Falha em qualquer objeto escolhido. Nunca ignora erros SQL.
     await run(path.join(bin, 'pg_restore'), ['--exit-on-error', '--single-transaction', '--no-password', '--no-tablespaces', '--use-list',selectionPath, '--dbname', 'postgres', archive], { env: cluster.writable });
     const actualCatalog = await json(bin, cluster.c, await readFile(path.join(AQUI, 'catalogo.sql'), 'utf8'));
-    if (!equal(manifest.catalog, actualCatalog)) {
+    if (!equal(normalizarCatalogo(manifest.catalog), normalizarCatalogo(actualCatalog))) {
       await save(path.join(dest, `catalogo-divergente-${Date.now()}.json`), actualCatalog);
       throw new Error('Catálogo restaurado diverge: definições, permissões, RLS, índices ou constraints.');
     }
@@ -312,7 +326,8 @@ export async function restore(bin, dest) {
     }
     if (!equal(await sequences(bin,cluster.c),manifest.sequences)) throw new Error('Estado das sequences/identity diverge.');
     const report = { result: 'VERIFICADO_NO_ESCOPO_DECLARADO', at: new Date().toISOString(), schemas:b.schemas, tables: manifest.tables.length,
-      archive_sha256: manifest.archive_sha256, unsupported_extensions: unsupported, limitations: manifest.limitations };
+      archive_sha256: manifest.archive_sha256, unsupported_extensions: unsupported,
+      catalog_comparison:'logical_column_order_without_dropped_physical_slots', limitations: manifest.limitations };
     await save(path.join(dest, `restauracao-${Date.now()}.json`), report);
     console.log(`RESTAURAÇÃO VERIFICADA: ${manifest.tables.length} tabelas, conteúdo e catálogo iguais no escopo declarado.`);
     console.log(`Escopo: ${b.schemas.join(', ')}.`);
