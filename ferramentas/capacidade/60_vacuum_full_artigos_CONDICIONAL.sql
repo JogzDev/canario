@@ -5,10 +5,19 @@
 --
 -- Alvo exato: a tabela `public.artigos`, o TOAST dela e os indices dela.
 --
+-- CAMINHO NORMAL DEPOIS DO PASSO 50. Meça a cota; se ela ainda estiver acima
+-- de 400 MB, pule o passo 40 e rode este arquivo diretamente. `VACUUM FULL`
+-- reescreve a tabela e reconstroi todos os seus indices, portanto executar o
+-- 40 antes repetiria a reconstrucao de `artigos_url_key`, o lock e o WAL.
+-- Os passos 40 e 60 sao ramos mutuamente exclusivos.
+--
 -- O que faz: reescreve a tabela so com as linhas vivas, no fillfactor dela
 -- (100), e reconstroi os indices. Nenhuma linha e apagada ou alterada.
 -- Medido em 18/09: heap de 55,93 MB com 43,09 MB de dado vivo. Reescrito:
--- ~44,0 MB (inventario, consulta 3). Indices: `artigos_url_key` ja reconstruido no passo 40; `artigos_pkey` cai de 7,7 para ~3,9 MB. Ganho estimado total: ~15,8 MB.
+-- ~44,0 MB (inventario, consulta 3). Sem executar o 40 antes,
+-- `artigos_url_key` cai de 42,0 para ~22,1 MB e `artigos_pkey`, de 7,7 para
+-- ~3,9 MB. Ganho direto estimado: ~35,7 MB (heap ~12,0 + URL ~19,9 + chave
+-- primaria ~3,9), levando a cota esperada de ~427,2 para ~391,5 MB.
 -- CONDICIONAL: so roda se a folga ainda estiver abaixo de 20% depois do
 -- passo 50 (a primeira pre-condicao confere). E o passo de maior espaco
 -- temporario (~70 MB) e o de menor razao ganho/custo, por isso e o ultimo.
@@ -44,6 +53,31 @@ do $$ begin
               where l.relation = 'public.artigos'::regclass
                 and l.pid <> pg_backend_pid()) then
     raise exception 'ABORTAR: outra sessao segura lock em public.artigos';
+  end if;
+end $$;
+
+-- PRE: o estado pode ter mudado desde a medicao de 18/09. Nao assuma o maior
+-- lock do roteiro se a tabela e os dois btrees ja estiverem perto do tamanho
+-- de uma reconstrucao nova. A estimativa usa o mesmo metodo auditado pelo
+-- inventario: tuplas vivas + ponteiros, folhas dos btrees a 90% e 2%/1% de
+-- perda de encaixe. Menos de 15% de ganho material exige nova decisao.
+do $$
+declare
+  atual numeric := pg_total_relation_size('public.artigos');
+  estimado numeric;
+begin
+  select
+    1.02 * coalesce(sum(pg_column_size(a.*) + 4), 0)
+    + 1.01 / 0.90 * coalesce(sum(20), 0)
+    + 1.01 / 0.90 * coalesce(sum(
+        ((8 + pg_column_size(a.url) + 7) / 8) * 8 + 4), 0)
+  into estimado
+  from public.artigos a;
+
+  if atual <= estimado * 1.15 then
+    raise exception
+      'ABORTAR: ganho estimado de artigos abaixo de 15%% (atual %, novo ~%)',
+      atual, round(estimado);
   end if;
 end $$;
 

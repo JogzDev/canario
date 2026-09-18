@@ -2,10 +2,12 @@
   "medido_em": "2026-09-18T12:40:00Z",
   "consulta": "select md5(regexp_replace(pg_get_functiondef(p.oid), '\\s+', ' ', 'g')) from pg_proc p where p.oid = 'public.<nome>'::regproc",
   "motivo": "Prova de que o 'antes' do laboratorio e o codigo que roda em producao, e criterio de abortamento do roteiro: se o hash em producao divergir, a migration substituiria outra coisa.",
+  "fonte_computar_indice": "Corpo extraido do backup verificavel de 18/09; coincide com a migration P1 salvo pela prosa curta de meta.por_que.",
   "funcoes": {
     "computar_serie_varejo": "4a1b76d8d0b9d81086474a563006d6b5",
     "computar_serie_editorial": "a56488dcf1e732973339e50442882c5e",
     "computar_z": "a84c63a5c5acd5fa95a25fe7fd0df120",
+    "computar_indice": "ce2ffa99841a237ee1001071b46ee772",
     "uso_do_banco": "7c6355a6bd043f9d01108f01d465bc39",
     "podar_snapshots": "c9b22fd0cc607449cbbf7b5aef7c77cf"
   }

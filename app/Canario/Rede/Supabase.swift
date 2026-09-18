@@ -341,6 +341,12 @@ actor Supabase {
             // similares e gráficos não, embora falhassem pelo mesmo pool.
             let dados = try await comUmaSegundaChance(req)
             return try JSONDecoder().decode(T.self, from: dados)
+        } catch is CancellationError {
+            // Cancelamento continua sendo controle de fluxo ate a tela. Se
+            // virar `Falha.rede`, o chamador nao consegue distingui-lo de uma
+            // queda real e pode exibir aviso (ou tentar de novo) para uma
+            // resposta que ele mesmo deixou de querer.
+            throw CancellationError()
         } catch let falha as Falha {
             throw falha
         } catch {

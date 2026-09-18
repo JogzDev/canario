@@ -56,3 +56,23 @@ declare u bigint; total int; begin
   raise notice 'base 3  computar_z antigo: % de % linhas reescritas sem mudanca',
     total, total;
 end $$;
+
+do $$
+begin
+  perform public.computar_indice();
+end $$;
+
+do $$
+declare u bigint; total int; begin
+  select count(*) into total from public.indices_semanais;
+  assert total > 0, 'a base precisa produzir indices para o teste da P25';
+  perform lab.fotografar_indices();
+  u := lab.updates_indices();
+  perform public.computar_indice();
+  assert lab.updates_indices() - u = total
+     and lab.indices_movidos_sem_mudar() = total,
+    'computar_indice antigo deveria reescrever os ' || total
+      || ' indices sem mudar nada; reescreveu ' || (lab.updates_indices() - u);
+  raise notice 'base 4  computar_indice antigo: % de % linhas reescritas sem mudanca',
+    total, total;
+end $$;

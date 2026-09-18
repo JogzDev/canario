@@ -1,10 +1,10 @@
 -- PASSO 90 · SO LEITURA. Uma vez por dia, durante a janela de observacao.
 --
--- A janela existe para MEDIR o crescimento com a coleta de volta e a
--- prevencao aplicada, antes de publicar A57/A58. Este passo imprime o que
--- mudou e sai com erro se um criterio de parada for atingido. O erro e o
--- sinal para parar a coleta e trazer os numeros para revisao -- nunca para
--- apagar dado.
+-- A janela existe para MEDIR o crescimento com a coleta de volta, a
+-- prevencao e o backend A57/A58 ja publicados, antes de liberar o app
+-- consumidor. Este passo imprime o que mudou e sai com erro se um criterio de
+-- parada for atingido. O erro e o sinal para parar a coleta e trazer os
+-- numeros para revisao -- nunca para apagar dado.
 
 do $$
 declare
@@ -31,11 +31,14 @@ select now() as medido_em,
        (select count(*) from public.snapshots) as linhas_de_snapshots,
        (select n_tup_upd from pg_stat_all_tables
          where relid = 'public.series_semanais'::regclass) as updates_acumulados_series,
+       (select n_tup_upd from pg_stat_all_tables
+         where relid = 'public.indices_semanais'::regclass) as updates_acumulados_indices,
        (select count(*) from cron.job_run_details) as linhas_do_log;
 
--- A prova de que a P22 esta funcionando: o que a ultima publicacao do motor
+-- A prova de que P22 e P25 estao funcionando: o que a ultima publicacao do motor
 -- escreveu em cada caminho. Numeros proximos do tamanho da serie inteira
--- (29 mil em computar_z) significam que a prevencao nao esta ativa.
+-- (29 mil em computar_z ou 9,9 mil em computar_indice) significam que a
+-- prevencao correspondente nao esta ativa.
 select execucao, status, concluido_em, resultado
 from public.motor_execucoes
 order by concluido_em desc nulls last

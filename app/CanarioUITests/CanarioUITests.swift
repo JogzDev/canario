@@ -119,22 +119,44 @@ final class CanarioUITests: XCTestCase {
     func testRespostaLentaNaoSobrescreveAPerguntaNova() {
         let app = abrirBusca("troca")
         let campo = app.searchFields.firstMatch
-        campo.typeText("lenta")
-        // A resposta de "lenta" leva 1,5 s. A troca acontece dentro disso.
-        campo.typeText(XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue
-                       + XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue
-                       + XCUIKeyboardKey.delete.rawValue)
-        campo.typeText("rapida")
 
-        let rapida = app.staticTexts.containing(
-            NSPredicate(format: "label CONTAINS 'Resposta rapida'")).firstMatch
+        // Primeiro, A ja esta visivel quando B comeca. A troca e atomica pelo
+        // controle de teste para nao passar por uma string com menos de tres
+        // letras (esse caminho ja limpava o card e mascararia a regressao).
+        campo.typeText("primeira")
+        let visivelA = app.staticTexts["Resposta visivel da pergunta A"]
+        XCTAssertTrue(visivelA.waitForExistence(timeout: 10))
+
+        let trocar = app.buttons["trocar-consulta-editorial"]
+        XCTAssertTrue(trocar.exists)
+        trocar.tap()
+        XCTAssertTrue(visivelA.waitForNonExistence(timeout: 1),
+                      "A precisa sumir durante o debounce/rede de B")
+        let tardiaB = app.staticTexts["Resposta tardia da pergunta B"]
+        XCTAssertFalse(tardiaB.exists,
+                       "o intervalo testado precisa ser anterior a resposta de B")
+        XCTAssertTrue(tardiaB.waitForExistence(timeout: 10))
+
+        // Agora preserva a segunda metade do contrato: uma A que ficou em voo
+        // nao pode chegar depois e sobrescrever a B mais nova.
+        app.terminate()
+        let appDaCorrida = abrirBusca("troca")
+        let campoDaCorrida = appDaCorrida.searchFields.firstMatch
+        campoDaCorrida.typeText("lenta")
+        // A resposta de "lenta" leva 1,5 s. A troca acontece dentro disso.
+        campoDaCorrida.typeText(
+            XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue
+            + XCUIKeyboardKey.delete.rawValue + XCUIKeyboardKey.delete.rawValue
+            + XCUIKeyboardKey.delete.rawValue)
+        campoDaCorrida.typeText("rapida")
+
+        let rapida = appDaCorrida.staticTexts["Resposta rapida da pergunta B"]
         XCTAssertTrue(rapida.waitForExistence(timeout: 10),
                       "a resposta da pergunta atual deveria estar na tela")
 
         // E continua sendo a B depois que a A chega: 3 s cobre o 1,5 s da
         // resposta lenta com folga.
-        let lenta = app.staticTexts.containing(
-            NSPredicate(format: "label CONTAINS 'Resposta lenta'")).firstMatch
+        let lenta = appDaCorrida.staticTexts["Resposta lenta da pergunta A"]
         XCTAssertFalse(lenta.waitForExistence(timeout: 3),
                        "resposta antiga não pode sobrescrever a nova")
         XCTAssertTrue(rapida.exists)

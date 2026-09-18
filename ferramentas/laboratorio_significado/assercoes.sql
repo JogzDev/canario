@@ -100,7 +100,15 @@ end $$;
 
 -- 7. Coleta pausada devolve dado com idade, não ausência.
 do $$
-declare r jsonb; resumo jsonb; begin
+declare r jsonb; resumo jsonb; marcador record; begin
+  select observado_em, produtos_observados into marcador
+  from public.observacoes_publicadas_do_painel
+  where segmento = 'feminino_casual_br';
+  assert marcador.observado_em = current_date - 15,
+    'seed escolheu o lote parcial mais novo: ' || marcador.observado_em;
+  assert marcador.produtos_observados = 210,
+    'seed deveria registrar as 210 pecas ainda no dia completo e registrou '
+      || marcador.produtos_observados;
   r := public.similares_da_peca_v2(array['vestido', 'preto'], 5);
   resumo := r->'resumo';
   assert (resumo->>'n_similares')::int = 20,
@@ -113,7 +121,7 @@ declare r jsonb; resumo jsonb; begin
       || (resumo->>'dias_desde_a_observacao');
   assert (r->'pecas'->0->>'visto_em')::date = current_date - 15,
     'cada peca deveria carregar a data que a sustenta';
-  raise notice 'ok 7  pausa de coleta: 20 similares com 15 dias declarados';
+  raise notice 'ok 7  seed rejeita queda de 90%% sem alerta; 20 similares com 15 dias';
 end $$;
 
 -- 8. Segmento com data mais nova não reprova o outro.
@@ -317,12 +325,28 @@ end $$;
 
 -- 17. Coleta recente sem eventos devolve zero na janela, nao a semana antiga.
 do $$
-declare r jsonb; begin
+declare r jsonb; marcador date; begin
   update public.estado_dos_produtos ep set ultimo_avistamento_em = current_date
   from public.produtos p
   where p.id = ep.produto_id
-    and p.segmento = 'feminino_casual_br'
-    and ep.ultimo_avistamento_em = current_date - 15;
+    and p.segmento = 'feminino_casual_br';
+
+  -- A observacao so e publicada quando TODAS as marcas ativas deixaram
+  -- saude positiva na mesma data.
+  insert into public.saude (data, fonte, marca_id, visitados, alertas) values
+    (current_date, 'varejo', 1, 503, null),
+    (current_date, 'varejo', 2, 100, null);
+  execute 'set local role service_role';
+  r := public.computar_motor();
+  execute 'reset role';
+  assert (r->>'observacoes_publicadas')::int = 1,
+    'a coleta completa deveria publicar 1 segmento e publicou '
+      || coalesce(r->>'observacoes_publicadas', 'nulo');
+  select observado_em into marcador
+  from public.observacoes_publicadas_do_painel
+  where segmento = 'feminino_casual_br';
+  assert marcador = current_date,
+    'o marcador completo deveria avancar para hoje e veio ' || marcador;
 
   r := public.resumo_de_eventos('reposicao', 7);
   assert (r->>'ate')::date = current_date
@@ -346,12 +370,20 @@ declare r jsonb; begin
     'com ate explicito, a janela antiga deveria voltar com 208 e veio '
       || (r->>'total_pecas');
 
-  update public.estado_dos_produtos ep set ultimo_avistamento_em = current_date - 15
+  delete from public.saude where data = current_date and fonte = 'varejo';
+  update public.estado_dos_produtos ep
+     set ultimo_avistamento_em = case when p.id between 601 and 603
+                                      then current_date - 30
+                                      else current_date - 15 end
   from public.produtos p
   where p.id = ep.produto_id
-    and p.segmento = 'feminino_casual_br'
-    and ep.ultimo_avistamento_em = current_date;
-  raise notice 'ok 17 coleta recente sem eventos: zero na janela comum';
+    and p.segmento = 'feminino_casual_br';
+  update public.observacoes_publicadas_do_painel
+     set observado_em = current_date - 15,
+         produtos_observados = 510,
+         marcas_observadas = 2
+   where segmento = 'feminino_casual_br';
+  raise notice 'ok 17 coleta completa publica hoje; sem eventos, janela comum zera';
 end $$;
 
 -- 18. Noite vermelha nao deixa buraco: o motor alcanca o dia que faltou.
@@ -413,6 +445,11 @@ declare resumo jsonb; begin
    where produto_id between 1 and 10;
   update public.estado_dos_produtos set ultimo_avistamento_em = current_date - 8
    where produto_id between 11 and 20;
+  update public.observacoes_publicadas_do_painel
+     set observado_em = current_date - 1,
+         produtos_observados = 20,
+         marcas_observadas = 1
+   where segmento = 'feminino_casual_br';
 
   resumo := public.similares_da_peca_v2(array['vestido', 'preto'], 5)->'resumo';
   assert (resumo->>'n_similares')::int = 20,
@@ -430,6 +467,11 @@ declare resumo jsonb; begin
 
   update public.estado_dos_produtos set ultimo_avistamento_em = current_date - 15
    where produto_id between 1 and 20;
+  update public.observacoes_publicadas_do_painel
+     set observado_em = current_date - 15,
+         produtos_observados = 510,
+         marcas_observadas = 2
+   where segmento = 'feminino_casual_br';
   raise notice 'ok 20 idades mistas: ponta nova 1 dia, ponta velha 8';
 end $$;
 
@@ -466,4 +508,86 @@ declare g jsonb; primeiro jsonb; begin
   assert primeiro->'detalhe'->'tamanhos' is not null,
     'o exemplo deveria carregar o detalhe inteiro, que e o que a frase le';
   raise notice 'ok 22 exemplos carregam ordinal, distancia e detalhe inteiro';
+end $$;
+
+-- 23. Lote parcial nao avanca a data publica, mesmo se o motor for manual.
+do $$
+declare r jsonb; resumo jsonb; marcador date; begin
+  -- Dez produtos de uma marca saltam quinze dias; a outra marca deixa uma
+  -- linha de saude explicitamente truncada. `max(ultimo_avistamento_em)` puro
+  -- carimbaria o painel como de hoje.
+  update public.estado_dos_produtos
+     set ultimo_avistamento_em = current_date
+   where produto_id between 1 and 10;
+  insert into public.saude (data, fonte, marca_id, visitados, alertas) values
+    (current_date, 'varejo', 1, 10, null),
+    (current_date, 'varejo', 2, 10, '{"truncou": true}'::jsonb);
+  -- Marca ativa configurada para a coorte, mas ainda sem produto algum. Se a
+  -- expectativa viesse de `produtos`, ela sumiria da prova de completude.
+  update public.marcas set ativa = true where id = 4;
+
+  execute 'set local role service_role';
+  r := public.computar_motor();
+  execute 'reset role';
+
+  select observado_em into marcador
+  from public.observacoes_publicadas_do_painel
+  where segmento = 'feminino_casual_br';
+  assert (r->>'observacoes_publicadas')::int = 0,
+    'motor com lote parcial deveria publicar 0 segmentos e publicou '
+      || coalesce(r->>'observacoes_publicadas', 'nulo');
+  assert marcador = current_date - 15,
+    'lote parcial avancou o marcador para ' || marcador;
+
+  r := public.resumo_de_eventos('reposicao', 7);
+  assert (r->>'ate')::date = current_date - 15,
+    'a capa nao pode seguir o maximo parcial: ' || coalesce(r->>'ate', 'nulo');
+  resumo := public.similares_da_peca_v2(
+    array['vestido', 'preto'], 5)->'resumo';
+  assert (resumo->>'painel_observado_em')::date = current_date - 15
+     and (resumo->>'painel_dias_desde_a_observacao')::int = 15,
+    'similares chamou lote parcial de atual';
+  assert (resumo->>'n_similares')::int = 10,
+    'as 10 linhas sobrescritas pelo lote futuro devem ficar de fora, nao ser '
+      || 'misturadas ao painel antigo; vieram ' || (resumo->>'n_similares');
+
+  delete from public.saude where data = current_date and fonte = 'varejo';
+  update public.marcas set ativa = false where id = 4;
+  update public.estado_dos_produtos
+     set ultimo_avistamento_em = current_date - 15
+   where produto_id between 1 and 10;
+  raise notice 'ok 23 lote parcial: relogio nao avanca; linhas futuras ficam de fora';
+end $$;
+
+-- 24. Volume baixo positivo tambem bloqueia o motor manual.
+do $$
+declare r jsonb; marcador date; begin
+  -- Nao ha erro, truncamento nem ausencia: as duas marcas responderam. Ainda
+  -- assim, 20 e 10 ficam abaixo de 30% da media positiva dos sete dias
+  -- anteriores. Esse e exatamente o critico que `alertas_criticos` emitiria.
+  update public.estado_dos_produtos
+     set ultimo_avistamento_em = current_date
+   where produto_id between 1 and 10;
+  insert into public.saude (data, fonte, marca_id, visitados, alertas) values
+    (current_date, 'varejo', 1, 20, null),
+    (current_date, 'varejo', 2, 10, null);
+
+  execute 'set local role service_role';
+  r := public.computar_motor();
+  execute 'reset role';
+
+  select observado_em into marcador
+  from public.observacoes_publicadas_do_painel
+  where segmento = 'feminino_casual_br';
+  assert (r->>'observacoes_publicadas')::int = 0,
+    'motor manual com queda critica deveria publicar 0 segmentos e publicou '
+      || coalesce(r->>'observacoes_publicadas', 'nulo');
+  assert marcador = current_date - 15,
+    'volume baixo positivo avancou o marcador para ' || marcador;
+
+  delete from public.saude where data = current_date and fonte = 'varejo';
+  update public.estado_dos_produtos
+     set ultimo_avistamento_em = current_date - 15
+   where produto_id between 1 and 10;
+  raise notice 'ok 24 queda critica: positivo sem erro nao avanca motor manual';
 end $$;

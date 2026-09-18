@@ -184,15 +184,25 @@ declare
   total integer := 0;
 begin
   -- Sem argumento, o alvo nao e so "o dia mais novo": e ele MAIS qualquer dia
-  -- observado que ainda nao tenha linha. Uma execucao do motor que falhasse
+  -- observado que ainda nao tenha linha. Inclui tambem o dia PUBLICADO de
+  -- cada segmento: num dia sem mudanca de preco/grade pode nao haver snapshot
+  -- exatamente naquela data, mas o denominador ainda precisa acompanhar a
+  -- observacao que a RPC declara. Uma execucao do motor que falhasse
   -- deixaria um buraco permanente no denominador -- a poda leva o cru em 21
   -- dias (A42) e aquele dia deixa de ser reconstruivel. Em dia normal e uma
   -- chamada so; depois de uma noite vermelha, ele se alcanca sozinho.
   if dia is null then
     for alvo in
       select d.data
-      from (select distinct s.data from public.snapshots s) d
+      from (
+        select distinct s.data from public.snapshots s
+        union
+        select o.observado_em
+        from public.observacoes_publicadas_do_painel o
+      ) d
       where d.data = (select max(s2.data) from public.snapshots s2)
+         or d.data in (select o.observado_em
+                       from public.observacoes_publicadas_do_painel o)
          or not exists (select 1 from public.sortimento_diario sd
                          where sd.data = d.data)
       order by 1
@@ -290,10 +300,9 @@ as $function$
     from par
     cross join lateral (
       select coalesce($4, (
-        select max(ep.ultimo_avistamento_em)
-        from public.estado_dos_produtos ep
-        join public.produtos p on p.id = ep.produto_id
-        where p.segmento = 'feminino_casual_br')) as ate
+        select o.observado_em
+        from public.observacoes_publicadas_do_painel o
+        where o.segmento = 'feminino_casual_br')) as ate
     ) lim
     where lim.ate is not null
       and $1 in ('reposicao', 'remarcacao', 'saida_de_linha')
@@ -485,10 +494,21 @@ grant execute on function public.buscar_referencia_editorial(text, integer)
 -- O DENOMINADOR SE RECONSTROI NO FIM DA COLETA SAUDAVEL, ANTES DA PODA
 -- ====================================================================
 --
--- O lugar nao e o workflow: e aqui. `computar_motor` so roda depois do portao
--- de saude do pipeline diario, roda com a chave de servico, roda numa unica
--- transacao com o lock da publicacao -- e e ele que chama a poda. Colocar a
--- reconstrucao um passo antes de `podar_snapshots(21)` torna impossivel podar
+-- O lugar nao e a consulta do app: e aqui. O pipeline diario e a recuperacao
+-- chamam `computar_motor` depois do portao de saude, mas isso NAO basta como
+-- invariante: existe disparo manual do motor e o catalogo candidato pode
+-- coletar uma plataforma ou marca isolada. Por isso o SQL exige a prova
+-- persistida em `saude`: cada marca ativa e testada daquele segmento precisa
+-- ter volume positivo na mesma data, sem corte de paginacao e sem a queda
+-- critica que o coletor ja usa. O limiar e o mesmo: menos de 30% da media
+-- positiva dos sete dias anteriores. Uma linha positiva com `erro` segue a
+-- decisao do portao Python e e julgada pelo volume; `truncou` e
+-- `faixas_truncadas` sao a trava adicional, deliberada, para catalogo que
+-- declarou corte. Motor manual sem coleta completa continua calculando as
+-- outras tabelas, mas nao avanca o relogio publico do painel.
+--
+-- A mesma transacao materializa o denominador e so depois chama a poda. Colocar
+-- a reconstrucao um passo antes de `podar_snapshots(21)` torna impossivel podar
 -- um dia sem antes ter gravado o denominador dele, mesmo que alguem reordene o
 -- YAML depois. Dia podado e dia irreconstruivel: e uma porta de sentido unico.
 create or replace function public.computar_motor()
@@ -504,6 +524,7 @@ declare
   r_indice integer;
   r_curva integer;
   r_raridade integer;
+  r_observacoes integer;
   r_sortimento integer;
   r_snapshots_removidos integer;
 begin
@@ -518,8 +539,95 @@ begin
   r_curva := public.computar_curva_tamanhos();
   r_raridade := public.computar_raridade();
 
-  -- A58: ultima chance de ler o cru do dia. Depois da poda, o denominador
-  -- daquele dia nao existe mais em lugar nenhum.
+  -- A58: o maximo do estado e apenas CANDIDATO. Ele so vira observacao
+  -- publicada quando todas as marcas ativas/testadas do segmento deixaram
+  -- saude positiva na mesma data. Isso cobre inclusive o motor manual e a
+  -- coleta dirigida a uma unica marca, que nao passam pelo portao global.
+  with candidatos as (
+    select p.segmento, max(ep.ultimo_avistamento_em) as observado_em
+    from public.estado_dos_produtos ep
+    join public.produtos p on p.id = ep.produto_id
+    where p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')
+      and ep.ofertavel is true
+      and ep.ultimo_avistamento_em <= current_date
+    group by p.segmento
+  ), contagens as (
+    select c.segmento, c.observado_em,
+           count(*)::integer as produtos_observados,
+           count(distinct p.marca_id)::integer as marcas_observadas
+    from candidatos c
+    join public.produtos p on p.segmento = c.segmento
+    join public.estado_dos_produtos ep
+      on ep.produto_id = p.id
+     and ep.ultimo_avistamento_em = c.observado_em
+     and ep.ofertavel is true
+    group by c.segmento, c.observado_em
+  ), marcas_esperadas as (
+    -- A coorte operacional vem de `marcas.segmento`: e ela que o coletor usa
+    -- para decidir quem TEM de comparecer. Derivar a expectativa de produtos
+    -- omitiria justamente uma marca ativa cuja primeira/recuperacao falhou
+    -- antes de classificar qualquer produto.
+    select m.segmento, m.id as marca_id
+    from public.marcas m
+    where m.segmento in ('feminino_casual_br', 'catalogo_candidato_br')
+      and m.ativa is true
+      and m.status_teste in ('vtex', 'shopify')
+  ), cobertura as (
+    select c.segmento, c.observado_em,
+           count(me.marca_id)::integer as marcas_esperadas,
+           count(me.marca_id) filter (
+             where coalesce(s.visitados, 0) > 0
+               and not (coalesce(s.alertas, '{}'::jsonb)
+                        ?| array['truncou', 'faixas_truncadas'])
+               and (historico.media_positiva_7d is null
+                    or s.visitados::numeric
+                       >= historico.media_positiva_7d * 0.30)
+           )::integer as marcas_saudaveis
+    from candidatos c
+    join marcas_esperadas me on me.segmento = c.segmento
+    left join public.saude s
+      on s.fonte = 'varejo'
+     and s.marca_id = me.marca_id
+     and s.data = c.observado_em
+    left join lateral (
+      select avg(h.visitados::numeric) as media_positiva_7d
+      from public.saude h
+      where h.fonte = 'varejo'
+        and h.marca_id = me.marca_id
+        and h.data >= c.observado_em - 7
+        and h.data < c.observado_em
+        and coalesce(h.visitados, 0) > 0
+    ) historico on true
+    group by c.segmento, c.observado_em
+  ), publicaveis as (
+    select c.*
+    from contagens c
+    join cobertura co
+      on co.segmento = c.segmento and co.observado_em = c.observado_em
+    left join public.observacoes_publicadas_do_painel anterior
+      on anterior.segmento = c.segmento
+    where co.marcas_esperadas > 0
+      and co.marcas_saudaveis = co.marcas_esperadas
+      and (anterior.segmento is null
+           or c.observado_em > anterior.observado_em)
+  )
+  insert into public.observacoes_publicadas_do_painel
+    (segmento, observado_em, produtos_observados, marcas_observadas,
+     publicado_em)
+  select segmento, observado_em, produtos_observados, marcas_observadas, now()
+  from publicaveis
+  on conflict (segmento) do update
+    set observado_em = excluded.observado_em,
+        produtos_observados = excluded.produtos_observados,
+        marcas_observadas = excluded.marcas_observadas,
+        publicado_em = excluded.publicado_em
+    where excluded.observado_em
+          > public.observacoes_publicadas_do_painel.observado_em;
+  get diagnostics r_observacoes = row_count;
+
+  -- Ultima chance de ler o cru do dia. A chamada sem argumento inclui agora
+  -- os dias dos marcadores publicados, alem dos dias com snapshot proprio.
+  -- Depois da poda, um dia fora da janela nao existe mais em lugar nenhum.
   r_sortimento := public.computar_sortimento_diario();
 
   -- Todos os consumidores do cru ja terminaram; mantemos o piso seguro da A30.
@@ -533,6 +641,7 @@ begin
     'computar_indice', r_indice,
     'computar_curva_tamanhos', r_curva,
     'computar_raridade', r_raridade,
+    'observacoes_publicadas', r_observacoes,
     'computar_sortimento_diario', r_sortimento,
     'snapshots_removidos', r_snapshots_removidos
   );
@@ -540,7 +649,7 @@ end;
 $function$;
 
 comment on function public.computar_motor() is
-  'A58: mesma sequencia da A42 com a reconstrucao do denominador diario imediatamente antes da poda do cru.';
+  'A58: mesma sequencia da A42; so avanca a observacao com saude positiva, sem queda critica, de todas as marcas ativas do segmento; reconstrói o denominador e depois poda o cru, tudo na mesma transacao.';
 
 revoke execute on function public.computar_motor()
   from public, anon, authenticated;

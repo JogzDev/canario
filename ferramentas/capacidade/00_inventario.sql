@@ -91,7 +91,9 @@ select count(*) as linhas, min(start_time) as mais_antiga, max(start_time) as ma
        count(*) filter (where end_time < now() - interval '7 days' and status = 'succeeded')
          as sucesso_com_mais_de_7_dias,
        count(*) filter (where end_time < now() - interval '30 days') as com_mais_de_30_dias,
-       (select jsonb_agg(jsonb_build_object('job', jobname, 'agenda', schedule, 'ativo', active))
+       (select jsonb_agg(jsonb_build_object(
+          'id', jobid, 'job', jobname, 'agenda', schedule, 'ativo', active,
+          'banco', database, 'usuario', username))
           from cron.job) as jobs
 from cron.job_run_details;
 
@@ -117,7 +119,7 @@ select (select count(*) from pg_stat_activity
           where status in ('queued', 'running')) as motor_em_andamento,
        (select max(age(datfrozenxid)) from pg_database) as idade_xid;
 
--- 8. As funcoes que P21, P22 e P24 substituem, contra o que foi medido em
+-- 8. As funcoes que P21, P22, P24 e P25 substituem, contra o que foi medido em
 -- 18/09. Diferenca aqui e criterio de abortamento: a migration substituiria
 -- outra coisa.
 select p.proname,
@@ -126,11 +128,12 @@ select p.proname,
          when 'computar_serie_varejo' then '4a1b76d8d0b9d81086474a563006d6b5'
          when 'computar_serie_editorial' then 'a56488dcf1e732973339e50442882c5e'
          when 'computar_z' then 'a84c63a5c5acd5fa95a25fe7fd0df120'
+         when 'computar_indice' then 'ce2ffa99841a237ee1001071b46ee772'
          when 'uso_do_banco' then '7c6355a6bd043f9d01108f01d465bc39'
          when 'podar_snapshots' then 'c9b22fd0cc607449cbbf7b5aef7c77cf'
        end as hash_de_18_09
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname in ('computar_serie_varejo', 'computar_serie_editorial', 'computar_z',
-                    'uso_do_banco', 'podar_snapshots')
+                    'computar_indice', 'uso_do_banco', 'podar_snapshots')
 order by 1;

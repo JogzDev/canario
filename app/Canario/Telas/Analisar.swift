@@ -66,7 +66,7 @@ struct Analisar: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $texto,
+            .searchable(text: textoDaBusca,
                         placement: .navigationBarDrawer(displayMode: .always),
                         prompt: "Search by garment, fabric, cut, pattern…")
             .toolbar {
@@ -273,6 +273,15 @@ struct Analisar: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.primary.opacity(0.70))
                     .fixedSize(horizontal: false, vertical: true)
+
+                // Controle deterministico, presente apenas no processo de
+                // UI test, para trocar A por B em uma unica mutacao do estado.
+                // Digitar/apagar caractere por caractere passaria por uma
+                // consulta curta e esconderia o defeito que o teste procura.
+                if ImprensaDeTeste.caso == "troca" {
+                    Button("Switch press query") { atualizarTextoDaBusca("segunda") }
+                        .accessibilityIdentifier("trocar-consulta-editorial")
+                }
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -325,6 +334,27 @@ struct Analisar: View {
         }
     }
 
+    /// Limpa a resposta anterior na mesma mutacao que muda a pergunta.
+    ///
+    /// Fazer essa limpeza apenas dentro de `.task(id:)` deixa uma janela entre
+    /// o `Binding` mudar e a nova tarefa ser agendada pelo SwiftUI. Nesse
+    /// intervalo a tela ja mostra a pergunta B, mas ainda associa a ela a
+    /// materia de A. O binding explicito fecha essa janela tanto para teclado
+    /// quanto para mudancas programaticas usadas pelos testes.
+    private var textoDaBusca: Binding<String> {
+        Binding(
+            get: { texto },
+            set: { atualizarTextoDaBusca($0) }
+        )
+    }
+
+    private func atualizarTextoDaBusca(_ novoTexto: String) {
+        guard novoTexto != texto else { return }
+        imprensa = nil
+        imprensaFalhou = false
+        texto = novoTexto
+    }
+
     /// Pergunta ao banco pela expressão LITERAL, em paralelo com a tradução.
     ///
     /// Silêncio em dois casos, e só nestes dois: quando a RPC ainda não existe
@@ -338,6 +368,12 @@ struct Analisar: View {
             imprensaFalhou = false
             return
         }
+        // A materia pertence a pergunta anterior. Ela deixa a tela no mesmo
+        // instante em que uma nova expressao valida comeca, antes do debounce
+        // e da rede; mante-la ali faria o titulo A parecer resposta de B por
+        // ate todo o timeout da requisicao.
+        imprensa = nil
+        imprensaFalhou = false
         // A pausa é a primeira proteção: se a pessoa continuar digitando, esta
         // tarefa é cancelada antes de chegar ao banco.
         do { try await Task.sleep(nanoseconds: 350_000_000) } catch { return }

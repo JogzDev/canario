@@ -1,9 +1,20 @@
--- PASSO 40 · DEVOLVE ESPACO FISICO.
+-- PASSO 40 · ALTERNATIVA PARCIAL; NAO FAZ PARTE DA SEQUENCIA NORMAL.
 --
 -- @espera_encolher
 -- @alvo public.artigos_url_key
 --
 -- Alvo exato: o indice `public.artigos_url_key` e nada mais.
+--
+-- MUTUAMENTE EXCLUSIVO COM O PASSO 60. O caminho normal mede depois do 50
+-- e, se a cota ainda estiver acima de 400 MB, pula este arquivo e vai direto
+-- ao `VACUUM FULL artigos`: ele ja reconstroi este indice. Rodar 40 e depois
+-- 60 repetiria o mesmo trabalho, o lock e o WAL sem recuperar um byte a mais.
+--
+-- Este arquivo so existe como recuperacao PARCIAL se o 60 tiver sido
+-- descartado por sua janela de lock ou pelo espaco temporario. Pelas medidas
+-- de 18/09, sozinho ele levaria a cota esperada de ~427,2 para ~407,3 MB, sem
+-- atingir a meta de 400 MB. Depois dele, rode o 70; se falhar, pare e revise.
+-- Nao prossiga para o 60 na mesma execucao.
 --
 -- O que faz: reconstroi o indice do zero. O dado da tabela nao muda.
 -- Medido em 18/09: 41.951.232 bytes; um btree recem-construido com as mesmas entradas

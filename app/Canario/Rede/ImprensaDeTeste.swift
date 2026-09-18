@@ -50,6 +50,16 @@ enum ImprensaDeTeste {
             // calar neste, e só neste.
             throw Supabase.Falha.resposta(404, #"{"code":"PGRST202","message":"Could not find the function"}"#)
         case "troca":
+            // Primeiro comprova a transicao visivel A -> B: A aparece, a tela
+            // troca a consulta de uma vez e B demora. Nesse intervalo, A ja
+            // nao pode continuar sob o texto de B.
+            if expressao.lowercased().hasPrefix("primeira") {
+                return resposta(expressao, titulo: "Resposta visivel da pergunta A")
+            }
+            if expressao.lowercased().hasPrefix("segunda") {
+                try await Task.sleep(nanoseconds: esperaDaLenta)
+                return resposta(expressao, titulo: "Resposta tardia da pergunta B")
+            }
             // A pergunta lenta responde DEPOIS da rápida. Se a tela escrever
             // o que chega em vez do que foi perguntado, "Lenta" aparece por
             // cima de "Rapida" e o teste pega.

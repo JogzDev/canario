@@ -43,15 +43,159 @@
 -- escopo, lock e consequencia -- e nao aqui. Esta migration e so a prevencao:
 -- sem ela, qualquer limpeza volta a crescer ~11 MB por mes.
 --
--- `cron.schedule` com nome atualiza o job se ele ja existir, entao reaplicar
--- esta migration nao duplica nada.
+-- `cron.schedule` com nome faz upsert pela dupla (jobname, username), nao pelo
+-- nome global. Por isso esta migration exige o papel canonico `postgres`, com
+-- BYPASSRLS, e recusa um homonimo pertencente a outro papel: sem isso dois
+-- jobs poderiam executar a mesma retencao. O pg_cron tambem nao reativa no
+-- upsert um job que alguem tenha desativado; a migration chama alter_job e
+-- confere o catalogo inteiro depois. Tudo acontece no mesmo DO; qualquer
+-- precondicao ou pos-condicao que falhe desfaz o agendamento.
 
-select cron.schedule(
-  'canario-retencao-do-log-do-cron',
-  '17 4 * * *',
-  $$delete from cron.job_run_details
+do $migration$
+declare
+  v_nome constant text := 'canario-retencao-do-log-do-cron';
+  v_agenda constant text := '17 4 * * *';
+  v_comando constant text := $comando$delete from cron.job_run_details
      where end_time < now() - interval '7 days'
        and status = 'succeeded';
     delete from cron.job_run_details
-     where end_time < now() - interval '30 days';$$
-);
+     where end_time < now() - interval '30 days';$comando$;
+  v_banco constant text := current_database();
+  v_usuario constant text := 'postgres';
+  v_jobid bigint;
+  v_total integer;
+  v_exatos integer;
+  v_outros integer;
+  v_colunas integer;
+  v_job regclass;
+  v_detalhes regclass;
+begin
+  -- Falhar aqui e melhor do que aceitar uma migration "verde" que nao
+  -- instalou prevencao nenhuma. A assinatura text,text,text existe desde o
+  -- pg_cron 1.4, e alter_job e necessario para tornar a reaplicacao tambem
+  -- idempotente quando o job existente estiver inativo.
+  if not exists (
+    select 1 from pg_catalog.pg_extension where extname = 'pg_cron'
+  ) then
+    raise exception 'P23 requer a extensao pg_cron';
+  end if;
+
+  if current_user <> v_usuario then
+    raise exception
+      'P23 deve ser aplicada pelo papel canonico postgres; papel atual: %',
+      current_user;
+  end if;
+
+  v_job := pg_catalog.to_regclass('cron.job');
+  v_detalhes := pg_catalog.to_regclass('cron.job_run_details');
+  if v_job is null or v_detalhes is null then
+    raise exception 'P23 requer cron.job e cron.job_run_details';
+  end if;
+
+  select count(*) into v_colunas
+  from pg_catalog.pg_attribute a
+  where a.attrelid = v_job
+    and not a.attisdropped
+    and a.attname::text = any (array[
+      'jobid', 'jobname', 'schedule', 'command',
+      'database', 'username', 'active'
+    ]);
+  if v_colunas <> 7 then
+    raise exception 'P23: cron.job nao tem o contrato de sete colunas esperado';
+  end if;
+
+  select count(*) into v_colunas
+  from pg_catalog.pg_attribute a
+  where a.attrelid = v_detalhes
+    and not a.attisdropped
+    and a.attname::text = any (array['end_time', 'status']);
+  if v_colunas <> 2 then
+    raise exception
+      'P23: cron.job_run_details nao tem end_time e status';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_catalog.pg_constraint c
+    where c.conrelid = v_job
+      and c.contype = 'u'
+      and c.conname = 'jobname_username_uniq'
+  ) then
+    raise exception 'P23 requer unicidade de cron.job por nome e usuario';
+  end if;
+
+  if pg_catalog.to_regprocedure('cron.schedule(text,text,text)') is null
+     or pg_catalog.to_regprocedure(
+       'cron.alter_job(bigint,text,text,text,text,boolean)') is null then
+    raise exception 'P23 requer cron.schedule nomeado e cron.alter_job';
+  end if;
+
+  if not pg_catalog.has_schema_privilege(v_usuario, 'cron', 'usage')
+     or not pg_catalog.has_function_privilege(
+       v_usuario, 'cron.schedule(text,text,text)', 'execute')
+     or not pg_catalog.has_function_privilege(
+       v_usuario,
+       'cron.alter_job(bigint,text,text,text,text,boolean)', 'execute')
+     or not pg_catalog.has_table_privilege(
+       v_usuario, 'cron.job', 'select')
+     or not pg_catalog.has_table_privilege(
+       v_usuario, 'cron.job_run_details', 'select')
+     or not pg_catalog.has_table_privilege(
+       v_usuario, 'cron.job_run_details', 'delete') then
+    raise exception
+      'P23 requer USAGE em cron, EXECUTE nas funcoes e SELECT/DELETE nos catalogos';
+  end if;
+
+  if not coalesce((
+    select r.rolcanlogin and (r.rolsuper or r.rolbypassrls)
+    from pg_catalog.pg_roles r
+    where r.rolname = v_usuario
+  ), false) then
+    raise exception
+      'P23 requer papel canonico com LOGIN e visibilidade global do cron: %',
+      v_usuario;
+  end if;
+
+  -- A constraint do pg_cron so protege (nome, usuario). Como `postgres`
+  -- ignora a RLS de cron.job, esta conta tambem enxerga jobs de outros papeis.
+  select count(*) into v_outros
+  from cron.job j
+  where j.jobname::text = v_nome
+    and j.username <> v_usuario;
+  if v_outros <> 0 then
+    raise exception
+      'P23: existe(m) % job(s) homonimo(s) pertencente(s) a outro papel',
+      v_outros;
+  end if;
+
+  -- A funcao nomeada atualiza agenda, comando e banco do job deste usuario.
+  -- `alter_job` cobre a unica coluna que o upsert do pg_cron nao reativa.
+  v_jobid := cron.schedule(v_nome, v_agenda, v_comando);
+  if v_jobid is null then
+    raise exception 'P23: cron.schedule nao devolveu jobid';
+  end if;
+  perform cron.alter_job(v_jobid, active => true);
+
+  -- A primeira conta prova a cardinalidade; a segunda prova o contrato
+  -- inteiro. Se qualquer detalhe divergir, o erro reverte schedule/alter_job.
+  select count(*) into v_total
+  from cron.job j
+  where j.jobname::text = v_nome;
+
+  select count(*) into v_exatos
+  from cron.job j
+  where j.jobid = v_jobid
+    and j.jobname::text = v_nome
+    and j.schedule = v_agenda
+    and j.command = v_comando
+    and j.database = v_banco
+    and j.username = v_usuario
+    and j.active is true;
+
+  if v_total <> 1 or v_exatos <> 1 then
+    raise exception
+      'P23: pos-condicao falhou (jobs do usuario %, exatos %)',
+      v_total, v_exatos;
+  end if;
+end;
+$migration$;

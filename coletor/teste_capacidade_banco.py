@@ -1,5 +1,8 @@
 """Regressões do portão que protege o limite Free do PostgreSQL."""
 
+import glob
+import os
+
 from verificar_capacidade_banco import (OVERHEAD_MINIMO_MEDIDO,
                                         avaliar_capacidade, ler_uso)
 
@@ -78,8 +81,45 @@ def main():
         print("FALHOU: cota que nao fecha foi aceita")
         return 1
 
+    # P25: compactar `indices_semanais` sem impedir a reescrita idêntica só
+    # adia o inchaço. O portão lê a ÚLTIMA definição, não apenas a migration
+    # nominal: uma redefinição futura também precisa preservar o predicado.
+    raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    arquivos = sorted(glob.glob(os.path.join(
+        raiz, "supabase", "migrations", "*.sql")))
+    assinatura = "create or replace function public.computar_indice("
+    indice = ""
+    for caminho in reversed(arquivos):
+        with open(caminho, encoding="utf-8") as arquivo:
+            texto = arquivo.read()
+        posicao = texto.lower().rfind(assinatura)
+        if posicao >= 0:
+            abre = texto.find("$function$", posicao)
+            fecha = texto.find("$function$;", abre + len("$function$"))
+            indice = texto[posicao:fecha + len("$function$;")]
+            break
+    exigencias_indice = [
+        "insert into indices_semanais as atual",
+        "where atual.indice is distinct from excluded.indice",
+        "or atual.estado is distinct from excluded.estado",
+        "or atual.pernas_ativas is distinct from excluded.pernas_ativas",
+        "or atual.n_pernas is distinct from excluded.n_pernas",
+        "or (atual.meta - 'computado_em')",
+        "is distinct from (excluded.meta - 'computado_em')",
+        "'por_que', 'o app posiciona peca no mercado brasileiro; "
+        "quem confirma direcao daqui e sinal daqui'",
+    ]
+    for trecho in exigencias_indice:
+        if trecho not in indice:
+            print("FALHOU: computar_indice voltou a reescrever sem mudanca: {}".format(
+                trecho))
+            return 1
+    if "Medido em 06/08: busca x editorial_br" in indice:
+        print("FALHOU: P25 voltou a prosa longa que reescreveria todos os indices")
+        return 1
+
     print("Capacidade: ok < 85%, aviso em 85%, bloqueio em 96%, decidido pela "
-          "cota inteira (principal + overhead)")
+          "cota inteira (principal + overhead); indices diferenciais")
     return 0
 
 

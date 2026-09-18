@@ -1,9 +1,9 @@
--- PASSO 80 · SO LEITURA. Imediatamente antes de aplicar P21, P22, P23 e P24.
+-- PASSO 80 · SO LEITURA. Imediatamente antes de aplicar P21 a P25.
 --
--- As quatro migrations substituem funcoes que estao em producao. Se a
--- definicao em producao nao for mais a medida em 18/09 -- alguem aplicou
--- outra coisa pelo editor, por exemplo --, a migration substituiria algo que
--- ninguem revisou. Hash diferente e ABORTAR.
+-- P21, P22, P24 e P25 substituem seis funcoes que estao em producao; P23 cria
+-- a retencao do log. Se qualquer definicao ativa nao for mais a medida em
+-- 18/09 -- alguem aplicou outra coisa pelo editor, por exemplo --, a migration
+-- substituiria algo que ninguem revisou. Hash diferente e ABORTAR.
 
 do $$
 declare
@@ -12,6 +12,7 @@ declare
     'computar_serie_varejo', '4a1b76d8d0b9d81086474a563006d6b5',
     'computar_serie_editorial', 'a56488dcf1e732973339e50442882c5e',
     'computar_z', 'a84c63a5c5acd5fa95a25fe7fd0df120',
+    'computar_indice', 'ce2ffa99841a237ee1001071b46ee772',
     'uso_do_banco', '7c6355a6bd043f9d01108f01d465bc39',
     'podar_snapshots', 'c9b22fd0cc607449cbbf7b5aef7c77cf');
   encontradas int := 0;
@@ -30,8 +31,8 @@ begin
   end loop;
   -- Funcao ausente tambem e divergencia: sem esta conta o laco passaria
   -- vazio e o passo sairia verde sem ter conferido nada.
-  if encontradas <> 5 then
-    raise exception 'ABORTAR: esperava 5 funcoes e achei %', encontradas;
+  if encontradas <> 6 then
+    raise exception 'ABORTAR: esperava 6 funcoes e achei %', encontradas;
   end if;
 
   if exists (select 1 from public.motor_execucoes
@@ -44,7 +45,7 @@ begin
   if to_regclass('public.sortimento_diario') is not null then
     raise exception 'REVISAR: sortimento_diario ja existe; a P24 seria inerte';
   end if;
-  raise notice 'as cinco funcoes sao as medidas em 18/09; motor parado; A58 ausente';
+  raise notice 'as seis funcoes sao as medidas em 18/09; motor parado; A58 ausente';
 end $$;
 
 -- O cru que a P24 protege, no momento da aplicacao.

@@ -135,4 +135,25 @@ final class SupabaseRedeTests: XCTestCase {
         let linha: Linha = try await cliente().chamar("resumir", ["limite": 3])
         XCTAssertEqual(linha, Linha(id: 9, nome: "Resumo"))
     }
+
+    func testRPCCanceladaContinuaSendoCancelamento() async {
+        var chamadas = 0
+        ProtocoloHTTPFalso.responder = { _ in
+            chamadas += 1
+            // Reproduz o erro que URLSession entrega quando a tarefa HTTP e
+            // cancelada. Ele atravessa a sessao e `comUmaSegundaChance`; a
+            // fronteira publica da RPC nao pode embrulha-lo em `Falha.rede`.
+            throw URLError(.cancelled)
+        }
+
+        do {
+            let _: Linha = try await cliente().chamar("resumir", ["limite": 3])
+            XCTFail("uma RPC cancelada deveria interromper o fluxo")
+        } catch is CancellationError {
+            // Contrato esperado: a tela consegue calar o cancelamento.
+        } catch {
+            XCTFail("cancelamento foi transformado em falha: \(error)")
+        }
+        XCTAssertEqual(chamadas, 1, "cancelamento nao pode receber retry")
+    }
 }

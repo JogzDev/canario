@@ -1,12 +1,12 @@
--- Fixture do laboratório de capacidade (P21/P22).
+-- Fixture do laboratório de capacidade (P21/P22/P24/P25).
 --
--- O esquema é o de produção nas colunas que as três funções leem e escrevem
+-- O esquema é o de produção nas colunas que as funções leem e escrevem
 -- (conferido em information_schema em 18/09/2026). As FUNÇÕES não estão aqui:
 -- o executor as extrai das migrations do repositório e confere o hash contra
 -- produção. Este arquivo só monta o chão onde elas pisam.
 --
 -- As datas são FIXAS, ao contrário do laboratório de significado: nenhuma das
--- três funções olha `current_date`, e data fixa torna cada contagem esperada
+-- funções olha `current_date`, e data fixa torna cada contagem esperada
 -- uma conta que dá para fazer de cabeça.
 
 -- Os instrumentos em `lab` leem uma tabela temporaria que so existe em tempo
@@ -75,6 +75,20 @@ create table public.series_semanais (
   n_amostra integer,
   meta jsonb,
   unique (termo_id, segmento, fonte, semana)
+) with (fillfactor = 70);
+
+create table public.indices_semanais (
+  id bigint generated always as identity primary key,
+  termo_id text not null references public.termos(id),
+  segmento text not null,
+  semana date not null,
+  indice numeric,
+  estado text check (estado in ('em alta', 'em queda', 'pico', 'estavel')),
+  pernas_ativas text[],
+  n_pernas integer,
+  meta jsonb,
+  computado_em timestamptz not null default now(),
+  unique (termo_id, segmento, semana)
 ) with (fillfactor = 70);
 
 -- VAREJO
@@ -196,5 +210,58 @@ create function lab.movidas_sem_mudar() returns bigint language sql as $$
     and s.valor_bruto is not distinct from a.valor_bruto
     and s.z is not distinct from a.z
     and s.n_amostra is not distinct from a.n_amostra
-    and (s.meta - 'computado_em') is not distinct from a.meta_de_negocio;
+     and (s.meta - 'computado_em') is not distinct from a.meta_de_negocio;
+$$;
+
+-- Os mesmos tres instrumentos, separados para `indices_semanais`. A P25
+-- precisa provar a escrita fisica, e nao apenas confiar no row_count dela.
+create function lab.updates_indices() returns bigint language sql as $$
+  select pg_stat_get_xact_tuples_updated('public.indices_semanais'::regclass);
+$$;
+
+create function lab.inserts_indices() returns bigint language sql as $$
+  select pg_stat_get_xact_tuples_inserted('public.indices_semanais'::regclass);
+$$;
+
+create function lab.deletes_indices() returns bigint language sql as $$
+  select pg_stat_get_xact_tuples_deleted('public.indices_semanais'::regclass);
+$$;
+
+create function lab.fotografar_indices() returns void language plpgsql as $$
+begin
+  if to_regclass('pg_temp.lab_indices_antes') is not null then
+    drop table pg_temp.lab_indices_antes;
+  end if;
+  create temp table lab_indices_antes as
+  select id, ctid::text as versao, termo_id, segmento, semana, indice, estado,
+         pernas_ativas, n_pernas, meta - 'computado_em' as meta_de_negocio,
+         meta->>'computado_em' as carimbo_meta, computado_em as carimbo_coluna
+  from public.indices_semanais;
+end $$;
+
+create function lab.indices_mudados() returns bigint language sql as $$
+  select count(*) from public.indices_semanais i
+  join pg_temp.lab_indices_antes a using (id)
+  where i.indice is distinct from a.indice
+     or i.estado is distinct from a.estado
+     or i.pernas_ativas is distinct from a.pernas_ativas
+     or i.n_pernas is distinct from a.n_pernas
+     or (i.meta - 'computado_em') is distinct from a.meta_de_negocio;
+$$;
+
+create function lab.indices_movidos() returns bigint language sql as $$
+  select count(*) from public.indices_semanais i
+  join pg_temp.lab_indices_antes a using (id)
+  where i.ctid::text <> a.versao;
+$$;
+
+create function lab.indices_movidos_sem_mudar() returns bigint language sql as $$
+  select count(*) from public.indices_semanais i
+  join pg_temp.lab_indices_antes a using (id)
+  where i.ctid::text <> a.versao
+    and i.indice is not distinct from a.indice
+    and i.estado is not distinct from a.estado
+    and i.pernas_ativas is not distinct from a.pernas_ativas
+    and i.n_pernas is not distinct from a.n_pernas
+    and (i.meta - 'computado_em') is not distinct from a.meta_de_negocio;
 $$;

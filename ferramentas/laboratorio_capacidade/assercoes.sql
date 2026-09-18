@@ -296,3 +296,154 @@ begin
   end;
   raise notice 'ok 16 poda: piso de 21 dias intacto';
 end $$;
+
+-- P25 ------------------------------------------------------------------------
+
+do $$
+declare r int; esperadas int; inseridas bigint; begin
+  select count(*) into esperadas from (
+    select distinct termo_id, segmento, semana
+    from public.series_semanais
+    where z is not null and fonte in ('busca', 'editorial_br')
+  ) x;
+  inseridas := lab.inserts_indices();
+  r := public.computar_indice();
+  assert esperadas > 0 and r = esperadas,
+    'a primeira escrita deveria inserir ' || esperadas || ' indices e inseriu ' || r;
+  assert lab.inserts_indices() - inseridas = esperadas,
+    'o executor nao inseriu os ' || esperadas || ' indices esperados';
+  raise notice 'ok 17 indice, primeira escrita: % linhas inseridas', esperadas;
+end $$;
+
+do $$
+declare r int; u bigint; carimbos_mudados int; begin
+  perform lab.fotografar_indices();
+  u := lab.updates_indices();
+  r := public.computar_indice();
+  assert r = 0, 'reexecutar o indice sem mudanca deveria escrever 0 e escreveu ' || r;
+  assert lab.updates_indices() - u = 0,
+    'o executor gravou ' || (lab.updates_indices() - u) || ' indices identicos';
+  assert lab.indices_movidos() = 0,
+    lab.indices_movidos() || ' indices ganharam versao fisica nova';
+  select count(*) into carimbos_mudados
+  from public.indices_semanais i join pg_temp.lab_indices_antes a using (id)
+  where i.computado_em is distinct from a.carimbo_coluna
+     or i.meta->>'computado_em' is distinct from a.carimbo_meta;
+  assert carimbos_mudados = 0,
+    'carimbos nao podem mudar sem resultado novo; mudaram em ' || carimbos_mudados;
+  raise notice 'ok 18 indice, reexecucao: 0 escritas, 0 versoes novas, carimbos intactos';
+end $$;
+
+do $$
+declare r int; u bigint; m bigint; t text; s text; d date;
+        indice_antes numeric; indice_depois numeric; begin
+  select termo_id, segmento, semana into t, s, d
+  from public.series_semanais
+  where fonte = 'busca' and z is not null
+  order by semana desc, termo_id limit 1;
+  select indice into indice_antes from public.indices_semanais
+   where termo_id = t and segmento = s and semana = d;
+  update public.series_semanais set z = z + 0.5
+   where termo_id = t and segmento = s and semana = d and fonte = 'busca';
+  perform lab.fotografar_indices();
+  u := lab.updates_indices();
+  r := public.computar_indice();
+  m := lab.indices_mudados();
+  select indice into indice_depois from public.indices_semanais
+   where termo_id = t and segmento = s and semana = d;
+  assert r = 1 and m = 1 and lab.updates_indices() - u = 1
+     and lab.indices_movidos() = 1,
+    'mudar o z da ultima semana deveria reescrever exatamente 1 indice';
+  assert indice_depois is distinct from indice_antes,
+    'o indice da celula alterada deveria mudar';
+  raise notice 'ok 19 indice, mudanca real: apenas a ultima semana afetada';
+end $$;
+
+do $$
+declare r int; u bigint; m bigint; t text; s text; d date;
+        indice_antes numeric; indice_depois numeric; begin
+  select termo_id, segmento, semana, indice into t, s, d, indice_antes
+  from public.indices_semanais order by semana desc, termo_id limit 1;
+  insert into public.series_semanais
+    (termo_id, segmento, fonte, semana, valor_bruto, z, n_amostra, meta)
+  values (t, s, 'editorial_intl', d, 1, 0.25, 1,
+          jsonb_build_object('fonte', 'contexto_do_teste'));
+  perform lab.fotografar_indices();
+  u := lab.updates_indices();
+  r := public.computar_indice();
+  m := lab.indices_mudados();
+  select indice into indice_depois from public.indices_semanais
+   where termo_id = t and segmento = s and semana = d;
+  assert r = 1 and m = 1 and lab.updates_indices() - u = 1
+     and lab.indices_movidos() = 1,
+    'mudar apenas o contexto deveria atualizar exatamente 1 meta';
+  assert indice_depois is not distinct from indice_antes,
+    'uma perna de contexto nao pode mover o numero do indice';
+  raise notice 'ok 20 indice, contexto: meta muda em 1 linha, numero fica intacto';
+end $$;
+
+do $$
+declare r int; inseridas bigint; t text; s text; d date; begin
+  select termo_id, segmento, max(semana) + 7 into t, s, d
+  from public.series_semanais where fonte = 'busca'
+  group by termo_id, segmento order by termo_id limit 1;
+  insert into public.series_semanais
+    (termo_id, segmento, fonte, semana, valor_bruto, z, n_amostra, meta)
+  values (t, s, 'busca', d, 1, null, null,
+          jsonb_build_object('fonte', 'nulo_do_teste'));
+  update public.series_semanais set z = 2
+   where termo_id = t and segmento = s and semana = d and fonte = 'busca';
+  inseridas := lab.inserts_indices();
+  r := public.computar_indice();
+  assert r = 1 and lab.inserts_indices() - inseridas = 1,
+    'nulo para valor deveria inserir exatamente 1 indice';
+  assert exists (select 1 from public.indices_semanais
+                  where termo_id = t and segmento = s and semana = d),
+    'o indice novo nao foi materializado';
+  raise notice 'ok 21 indice, nulo para valor: 1 linha inserida';
+end $$;
+
+do $$
+declare r int; removidas bigint; atualizadas bigint; t text; s text; d date; begin
+  select termo_id, segmento, max(semana) into t, s, d
+  from public.series_semanais where meta->>'fonte' = 'nulo_do_teste'
+  group by termo_id, segmento;
+  update public.series_semanais set z = null
+   where termo_id = t and segmento = s and semana = d and fonte = 'busca';
+  removidas := lab.deletes_indices();
+  atualizadas := lab.updates_indices();
+  r := public.computar_indice();
+  assert r = 0, 'o contrato legado nao conta deletes no retorno; devolveu ' || r;
+  assert lab.deletes_indices() - removidas = 1
+     and lab.updates_indices() - atualizadas = 0,
+    'valor para nulo deveria apagar 1 indice e atualizar 0';
+  assert not exists (select 1 from public.indices_semanais
+                      where termo_id = t and segmento = s and semana = d),
+    'a leitura sem nenhuma base continuou materializada';
+  raise notice 'ok 22 indice, valor para nulo: 1 leitura sem base removida';
+end $$;
+
+do $$
+declare diferentes int; begin
+  create temp table lab_indices_incremental as
+  select termo_id, segmento, semana, indice, estado, pernas_ativas, n_pernas,
+         meta - 'computado_em' as meta
+  from public.indices_semanais;
+
+  truncate public.indices_semanais restart identity;
+  perform public.computar_indice();
+
+  select count(*) into diferentes from (
+    (select termo_id, segmento, semana, indice, estado, pernas_ativas, n_pernas,
+            meta - 'computado_em' from public.indices_semanais
+     except select * from lab_indices_incremental)
+    union all
+    (select * from lab_indices_incremental
+     except select termo_id, segmento, semana, indice, estado, pernas_ativas, n_pernas,
+                   meta - 'computado_em' from public.indices_semanais)
+  ) d;
+  assert diferentes = 0,
+    'recalcular indices do zero deveria dar a mesma tabela; '
+      || diferentes || ' linhas diferem';
+  raise notice 'ok 23 indice, recalculo do zero = incremental: significado preservado';
+end $$;

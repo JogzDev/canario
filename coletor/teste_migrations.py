@@ -75,7 +75,8 @@ def main():
     exigencias_similares = [
         "t.status = 'aprovado'",
         "limit 12",
-        "p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')",
+        "from public.observacoes_publicadas_do_painel",
+        "where segmento in ('feminino_casual_br', 'catalogo_candidato_br')",
         "least(greatest(coalesce($2, 12), 1), 24)",
         "ep.ofertavel is true",
         # A57 trocou a ancora: o frescor e medido contra o ultimo dia
@@ -83,6 +84,7 @@ def main():
         # uma data unica para as duas coortes.
         "join painel pa on pa.segmento = p.segmento",
         "ep.ultimo_avistamento_em >= pa.observado_em - 7",
+        "ep.ultimo_avistamento_em <= pa.observado_em",
         "coalesce(g.esgotada, false) = false",
         "public.url_publica_produto(p.url, m.nome)",
         "cardinality(par.categorias) = 0",
@@ -96,7 +98,6 @@ def main():
     # 17/09/2026, com a coleta parada desde 02/09: similares devolvia 0 para
     # `vestido + preto` num painel com 12.496 vestidos.
     exigencias_frescor = [
-        "group by p.segmento",
         "'visto_em', visto_em",
         "'observado_em', max(visto_em)",
         "'observado_mais_antigo_em', min(visto_em)",
@@ -115,6 +116,27 @@ def main():
             return falhar("similares nao ancora frescor no dado: {}".format(trecho))
     if "ep.ultimo_avistamento_em >= current_date - 7" in similares:
         return falhar("similares ainda ancora frescor em current_date")
+
+    caminho_a57 = next((c for c in arquivos
+                        if "20260917210000_a57" in c), None)
+    a57 = open(caminho_a57, encoding="utf-8").read().lower()
+    exigencias_seed_publicado = [
+        "with marcas_esperadas as",
+        "from public.marcas m",
+        "s.data = d.observado_em",
+        "coalesce(s.visitados, 0) > 0",
+        "array['truncou', 'faixas_truncadas']",
+        "historico.media_positiva_7d is null",
+        "s.visitados::numeric\n                     >= historico.media_positiva_7d * 0.30",
+        "h.data >= d.observado_em - 7",
+        "h.data < d.observado_em",
+        "coalesce(h.visitados, 0) > 0",
+        "c.marcas_saudaveis = c.marcas_esperadas",
+        "raise exception\n      'a57 nao achou observacao completa em saude",
+    ]
+    for trecho in exigencias_seed_publicado:
+        if trecho not in a57:
+            return falhar("seed A57 pode aceitar lote parcial: {}".format(trecho))
 
     _, similares_amplos = ultima_definicao(
         arquivos, "create or replace function public.similares_da_peca_amplo(")
@@ -281,7 +303,8 @@ def main():
         # Janela COMUM aos tres tipos, ancorada na observacao do painel ou num
         # `ate` explicito de quem pergunta.
         "ate date default null",
-        "max(ep.ultimo_avistamento_em)",
+        "from public.observacoes_publicadas_do_painel o",
+        "where o.segmento = 'feminino_casual_br'",
         "grant execute on function public.resumo_de_eventos(text, integer, integer, date)",
     ]
     for trecho in exigencias_resumo:
@@ -324,6 +347,43 @@ def main():
 
     estado_final = "\n".join(
         open(c, encoding="utf-8").read().lower() for c in arquivos)
+
+    # P23 e uma mudanca de plataforma, nao apenas uma string de DELETE. Ela
+    # precisa falhar antes de agendar se o contrato do pg_cron nao estiver
+    # disponivel e, no mesmo statement, provar que terminou com exatamente um
+    # job ativo para o banco e o papel que aplicaram a migration.
+    caminhos_p23 = [
+        c for c in arquivos
+        if os.path.basename(c) ==
+        "20260917202000_p23_retencao_do_log_do_cron.sql"
+    ]
+    if len(caminhos_p23) != 1:
+        return falhar("migration P23 ausente ou duplicada")
+    p23 = open(caminhos_p23[0], encoding="utf-8").read().lower()
+    exigencias_p23 = [
+        "do $migration$",
+        "to_regprocedure('cron.schedule(text,text,text)')",
+        "cron.alter_job(bigint,text,text,text,text,boolean)",
+        "c.conname = 'jobname_username_uniq'",
+        "a.attname::text = any (array[",
+        "v_usuario constant text := 'postgres'",
+        "current_user <> v_usuario",
+        "r.rolcanlogin and (r.rolsuper or r.rolbypassrls)",
+        "j.username <> v_usuario",
+        "has_table_privilege(\n       v_usuario, 'cron.job_run_details', 'delete')",
+        "v_jobid := cron.schedule(v_nome, v_agenda, v_comando)",
+        "perform cron.alter_job(v_jobid, active => true)",
+        "j.schedule = v_agenda",
+        "j.command = v_comando",
+        "j.database = v_banco",
+        "j.username = v_usuario",
+        "j.active is true",
+        "v_total <> 1 or v_exatos <> 1",
+    ]
+    for trecho in exigencias_p23:
+        if trecho not in p23:
+            return falhar("retencao do cron nao e atomica: {}".format(trecho))
+
     exigencias_finais = [
         # P23: o log do pg_cron tem retencao. O dispatcher roda a cada minuto
         # e, sem isto, o log cresce ~360 KB por dia com a coleta parada.
@@ -411,6 +471,10 @@ def main():
         "r_indice := public.computar_indice()",
         "r_curva := public.computar_curva_tamanhos()",
         "r_raridade := public.computar_raridade()",
+        # O maximo gravado por um lote so vira data publica com saude positiva
+        # de todas as marcas ativas/testadas do segmento. Isso protege tambem
+        # motor manual e coleta dirigida a uma marca.
+        "insert into public.observacoes_publicadas_do_painel",
         # A58: ultima leitura do cru antes da poda. Dia podado e dia
         # irreconstruivel -- esta ordem e uma porta de sentido unico.
         "r_sortimento := public.computar_sortimento_diario()",
@@ -421,6 +485,24 @@ def main():
         return falhar("computar_motor nao preserva a ordem dos passos")
     if "revoke execute on function public.computar_motor()" not in motor:
         return falhar("computar_motor ficou executavel publicamente")
+    exigencias_publicacao_do_painel = [
+        "select m.segmento, m.id as marca_id",
+        "from public.marcas m",
+        "join marcas_esperadas me on me.segmento = c.segmento",
+        "s.data = c.observado_em",
+        "coalesce(s.visitados, 0) > 0",
+        "array['truncou', 'faixas_truncadas']",
+        "historico.media_positiva_7d is null",
+        "s.visitados::numeric\n                       >= historico.media_positiva_7d * 0.30",
+        "h.data >= c.observado_em - 7",
+        "h.data < c.observado_em",
+        "coalesce(h.visitados, 0) > 0",
+        "co.marcas_saudaveis = co.marcas_esperadas",
+    ]
+    for trecho in exigencias_publicacao_do_painel:
+        if trecho not in motor:
+            return falhar(
+                "motor pode publicar painel parcial: {}".format(trecho))
 
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")

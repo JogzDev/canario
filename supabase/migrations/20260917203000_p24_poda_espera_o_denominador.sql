@@ -4,8 +4,9 @@
 -- =====================================
 --
 -- A ordem aprovada para a etapa 1 e: recuperar espaco, aplicar a prevencao,
--- retomar a coleta e OBSERVAR o crescimento -- e so depois publicar A57/A58.
--- Mas a primeira publicacao do motor depois da retomada chama
+-- publicar o backend A57/A58, retomar a coleta e OBSERVAR o crescimento antes
+-- de liberar o app consumidor. Ainda assim, entre a P24 e a A58 -- ou se a
+-- A58 falhar e precisar ser revertida -- uma publicacao manual do motor chama
 -- `podar_snapshots(21)` (A42), que apaga todo snapshot com
 -- `data < current_date - 21`. O corte e de CALENDARIO, nao de dado: com a
 -- coleta parada desde 02/09, ele avancou sozinho. Medido em 18/09/2026, em
@@ -34,23 +35,17 @@
 -- O CUSTO, MEDIDO, E DECLARADO
 -- ============================
 --
--- Enquanto a guarda estiver ativa com a coleta rodando, `snapshots` cresce sem
--- poda: 11.579 linhas por dia em media (254.736 / 22), ~148 bytes por linha
--- viva no heap e ~95 bytes nos dois indices -- cerca de 2,7 MB por dia, 19 MB
--- por semana. Isso sai da folga que a etapa 1 recupera. O roteiro trata como
--- criterio de reavaliacao: se a A58 nao for aplicada dentro da janela de
--- observacao, a decisao volta para a mesa -- nunca e resolvida apagando
--- snapshot.
+-- A coleta permanece parada enquanto esta guarda estiver ativa. Se o backend
+-- A58 nao puder ser aplicado na mesma janela, a retomada e cancelada: nunca se
+-- troca a fonte historica por crescimento sem poda nem se resolve o impasse
+-- apagando snapshot.
 --
 -- ALTERNATIVAS, E POR QUE NAO ESTAS
 -- =================================
 --
--- Manter a coleta parada ate a A58 nao custa espaco, mas inverte a ordem
--- aprovada: nao haveria crescimento para observar antes de publicar.
--- Aplicar so a parte da A58 que cria `sortimento_diario` antes da retomada
--- resolve sem custo, mas separa uma migration que foi revisada inteira. As
--- duas sao decisao de produto; esta guarda e a unica que nao muda nada alem
--- da poda.
+-- Publicar apenas a parte da A58 que cria `sortimento_diario` separaria uma
+-- migration revisada como unidade. A guarda conserva o cru durante a pequena
+-- janela entre migrations; a A58 completa a torna inerte antes da retomada.
 
 create or replace function public.podar_snapshots(p_retencao_dias integer default 21)
 returns integer

@@ -56,7 +56,7 @@ e apagam a velha no commit. Precisam de espaço temporário do tamanho da
 cópia, e seguram lock. Passos 11 a 60.
 
 **Preventiva.** Muda o que o banco faz a partir de agora; não devolve nada
-por si. As migrations P21 a P24.
+por si. As migrations P21 a P25.
 
 ## 3. A ordem, e três dependências que ela precisa respeitar
 
@@ -64,11 +64,19 @@ A ordem é a aprovada:
 
 1. medir de novo em leitura (`00_inventario.sql`);
 2. revisar com vocês o roteiro e os alvos;
-3. autorizar e executar a menor recuperação segura (passos 10 a 60);
+3. executar a recuperação com 10, 11, 20, 21, 30 e 50; medir; se a cota ainda
+   estiver acima de 400 MB, ir **direto ao 60**, sem executar o 40 antes;
 4. confirmar escrita liberada e pelo menos 20% de folga (passo 70);
-5. aplicar a prevenção (passo 80, depois P21, P22, P23 e P24);
-6. retomar a coleta e observar (passo 90, uma vez por dia);
-7. só então A57/A58 no backend, e depois o app consumidor.
+5. passar pelo portão 80 e aplicar P21, P22, P23, P24 e P25, nessa ordem,
+   pelo executor de migrations e com o papel canônico `postgres`;
+6. aplicar A57 e depois A58, no mesmo rollout de backend e antes de retomar a
+   coleta. A58 depende do marcador criado pela A57; não são opcionais entre
+   si. A P24 é apenas a guarda temporária até a A58 materializar o denominador
+   e reativar a poda com segurança;
+7. executar a sonda pública das RPCs depois do refresh do schema do PostgREST;
+8. rotacionar a senha administrativa pelo procedimento da seção 8;
+9. retomar a coleta e observar por sete dias (passo 90, uma vez por dia);
+10. só então publicar o app consumidor.
 
 **P22 não precisa vir antes da compactação — mas precisa vir antes da
 retomada.** Com a coleta parada o motor não roda, e nada reescreve
@@ -78,20 +86,30 @@ motor reescreve até ~46,7 mil linhas e começa a comer os ~43 MB que o passo
 alguns KB de catálogo, sem tocar em linha nenhuma. Não mudei a ordem; só
 registro que ela não é uma restrição.
 
-**P23 fica na etapa 5, como a ordem manda, e o intervalo custa ~360 KB por
-dia.** Se entre a recuperação e a prevenção passarem dias, vale aplicar a P23
-junto com o passo 11. É uma decisão de vocês.
+**P25 é a mesma proteção para `indices_semanais`.** O passo 30 recupera cerca
+de 7,3 MB, mas a função antiga acumulou 610.443 updates em apenas 9.897
+linhas. Sem a P25, essa folga começaria a ser consumida outra vez na primeira
+publicação. O laboratório prova reexecução idêntica com zero updates, mudança
+real restrita às linhas afetadas, remoção da leitura sem base e equivalência
+do recálculo completo.
 
-**P24 é um conflito que a ordem tinha, e eu não posso resolver em
-silêncio.** A etapa 6 retoma a coleta antes da A58. A primeira publicação do
-motor chama `podar_snapshots(21)`, cujo corte é de calendário: medido em
+**P23 entra com as demais migrations, depois do passo 70.** O intervalo entre
+a compactação e a prevenção custa ~360 KB por dia; este roteiro é uma única
+janela operacional, não uma pausa de dias. Preservar a ordem cronológica das
+migrations mantém o ledger coerente e evita tentar escrever antes de o passo
+70 confirmar que o banco saiu do modo somente leitura. A P23 recusa execução
+fora do papel `postgres`, que enxerga o catálogo inteiro e impede um job
+homônimo de outro papel.
+
+**P24 é uma guarda temporária até a A58.** A primeira publicação do motor
+chama `podar_snapshots(21)`, cujo corte é de calendário: medido em
 18/09, ela apagaria **202.050 das 254.736 linhas de snapshot — 16 dos 22
 dias** (12/08 a 27/08). É a única fonte do denominador que a A58 reconstrói.
-A P24 faz a poda devolver 0 enquanto `sortimento_diario` não existir. Custo
-com a coleta rodando: ~2,7 MB por dia (11.579 linhas/dia; ~148 bytes de heap
-e ~95 de índice cada), ~19 MB por semana. As alternativas sem custo mudam a
-ordem ou o pacote — manter a coleta parada até a A58, ou aplicar antes só a
-parte da A58 que cria `sortimento_diario` — e por isso ficam com vocês.
+A P24 faz a poda devolver 0 enquanto `sortimento_diario` não existir. O
+A57 e A58 entram nessa ordem e no mesmo rollout antes da retomada. A58
+materializa o denominador e torna a guarda inerte; assim o custo potencial de
+~2,7 MB por dia com a coleta rodando não vira parte do plano. O app consumidor
+espera os sete dias de observação.
 
 ## 4. Os passos
 
@@ -107,17 +125,28 @@ vem, espaço temporário, lock, duração esperada e critério de abortamento.
 | `20` | devolve espaço | `estado_produtos_oferta_recente` | ~7,2 MB | ~2 MB | índice + share | 1–3 s |
 | `21` | devolve espaço (opcional) | `estado_dos_produtos_pkey` | ~2,0 MB | ~3 MB | índice + share | 1–3 s |
 | `30` | devolve espaço | `indices_semanais` | ~7,3 MB | ~11 MB | access exclusive | 2–8 s |
-| `40` | devolve espaço | `artigos_url_key` | ~19,9 MB | ~22 MB | índice + share | 3–15 s |
+| `40` | alternativa parcial, não sequencial | `artigos_url_key` | ~19,9 MB | ~22 MB | índice + share | 3–15 s |
 | `50` | devolve espaço | `series_semanais` | ~43,4 MB | ~36 MB | access exclusive | 5–20 s |
-| `60` | devolve espaço (condicional) | `artigos` | ~15,8 MB | ~70 MB | access exclusive | 10–40 s |
+| `60` | devolve espaço (condicional) | `artigos` + índices | ~35,7 MB | ~70 MB | access exclusive | 10–40 s |
 | `70` | leitura | folga ≥ 20% e escrita livre | — | — | nenhum | segundos |
 | `80` | leitura | funções = as de 18/09 | — | — | nenhum | segundos |
 | `90` | leitura | observação diária | — | — | nenhum | segundos |
 
-**Acumulado estimado** a partir de 501,2 MB: 487,1 depois do 11 · 479,9 do 20 ·
-477,9 do 21 · 470,6 do 30 · 450,7 do 40 · **407,3 do 50 (81,5%)** · **391,5 do
-60 (78,3%)**. A meta de 20% de folga (≤ 400 MB) **depende do passo 60**: sem
-ele a estimativa para em 18,5%. O passo 60 recusa rodar se o 70 já passar.
+**Acumulado estimado do caminho normal** a partir de 501,2 MB: 487,1 depois do
+11 · 479,9 do 20 · 477,9 do 21 · 470,6 do 30 · **427,2 do 50 (85,4%)**. Meça
+nesse ponto. Se a cota estiver acima de 400 MB, pule o 40 e rode o 60
+diretamente: ele reescreve `artigos` e reconstrói, uma única vez,
+`artigos_pkey` e `artigos_url_key`. O ganho direto estimado é ~35,7 MB e o
+resultado, **391,5 MB (78,3%)**. O passo 60 recusa rodar se a meta já tiver
+sido atingida.
+
+**40 e 60 são ramos mutuamente exclusivos.** O 40 existe apenas como
+alternativa parcial quando o 60 tiver sido descartado por sua janela de lock
+ou por seu espaço temporário. Pelas medidas de 18/09, o 40 sozinho levaria
+427,2 a ~407,3 MB e não atingiria os 20% de folga. Se ele for escolhido, rode o
+70 em seguida; se o 70 falhar, pare e revise. Não execute o 60 depois: um
+`VACUUM FULL artigos` reconstruiria de novo o índice que o 40 acabou de
+reconstruir.
 
 **Duração** é estimativa: a leitura sequencial medida foi de 73,8 MB em 0,42 s
 (`series_semanais`) e 55,9 MB em 1,8 s (`artigos`); reescrever custa algumas
@@ -171,14 +200,32 @@ t;` falha inteiro (medido no PostgreSQL 17.10 do laboratório). Sem
 `lock_timeout` na mesma sessão, um `VACUUM FULL` esperando lock entra na fila
 e trava todas as leituras que chegam depois dele.
 
-As migrations P21 a P24 são SQL comum, sem `VACUUM`, e podem ir pelo editor
-ou pelo `apply_migration`, **uma por vez, só estes quatro arquivos** —
-nunca `supabase db push`, que empurraria também tudo o que ainda não foi
-aprovado.
+As migrations P21 a P25 são SQL comum, sem `VACUUM`. Aplique **uma por vez,
+só estes cinco arquivos e na ordem dos timestamps**, pelo executor de
+migrations que registra o ledger e executa como `postgres`. Não use o editor
+como atalho (ele deixa o histórico divergente) nem `supabase db push` (ele
+empurraria também tudo o que ainda não foi aprovado). Se qualquer migration
+encontrar o projeto em somente leitura apesar do passo 70, pare: não contorne
+o erro nem aplique fora do ledger.
+
+Depois da P23, confira em `cron.job` que existe exatamente uma linha ativa
+chamada `canario-retencao-do-log-do-cron`, no banco atual e sob `postgres`.
+Depois do primeiro horário agendado, confirme uma execução `succeeded` em
+`cron.job_run_details`; essa é a prova operacional que o laboratório local,
+sem a extensão `pg_cron`, não consegue fabricar.
+
+Depois de A57/A58 e do refresh do schema do PostgREST, dispare o workflow
+manual `Sonda pública do backend A57/A58` (ou rode localmente
+`python3 coletor/sonda_significado_publico.py`). Ele usa a publishable key do
+app, faz três leituras mínimas e exige os contratos de
+`similares_da_peca_amplo_v2`, `resumo_de_eventos` e
+`buscar_referencia_editorial`. Qualquer 404/PGRST202 ou campo ausente bloqueia
+a retomada; não espere o app publicado descobrir uma migration incompleta.
 
 ## 7. O que está provado, e onde
 
-- **`node ferramentas/laboratorio_capacidade/rodar.mjs`** — P21, P22 e P24 num
+- **`node ferramentas/laboratorio_capacidade/rodar.mjs`** — P21, P22, P24 e
+  P25 num
   PostgreSQL 17.10. As funções "de antes" são extraídas das migrations e o
   hash de cada uma é conferido contra o medido em produção; a linha de base
   prova que o código de hoje reescreve 100% das linhas; as asserções provam,
@@ -186,20 +233,26 @@ aprovado.
   reescritas e mudança real com só as linhas necessárias — pelo retorno da
   função, pelo contador da transação e pelo `ctid` — e que recalcular do zero
   dá a mesma tabela.
-- **`node ferramentas/capacidade/teste_roteiro.mjs`** — cada passo pelo mesmo
+- **`node ferramentas/capacidade/teste_roteiro.mjs`** — os arquivos pelo mesmo
   executor que rodaria em produção, conectado como um papel sem superusuário
-  no formato do `postgres` do Supabase: ensaio não escreve; cada ação
-  encolhe o alvo sem perder linha; cada pré-condição aborta antes da ação;
-  `VACUUM` sem MAINTAIN é pego; o TRUNCATE vem desarmado; os snapshots não
-  são tocados.
+  no formato do `postgres` do Supabase: ensaio não escreve; cada ação encolhe
+  o alvo sem perder linha; cada pré-condição aborta antes da ação; `VACUUM`
+  sem MAINTAIN é pego; o TRUNCATE vem desarmado; os snapshots não são tocados.
+  Como o cluster descartável tem menos de 400 MB, a ação do 60 é extraída do
+  arquivo e executada sem alteração: a prova confere que ela encolhe o heap,
+  `artigos_pkey` e `artigos_url_key` de uma vez. A guarda real de 400 MB é
+  testada separadamente pelo executor, e o 70 cobre tanto aprovação quanto
+  rejeição da meta.
 - **Não provado:** tempo e espaço reais de produção (as tabelas do
-  laboratório são pequenas e o disco é outro) e a P23, porque o pg_cron não
-  existe no PostgreSQL embutido — ela tem só o portão de texto.
+  laboratório são pequenas e o disco é outro) e a execução da P23, porque o
+  pg_cron não existe no PostgreSQL embutido. A P23 tem portão estrutural que
+  exige pré-condições, agendamento idempotente, reativação e pós-condição
+  atômica; o comportamento real do serviço só se confirma na aplicação.
 
 ## 8. Rotação da senha administrativa
 
-Depois da etapa 1 concluída e antes da A57/A58. Nunca no meio de um passo,
-nunca durante um dump.
+Depois das migrations preventivas e do rollout de backend A57/A58, e antes de
+retomar a coleta. Nunca no meio de um passo, nunca durante um dump.
 
 1. **Inventariar os consumidores.** Neste repositório nada lê a senha do
    banco (conferido em 18/09): os workflows usam `SUPABASE_URL` e

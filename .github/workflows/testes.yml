@@ -95,6 +95,8 @@ jobs:
       # pergunta ao servidor, que e a unica que separa os dois casos.
       - name: Classificacao da sonda da rota paga (sem rede)
         run: "$PY coletor/teste_sonda_edge_luna.py"
+      - name: Contrato da sonda pública A57/A58 (sem rede)
+        run: "$PY coletor/teste_sonda_significado_publico.py"
       # Alarme que dispara todo dia deixa de ser lido: este confere que o
       # alerta agrupa noites seguidas numa issue so e fecha sozinho no verde.
       - name: Alerta do pipeline nao vira ruido (sem rede)
@@ -122,7 +124,7 @@ jobs:
     #
     # `coletor/teste_migrations.py` le as migrations como texto. Este job as
     # executa: prova que o "antes" e o codigo de producao (hash), que ele
-    # reescreve tudo, e que P21/P22/P24 corrigem sem mudar o resultado. E
+    # reescreve tudo, e que P21/P22/P24/P25 corrigem sem mudar o resultado. E
     # ensaia cada passo do roteiro da etapa 1 pelo mesmo executor que rodaria
     # em producao.
     runs-on: [self-hosted, macOS, xcode]
@@ -141,7 +143,7 @@ jobs:
           cp ferramentas/laboratorio_capacidade/package-lock.json "$LAB/"
           cd "$LAB" && npm install --no-audit --no-fund
 
-      - name: P21, P22 e P24 num banco de verdade
+      - name: P21, P22, P24 e P25 num banco de verdade
         run: caffeinate -dimsu node ferramentas/laboratorio_capacidade/rodar.mjs
 
       - name: Ensaio do roteiro da etapa 1

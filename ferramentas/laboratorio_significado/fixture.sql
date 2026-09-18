@@ -29,12 +29,18 @@ create role authenticated nologin;
 -- A coleta e o motor falam com o banco por este papel. Ele existe aqui porque
 -- `grant execute ... to service_role` e parte do que esta sob teste: sem o
 -- grant, a funcao existe e nao roda.
-create role service_role nologin;
+-- No Supabase este papel tem BYPASSRLS. Reproduzir isso aqui importa agora
+-- que o motor escreve o marcador de observacao publicado diretamente, dentro
+-- da mesma transacao dos demais calculos.
+create role service_role nologin bypassrls;
 
 create table public.marcas (
   id bigint primary key,
   nome text not null unique,
-  papel text
+  papel text,
+  segmento text,
+  status_teste text not null default 'vtex',
+  ativa boolean not null default true
 );
 
 create table public.produtos (
@@ -63,6 +69,16 @@ create table public.eventos (
   tipo text not null,
   data date not null,
   detalhe jsonb
+);
+
+create table public.saude (
+  id bigint generated always as identity primary key,
+  data date not null,
+  fonte text not null,
+  marca_id bigint references public.marcas(id),
+  visitados integer,
+  alertas jsonb,
+  unique nulls not distinct (data, fonte, marca_id)
 );
 create index eventos_produto_tipo_data_id_idx
   on public.eventos (produto_id, tipo, data, id);
@@ -144,10 +160,14 @@ $function$;
 -- Candidata: 5 produtos em `catalogo_candidato_br`, observados DEPOIS do
 --            painel; existem para provar que a âncora de frescor de um
 --            segmento não reprova o outro.
-insert into public.marcas (id, nome, papel) values
-  (1, 'Grande', 'ancora'),
-  (2, 'Pequena', 'nucleo'),
-  (3, 'Candidata', 'nucleo');
+insert into public.marcas
+  (id, nome, papel, segmento, status_teste, ativa) values
+  (1, 'Grande', 'ancora', 'feminino_casual_br', 'vtex', true),
+  (2, 'Pequena', 'nucleo', 'feminino_casual_br', 'shopify', true),
+  (3, 'Candidata', 'nucleo', 'catalogo_candidato_br', 'vtex', true),
+  -- Sem produto de proposito: fica inativa nos casos normais e entra na
+  -- assercao 23 para provar que expectativa nao pode nascer de produtos.
+  (4, 'Nova sem produtos', 'nucleo', 'feminino_casual_br', 'vtex', false);
 
 insert into public.produtos (id, marca_id, segmento, titulo, url, imagem_url,
                              ultimo_preco_atual, ultimo_preco_original,
@@ -212,6 +232,31 @@ insert into public.estado_dos_produtos (produto_id, ultimo_avistamento_em,
                                         ofertavel, ultimo_snapshot_em)
 select id, current_date - 5, true, current_date - 5
 from public.produtos where segmento = 'catalogo_candidato_br';
+
+-- Um lote parcial MAIS NUMEROSO que o resto do painel salta 14 dias. A
+-- heuristica anterior (maior count, mais novo no empate) escolheria este dia
+-- como seed, apesar de a Pequena nao ter sido coletada por inteiro.
+update public.estado_dos_produtos
+   set ultimo_avistamento_em = current_date - 1
+ where produto_id between 201 and 500;
+
+-- Sete dias positivos formam a base do mesmo portao de volume usado pelo
+-- coletor. A Pequena cai de 100 para 10 no lote parcial mais novo: ainda e um
+-- numero positivo e nao traz alerta de erro/truncamento, mas e so 10% da sua
+-- media. Isso prova que o seed nao confunde "respondeu" com "veio inteiro".
+insert into public.saude (data, fonte, marca_id, visitados, alertas)
+select current_date - dias, 'varejo', marca_id, 100, null
+from generate_series(2, 8) dias
+cross join unnest(array[1::bigint, 2::bigint]) marca_id;
+
+-- A prova persistida que autoriza os dois marcadores iniciais. O motor exige
+-- uma linha publicavel por marca ativa do segmento na mesma data candidata.
+insert into public.saude (data, fonte, marca_id, visitados, alertas) values
+  (current_date - 15, 'varejo', 1, 500, null),
+  (current_date - 15, 'varejo', 2, 10, null),
+  (current_date - 5, 'varejo', 3, 5, null),
+  (current_date - 1, 'varejo', 1, 300, null),
+  (current_date - 1, 'varejo', 2, 10, null);
 
 -- SNAPSHOTS
 --

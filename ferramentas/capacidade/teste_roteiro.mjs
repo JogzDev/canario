@@ -2,15 +2,20 @@
 /**
  * Ensaio do roteiro da etapa 1 num PostgreSQL 17.10 descartável.
  *
- * Cada passo é executado pelo MESMO executor que rodaria em produção
+ * Os arquivos são exercitados pelo MESMO executor que rodaria em produção
  * (`passo.mjs`), como subprocesso, conectado como um papel que imita o
  * `postgres` do Supabase: sem superusuário, dono das tabelas de `public`,
  * membro de `pg_read_all_stats` e `pg_monitor`, e sem ser dono do log do
- * pg_cron -- onde só tem MAINTAIN e DELETE, como em produção.
+ * pg_cron -- onde só tem MAINTAIN e DELETE, como em produção. A única exceção
+ * é a ação do 60: como o cluster descartável tem menos de 400 MB, o teste
+ * extrai do arquivo e executa seu comando exato, sem mudar o SQL de produção;
+ * a guarda real de 400 MB continua testada pelo executor.
  *
  * O que ele prova:
  *   - o ensaio (sem --executar) não escreve nada;
  *   - cada ação encolhe o alvo e não perde nenhuma linha;
+ *   - o 60 direto reconstrói heap, chave primária e índice único de URL;
+ *   - 40 e 60 são ramos separados, nunca uma sequência;
  *   - cada pré-condição aborta ANTES da ação quando deve;
  *   - o TRUNCATE alternativo vem desarmado;
  *   - VACUUM sem MAINTAIN é pego pela checagem de encolhimento.
@@ -25,6 +30,7 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { comandos } from './passo.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORIO = path.resolve(AQUI, '../..');
@@ -74,8 +80,9 @@ async function main() {
   const admin = await conectar('lab');
 
   const passo = (arquivo, ...extra) => {
+    const caminho = path.isAbsolute(arquivo) ? arquivo : path.join(AQUI, arquivo);
     const r = spawnSync(process.execPath, [path.join(AQUI, 'passo.mjs'),
-      path.join(AQUI, arquivo), '--socket', sock, '--usuario', 'operador',
+      caminho, '--socket', sock, '--usuario', 'operador',
       '--senha-vazia', '--modulos', MODULOS, ...extra], { encoding: 'utf8' });
     return { codigo: r.status, saida: `${r.stdout}${r.stderr}` };
   };
@@ -83,6 +90,8 @@ async function main() {
     'select pg_total_relation_size($1::regclass) as n', [rel])).rows[0].n);
   const linhas = async (rel) => Number((await admin.query(
     `select count(*) as n from ${rel}`)).rows[0].n);
+  const tamanhoRelacao = async (rel) => Number((await admin.query(
+    'select pg_relation_size($1::regclass) as n', [rel])).rows[0].n);
 
   try {
     // Papéis no formato de produção.
@@ -170,6 +179,22 @@ async function main() {
     conferir(semAcao.codigo === 0 && /passo sem ação/.test(semAcao.saida),
       '70 roda só leitura e passa com o banco pequeno do laboratório');
 
+    // O cluster descartável é muito menor que 400 MB. Para provar também o
+    // ramo de rejeição sem fabricar 400 MB de lixo, a fixture é derivada do
+    // arquivo de produção e troca somente a meta por 1 byte. O SQL de
+    // produção permanece intacto e roda acima com a meta real.
+    const texto70 = await readFile(path.join(AQUI, '70_confere_folga.sql'), 'utf8');
+    const limite70 = 'if cota > 400000000 then';
+    if (texto70.split(limite70).length !== 2) {
+      throw new Error('a fixture do 70 esperava uma única comparação de cota');
+    }
+    const fixture70 = path.join(raiz, '70_cota_acima_fixture.sql');
+    await writeFile(fixture70, texto70.replace(limite70, 'if cota > 1 then'),
+      { mode: 0o600 });
+    const semFolga = passo(fixture70);
+    conferir(semFolga.codigo === 1 && /FOLGA INSUFICIENTE/.test(semFolga.saida),
+      '70 rejeita cota acima da meta (limite escalado só na fixture local)');
+
     // 11 antes de 10: aborta.
     let r = passo('11_log_do_cron_compactar.sql', '--executar');
     conferir(r.codigo === 1 && /rode o passo 10 antes/.test(r.saida),
@@ -236,7 +261,6 @@ async function main() {
       ['20_reindex_estado_produtos_oferta_recente.sql', 'public.estado_produtos_oferta_recente', 'public.estado_dos_produtos'],
       ['21_reindex_estado_dos_produtos_pkey.sql', 'public.estado_dos_produtos_pkey', 'public.estado_dos_produtos'],
       ['30_vacuum_full_indices_semanais.sql', 'public.indices_semanais', 'public.indices_semanais'],
-      ['40_reindex_artigos_url_key.sql', 'public.artigos_url_key', 'public.artigos'],
       ['50_vacuum_full_series_semanais.sql', 'public.series_semanais', 'public.series_semanais'],
     ];
     const snapshots = await linhas('public.snapshots');
@@ -251,38 +275,132 @@ async function main() {
       conferir(r.codigo === 0 && depois < antes && await linhas(tabela) === n,
         `${arquivo.slice(0, 2)} encolhe ${alvo} (${antes} -> ${depois}) sem perder linha`);
     }
-    conferir(await linhas('public.snapshots') === snapshots,
-      'nenhum passo tocou nos snapshots que a A58 precisa');
 
-    // 60 é condicional: com a cota abaixo de 400 MB ele se recusa.
+    // Ramo normal: depois do 50, se ainda falta folga, vai DIRETO ao 60. O
+    // cluster local não chega a 400 MB, então extraímos e executamos a ação
+    // exata do arquivo de produção. Isso prova o efeito real do VACUUM FULL
+    // sem alterar o SQL nem fabricar centenas de MB só para enganar a guarda.
+    const texto60 = await readFile(
+      path.join(AQUI, '60_vacuum_full_artigos_CONDICIONAL.sql'), 'utf8');
+    const texto40 = await readFile(path.join(AQUI, '40_reindex_artigos_url_key.sql'),
+      'utf8');
+    conferir(!casos.some(([arquivo]) => arquivo.startsWith('40_'))
+      && /MUTUAMENTE EXCLUSIVO COM O PASSO 60/.test(texto40)
+      && /passos 40 e 60 sao ramos mutuamente exclusivos/i.test(texto60),
+    'grafo normal pula o 40 e os dois arquivos declaram ramos exclusivos');
+    const comandosDo60 = comandos(texto60);
+    const acoes60 = comandosDo60.filter(c => c.acao);
+    const precondicoes60 = comandosDo60.filter(c => !c.acao);
+    conferir(acoes60.length === 1
+      && precondicoes60.length === 5
+      && /400000000/.test(precondicoes60[0].sql)
+      && /estimado \* 1\.15/.test(precondicoes60[3].sql)
+      && /^vacuum\s+full\s+public\.artigos;$/i.test(acoes60[0].sql),
+    '60 guarda cota e ganho material antes do único VACUUM FULL public.artigos');
+    const artigosLinhasAntes60 = await linhas('public.artigos');
+    const artigosAntes60 = await tamanho('public.artigos');
+    const heapAntes60 = await tamanhoRelacao('public.artigos');
+    const urlAntes60 = await tamanhoRelacao('public.artigos_url_key');
+    const pkeyAntes60 = await tamanhoRelacao('public.artigos_pkey');
+    await op.query("set lock_timeout = '5s'");
+    await op.query("set statement_timeout = '180s'");
+    // A primeira pré-condição é somente a escala de 400 MB, exercitada logo
+    // abaixo pelo executor. As outras quatro rodam aqui sem nenhuma alteração.
+    for (const pre of precondicoes60.slice(1)) {
+      await op.query('begin transaction read only');
+      try {
+        await op.query(pre.sql);
+        await op.query('commit');
+      } catch (erro) {
+        await op.query('rollback').catch(() => {});
+        throw erro;
+      }
+    }
+    await op.query(acoes60[0].sql);
+    const artigosDepois60 = await tamanho('public.artigos');
+    const heapDepois60 = await tamanhoRelacao('public.artigos');
+    const urlDepois60 = await tamanhoRelacao('public.artigos_url_key');
+    const pkeyDepois60 = await tamanhoRelacao('public.artigos_pkey');
+    conferir(artigosDepois60 < artigosAntes60
+      && heapDepois60 < heapAntes60
+      && urlDepois60 < urlAntes60
+      && pkeyDepois60 < pkeyAntes60
+      && await linhas('public.artigos') === artigosLinhasAntes60,
+    `60 direto encolhe heap e os dois índices sem perder linha `
+      + `(${artigosAntes60} -> ${artigosDepois60})`);
+
+    // A guarda real de 400 MB continua sendo exercitada sem alteração: depois
+    // de o ramo equivalente passar, o arquivo de produção recusa por já haver
+    // folga. A ação não é enviada pelo executor.
     r = passo('60_vacuum_full_artigos_CONDICIONAL.sql', '--executar');
     conferir(r.codigo === 1 && /nao e necessario/.test(r.saida),
       '60 se recusa quando a folga de 20% já existe');
+
+    // O 40 é outro ramo, nunca o passo anterior ao 60. Recriamos a fixture
+    // para que esta prova não seja a sequência proibida 40 -> 60 sobre a
+    // mesma geração física da tabela.
+    await op.query(`
+      drop table public.artigos;
+      create table public.artigos (id bigint generated by default as identity primary key,
+        url text unique, titulo text);
+      insert into public.artigos (url, titulo)
+      select 'https://exemplo.invalid/materia/' || n || '/' || md5(n::text), 'titulo ' || n
+      from generate_series(1, 20000) n;
+      update public.artigos set titulo = titulo || '.';
+      delete from public.artigos where id % 2 = 0;`);
+    await op.query('vacuum public.artigos');
+    const ensaio40 = passo('40_reindex_artigos_url_key.sql');
+    const urlAntes40 = await tamanhoRelacao('public.artigos_url_key');
+    const linhasAntes40 = await linhas('public.artigos');
+    conferir(ensaio40.codigo === 0 && /ENSAIO/.test(ensaio40.saida)
+      && await tamanhoRelacao('public.artigos_url_key') === urlAntes40,
+    '40 alternativo em ensaio não mexe no índice');
+    r = passo('40_reindex_artigos_url_key.sql', '--executar');
+    const urlDepois40 = await tamanhoRelacao('public.artigos_url_key');
+    conferir(r.codigo === 0 && urlDepois40 < urlAntes40
+      && await linhas('public.artigos') === linhasAntes40,
+    `40 alternativo encolhe só o índice (${urlAntes40} -> ${urlDepois40})`);
+
+    conferir(await linhas('public.snapshots') === snapshots,
+      'nenhum ramo tocou nos snapshots que a A58 precisa');
 
     // 80: com as funções de produção carregadas, confere; com uma diferente,
     // aborta; com uma faltando, aborta.
     const arquivos = (await readdir(MIGRATIONS)).filter(a => a.endsWith('.sql')
       && a < '20260917200000').sort().reverse();
+    const porqueHistorico = 'o app posiciona peca no mercado brasileiro; quem confirma direcao daqui e sinal daqui. Medido em 06/08: busca x editorial_br r=0,235 e 67,7% de mesmo sinal; busca x editorial_intl r=-0,070, dentro de um erro-padrao de zero';
+    const porqueCapturado = 'o app posiciona peca no mercado brasileiro; quem confirma direcao daqui e sinal daqui';
     const carregar = async (nome) => {
       for (const a of arquivos) {
         const texto = await readFile(path.join(MIGRATIONS, a), 'utf8');
         const i = texto.toLowerCase().lastIndexOf(`create or replace function public.${nome}(`);
         if (i < 0) continue;
         const f = texto.indexOf('$function$;', texto.indexOf('$function$', i) + 10);
-        await op.query(texto.slice(i, f + '$function$;'.length));
+        let definicao = texto.slice(i, f + '$function$;'.length);
+        // O backup verificavel de 18/09 capturou `computar_indice` com esta
+        // prosa curta. O calculo e todo o restante coincidem com a migration
+        // P1; carregar a frase longa faria o portao testar uma funcao que nao
+        // e a que estava ativa no banco.
+        if (nome === 'computar_indice') {
+          if (definicao.split(porqueHistorico).length !== 2) {
+            throw new Error('computar_indice historico nao tem a prosa esperada');
+          }
+          definicao = definicao.replace(porqueHistorico, porqueCapturado);
+        }
+        await op.query(definicao);
         return;
       }
     };
     await op.query('create table public.denominador_editorial (fonte text, semana date, total_janela_4sem numeric)');
     for (const nome of ['computar_serie_varejo', 'computar_serie_editorial',
-      'computar_z', 'uso_do_banco']) await carregar(nome);
+      'computar_z', 'computar_indice', 'uso_do_banco']) await carregar(nome);
     r = passo('80_confere_antes_das_migrations.sql');
-    conferir(r.codigo === 1 && /esperava 5 funcoes e achei 4/.test(r.saida),
+    conferir(r.codigo === 1 && /esperava 6 funcoes e achei 5/.test(r.saida),
       '80 aborta com uma função faltando');
     await carregar('podar_snapshots');
     r = passo('80_confere_antes_das_migrations.sql');
     conferir(r.codigo === 0 && /medidas em 18\/09/.test(r.saida),
-      '80 passa com as cinco funções idênticas às de produção');
+      '80 passa com as seis funções idênticas às capturadas em produção');
     await op.query(`create or replace function public.computar_z() returns integer
       language sql as 'select 0'`);
     r = passo('80_confere_antes_das_migrations.sql');

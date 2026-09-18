@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
- * Laboratório de capacidade: P21, P22 e P24 num PostgreSQL 17.10 real,
+ * Laboratório de capacidade: P21, P22, P24 e P25 num PostgreSQL 17.10 real,
  * descartável, acessível somente pelo socket deste processo.
  *
  * O QUE ELE PROVA
  * ===============
  *
  * 1. Que o "antes" é o código de produção. As definições atuais de
- *    `computar_serie_varejo`, `computar_serie_editorial`, `computar_z` e
- *    `uso_do_banco` são extraídas das migrations do repositório no momento da
+ *    `computar_serie_varejo`, `computar_serie_editorial`, `computar_z`,
+ *    `computar_indice` e `uso_do_banco` são extraídas das migrations no momento da
  *    execução -- nunca copiadas à mão -- e o hash de `pg_get_functiondef` de
  *    cada uma é comparado com o medido em produção (`hashes_de_producao.json`).
  *    Hash divergente é falha: o laboratório estaria testando outra coisa.
  *
  * 2. Que o defeito existe. `linha_de_base.sql` roda as funções ANTIGAS duas
  *    vezes e exige que a segunda reescreva todas as linhas. Se um dia essa
- *    asserção falhar, o teste da P22 deixou de distinguir o antes do depois.
- *    A tabela é esvaziada em seguida: a base só escreve em `series_semanais`.
+ *    asserção falhar, o teste deixou de distinguir o antes do depois. As duas
+ *    tabelas são esvaziadas em seguida.
  *
  * 3. Que a correção funciona, caminho por caminho: primeira escrita,
  *    reexecução idêntica com zero linhas reescritas, e mudança real com
@@ -55,14 +55,26 @@ const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
 
-// As funções que a P21 e a P22 substituem. O "antes" é a ÚLTIMA definição de
-// cada uma nas migrations anteriores às duas -- a mesma regra de
+// As funções que P21, P22, P24 e P25 substituem. O "antes" é a ÚLTIMA definição
+// de cada uma nas migrations anteriores a elas -- a mesma regra de
 // `coletor/teste_migrations.py`.
 const ANTIGAS = ['computar_serie_varejo', 'computar_serie_editorial',
-  'computar_z', 'uso_do_banco', 'podar_snapshots'];
+  'computar_z', 'computar_indice', 'uso_do_banco', 'podar_snapshots'];
 const P21 = '20260917200000_p21_uso_do_banco_mede_a_cota.sql';
 const P22 = '20260917201000_p22_series_sem_reescrita_identica.sql';
 const P24 = '20260917203000_p24_poda_espera_o_denominador.sql';
+const P25 = '20260917204000_p25_indices_sem_reescrita_identica.sql';
+
+// O backup restaurável de 18/09 mostrou uma divergência de uma linha entre a
+// migration histórica e a função realmente ativa. O cálculo é idêntico; só a
+// prosa de `meta.por_que` é curta em produção. A linha de base precisa carregar
+// o que estava no banco, não uma reconstrução que nunca rodou lá.
+const PORQUE_NO_REPOSITORIO = 'o app posiciona peca no mercado brasileiro; '
+  + 'quem confirma direcao daqui e sinal daqui. Medido em 06/08: '
+  + 'busca x editorial_br r=0,235 e 67,7% de mesmo sinal; '
+  + 'busca x editorial_intl r=-0,070, dentro de um erro-padrao de zero';
+const PORQUE_EM_PRODUCAO = 'o app posiciona peca no mercado brasileiro; '
+  + 'quem confirma direcao daqui e sinal daqui';
 
 const CANDIDATOS = [
   path.join(AQUI, 'node_modules'),
@@ -127,7 +139,17 @@ async function definicaoAtual(nome) {
     if (inicio < 0) continue;
     const corpo = texto.indexOf('$function$', inicio);
     const fim = texto.indexOf('$function$;', corpo + 10);
-    return { arquivo, sql: texto.slice(inicio, fim + '$function$;'.length) };
+    let sql = texto.slice(inicio, fim + '$function$;'.length);
+    let origem = arquivo;
+    if (nome === 'computar_indice') {
+      const ocorrencias = sql.split(PORQUE_NO_REPOSITORIO).length - 1;
+      if (ocorrencias !== 1) {
+        throw new Error(`computar_indice: esperava uma prosa histórica e achei ${ocorrencias}.`);
+      }
+      sql = sql.replace(PORQUE_NO_REPOSITORIO, PORQUE_EM_PRODUCAO);
+      origem += ' + prosa curta capturada no backup de 18/09';
+    }
+    return { arquivo: origem, sql };
   }
   throw new Error(`Não achei a definição atual de ${nome}.`);
 }
@@ -224,13 +246,13 @@ async function main() {
     await cliente.query(
       'grant execute on function public.uso_do_banco() to service_role;');
 
-    // O defeito, medido com o código antigo. A tabela volta vazia depois:
-    // a linha de base só escreve em `series_semanais`.
+    // O defeito, medido com o código antigo. As duas tabelas voltam vazias.
     await porBloco('linha_de_base.sql',
       await readFile(path.join(AQUI, 'linha_de_base.sql'), 'utf8'));
-    await cliente.query('truncate public.series_semanais restart identity');
+    await cliente.query(
+      'truncate public.indices_semanais, public.series_semanais restart identity');
 
-    for (const m of [P21, P22, P24]) {
+    for (const m of [P21, P22, P24, P25]) {
       await aplicar(`supabase/migrations/${m}`,
         await readFile(path.join(MIGRATIONS, m), 'utf8'));
     }

@@ -88,6 +88,129 @@
 -- `dias_desde_a_observacao_mais_antiga`: quem decide se o conjunto pode ser
 -- apresentado como atual e a ponta velha, nao a nova.
 
+-- OBSERVACAO PUBLICADA, NAO O MAXIMO QUE ENTROU NO BANCO
+-- ======================================================
+--
+-- O coletor grava `estado_dos_produtos` em lotes, antes de o portao de saude
+-- decidir se a noite pode ser publicada. Portanto `max(ultimo_avistamento_em)`
+-- nao e uma ancora de painel: uma unica marca que terminou antes de outra
+-- falhar ja empurra esse maximo para a frente e transforma uma coleta parcial
+-- em "agora".
+--
+-- A ancora vira estado publicado explicito. A A57 semeia o ultimo painel
+-- comprovadamente completo enquanto a coleta esta parada; a A58 so a avanca
+-- com a mesma prova. Nem `max(data)` nem "o dia com mais produtos" bastam: um
+-- lote parcial maior que metade do painel venceria os dois criterios. A prova
+-- e a que o coletor persiste em `saude`: toda marca ativa/testada da coorte
+-- precisa ter volume positivo naquele dia, sem corte de paginacao e sem queda
+-- critica. A queda repete literalmente o portao operacional do
+-- coletor: volume abaixo de 30% da media das observacoes positivas dos sete
+-- dias anteriores. Sem historico positivo, como no primeiro dia de uma marca,
+-- nao ha base para inventar queda.
+--
+-- `alertas_criticos` nao reprova uma linha positiva so por carregar `erro`:
+-- o volume comparavel e quem diz se a coleta perdeu cobertura. Repetimos isso
+-- aqui para o seed continuar viavel com uma resposta parcial de plataforma que
+-- ainda preservou volume normal. `truncou` e `faixas_truncadas` continuam sendo
+-- uma trava adicional e deliberada: elas afirmam que o catalogo foi cortado,
+-- mesmo quando o total visitado por outras faixas parece normal.
+create table if not exists public.observacoes_publicadas_do_painel (
+  segmento text primary key,
+  observado_em date not null,
+  produtos_observados integer not null check (produtos_observados > 0),
+  marcas_observadas integer not null check (marcas_observadas > 0),
+  publicado_em timestamptz not null default now()
+);
+
+comment on table public.observacoes_publicadas_do_painel is
+  'A57: ultima observacao de cada segmento aceita para publicacao; separa lote gravado de painel publicado.';
+
+alter table public.observacoes_publicadas_do_painel enable row level security;
+revoke all on table public.observacoes_publicadas_do_painel
+  from public, anon, authenticated;
+-- O motor da A58 e o unico escritor normal e roda com a chave de servico.
+grant select, insert, update on table public.observacoes_publicadas_do_painel
+  to service_role;
+
+with marcas_esperadas as (
+  select m.segmento, m.id as marca_id
+  from public.marcas m
+  where m.segmento in ('feminino_casual_br', 'catalogo_candidato_br')
+    and m.ativa is true
+    and m.status_teste in ('vtex', 'shopify')
+), por_dia as (
+  select p.segmento,
+         ep.ultimo_avistamento_em as observado_em,
+         count(*)::integer as produtos_observados,
+         count(distinct p.marca_id)::integer as marcas_observadas
+  from public.estado_dos_produtos ep
+  join public.produtos p on p.id = ep.produto_id
+  where p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')
+    and ep.ofertavel is true
+    and ep.ultimo_avistamento_em <= current_date
+  group by p.segmento, ep.ultimo_avistamento_em
+), cobertura as (
+  select d.segmento, d.observado_em,
+         count(me.marca_id)::integer as marcas_esperadas,
+         count(me.marca_id) filter (
+           where coalesce(s.visitados, 0) > 0
+             and not (coalesce(s.alertas, '{}'::jsonb)
+                      ?| array['truncou', 'faixas_truncadas'])
+             and (historico.media_positiva_7d is null
+                  or s.visitados::numeric
+                     >= historico.media_positiva_7d * 0.30)
+         )::integer as marcas_saudaveis
+  from por_dia d
+  join marcas_esperadas me on me.segmento = d.segmento
+  left join public.saude s
+    on s.fonte = 'varejo'
+   and s.marca_id = me.marca_id
+   and s.data = d.observado_em
+  left join lateral (
+    select avg(h.visitados::numeric) as media_positiva_7d
+    from public.saude h
+    where h.fonte = 'varejo'
+      and h.marca_id = me.marca_id
+      and h.data >= d.observado_em - 7
+      and h.data < d.observado_em
+      and coalesce(h.visitados, 0) > 0
+  ) historico on true
+  group by d.segmento, d.observado_em
+), escolhido as (
+  select d.*, row_number() over (
+    partition by d.segmento order by d.observado_em desc) as posicao
+  from por_dia d
+  join cobertura c using (segmento, observado_em)
+  where c.marcas_esperadas > 0
+    and c.marcas_saudaveis = c.marcas_esperadas
+)
+insert into public.observacoes_publicadas_do_painel
+  (segmento, observado_em, produtos_observados, marcas_observadas)
+select segmento, observado_em, produtos_observados, marcas_observadas
+from escolhido
+where posicao = 1
+on conflict (segmento) do nothing;
+
+-- Falhar o rollout e mais seguro que criar RPCs que parecem validas, mas nao
+-- sabem de quando e o painel. A coleta fica parada e o preflight precisa
+-- resolver a ausencia de prova; a migration nunca recua para uma heuristica.
+do $seed$
+declare
+  faltantes text[];
+begin
+  select array_agg(s.segmento order by s.segmento) into faltantes
+  from (values ('feminino_casual_br'), ('catalogo_candidato_br')) s(segmento)
+  where not exists (
+    select 1 from public.observacoes_publicadas_do_painel o
+    where o.segmento = s.segmento
+  );
+  if faltantes is not null then
+    raise exception
+      'A57 nao achou observacao completa em saude para: %', faltantes;
+  end if;
+end;
+$seed$;
+
 create or replace function public.similares_da_peca_v2(termos text[],
                                                     limite integer default 12,
                                                     preco_alvo numeric default null)
@@ -97,16 +220,14 @@ stable security definer
 set search_path to 'public', 'pg_temp'
 as $function$
   with painel as (
-    -- A ancora e POR SEGMENTO. Uma data unica para os dois misturava coortes:
+    -- A ancora PUBLICADA e POR SEGMENTO. Uma data unica para os dois misturava coortes:
     -- se o catalogo candidato fosse observado depois, a data mais nova dele
     -- reprovaria o painel medido de novo -- o mesmo defeito que esta migration
-    -- existe para corrigir, com outro disfarce.
-    select p.segmento, max(ep.ultimo_avistamento_em) as observado_em
-    from public.estado_dos_produtos ep
-    join public.produtos p on p.id = ep.produto_id
-    where p.segmento in ('feminino_casual_br', 'catalogo_candidato_br')
-      and ep.ofertavel is true
-    group by p.segmento
+    -- existe para corrigir, com outro disfarce. Ler o marcador, em vez do maximo
+    -- do estado, impede que um lote parcial anterior ao portao avance a tela.
+    select segmento, observado_em
+    from public.observacoes_publicadas_do_painel
+    where segmento in ('feminino_casual_br', 'catalogo_candidato_br')
   ), entrada as (
     select e.termo_id, min(e.posicao) as primeira_posicao,
            min(t.dimensao) as dimensao
@@ -142,6 +263,17 @@ as $function$
     cross join parametros par
     where ep.ofertavel is true
       and ep.ultimo_avistamento_em >= pa.observado_em - 7
+      -- Estado escrito DEPOIS do painel publicado ainda nao pertence a ele.
+      -- Sem o teto, o marcador ficaria antigo mas a resposta misturaria pecas
+      -- do lote parcial que o portao ainda nao aceitou.
+      --
+      -- Limite declarado: isto congela o RELOGIO, nao uma copia integral do
+      -- estado. Uma peca ja sobrescrita pelo lote futuro fica temporariamente
+      -- fora da resposta ate a proxima publicacao completa; ela nunca aparece
+      -- como atual nem e atribuida falsamente ao painel antigo. Congelar o
+      -- conjunto inteiro exigiria staging/versionamento de dezenas de milhares
+      -- de linhas, custo que nao entra nesta correcao com o banco no limite.
+      and ep.ultimo_avistamento_em <= pa.observado_em
       and (cardinality(par.categorias) = 0 or c.tem_categoria)
   ), nivel_escolhido as (
     select coalesce(max(nivel) filter (where existe), 1)::int as minimo
@@ -254,7 +386,7 @@ as $function$
 $function$;
 
 comment on function public.similares_da_peca_v2(text[], integer, numeric) is
-  'A57: A40 com frescor ancorado no ultimo dia observado de cada segmento; cada peca carrega visto_em e o resumo declara a idade do que devolveu e a do painel consultado. A versao sem sufixo fica como esta, para os aparelhos ja instalados.';
+  'A57: A40 com frescor ancorado na ultima observacao publicada de cada segmento; cada peca carrega visto_em e o resumo declara a idade do que devolveu e a do painel consultado. A versao sem sufixo fica como esta, para os aparelhos ja instalados.';
 
 revoke all on function public.similares_da_peca_v2(text[], integer, numeric)
   from public;
@@ -341,10 +473,9 @@ stable security definer
 set search_path to 'public', 'pg_temp'
 as $function$
   with painel as (
-    select max(ep.ultimo_snapshot_em) as observado_em
-    from public.estado_dos_produtos ep
-    join public.produtos p on p.id = ep.produto_id
-    where p.segmento = 'feminino_casual_br'
+    select observado_em
+    from public.observacoes_publicadas_do_painel
+    where segmento = 'feminino_casual_br'
   ), selecionados as materialized (
     select e.id, e.produto_id, e.tipo, e.data, e.detalhe
     from public.eventos e
@@ -399,7 +530,7 @@ as $function$
 $function$;
 
 comment on function public.eventos_recentes(text, integer) is
-  'A57: link da loja lido de estado_dos_produtos (a coluna em produtos congelou na A27) e ancorado no ultimo dia observado.';
+  'A57: link da loja lido de estado_dos_produtos (a coluna em produtos congelou na A27) e ancorado na ultima observacao publicada do painel.';
 
 revoke all on function public.eventos_recentes(text, integer) from public;
 grant execute on function public.eventos_recentes(text, integer)

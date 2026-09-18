@@ -2,7 +2,7 @@
 --
 -- Sai com erro -- e o executor com codigo 1 -- se qualquer condicao da
 -- etapa 1 nao estiver cumprida. Verde aqui e a autorizacao tecnica para
--- aplicar P21, P22, P23 e P24; a autorizacao de fato continua sendo de voces.
+-- aplicar P21 a P25; a autorizacao de fato continua sendo de voces.
 
 do $$
 declare
