@@ -33,6 +33,33 @@
 -- vai a 02/09: o link teria sumido em 07/09 mesmo com a coleta de pe. Passa a
 -- ler `estado_dos_produtos`, com a mesma ancora de dado.
 --
+-- POR QUE `_v2`, E NAO SUBSTITUIR NO LUGAR
+-- ========================================
+--
+-- A primeira versao desta migration fazia `create or replace` em
+-- `similares_da_peca`. Publicar isso junto com o app novo NAO e suficiente: o
+-- aparelho de quem nao atualizou continua chamando a mesma funcao, e quem
+-- decide a versao do app e a pessoa, nao nos. Pior, `similares_da_peca_amplo`
+-- chama `similares_da_peca` por dentro -- trocar a segunda muda a primeira
+-- sem que nada no nome dela diga isso.
+--
+-- Entao as funcoes antigas ficam INTACTAS, com o comportamento que os
+-- aparelhos instalados esperam, e o comportamento novo nasce em
+-- `similares_da_peca_v2` e `similares_da_peca_amplo_v2`. A ordem de
+-- publicacao passa a ser backend primeiro, app depois -- que e a unica ordem
+-- em que nenhuma versao ja instalada quebra.
+--
+-- O preco disso e duas definicoes quase iguais no banco. O preco de nao fazer
+-- e mudar, sem aviso, o que um app que ninguem atualizou mostra na tela.
+--
+-- `eventos_recentes` E A EXCECAO, E COM MOTIVO
+-- ============================================
+--
+-- Ela e substituida no lugar porque o CONTRATO nao muda -- mesmas chaves,
+-- mesmos tipos -- e porque o que ela corrige e um link que sumiu para todo
+-- mundo. Um app antigo ganha o link de volta; nenhum app antigo passa a
+-- receber campo diferente do que le hoje.
+--
 -- O QUE NAO MUDA
 -- ==============
 --
@@ -40,8 +67,28 @@
 -- portao de cobertura, o z-score, a raridade e os pesos nao sao tocados.
 -- `produto_do_painel_por_url` fica como esta: a entrada por link saiu do app
 -- na A47 e nenhuma tela a chama.
+--
+-- ZERO RESULTADO TAMBEM TEM PERIODO
+-- =================================
+--
+-- `observado_em` e a data das PECAS DEVOLVIDAS: sem pecas, ela e nula, e a
+-- tela ficaria sem saber de quando e o painel que respondeu "nao achei". O
+-- resumo passa a carregar tambem as datas do PAINEL CONSULTADO
+-- (`painel_observado_em`, `painel_dias_desde_a_observacao`), que existem
+-- independentemente de casamento. Sem isso, "nenhuma peca com estes
+-- atributos" e uma afirmacao sem data -- e uma afirmacao sem data sobre um
+-- painel de duas semanas atras e uma afirmacao sobre hoje que ninguem mediu.
+--
+-- E A MAIS ANTIGA MANDA NO "AGORA"
+-- ================================
+--
+-- `dias_desde_a_observacao` sozinho e a idade da peca MAIS NOVA do conjunto.
+-- Uma peca vista ontem, ao lado de dezenove vistas ha quinze dias, faria a
+-- resposta inteira passar por atual. Por isso entra
+-- `dias_desde_a_observacao_mais_antiga`: quem decide se o conjunto pode ser
+-- apresentado como atual e a ponta velha, nao a nova.
 
-create or replace function public.similares_da_peca(termos text[],
+create or replace function public.similares_da_peca_v2(termos text[],
                                                     limite integer default 12,
                                                     preco_alvo numeric default null)
 returns jsonb
@@ -162,7 +209,20 @@ as $function$
       -- mais velha -- as duas sustentam a frase, nenhuma data solta sustenta.
       'observado_em', max(visto_em),
       'observado_mais_antigo_em', min(visto_em),
-      'dias_desde_a_observacao', (current_date - max(visto_em))
+      'dias_desde_a_observacao', (current_date - max(visto_em)),
+      -- A ponta VELHA, que e quem decide se isto pode ser chamado de "agora".
+      'dias_desde_a_observacao_mais_antiga', (current_date - min(visto_em)),
+      -- A data do PAINEL CONSULTADO, que existe mesmo sem casamento nenhum:
+      -- zero resultado tambem precisa declarar de quando e o painel que
+      -- respondeu. E a ancora de `feminino_casual_br` e nao o maximo entre os
+      -- segmentos: o catalogo candidato tem cadencia propria, e usar a data
+      -- dele para carimbar uma resposta sobre o painel medido seria carimbar
+      -- com o relogio de outra coorte.
+      'painel_observado_em', (select observado_em from painel
+                               where segmento = 'feminino_casual_br'),
+      'painel_dias_desde_a_observacao',
+        (select current_date - observado_em from painel
+          where segmento = 'feminino_casual_br')
     ) as j from sim
   ), ordenado as (
     select *, row_number() over (
@@ -193,12 +253,82 @@ as $function$
     'pecas', coalesce((select j from amostra), '[]'::jsonb));
 $function$;
 
-comment on function public.similares_da_peca(text[], integer, numeric) is
-  'A57: A40 com frescor ancorado no ultimo dia observado de cada segmento; cada peca carrega visto_em e o resumo declara a idade do que devolveu.';
+comment on function public.similares_da_peca_v2(text[], integer, numeric) is
+  'A57: A40 com frescor ancorado no ultimo dia observado de cada segmento; cada peca carrega visto_em e o resumo declara a idade do que devolveu e a do painel consultado. A versao sem sufixo fica como esta, para os aparelhos ja instalados.';
 
-revoke all on function public.similares_da_peca(text[], integer, numeric)
+revoke all on function public.similares_da_peca_v2(text[], integer, numeric)
   from public;
-grant execute on function public.similares_da_peca(text[], integer, numeric)
+grant execute on function public.similares_da_peca_v2(text[], integer, numeric)
+  to anon, authenticated;
+
+-- O envelope que o app chama de verdade. Copia fiel da A48, com uma unica
+-- diferenca: as duas tentativas caem em `similares_da_peca_v2`. Duplicar o
+-- corpo e o preco de nao mexer no que os aparelhos instalados usam.
+create or replace function public.similares_da_peca_amplo_v2(
+  termos text[], limite integer default 12, preco_alvo numeric default null)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path to 'public', 'pg_temp'
+as $function$
+declare
+  estrita jsonb;
+  ampliada jsonb;
+  dimensao_a_relaxar text;
+  termos_reduzidos text[];
+  dimensoes_originais integer;
+  atributos_originais integer;
+begin
+  select count(*)::integer, count(distinct t.dimensao)::integer
+    into atributos_originais, dimensoes_originais
+  from unnest(coalesce(termos, '{}'::text[])) e(id)
+  join public.termos t on t.id = e.id and t.status = 'aprovado';
+
+  estrita := public.similares_da_peca_v2(termos, limite, preco_alvo);
+  if jsonb_array_length(coalesce(estrita->'pecas', '[]'::jsonb)) >= least(limite, 8) then
+    return estrita;
+  end if;
+
+  select t.dimensao into dimensao_a_relaxar
+  from unnest(coalesce(termos, '{}'::text[])) with ordinality e(id, posicao)
+  join public.termos t on t.id = e.id and t.status = 'aprovado'
+  where t.dimensao <> 'categoria'
+  group by t.dimensao
+  order by array_position(
+    array['estetica','comprimento','silhueta','cintura','tecido','cor','estampa'],
+    t.dimensao) nulls last, min(e.posicao)
+  limit 1;
+  if dimensao_a_relaxar is null then return estrita; end if;
+
+  select array_agg(e.id order by e.posicao)
+    into termos_reduzidos
+  from unnest(coalesce(termos, '{}'::text[])) with ordinality e(id, posicao)
+  join public.termos t on t.id = e.id and t.status = 'aprovado'
+  where t.dimensao <> dimensao_a_relaxar;
+  if cardinality(termos_reduzidos) = 0 then return estrita; end if;
+
+  ampliada := public.similares_da_peca_v2(termos_reduzidos, limite, preco_alvo);
+  if jsonb_array_length(coalesce(ampliada->'pecas', '[]'::jsonb)) <=
+     jsonb_array_length(coalesce(estrita->'pecas', '[]'::jsonb)) then
+    return estrita;
+  end if;
+  ampliada := jsonb_set(ampliada, '{resumo,atributos_pedidos}',
+                        to_jsonb(atributos_originais), true);
+  ampliada := jsonb_set(ampliada, '{resumo,dimensoes_pedidas}',
+                        to_jsonb(dimensoes_originais), true);
+  ampliada := jsonb_set(ampliada, '{resumo,dimensao_relaxada}',
+                        to_jsonb(dimensao_a_relaxar), true);
+  return ampliada;
+end;
+$function$;
+
+comment on function public.similares_da_peca_amplo_v2(text[], integer, numeric) is
+  'A57: envelope da A48 apoiado em similares_da_peca_v2; a versao sem sufixo continua servindo os aparelhos ja instalados.';
+
+revoke all on function public.similares_da_peca_amplo_v2(text[], integer, numeric)
+  from public;
+grant execute on function public.similares_da_peca_amplo_v2(text[], integer, numeric)
   to anon, authenticated;
 
 -- O link da loja volta a ler o estado que o coletor escreve.

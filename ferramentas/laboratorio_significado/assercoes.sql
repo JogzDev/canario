@@ -101,7 +101,7 @@ end $$;
 -- 7. Coleta pausada devolve dado com idade, não ausência.
 do $$
 declare r jsonb; resumo jsonb; begin
-  r := public.similares_da_peca(array['vestido', 'preto'], 5);
+  r := public.similares_da_peca_v2(array['vestido', 'preto'], 5);
   resumo := r->'resumo';
   assert (resumo->>'n_similares')::int = 20,
     'similares deveria achar as 20 pecas do painel e veio '
@@ -121,10 +121,10 @@ do $$
 declare resumo jsonb; begin
   -- As candidatas foram vistas em current_date - 5, dez dias depois do
   -- painel. Com uma ancora unica, o painel inteiro cairia.
-  resumo := public.similares_da_peca(array['vestido', 'preto'], 5)->'resumo';
+  resumo := public.similares_da_peca_v2(array['vestido', 'preto'], 5)->'resumo';
   assert (resumo->>'n_similares')::int = 20,
     'a ancora do catalogo candidato nao pode derrubar o painel medido';
-  resumo := public.similares_da_peca(array['saia'], 5)->'resumo';
+  resumo := public.similares_da_peca_v2(array['saia'], 5)->'resumo';
   assert (resumo->>'n_similares')::int = 5,
     'as candidatas continuam encontraveis pela propria data e veio '
       || (resumo->>'n_similares');
@@ -369,4 +369,99 @@ declare tocadas int; n int; begin
   assert public.computar_sortimento_diario() = 0,
     'com tudo em dia, a chamada sem argumento nao escreve nada';
   raise notice 'ok 18 dia que faltou e reconstruido antes da poda alcanca-lo';
+end $$;
+
+-- 19. Aparelho nao atualizado continua recebendo o que sempre recebeu.
+do $$
+declare v1 jsonb; v2 jsonb; amplo1 jsonb; amplo2 jsonb; begin
+  -- A coleta esta parada ha 15 dias. A v1 ancora em `current_date - 7` e
+  -- devolve zero: e o defeito de producao, e e o contrato que um app ja
+  -- instalado espera. Trocar isso por baixo dele seria mudar a tela de quem
+  -- nao pediu para mudar.
+  v1 := public.similares_da_peca(array['vestido', 'preto'], 5);
+  assert (v1->'resumo'->>'n_similares')::int = 0,
+    'a v1 deveria seguir devolvendo 0 com a coleta parada e devolveu '
+      || (v1->'resumo'->>'n_similares');
+  assert v1->'resumo'->>'observado_em' is null,
+    'a v1 nao pode ganhar campos novos: o app antigo nao os espera';
+
+  v2 := public.similares_da_peca_v2(array['vestido', 'preto'], 5);
+  assert (v2->'resumo'->>'n_similares')::int = 20,
+    'a v2 deveria achar as 20 pecas do painel e achou '
+      || (v2->'resumo'->>'n_similares');
+
+  -- O envelope e o que o app chama de verdade, e cada um cai na sua versao.
+  amplo1 := public.similares_da_peca_amplo(array['vestido', 'preto'], 5);
+  amplo2 := public.similares_da_peca_amplo_v2(array['vestido', 'preto'], 5);
+  assert (amplo1->'resumo'->>'n_similares')::int = 0,
+    'o envelope antigo deveria seguir a v1 e devolveu '
+      || (amplo1->'resumo'->>'n_similares');
+  assert (amplo2->'resumo'->>'n_similares')::int = 20,
+    'o envelope novo deveria seguir a v2 e devolveu '
+      || (amplo2->'resumo'->>'n_similares');
+  raise notice 'ok 19 v1 e v2 convivem: 0 no envelope antigo, 20 no novo';
+end $$;
+
+-- 20. A ponta VELHA decide o "agora", e o intervalo e declarado.
+do $$
+declare resumo jsonb; begin
+  -- Coleta de ontem, mas so metade do painel entrou nela: a outra metade foi
+  -- vista ha oito dias e continua elegivel, porque a janela de frescor tem
+  -- sete dias de tolerancia a partir da ancora. Se o "agora" olhasse so a
+  -- ponta nova, metade de uma semana de atraso passaria por atual.
+  update public.estado_dos_produtos set ultimo_avistamento_em = current_date - 1
+   where produto_id between 1 and 10;
+  update public.estado_dos_produtos set ultimo_avistamento_em = current_date - 8
+   where produto_id between 11 and 20;
+
+  resumo := public.similares_da_peca_v2(array['vestido', 'preto'], 5)->'resumo';
+  assert (resumo->>'n_similares')::int = 20,
+    'as 20 pecas continuam elegiveis pela tolerancia de 7 dias e vieram '
+      || (resumo->>'n_similares');
+  assert (resumo->>'dias_desde_a_observacao')::int = 1,
+    'a ponta nova deveria ser de ontem e veio '
+      || (resumo->>'dias_desde_a_observacao');
+  assert (resumo->>'dias_desde_a_observacao_mais_antiga')::int = 8,
+    'a ponta velha deveria ter 8 dias e veio '
+      || coalesce(resumo->>'dias_desde_a_observacao_mais_antiga', 'nulo');
+  assert (resumo->>'observado_mais_antigo_em')::date = current_date - 8
+     and (resumo->>'observado_em')::date = current_date - 1,
+    'o intervalo inteiro deveria estar declarado';
+
+  update public.estado_dos_produtos set ultimo_avistamento_em = current_date - 15
+   where produto_id between 1 and 20;
+  raise notice 'ok 20 idades mistas: ponta nova 1 dia, ponta velha 8';
+end $$;
+
+-- 21. Zero resultado tambem tem periodo.
+do $$
+declare resumo jsonb; begin
+  -- `tule` nao existe na taxonomia do laboratorio: nenhum casamento, nenhuma
+  -- peca, nenhuma data vinda das pecas. A data do PAINEL continua existindo.
+  resumo := public.similares_da_peca_v2(array['tule'], 5)->'resumo';
+  assert (resumo->>'n_similares')::int = 0,
+    'a busca deveria voltar vazia e voltou com ' || (resumo->>'n_similares');
+  assert resumo->>'observado_em' is null,
+    'sem pecas nao ha data de pecas';
+  assert (resumo->>'painel_observado_em')::date = current_date - 15,
+    'o painel consultado deveria declarar a propria data e veio '
+      || coalesce(resumo->>'painel_observado_em', 'nulo');
+  assert (resumo->>'painel_dias_desde_a_observacao')::int = 15,
+    'zero resultado tambem precisa declarar a idade do painel';
+  raise notice 'ok 21 resultado vazio declara a data do painel consultado';
+end $$;
+
+-- 22. O sinal de repeticao sobrevive a troca de fonte dos exemplos.
+do $$
+declare g jsonb; primeiro jsonb; begin
+  g := public.resumo_de_eventos('reposicao', 7, 6)->'marcas'->0;
+  primeiro := g->'exemplos'->0;
+  -- Produto 29: um evento antes da janela (current_date - 40), um dentro e o
+  -- terceiro no ultimo dia. E a "3a reposicao" que a tela mostra em destaque.
+  assert (primeiro->>'ordinal')::int >= 2,
+    'o exemplo deveria carregar o ordinal e veio '
+      || coalesce(primeiro->>'ordinal', 'nulo');
+  assert (primeiro->>'dias_desde_a_primeira')::int > 0,
+    'o exemplo deveria carregar a distancia da primeira vez';
+  raise notice 'ok 22 exemplos carregam ordinal e distancia da primeira vez';
 end $$;

@@ -54,8 +54,24 @@ def main():
         if trecho not in cluster:
             return falhar("cluster final nao garante: {}".format(trecho))
 
-    _, similares = ultima_definicao(
+    # A57 NAO substitui as funcoes antigas: quem decide a versao do app
+    # instalada e a pessoa, e trocar o comportamento por baixo de um aparelho
+    # que ninguem atualizou muda a tela de quem nao pediu para mudar. A v1
+    # fica congelada na A40 -- inclusive com o defeito da ancora de
+    # calendario, que e o que o app ja instalado espera receber.
+    arquivo_v1, similares_v1 = ultima_definicao(
         arquivos, "create or replace function public.similares_da_peca(")
+    if "20260917210000_a57" in arquivo_v1:
+        return falhar("a A57 voltou a substituir similares_da_peca no lugar")
+    if "ep.ultimo_avistamento_em >= current_date - 7" not in similares_v1:
+        return falhar("a v1 de similares deixou de ser a da A40")
+    for proibido in ("join painel pa", "'visto_em', visto_em"):
+        if proibido in similares_v1:
+            return falhar(
+                "a v1 de similares ganhou contrato novo: {}".format(proibido))
+
+    _, similares = ultima_definicao(
+        arquivos, "create or replace function public.similares_da_peca_v2(")
     exigencias_similares = [
         "t.status = 'aprovado'",
         "limit 12",
@@ -85,6 +101,14 @@ def main():
         "'observado_em', max(visto_em)",
         "'observado_mais_antigo_em', min(visto_em)",
         "'dias_desde_a_observacao', (current_date - max(visto_em))",
+        # A ponta VELHA e quem decide se o conjunto pode ser chamado de
+        # "agora": uma peca vista ontem nao pode carimbar de atual outra
+        # vista ha oito dias na mesma resposta.
+        "'dias_desde_a_observacao_mais_antiga', (current_date - min(visto_em))",
+        # Zero resultado tambem tem periodo: a data do painel consultado nao
+        # depende de ter havido casamento.
+        "'painel_observado_em', (select observado_em from painel",
+        "'painel_dias_desde_a_observacao'",
     ]
     for trecho in exigencias_frescor:
         if trecho not in similares:
@@ -104,6 +128,20 @@ def main():
     for trecho in exigencias_amostra_util:
         if trecho not in similares_amplos:
             return falhar("amostra ampliada nao garante: {}".format(trecho))
+
+    # O envelope e o que o app chama de verdade. Se ele continuasse caindo na
+    # v1, a v2 existiria sem ninguem para consumi-la.
+    _, amplo_v2 = ultima_definicao(
+        arquivos, "create or replace function public.similares_da_peca_amplo_v2(")
+    exigencias_amplo_v2 = [
+        "public.similares_da_peca_v2(termos, limite, preco_alvo)",
+        "public.similares_da_peca_v2(termos_reduzidos",
+        "dimensao_relaxada",
+        "grant execute on function public.similares_da_peca_amplo_v2",
+    ]
+    for trecho in exigencias_amplo_v2:
+        if trecho not in amplo_v2:
+            return falhar("envelope v2 nao garante: {}".format(trecho))
 
     _, serie_varejo = ultima_definicao(
         arquivos, "create or replace function public.computar_serie_varejo")
@@ -186,6 +224,11 @@ def main():
         # gastar dois cartoes com a mesma peca que repos duas vezes.
         "x.posicao <= j.teto",
         "select distinct on (np.produto_id) np.*",
+        # O sinal de repeticao que o JP pediu em 31/07 ("3a reposicao dos
+        # tamanhos PP/P em menos de 2 meses") viajava em `eventos_recentes`.
+        # Como a tela deixa de contar por ali, ele passa a viajar no exemplo.
+        "'ordinal', h.ordinal",
+        "'dias_desde_a_primeira', h.dias_desde_a_primeira",
         # Janela COMUM aos tres tipos, ancorada na observacao do painel ou num
         # `ate` explicito de quem pergunta.
         "ate date default null",

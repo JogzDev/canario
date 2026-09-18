@@ -345,16 +345,8 @@ as $function$
     select distinct on (np.produto_id) np.*
     from no_periodo np
     order by np.produto_id, np.data desc, np.id desc
-  ), exemplos as (
-    select x.marca, jsonb_agg(jsonb_build_object(
-             'peca', x.titulo,
-             'imagem', x.imagem_url,
-             'url_da_peca', x.url_da_peca,
-             'data', x.data,
-             'repetida', x.repetida,
-             'queda_pct', x.queda_pct,
-             'tamanhos', coalesce(x.detalhe->'tamanhos', '[]'::jsonb))
-             order by x.posicao) as exemplos
+  ), escolhidos as (
+    select x.*
     from (
       select u.*, row_number() over (
                partition by u.marca order by u.data desc, u.id desc) as posicao
@@ -362,7 +354,32 @@ as $function$
     ) x
     cross join janela j
     where x.posicao <= j.teto
-    group by x.marca
+  ), exemplos as (
+    -- `ordinal` e `dias_desde_a_primeira` sao o sinal que o JP pediu em
+    -- 31/07 -- "3a reposicao dos tamanhos PP/P em menos de 2 meses" --, e
+    -- eram o unico motivo para a tela ainda depender de `eventos_recentes`.
+    -- A subconsulta e por peca, entao roda DEPOIS do corte: no maximo 12 por
+    -- marca, nunca sobre a populacao inteira da janela.
+    select e.marca, jsonb_agg(jsonb_build_object(
+             'peca', e.titulo,
+             'imagem', e.imagem_url,
+             'url_da_peca', e.url_da_peca,
+             'data', e.data,
+             'repetida', e.repetida,
+             'queda_pct', e.queda_pct,
+             'ordinal', h.ordinal,
+             'dias_desde_a_primeira', h.dias_desde_a_primeira,
+             'tamanhos', coalesce(e.detalhe->'tamanhos', '[]'::jsonb))
+             order by e.posicao) as exemplos
+    from escolhidos e
+    cross join lateral (
+      select count(*) filter (
+               where (t.data, t.id) <= (e.data, e.id))::int as ordinal,
+             nullif(e.data - min(t.data), 0) as dias_desde_a_primeira
+      from public.eventos t
+      where t.produto_id = e.produto_id and t.tipo = $1
+    ) h
+    group by e.marca
   ), por_marca as (
     select np.marca,
            count(distinct np.produto_id)::int as pecas,
