@@ -16,6 +16,9 @@ const lerJson = async file => JSON.parse(await readFile(file, 'utf8'));
 const modo = async file => (await stat(file)).mode & 0o777;
 
 try {
+  const unicode = await run(node, ['-e', `const b=Buffer.from('ação🎨'); process.stdout.write(b.subarray(0,8)); setTimeout(()=>process.stdout.write(b.subarray(8)),25);`]);
+  assert.equal(unicode,'ação🎨');
+  console.log('ok 0: UTF8 preservado quando caractere cruza chunks de stdout');
   const stderrCompleto = [
     'pg_dump: error: Dumping the contents of table "artigos" failed: PQgetCopyData() failed.',
     'pg_dump: detail: Error message from server: SSL connection has been closed unexpectedly.',

@@ -16,7 +16,7 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const PROJETO = 'tbluoqpnjqsflfoclmms';
 const ESQUEMAS = ['public', 'auth', 'storage', 'supabase_migrations'];
 // Somente a conexão administrativa de leitura. Não altera defaults do banco/papéis.
-export const LEITURA_SETUP = "SET statement_timeout = '10min'; SET default_transaction_read_only = on; SET lock_timeout = '10s'; SET idle_in_transaction_session_timeout = '30min'; SET transaction_timeout = '30min';\n";
+export const LEITURA_SETUP = "SET statement_timeout = '10min'; SET default_transaction_read_only = on; SET lock_timeout = '10s'; SET idle_in_transaction_session_timeout = '30min'; SET transaction_timeout = '30min'; SET timezone='UTC'; SET datestyle='ISO,YMD'; SET extra_float_digits=3; SET intervalstyle='postgres'; SET bytea_output='hex';\n";
 const BIN_PADRAO = path.join(os.homedir(), '.local/share/datadrobe-tools/Postgres.app/Contents/Versions/17/bin');
 const qid = s => '"' + s.replaceAll('"', '""') + '"';
 const lit = s => "'" + s.replaceAll("'", "''") + "'";
@@ -63,15 +63,16 @@ export function run(bin, args, { env = {}, input, stream, timeout = 900_000, dia
     const child = spawn(bin, args, { env: { PATH: '/usr/bin:/bin', LC_ALL: 'C', TZ: 'UTC', ...env }, stdio: ['pipe', 'pipe', 'pipe'] });
     localChildren.add(child);
     let out = '', err = '', truncated = false, timedOut = false, spawnError, killTimer;
+    const stdoutDecoder = new StringDecoder('utf8'), stderrDecoder = new StringDecoder('utf8');
     const startedAt = new Date().toISOString();
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill('SIGTERM');
       killTimer = setTimeout(() => child.kill('SIGKILL'), 2000);
     }, timeout);
-    child.stdout.on('data', d => { if (stream) stream(d); else out += d; });
+    child.stdout.on('data', d => { if (stream) stream(d); else out += stdoutDecoder.write(d); });
     child.stderr.on('data', d => {
-      err += d;
+      err += stderrDecoder.write(d);
       if (err.length > 1_000_000) { err = err.slice(-1_000_000); truncated = true; }
     });
     // Node emite close também depois de error. Finalizar uma única vez permite
@@ -79,6 +80,8 @@ export function run(bin, args, { env = {}, input, stream, timeout = 900_000, dia
     child.on('error', e => { clearTimeout(timer); spawnError = e; });
     child.on('close', async (code, signal) => {
       clearTimeout(timer); clearTimeout(killTimer); localChildren.delete(child);
+      if (!stream) out += stdoutDecoder.end();
+      err += stderrDecoder.end();
       // Arquivo privado, separado do resumo público. Nunca salva ambiente,
       // argumentos, stdin ou stdout; remove a senha até se um filho a emitir.
       for (const secret of new Set([env.PGPASSWORD, env.PGPASSWORD && encodeURIComponent(env.PGPASSWORD)])) {
@@ -114,7 +117,8 @@ function connEnv(c) {
 async function sql(bin, c, query, snapshot) {
   const prefix = snapshot ? `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SET TRANSACTION SNAPSHOT ${lit(snapshot)};\n` : '';
   return run(path.join(bin, 'psql'), ['-X', '-qAt', '--no-password', '-v', 'ON_ERROR_STOP=1'],
-    { env: connEnv(c), input: LEITURA_SETUP + prefix + query + (snapshot ? '\nCOMMIT;\n' : '\n') });
+    { env: connEnv(c), input: LEITURA_SETUP + prefix + query + (snapshot ? '\nCOMMIT;\n' : '\n'),
+      diagnosticsFile:c.diagnosticsDir ? path.join(c.diagnosticsDir,`consulta-${Date.now()}-${randomBytes(3).toString('hex')}.json`) : undefined });
 }
 async function json(bin, c, query, snapshot) { return JSON.parse((await sql(bin, c, query, snapshot)).trim()); }
 async function save(file, value) { await writeFile(file, JSON.stringify(value, null, 2) + '\n', { mode: 0o600, flag: 'wx' }); }
@@ -140,7 +144,8 @@ export function normalizarCatalogo(catalog) {
   return copy;
 }
 
-async function snapshotOpen(bin, c) {
+async function snapshotOpen(bin, c, minutes = 30) {
+  if (![30,60].includes(minutes)) throw new Error('Duração de snapshot inválida.');
   const child = spawn(path.join(bin, 'psql'), ['-X', '-qAt', '--no-password', '-v', 'ON_ERROR_STOP=1'],
     { env: { PATH: '/usr/bin:/bin', ...connEnv(c) }, stdio: ['pipe', 'pipe', 'pipe'] });
   localChildren.add(child);
@@ -153,7 +158,7 @@ async function snapshotOpen(bin, c) {
     child.once('error', e => { clearTimeout(timer); reject(e); });
     child.once('exit', code => { clearTimeout(timer); reject(new Error(`Conexão de leitura encerrada (${code}): ${err}`)); });
     lines.once('line', line => { clearTimeout(timer); resolve(line.trim()); });
-    child.stdin.write(LEITURA_SETUP + 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SELECT pg_export_snapshot();\n');
+    child.stdin.write(LEITURA_SETUP + `SET transaction_timeout='${minutes}min'; SET idle_in_transaction_session_timeout='${minutes}min'; BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SELECT pg_export_snapshot();\n`);
   });
   if (!/^[0-9A-F]+-[0-9A-F]+-[0-9]+$/i.test(id)) { child.kill(); throw new Error('Identificador de snapshot inesperado.'); }
   return { id, close: async () => { if (child.exitCode === null) { const done = once(child, 'exit'); child.stdin.end('ROLLBACK;\n'); await done; } lines.close(); } };
@@ -181,7 +186,7 @@ async function sequences(bin,c) {
   return result;
 }
 
-async function digestTable(bin, c, t, snapshot) {
+async function digestTable(bin, c, t, snapshot, blockRange) {
   // SHA-256 multiset: count + soma modular + XOR, independente da ordem física.
   // Sem ORDER BY no servidor: não cria sort temporário num banco quase cheio.
   let pending = '', count = 0, sum = 0n, xor = 0n;
@@ -189,13 +194,93 @@ async function digestTable(bin, c, t, snapshot) {
   const mask = (1n << 256n) - 1n;
   const accept = line => { const v = BigInt('0x' + createHash('sha256').update(line).digest('hex')); sum = (sum + v) & mask; xor ^= v; count++; };
   const prefix = snapshot ? `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SET TRANSACTION SNAPSHOT ${lit(snapshot)};\n` : '';
+  const where = blockRange ? ` WHERE ctid >= '(${blockRange[0]},0)'::tid AND ctid < '(${blockRange[1]},0)'::tid` : '';
   await run(path.join(bin, 'psql'), ['-X', '-qAt', '--no-password', '-v', 'ON_ERROR_STOP=1'], {
-    env: connEnv(c), input: LEITURA_SETUP + prefix + `COPY (SELECT row_to_json(r)::text FROM ONLY ${qid(t.schema)}.${qid(t.name)} r) TO STDOUT;\n` + (snapshot ? 'COMMIT;\n' : ''),
+    env: connEnv(c), input: LEITURA_SETUP + prefix + `COPY (SELECT row_to_json(r)::text FROM ONLY ${qid(t.schema)}.${qid(t.name)} r${where}) TO STDOUT;\n` + (snapshot ? 'COMMIT;\n' : ''),
+    diagnosticsFile:c.diagnosticsDir ? path.join(c.diagnosticsDir,`psql-${t.schema}-${t.name}-${blockRange?.[0] ?? 'all'}-${Date.now()}.json`) : undefined,
     stream: chunk => { pending += decoder.write(chunk); let i; while ((i = pending.indexOf('\n')) >= 0) { accept(pending.slice(0, i)); pending = pending.slice(i + 1); } }
   });
   pending += decoder.end();
   if (pending) throw new Error('COPY terminou com linha incompleta.');
   return { count, sha256_sum: sum.toString(16).padStart(64, '0'), sha256_xor: xor.toString(16).padStart(64, '0') };
+}
+
+export async function digestTableEmBlocos(bin,c,t,snapshot,blockCount=256) {
+  if (!Number.isSafeInteger(blockCount) || blockCount < 1 || blockCount > 256) throw new Error('Tamanho de bloco inválido.');
+  const pages = await json(bin,c,`SELECT ceil(pg_relation_size(${lit(`${qid(t.schema)}.${qid(t.name)}`)}::regclass)::numeric / current_setting('block_size')::int)::bigint;`,snapshot);
+  if (!Number.isSafeInteger(pages) || pages < 0) throw new Error('Tamanho físico inválido.');
+  const mask=(1n<<256n)-1n;
+  let count=0,sum=0n,xor=0n;
+  // Intervalos TID disjuntos cobrem todo o heap, sem OFFSET/ORDER BY/sort.
+  // Todas as consultas importam o MESMO snapshot; ctid não entra na assinatura.
+  for (let start=0;start<pages;start+=blockCount) {
+    const d=await digestTable(bin,c,t,snapshot,[start,Math.min(start+blockCount,pages)]);
+    count+=d.count; sum=(sum+BigInt('0x'+d.sha256_sum))&mask; xor^=BigInt('0x'+d.sha256_xor);
+    if (pages>blockCount) console.log(`  ${t.schema}.${t.name}: blocos ${Math.min(start+blockCount,pages)}/${pages}, ${count} linhas.`);
+  }
+  return {count,sha256_sum:sum.toString(16).padStart(64,'0'),sha256_xor:xor.toString(16).padStart(64,'0')};
+}
+
+export const SQL_DIGEST_METHOD='sha256_record_utf8_count_four_signed64_sums_xors_v1';
+export async function digestTableSql(bin,c,t,snapshot) {
+  // Hash por linha no servidor, agregado sem sort e sem exportar o conteúdo.
+  // Quatro somas de inteiros64 promovidas a numeric (sem overflow) e quatro
+  // XORs cobrem os256bits. Strings decimais preservam precisão no JavaScript.
+  // record_out preserva SQL NULL vs JSON null e limites inferiores dos arrays;
+  // row_to_json perde essas distinções. O MESMO algoritmo roda no restore.
+  return json(bin,c,`WITH hashes AS (
+    SELECT hashed.h FROM ONLY ${qid(t.schema)}.${qid(t.name)} r
+    CROSS JOIN LATERAL (SELECT encode(sha256(convert_to(r::text,'UTF8')),'hex') AS h OFFSET 0) hashed
+  ), parts AS (
+    SELECT ${[0,1,2,3].map(i=>`('x'||substr(h,${i*16+1},16))::bit(64)::bigint AS p${i}`).join(',')}
+    FROM hashes
+  ) SELECT json_build_object('method',${lit(SQL_DIGEST_METHOD)},'count',count(*),
+    'sums',json_build_array(${[0,1,2,3].map(i=>`coalesce(sum(p${i}),0)::text`).join(',')}),
+    'xors',json_build_array(${[0,1,2,3].map(i=>`coalesce(bit_xor(p${i}),0)::text`).join(',')})) FROM parts;`,snapshot);
+}
+
+export async function verifyExisting(bin,c,dest) {
+  // Recupera um dump CONCLUÍDO cuja conferência remota caiu depois. Não o
+  // modifica nem mistura hashes de snapshots distintos. Um snapshot posterior
+  // é declarado no manifesto e precisa concordar integralmente com o restore.
+  const initial=JSON.parse(await readFile(path.join(dest,'captura-inicial.json'),'utf8'));
+  const dumpLog=JSON.parse(await readFile(path.join(dest,'diagnostico-pg_dump.json'),'utf8'));
+  if (dumpLog.exit_code!==0 || dumpLog.local_timeout) throw new Error('Dump não comprovadamente concluído; não verificar archive parcial.');
+  const archive=path.join(dest,'banco.dump');
+  await run(path.join(bin,'pg_restore'),['--file=/dev/null',archive]);
+  const verificationDir=path.join(dest,`verificacao-${Date.now()}`);
+  await mkdir(verificationDir,{mode:0o700});
+  const v={...c,diagnosticsDir:verificationDir};
+  const snap=await snapshotOpen(bin,v,60);
+  try {
+    const currentBootstrap=await json(bin,v,BOOT_SQL,snap.id);
+    if (currentBootstrap.read_session.statement_timeout_ms!==600000 || currentBootstrap.read_session.default_transaction_read_only!=='on' || currentBootstrap.read_session.transaction_read_only!=='on') throw new Error('Sessão de conferência não confirmou limites e modo somente leitura.');
+    for (const field of ['roles','memberships','extensions','schemas','server_version']) {
+      if (!equal(initial.bootstrap[field],currentBootstrap[field])) throw new Error(`Metadado ${field} mudou desde o dump; requer análise antes de validar.`);
+    }
+    const currentCatalog=await json(bin,v,await readFile(path.join(AQUI,'catalogo.sql'),'utf8'),snap.id);
+    const currentTables=await json(bin,v,TABLES_SQL,snap.id);
+    if (!equal(normalizarCatalogo(initial.catalog),normalizarCatalogo(currentCatalog)) || !equal(initial.tables,currentTables)) throw new Error('Estrutura da origem mudou desde o dump; não reutilizar esta verificação.');
+    if (!equal(initial.sequences,await sequences(bin,v))) throw new Error('Sequences mudaram desde o dump; requer análise antes de validar.');
+    const rows={};
+    for (const [i,t] of currentTables.entries()) {
+      const key=`${t.schema}.${t.name}`;
+      console.log(`[${i+1}/${currentTables.length}] Conferindo assinatura SHA-256 ${key}...`);
+      rows[key]=await digestTableSql(bin,v,t,snap.id);
+      console.log(`  ${rows[key].count} linhas conferidas, sem transferir conteúdo.`);
+      await save(path.join(verificationDir,`tabela-${i}.json`),{table:key,digest:rows[key],status:'CONFERIDO_NA_ORIGEM_RESTORE_PENDENTE'});
+    }
+    const seqAfter=await sequences(bin,v);
+    if (!equal(initial.sequences,seqAfter)) throw new Error('Sequences mudaram durante a conferência.');
+    const manifest={format:1,scope_verified:initial.bootstrap.schemas,bootstrap:initial.bootstrap,
+      catalog:initial.catalog,tables:initial.tables,rows,sequences:seqAfter,archive_sha256:await sha(archive),
+      verification:{same_snapshot_as_dump:false,source_snapshot_at:currentBootstrap.captured_at,
+        method:SQL_DIGEST_METHOD,note:'Assinaturas de todas as linhas comparadas com snapshot posterior; igualdade exigida na restauração.'},
+      limitations:['Storage: apenas metadados; bytes dos arquivos não incluídos.','Cron/Vault/extensões: operação dos serviços não comprovada.','Senhas dos papéis, e-mails, Edge Functions, autenticação externa e configurações do projeto não comprovados.']};
+    await save(path.join(dest,'manifesto.json'),manifest);
+    await writeFile(path.join(dest,'inventario.txt'),await run(path.join(bin,'pg_restore'),['--list',archive]),{mode:0o600,flag:'wx'});
+    return manifest;
+  } finally {await snap.close();}
 }
 
 export async function capture(bin, c, dest) {
@@ -322,11 +407,14 @@ export async function restore(bin, dest) {
     if (!equal(actualTables, manifest.tables)) throw new Error('Conjunto de tabelas restaurado diverge.');
     for (const t of manifest.tables) {
       const key = `${t.schema}.${t.name}`;
-      if (!equal(await digestTable(bin, cluster.c, t), manifest.rows[key])) throw new Error(`Dados divergentes em ${key}.`);
+      const expected=manifest.rows[key];
+      const actual=expected.method===SQL_DIGEST_METHOD ? await digestTableSql(bin,cluster.c,t) : await digestTable(bin,cluster.c,t);
+      if (!equal(actual,expected)) throw new Error(`Dados divergentes em ${key}.`);
     }
     if (!equal(await sequences(bin,cluster.c),manifest.sequences)) throw new Error('Estado das sequences/identity diverge.');
     const report = { result: 'VERIFICADO_NO_ESCOPO_DECLARADO', at: new Date().toISOString(), schemas:b.schemas, tables: manifest.tables.length,
       archive_sha256: manifest.archive_sha256, unsupported_extensions: unsupported,
+      source_verification:manifest.verification ?? {same_snapshot_as_dump:true},
       catalog_comparison:'logical_column_order_without_dropped_physical_slots', limitations: manifest.limitations };
     await save(path.join(dest, `restauracao-${Date.now()}.json`), report);
     console.log(`RESTAURAÇÃO VERIFICADA: ${manifest.tables.length} tabelas, conteúdo e catálogo iguais no escopo declarado.`);
@@ -379,7 +467,8 @@ export async function main(argv = process.argv.slice(2)) {
   const version = await run(path.join(bin, 'pg_dump'), ['--version']);
   if (!/\b17\./.test(version)) throw new Error('É necessário pg_dump 17.');
   if (mode === 'restore') { if (!opts['--dest']) throw new Error('Informe --dest.'); return restore(bin, opts['--dest']); }
-  if (mode !== 'backup') throw new Error('Modo deve ser backup ou restore.');
+  if (!['backup','verify-existing'].includes(mode)) throw new Error('Modo deve ser backup, verify-existing ou restore.');
+  if (mode==='verify-existing' && !opts['--dest']) throw new Error('verify-existing exige --dest do dump concluído.');
   const projectRoot = opts['--project-root'] || '/Users/jpscoliveira/Canario';
   const url = new URL((await readFile(path.join(projectRoot, 'supabase/.temp/pooler-url'), 'utf8')).trim());
   if (url.username !== `postgres.${PROJETO}` || !url.hostname.endsWith('.pooler.supabase.com') || url.port !== '5432' || url.password) throw new Error('Conexão salva não corresponde ao session pooler esperado, sem senha.');
@@ -393,7 +482,8 @@ export async function main(argv = process.argv.slice(2)) {
   console.log('Consultando produção somente em leitura. Nenhuma migration será aplicada.');
   console.log(`Destino protegido: ${dest}`);
   try {
-    await capture(bin, c, dest);
+    if (mode==='verify-existing') await verifyExisting(bin,c,dest);
+    else await capture(bin, c, dest);
     c.password = '';
     await restore(bin, dest);
     console.log(`Arquivos preservados em ${dest}`);

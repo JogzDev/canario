@@ -5,6 +5,24 @@ O trabalho de backup está isolado na branch `codex/backup-verificado`, em
 permanece independente. Não aplicar migrations nem fazer manutenção em produção
 antes de verificar um dump real e avaliar as limitações abaixo.
 
+## Prova real concluída em 18/09/2026
+
+Às 08:59:35 BRT, a restauração do backup real terminou com exit 0 e resultado
+`VERIFICADO_NO_ESCOPO_DECLARADO`: 57 tabelas nos schemas `auth`, `public`, `storage`
+e `supabase_migrations`, com conteúdo, catálogo, permissões e sequences conferidos.
+
+- Destino: `/Users/jpscoliveira/backups/datadrobe-2026-09-18T02-14-22.054Z-6b15f9`.
+- Relatório: `restauracao-1789732775050.json` dentro desse destino.
+- Archive: `banco.dump`, 27.774.292 bytes.
+- SHA-256: `6906927eb188658d4e1b6880672d3b324afe757df66d798baa035abaaf357686`.
+
+A verificação usou o modo `verify-existing`, comparando o conteúdo restaurado
+com um snapshot único posterior ao dump (11:54:32 UTC), como declarado no
+relatório. As assinaturas de todas as tabelas coincidiram. Nenhuma alteração
+foi feita em produção. O backup não libera espaço nem autoriza manutenção:
+capacidade e dependências fora da prova ainda precisam do roteiro revisado.
+Não iniciar nova exportação para retomar as tentativas antigas já superadas.
+
 ## Ferramentas preparadas
 
 Postgres.app 2.9.6, PostgreSQL **17.11**, instalado para este usuário em:
@@ -27,7 +45,7 @@ Abra `iniciar_backup.command` no Terminal. Ele usa a conexão sem senha já salv
 no projeto original em `supabase/.temp/pooler-url`, limitada ao session pooler
 5432 do projeto esperado. Digite a senha atual do banco no prompt sem eco.
 
-A senha não entra no chat, URI, argumentos do processo, arquivos ou histórico.
+O procedimento não solicita senha no chat nem a grava em URI, argumentos do processo, arquivos ou histórico.
 É mantida em memória e passada aos filhos PostgreSQL por ambiente. Não é
 recuperável da chave publicável do aplicativo. A ferramenta não troca a senha.
 
@@ -83,7 +101,28 @@ Para repetir apenas a restauração:
 node ferramentas/backup/backup_nativo.mjs restore --dest /caminho/absoluto/do/backup
 ```
 
-`restaurar_isolado.mjs` é um alias para esse modo; o parser antigo de SQL/COPY foi
+Se o dump terminou com exit0, mas a verificação de conteúdo perdeu a conexão,
+não é necessário exportar tudo novamente:
+
+```sh
+node ferramentas/backup/backup_nativo.mjs verify-existing --dest /caminho/absoluto/do/backup
+```
+
+Esse modo valida a leitura integral do archive, confirma que a estrutura e as
+sequences não mudaram e calcula SHA-256 de cada linha no próprio servidor. Só
+transfere contagem, quatro somas exatas e quatro XORs dos segmentos64bits dos
+hashes. A representação usada é `record_out` (`r::text`), que distingue SQL NULL
+de JSON null e preserva limites inferiores de arrays, diferente de row_to_json.
+Isso evita reenviar centenas deMB pela conexão instável. Não usa sort
+nem CTE materializado; a mesma assinatura é calculada no restore local. Todas
+as leituras compartilham um único snapshot novo, limitado a60min. O manifesto
+declara explicitamente que a comparação usou um snapshot **posterior ao dump**;
+só há aprovação se todas as assinaturas forem iguais. Divergência não é
+ignorada ou atribuída automaticamente a "mudanças normais". Logs privados e
+hashes parciais não constituem aprovação. O método anterior em blocosctid
+continua testado, mas não é o caminho padrão dessa recuperação.
+
+`restaurar_isolado.mjs` é um alias para o modo `restore`; o parser antigo de SQL/COPY foi
 retirado. O formato esperado agora é `banco.dump` + `manifesto.json`, não três
 arquivos SQL avulsos.
 
@@ -126,7 +165,8 @@ conteúdo divergente e hash adulterado são rejeitados. Não lê produção.
 
 Em 17/09/2026, o ensaio passou em PostgreSQL 17.11: seis tabelas, 12 mil linhas
 de peças fictícias, catálogo/dados/sequences iguais; os dois casos negativos
-também foram rejeitados. Isso não afirma que o backup real já foi realizado.
+também foram rejeitados. Esse ensaio usa fixtures; a prova real está registrada
+separadamente no início deste documento.
 
 `node ferramentas/backup/testar_diagnostico.mjs` usa processos e credenciais
 fictícios para provar preservação de stderr multilinha, redação de senha,
