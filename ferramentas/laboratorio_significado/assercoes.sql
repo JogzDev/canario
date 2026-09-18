@@ -11,22 +11,22 @@ declare r jsonb; begin
   r := public.resumo_de_eventos('reposicao', 7, 6);
   assert (r->>'total_pecas')::int = 208,
     'total de pecas deveria ser 208 e veio ' || (r->>'total_pecas');
-  assert (r->>'total_eventos')::int = 238,
-    'total de eventos deveria ser 238 e veio ' || (r->>'total_eventos');
+  assert (r->>'total_eventos')::int = 240,
+    'total de eventos deveria ser 240 e veio ' || (r->>'total_eventos');
   assert (r->'marcas'->0->>'marca') = 'Grande',
     'a marca com mais pecas deveria abrir a lista';
   assert (r->'marcas'->0->>'pecas')::int = 200,
     'Grande deveria ter 200 pecas distintas e veio '
       || (r->'marcas'->0->>'pecas');
-  raise notice 'ok 1  janela inteira: 208 pecas, 238 eventos, sem teto de 120';
+  raise notice 'ok 1  janela inteira: 208 pecas, 240 eventos, sem teto de 120';
 end $$;
 
 -- 2. Produto que voltou duas vezes conta uma vez; o evento extra conta.
 do $$
 declare g jsonb; begin
   g := public.resumo_de_eventos('reposicao', 7, 6)->'marcas'->0;
-  assert (g->>'pecas')::int = 200 and (g->>'eventos')::int = 230,
-    'Grande deveria ser 200 pecas em 230 eventos e veio '
+  assert (g->>'pecas')::int = 200 and (g->>'eventos')::int = 232,
+    'Grande deveria ser 200 pecas em 232 eventos e veio '
       || (g->>'pecas') || '/' || (g->>'eventos');
   -- 10 produtos ja tinham voltado antes da janela.
   assert (g->>'pecas_repetidas')::int = 10,
@@ -169,5 +169,187 @@ declare r jsonb; begin
   r := public.buscar_referencia_editorial('napoleon', 999);
   assert jsonb_array_length(r->'materias') <= 10,
     'o limite deveria ser aparado em 10';
-  raise notice 'ok 10 busca editorial: recorte, caixa, curinga, limite';
+
+  -- Termo frequente: o total conta a populacao, a lista e amostra. Sao as
+  -- duas coisas que a capa confundia.
+  r := public.buscar_referencia_editorial('promo', 1);
+  assert (r->>'total')::int = 2,
+    'o total deveria contar as 2 materias e veio ' || (r->>'total');
+  assert jsonb_array_length(r->'materias') = 1,
+    'a lista deveria respeitar o limite de 1 e veio '
+      || jsonb_array_length(r->'materias');
+
+  -- Barra DENTRO de uma expressao valida: o caso que o teste curto nao
+  -- alcancava. Sem escapar a barra, `ilike` a consome como escape e a busca
+  -- passa a procurar outra coisa.
+  r := public.buscar_referencia_editorial('barra \ no', 5);
+  assert (r->>'total')::int = 1,
+    'barra escapada deveria achar 1 e achou ' || (r->>'total');
+  assert (r->'materias'->0->>'url') = 'https://ex.example/curinga',
+    'a materia achada deveria ser a que tem a barra no titulo';
+
+  -- Controle negativo: `_` do usuario e sublinhado, nao "qualquer caractere".
+  r := public.buscar_referencia_editorial('barra _ no', 5);
+  assert (r->>'total')::int = 0,
+    'o sublinhado nao pode voltar a ser curinga e achou ' || (r->>'total');
+  raise notice 'ok 10 busca editorial: recorte, caixa, curinga, limite, barra';
+end $$;
+
+-- 11. Snapshot antigo nao conta como oferta de hoje (P17).
+do $$
+declare n int; begin
+  select pecas_ofertadas into n from public.sortimento_diario
+   where data = current_date - 15 and marca_id = 1;
+  -- 3 pecas abandonadas ha 30 dias continuam `ofertavel` no estado. Sob a
+  -- regra antiga (`s.data <= alvo`, sem piso) elas entrariam e o denominador
+  -- seria 403.
+  assert n = 400,
+    'o denominador de D0 deveria ignorar o catalogo morto e veio ' || n;
+  select pecas_ofertadas into n from public.sortimento_diario
+   where data = current_date - 30 and marca_id = 1;
+  assert n = 3,
+    'no dia em que foram vistas, as 3 contam; vieram ' || coalesce(n::text, 'nulo');
+  raise notice 'ok 11 snapshot antigo: 400 em D0, 3 no dia proprio';
+end $$;
+
+-- 12. Exemplo e vitrine: uma peca, um cartao.
+do $$
+declare g jsonb; distintas int; begin
+  g := public.resumo_de_eventos('reposicao', 7, 6)->'marcas'->0;
+  assert jsonb_array_length(g->'exemplos') = 6,
+    'deveriam vir 6 exemplos e vieram ' || jsonb_array_length(g->'exemplos');
+  select count(distinct e->>'peca') into distintas
+  from jsonb_array_elements(g->'exemplos') e;
+  assert distintas = 6,
+    'as 2 pecas que repuseram tres vezes ocupariam 4 cartoes; distintas: '
+      || distintas;
+  raise notice 'ok 12 exemplos: 6 cartoes, 6 pecas diferentes';
+end $$;
+
+-- 13. Recomputar corrige para baixo: grupo que zera sai da tabela.
+do $$
+declare tocadas int; existe boolean; n int; begin
+  update public.snapshots set ofertavel = false
+   where data = current_date - 15 and produto_id between 1001 and 1010;
+  tocadas := public.computar_sortimento_diario(current_date - 15);
+  select exists (select 1 from public.sortimento_diario
+                  where data = current_date - 15 and marca_id = 2) into existe;
+  assert not existe,
+    'a marca que zerou deveria sair da tabela, nao virar denominador fantasma';
+  assert tocadas = 1,
+    'a recomputacao deveria declarar 1 linha tocada e declarou ' || tocadas;
+
+  update public.snapshots set ofertavel = true
+   where data = current_date - 15 and produto_id between 1001 and 1010;
+  perform public.computar_sortimento_diario(current_date - 15);
+  select pecas_ofertadas into n from public.sortimento_diario
+   where data = current_date - 15 and marca_id = 2;
+  assert n = 10, 'a marca deveria voltar com 10 e voltou com '
+    || coalesce(n::text, 'nulo');
+  raise notice 'ok 13 grupo que zera sai; volta quando volta a existir';
+end $$;
+
+-- 14. Reexecutar o mesmo dia nao escreve nada (P11).
+do $$
+declare tocadas int; begin
+  tocadas := public.computar_sortimento_diario(current_date - 15);
+  assert tocadas = 0,
+    'reexecutar um dia estavel deveria escrever 0 linhas e escreveu ' || tocadas;
+  raise notice 'ok 14 reexecucao: 0 linhas escritas';
+end $$;
+
+-- 15. Quem chama e a chave de servico; `anon` nao alcanca.
+do $$
+declare tocadas int; begin
+  execute 'set local role service_role';
+  tocadas := public.computar_sortimento_diario(current_date - 15);
+  execute 'reset role';
+  assert tocadas = 0,
+    'service_role deveria executar a reconstrucao e devolveu ' || tocadas;
+
+  begin
+    execute 'set local role anon';
+    perform public.computar_sortimento_diario(current_date - 15);
+    execute 'reset role';
+    assert false, 'anon nao pode reconstruir o denominador';
+  exception when insufficient_privilege then
+    execute 'reset role';
+  end;
+  raise notice 'ok 15 service_role executa; anon recebe 42501';
+end $$;
+
+-- 16. O motor grava o denominador do dia e so entao poda o cru.
+do $$
+declare r jsonb; n int; fora int; begin
+  select count(*) into fora from public.snapshots
+   where data < current_date - 21;
+  assert fora = 3, 'o laboratorio deveria ter 3 snapshots fora da retencao e tem '
+    || fora;
+
+  -- Apaga o denominador do dia mais novo para ver o motor grava-lo.
+  delete from public.sortimento_diario where data = current_date - 5;
+
+  execute 'set local role service_role';
+  r := public.computar_motor();
+  execute 'reset role';
+
+  assert (r->>'computar_sortimento_diario')::int = 1,
+    'o motor deveria gravar 1 linha de denominador e gravou '
+      || coalesce(r->>'computar_sortimento_diario', 'nulo');
+  assert (r->>'snapshots_removidos')::int = 3,
+    'o motor deveria podar os 3 snapshots fora da retencao e podou '
+      || coalesce(r->>'snapshots_removidos', 'nulo');
+  select pecas_ofertadas into n from public.sortimento_diario
+   where data = current_date - 5 and segmento = 'catalogo_candidato_br';
+  assert n = 5,
+    'o denominador do dia mais novo deveria existir depois do motor e veio '
+      || coalesce(n::text, 'nulo');
+
+  -- Dia ja podado nao e reconstruivel: recomputar nao pode apagar o historico.
+  assert public.computar_sortimento_diario(current_date - 30) = 0,
+    'recomputar um dia sem cru deveria sair sem tocar em nada';
+  select pecas_ofertadas into n from public.sortimento_diario
+   where data = current_date - 30 and marca_id = 1;
+  assert n = 3,
+    'o denominador de um dia podado foi apagado por uma recomputacao';
+  raise notice 'ok 16 motor: denominador gravado, cru podado, historico intacto';
+end $$;
+
+-- 17. Coleta recente sem eventos devolve zero na janela, nao a semana antiga.
+do $$
+declare r jsonb; begin
+  update public.estado_dos_produtos ep set ultimo_avistamento_em = current_date
+  from public.produtos p
+  where p.id = ep.produto_id
+    and p.segmento = 'feminino_casual_br'
+    and ep.ultimo_avistamento_em = current_date - 15;
+
+  r := public.resumo_de_eventos('reposicao', 7);
+  assert (r->>'ate')::date = current_date
+     and (r->>'de')::date = current_date - 6,
+    'a janela deveria seguir a observacao do painel e veio '
+      || (r->>'de') || '..' || (r->>'ate');
+  assert (r->>'total_pecas')::int = 0 and (r->>'total_eventos')::int = 0,
+    'sem evento na janela, a resposta e zero -- nao a semana do ultimo evento';
+  assert (r->>'dias_desde_o_fim')::int = 0,
+    'a idade do dado deveria ser 0 e veio ' || (r->>'dias_desde_o_fim');
+
+  -- Janela COMUM: um tipo que nunca teve evento nenhum responde a mesma
+  -- janela, em vez de nao responder.
+  r := public.resumo_de_eventos('saida_de_linha', 7);
+  assert (r->>'ate')::date = current_date and (r->>'total_pecas')::int = 0,
+    'os tres tipos deveriam compartilhar a janela do painel';
+
+  -- O passado continua consultavel, mas so quando alguem pede por ele.
+  r := public.resumo_de_eventos('reposicao', 7, 6, current_date - 15);
+  assert (r->>'total_pecas')::int = 208,
+    'com ate explicito, a janela antiga deveria voltar com 208 e veio '
+      || (r->>'total_pecas');
+
+  update public.estado_dos_produtos ep set ultimo_avistamento_em = current_date - 15
+  from public.produtos p
+  where p.id = ep.produto_id
+    and p.segmento = 'feminino_casual_br'
+    and ep.ultimo_avistamento_em = current_date;
+  raise notice 'ok 17 coleta recente sem eventos: zero na janela comum';
 end $$;

@@ -16,12 +16,16 @@
  *
  *   node ferramentas/laboratorio_significado/rodar.mjs
  *
- * Os binários do PostgreSQL vêm do pacote `@embedded-postgres`, que hoje mora
- * no laboratório do radar (branch de produto). Enquanto ele não estiver neste
- * checkout, aponte a pasta com `--modulos`:
+ * Os binários do PostgreSQL vêm do pacote `@embedded-postgres`, declarado no
+ * `package.json` desta pasta. Instale-os uma vez, fora da árvore de trabalho,
+ * porque o `actions/checkout` limpa o workspace a cada execução e 133 MB
+ * baixados todo dia seriam desperdício:
  *
- *   node ferramentas/laboratorio_significado/rodar.mjs \
- *     --modulos ~/Canario-produto/ferramentas/laboratorio_radar/node_modules
+ *   LAB=~/.canario/laboratorio-significado
+ *   mkdir -p "$LAB" && cp ferramentas/laboratorio_significado/package*.json "$LAB/"
+ *   (cd "$LAB" && npm install --no-audit --no-fund)
+ *
+ * Qualquer outra pasta serve, apontada por `--modulos`.
  *
  * Nada aqui fala com o Supabase: o cluster nasce e morre nesta invocação, e
  * nenhuma migration é aplicada em produção.
@@ -29,7 +33,7 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { once } from 'node:events';
-import { chmod, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
@@ -46,13 +50,35 @@ const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
 
+// Onde procurar os binários quando ninguém passa `--modulos`: a própria pasta
+// primeiro, depois o destino de instalação do CI.
+const CANDIDATOS = [
+  path.join(AQUI, 'node_modules'),
+  path.join(os.homedir(), '.canario/laboratorio-significado/node_modules'),
+];
+
 function opcoes(argv) {
-  const escolhas = { modulos: path.join(AQUI, 'node_modules') };
+  const escolhas = { modulos: null };
   for (let i = 0; i < argv.length; i += 2) {
     if (argv[i] === '--modulos' && argv[i + 1]) escolhas.modulos = argv[i + 1];
     else throw new Error(`Opção desconhecida: ${argv[i]}`);
   }
   return escolhas;
+}
+
+async function ondeEstaoOsModulos(escolhido) {
+  if (escolhido) return escolhido;
+  for (const candidato of CANDIDATOS) {
+    try {
+      await access(path.join(candidato, 'pg'));
+      return candidato;
+    } catch { /* tenta o proximo */ }
+  }
+  throw new Error('Não achei `pg` nem `@embedded-postgres`. Instale uma vez:\n'
+    + '  LAB=~/.canario/laboratorio-significado\n'
+    + '  mkdir -p "$LAB" && cp ferramentas/laboratorio_significado/package*.json "$LAB/"\n'
+    + '  (cd "$LAB" && npm install --no-audit --no-fund)\n'
+    + 'Ou aponte outra pasta com --modulos.');
 }
 
 function executar(binario, args, { timeout = 120_000 } = {}) {
@@ -87,14 +113,14 @@ async function dependencias(modulos) {
   } catch (causa) {
     throw new Error(
       `Não achei @embedded-postgres/${plataforma} e pg em ${modulos}.\n`
-      + 'Use --modulos apontando para o node_modules do laboratório do radar.\n'
+      + 'Use --modulos apontando para um node_modules com as duas.\n'
       + `Causa: ${causa.message}`);
   }
   return { binarios, pg };
 }
 
 async function main() {
-  const { modulos } = opcoes(process.argv.slice(2));
+  const modulos = await ondeEstaoOsModulos(opcoes(process.argv.slice(2)).modulos);
   if (process.getuid?.() === 0) throw new Error('Rode como usuário comum, sem root.');
   const { binarios, pg } = await dependencias(modulos);
   for (const nome of ['initdb', 'postgres', 'pg_ctl']) await chmod(binarios[nome], 0o755);

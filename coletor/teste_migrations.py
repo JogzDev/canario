@@ -182,13 +182,23 @@ def main():
         "on sd.data = j.ate and sd.segmento = 'feminino_casual_br'",
         "'denominador_em'",
         "por_mil_ofertadas",
-        # Exemplos sao amostra e nao podem voltar a alimentar contagem.
+        # Exemplos sao amostra e nao podem voltar a alimentar contagem, nem
+        # gastar dois cartoes com a mesma peca que repos duas vezes.
         "x.posicao <= j.teto",
-        "grant execute on function public.resumo_de_eventos(text, integer, integer)",
+        "select distinct on (np.produto_id) np.*",
+        # Janela COMUM aos tres tipos, ancorada na observacao do painel ou num
+        # `ate` explicito de quem pergunta.
+        "ate date default null",
+        "max(ep.ultimo_avistamento_em)",
+        "grant execute on function public.resumo_de_eventos(text, integer, integer, date)",
     ]
     for trecho in exigencias_resumo:
         if trecho not in resumo_eventos:
             return falhar("resumo de eventos nao garante: {}".format(trecho))
+    # Ancorar no ultimo evento DE CADA TIPO fazia "nenhuma remarcacao nesta
+    # semana" recuar ate a ultima remarcacao e apresenta-la como atual.
+    if "max(e.data)" in resumo_eventos:
+        return falhar("a janela voltou a seguir o ultimo evento do tipo")
 
     _, referencia = ultima_definicao(
         arquivos,
@@ -234,6 +244,16 @@ def main():
         "revoke all on table public.sortimento_diario from anon, authenticated",
         "revoke all on function public.computar_sortimento_diario(date) from public, anon, authenticated",
         "is distinct from excluded.pecas_ofertadas",
+        # P17: o snapshot vale sete dias. Sem o piso, catalogo morto contava
+        # como oferta para sempre e o denominador inchava.
+        "where s.data between alvo - 6 and alvo",
+        # Recomputar um dia tambem corrige para baixo: grupo que sumiu do
+        # calculo sai da tabela, em vez de virar denominador fantasma.
+        "delete from public.sortimento_diario sd",
+        "not exists (select 1 from pg_temp.sortimento_calculado c",
+        # A coleta e o motor chamam com a chave de servico. Sem o grant a
+        # funcao existe e nao roda.
+        "grant execute on function public.computar_sortimento_diario(date) to service_role",
     ]
     for trecho in exigencias_finais:
         if trecho not in estado_final:
@@ -290,6 +310,9 @@ def main():
         "r_indice := public.computar_indice()",
         "r_curva := public.computar_curva_tamanhos()",
         "r_raridade := public.computar_raridade()",
+        # A58: ultima leitura do cru antes da poda. Dia podado e dia
+        # irreconstruivel -- esta ordem e uma porta de sentido unico.
+        "r_sortimento := public.computar_sortimento_diario()",
         "r_snapshots_removidos := public.podar_snapshots(21)",
     ]
     posicoes = [motor.find(p) for p in passos_motor]

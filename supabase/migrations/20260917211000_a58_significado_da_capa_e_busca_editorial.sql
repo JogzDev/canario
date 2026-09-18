@@ -21,15 +21,33 @@
 --
 -- Esta funcao separa as duas coisas que estavam juntas: a AGREGACAO percorre a
 -- populacao inteira da janela e conta PRODUTOS DISTINTOS; os EXEMPLOS (as
--- fotos dos cartoes) vem limitados por marca e nunca alimentam contagem. A
--- janela e explicita, ancorada no ultimo dia coletado, e a resposta devolve
--- `de`, `ate` e `dias_desde_o_fim` para a tela declarar idade em vez de
--- chamar dado de 15 dias de "esta semana".
+-- fotos dos cartoes) vem limitados por marca, sem repetir peca, e nunca
+-- alimentam contagem. A janela e explicita e a resposta devolve `de`, `ate` e
+-- `dias_desde_o_fim` para a tela declarar idade em vez de chamar dado de 15
+-- dias de "esta semana".
 --
 -- `pecas_ofertadas` e `por_mil_ofertadas` viajam junto porque comparar marcas
 -- de tamanhos diferentes exige denominador (DAT-04). A funcao NAO escolhe o
 -- ranking: devolve as duas leituras e a ordenacao por contagem; qual vira
 -- manchete e decisao de produto, tomada com o numero na mao.
+--
+-- A JANELA E COMUM AOS TIPOS DE EVENTO
+-- ====================================
+--
+-- A primeira versao ancorava a janela no ultimo evento DAQUELE TIPO
+-- (`max(e.data) where e.tipo = $1`). Dois defeitos:
+--
+--   1. cada aba da tela falava de uma semana diferente, e as contagens de
+--      reposicao e remarcacao deixavam de ser comparaveis entre si;
+--   2. pior: ausencia recente virava atividade antiga. Uma coleta saudavel de
+--      hoje sem nenhuma remarcacao recuava ate a ultima remarcacao registrada
+--      -- semanas atras -- e apresentava aquele dia como "esta semana". O
+--      defeito que a A57 corrigiu nos similares, com outro disfarce.
+--
+-- A ancora passa a ser a OBSERVACAO DO PAINEL (o ultimo dia em que o coletor
+-- viu o segmento), comum aos tres tipos, ou um `ate` explicito de quem
+-- pergunta. Coleta recente sem eventos do tipo devolve ZERO naquela janela,
+-- que e a verdade, em vez de mudar de assunto.
 --
 -- O DENOMINADOR E OBSERVADO, NAO O ESTADO DE HOJE
 -- ===============================================
@@ -56,6 +74,35 @@
 -- `por_mil_ofertadas` voltam nulos e `denominador_em` vem nulo. Sem
 -- denominador a tela mostra contagem absoluta e cala a taxa -- nunca
 -- substitui o denominador da janela pelo de hoje.
+--
+-- E SO CONTA QUEM FOI OBSERVADO NAQUELE DIA (P17)
+-- ===============================================
+--
+-- `snapshot` e diferencial: o coletor so abre linha quando preco, grade ou
+-- ofertabilidade mudam -- mas reabre de qualquer jeito a cada 7 dias
+-- (batimento semanal da B3, `_precisa_snapshot`). Por isso o ultimo snapshot
+-- de um produto vale por 7 dias e nao para sempre: e a mesma regra que a P17
+-- ja usa na serie (`s.data + 6`).
+--
+-- A primeira versao pegava `distinct on (produto_id) ... where s.data <= alvo`
+-- SEM piso: um produto visto em maio, nunca mais revisto, continuava contando
+-- como ofertavel em setembro. O denominador inchava com catalogo morto e a
+-- taxa de todas as marcas saia menor do que e. A janela agora e
+-- `alvo - 6 .. alvo`.
+--
+-- RECOMPUTAR UM DIA CORRIGE PARA BAIXO, NAO SO PARA CIMA
+-- ======================================================
+--
+-- `on conflict do update` sozinho e um upsert que nunca apaga: se uma marca
+-- deixa de ter pecas ofertaveis num dia ja computado, a linha antiga fica la,
+-- fantasma, e a taxa continua sendo dividida por um sortimento que nao existe
+-- mais. A recomputacao remove os grupos que sumiram do calculo -- inclusive os
+-- que passam a zero.
+--
+-- Com uma excecao declarada: dia SEM NENHUM snapshot na janela e dia nao
+-- observado (nunca coletado, ou ja podado pelos 21 dias da A42). Recomputar um
+-- dia desses apagaria o denominador historico e o trocaria por zero. A funcao
+-- sai sem tocar em nada.
 --
 -- POR QUE (2): "NAPOLEON JACKET" JA ESTAVA NO BANCO
 -- =================================================
@@ -90,8 +137,39 @@ comment on table public.sortimento_diario is
 alter table public.sortimento_diario enable row level security;
 revoke all on table public.sortimento_diario from anon, authenticated;
 
--- Reconstroi um dia. Roda com a chave de servico, no fim da coleta; nunca no
--- caminho da consulta.
+-- O calculo de um dia, em um lugar so: a reconstrucao e usada tanto para
+-- gravar quanto para decidir o que apagar, e duas copias divergiriam.
+create or replace function public.sortimento_observado(alvo date)
+returns table (marca_id bigint, segmento text, pecas_ofertadas integer)
+language sql
+stable
+security definer
+set search_path to 'public', 'pg_temp'
+as $function$
+  with ultimo as (
+    -- P17: o snapshot vale por sete dias, nao para sempre. Quem nao foi
+    -- observado dentro da janela nao entra no denominador daquele dia.
+    select distinct on (s.produto_id) s.produto_id, s.ofertavel
+    from public.snapshots s
+    where s.data between alvo - 6 and alvo
+    order by s.produto_id, s.data desc
+  )
+  select p.marca_id, p.segmento, count(*)::int
+  from ultimo u
+  join public.produtos p on p.id = u.produto_id
+  where u.ofertavel is true
+    and p.segmento is not null
+  group by p.marca_id, p.segmento;
+$function$;
+
+comment on function public.sortimento_observado(date) is
+  'A58: sortimento ofertavel por (marca, segmento) no dia, pela janela de observacao de sete dias da P17.';
+
+revoke all on function public.sortimento_observado(date) from public, anon, authenticated;
+grant execute on function public.sortimento_observado(date) to service_role;
+
+-- Reconstroi um dia. Roda com a chave de servico, no fim da coleta saudavel e
+-- ANTES da poda; nunca no caminho da consulta.
 create or replace function public.computar_sortimento_diario(dia date default null)
 returns integer
 language plpgsql
@@ -100,43 +178,65 @@ set search_path to 'public', 'pg_temp'
 as $function$
 declare
   alvo date;
+  observado boolean;
   gravadas integer;
+  removidas integer;
 begin
   alvo := coalesce(dia, (select max(s.data) from public.snapshots s));
   if alvo is null then
     return 0;
   end if;
 
-  with ultimo as (
-    -- Snapshot e diferencial: o estado de um produto no dia `alvo` e o ultimo
-    -- snapshot dele em `alvo` ou antes.
-    select distinct on (s.produto_id) s.produto_id, s.ofertavel
-    from public.snapshots s
-    where s.data <= alvo
-    order by s.produto_id, s.data desc
-  ), contagem as (
-    select p.marca_id, p.segmento, count(*)::int as pecas_ofertadas
-    from ultimo u
-    join public.produtos p on p.id = u.produto_id
-    where u.ofertavel is true
-      and p.segmento is not null
-    group by p.marca_id, p.segmento
-  )
+  -- Dia sem snapshot na janela e dia NAO OBSERVADO. Pode ser um dia que nunca
+  -- foi coletado ou um dia cujo cru a poda ja levou (21 dias, A42). Nos dois
+  -- casos, recomputar apagaria o denominador historico e o trocaria por zero.
+  select exists (select 1 from public.snapshots s
+                  where s.data between alvo - 6 and alvo)
+    into observado;
+  if not observado then
+    return 0;
+  end if;
+
+  -- Calcula uma vez e usa duas: apagar o fantasma e gravar o que mudou.
+  -- `to_regclass` em vez de `drop ... if exists` porque a segunda avisa em
+  -- NOTICE a cada chamada, e o backfill chama uma vez por dia coletado.
+  if to_regclass('pg_temp.sortimento_calculado') is not null then
+    drop table pg_temp.sortimento_calculado;
+  end if;
+  create temp table pg_temp.sortimento_calculado on commit drop as
+  select * from public.sortimento_observado(alvo);
+
+  -- Linha fantasma: grupo que existia numa execucao anterior deste mesmo dia
+  -- e sumiu do calculo -- a marca que passou a zero ofertaveis, o segmento que
+  -- mudou. Sem isto, recomputar so corrige para cima.
+  delete from public.sortimento_diario sd
+  where sd.data = alvo
+    and not exists (select 1 from pg_temp.sortimento_calculado c
+                     where c.marca_id = sd.marca_id
+                       and c.segmento = sd.segmento);
+  get diagnostics removidas = row_count;
+
   insert into public.sortimento_diario (data, marca_id, segmento, pecas_ofertadas)
   select alvo, c.marca_id, c.segmento, c.pecas_ofertadas
-  from contagem c
+  from pg_temp.sortimento_calculado c
   on conflict (data, marca_id, segmento) do update
     set pecas_ofertadas = excluded.pecas_ofertadas
     -- P11: escrever so o que mudou.
     where public.sortimento_diario.pecas_ofertadas
           is distinct from excluded.pecas_ofertadas;
-
   get diagnostics gravadas = row_count;
-  return gravadas;
+
+  drop table pg_temp.sortimento_calculado;
+  -- Zero significa "nada mudou": reexecutar o mesmo dia e barato e silencioso.
+  return gravadas + removidas;
 end;
 $function$;
 
 revoke all on function public.computar_sortimento_diario(date) from public, anon, authenticated;
+-- A coleta e o motor rodam com a chave de servico. Sem este grant a funcao
+-- existe e nao roda: `revoke ... from public` tira o default de EXECUTE de
+-- todo mundo, inclusive de quem precisa chamar.
+grant execute on function public.computar_sortimento_diario(date) to service_role;
 
 -- Historico disponivel: a retencao de snapshots cobre 22 dias (12/08 a 02/09
 -- em 17/09/2026). Fora dessa janela nao existe denominador, e a funcao de
@@ -152,7 +252,8 @@ end $$;
 
 create or replace function public.resumo_de_eventos(tipo_evento text,
                                                     dias integer default 7,
-                                                    exemplos_por_marca integer default 6)
+                                                    exemplos_por_marca integer default 6,
+                                                    ate date default null)
 returns jsonb
 language sql
 stable security definer
@@ -162,17 +263,23 @@ as $function$
     select least(greatest(coalesce($2, 7), 1), 31) as janela,
            least(greatest(coalesce($3, 6), 1), 12) as teto
   ), janela as (
+    -- JANELA COMUM AOS TIPOS. A ancora e a observacao do painel -- o ultimo
+    -- dia em que o coletor viu o segmento --, ou um `ate` explicito de quem
+    -- pergunta. Ancorar no ultimo evento DE CADA TIPO faria cada aba da tela
+    -- falar de uma semana diferente e, pior, faria "nenhuma remarcacao nesta
+    -- semana" recuar ate a ultima remarcacao registrada e apresenta-la como
+    -- atual. Coleta recente sem eventos do tipo devolve zero nesta janela.
     select par.janela, par.teto, lim.ate, lim.ate - (par.janela - 1) as de
     from par
     cross join lateral (
-      select max(e.data) as ate
-      from public.eventos e
-      join public.produtos p on p.id = e.produto_id
-      where e.tipo = $1
-        and $1 in ('reposicao', 'remarcacao', 'saida_de_linha')
-        and p.segmento = 'feminino_casual_br'
+      select coalesce($4, (
+        select max(ep.ultimo_avistamento_em)
+        from public.estado_dos_produtos ep
+        join public.produtos p on p.id = ep.produto_id
+        where p.segmento = 'feminino_casual_br')) as ate
     ) lim
     where lim.ate is not null
+      and $1 in ('reposicao', 'remarcacao', 'saida_de_linha')
   ), no_periodo as (
     select e.id, e.produto_id, e.data, e.detalhe, m.nome as marca,
            p.titulo, p.imagem_url,
@@ -214,6 +321,13 @@ as $function$
     ) t
     where posicao <= 3
     group by marca
+  ), uma_por_peca as (
+    -- Uma peca aparece uma vez na vitrine, pelo evento mais recente dela na
+    -- janela. Sem isto, a peca que foi reposta tres vezes ocupa tres dos seis
+    -- cartoes e a marca parece ter menos variedade do que tem.
+    select distinct on (np.produto_id) np.*
+    from no_periodo np
+    order by np.produto_id, np.data desc, np.id desc
   ), exemplos as (
     select x.marca, jsonb_agg(jsonb_build_object(
              'peca', x.titulo,
@@ -225,9 +339,9 @@ as $function$
              'tamanhos', coalesce(x.detalhe->'tamanhos', '[]'::jsonb))
              order by x.posicao) as exemplos
     from (
-      select np.*, row_number() over (
-               partition by np.marca order by np.data desc, np.id desc) as posicao
-      from no_periodo np
+      select u.*, row_number() over (
+               partition by u.marca order by u.data desc, u.id desc) as posicao
+      from uma_por_peca u
     ) x
     cross join janela j
     where x.posicao <= j.teto
@@ -274,11 +388,11 @@ as $function$
       left join exemplos ex on ex.marca = pm.marca), '[]'::jsonb));
 $function$;
 
-comment on function public.resumo_de_eventos(text, integer, integer) is
-  'A58: agregacao da janela inteira em produtos distintos, com denominador observado no fim da janela; exemplos limitados nunca viram contagem.';
+comment on function public.resumo_de_eventos(text, integer, integer, date) is
+  'A58: agregacao da janela inteira em produtos distintos, em janela comum ancorada na observacao do painel, com denominador observado no fim da janela; exemplos sem peca repetida e nunca alimentando contagem.';
 
-revoke all on function public.resumo_de_eventos(text, integer, integer) from public;
-grant execute on function public.resumo_de_eventos(text, integer, integer)
+revoke all on function public.resumo_de_eventos(text, integer, integer, date) from public;
+grant execute on function public.resumo_de_eventos(text, integer, integer, date)
   to anon, authenticated;
 
 create or replace function public.buscar_referencia_editorial(expressao text,
@@ -292,7 +406,9 @@ as $function$
     select btrim(coalesce($1, '')) as termo,
            least(greatest(coalesce($2, 5), 1), 10) as teto
   ), valida as (
-    -- `%` e `_` do usuario sao escapados: a expressao e dado, nao padrao.
+    -- `%` e `_` do usuario sao escapados: a expressao e dado, nao padrao. A
+    -- barra vem primeiro porque ela e o proprio caractere de escape do LIKE:
+    -- escapar `%` antes de `\` dobraria a barra que acabou de ser escrita.
     select termo, teto,
            replace(replace(replace(termo, '\', '\\'), '%', '\%'), '_', '\_') as padrao
     from par
@@ -327,3 +443,67 @@ comment on function public.buscar_referencia_editorial(text, integer) is
 revoke all on function public.buscar_referencia_editorial(text, integer) from public;
 grant execute on function public.buscar_referencia_editorial(text, integer)
   to anon, authenticated;
+
+-- O DENOMINADOR SE RECONSTROI NO FIM DA COLETA SAUDAVEL, ANTES DA PODA
+-- ====================================================================
+--
+-- O lugar nao e o workflow: e aqui. `computar_motor` so roda depois do portao
+-- de saude do pipeline diario, roda com a chave de servico, roda numa unica
+-- transacao com o lock da publicacao -- e e ele que chama a poda. Colocar a
+-- reconstrucao um passo antes de `podar_snapshots(21)` torna impossivel podar
+-- um dia sem antes ter gravado o denominador dele, mesmo que alguem reordene o
+-- YAML depois. Dia podado e dia irreconstruivel: e uma porta de sentido unico.
+create or replace function public.computar_motor()
+returns jsonb
+language plpgsql
+set search_path to 'public', 'pg_temp'
+as $function$
+declare
+  r_eventos integer;
+  r_varejo integer;
+  r_editorial integer;
+  r_z integer;
+  r_indice integer;
+  r_curva integer;
+  r_raridade integer;
+  r_sortimento integer;
+  r_snapshots_removidos integer;
+begin
+  perform pg_advisory_xact_lock(
+    hashtextextended('canario:publicacao-do-motor', 0));
+
+  r_eventos := public.computar_eventos();
+  r_varejo := public.computar_serie_varejo();
+  r_editorial := public.computar_serie_editorial();
+  r_z := public.computar_z();
+  r_indice := public.computar_indice();
+  r_curva := public.computar_curva_tamanhos();
+  r_raridade := public.computar_raridade();
+
+  -- A58: ultima chance de ler o cru do dia. Depois da poda, o denominador
+  -- daquele dia nao existe mais em lugar nenhum.
+  r_sortimento := public.computar_sortimento_diario();
+
+  -- Todos os consumidores do cru ja terminaram; mantemos o piso seguro da A30.
+  r_snapshots_removidos := public.podar_snapshots(21);
+
+  return jsonb_build_object(
+    'computar_eventos', r_eventos,
+    'computar_serie_varejo', r_varejo,
+    'computar_serie_editorial', r_editorial,
+    'computar_z', r_z,
+    'computar_indice', r_indice,
+    'computar_curva_tamanhos', r_curva,
+    'computar_raridade', r_raridade,
+    'computar_sortimento_diario', r_sortimento,
+    'snapshots_removidos', r_snapshots_removidos
+  );
+end;
+$function$;
+
+comment on function public.computar_motor() is
+  'A58: mesma sequencia da A42 com a reconstrucao do denominador diario imediatamente antes da poda do cru.';
+
+revoke execute on function public.computar_motor()
+  from public, anon, authenticated;
+grant execute on function public.computar_motor() to service_role;

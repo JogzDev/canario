@@ -26,6 +26,10 @@
 
 create role anon nologin;
 create role authenticated nologin;
+-- A coleta e o motor falam com o banco por este papel. Ele existe aqui porque
+-- `grant execute ... to service_role` e parte do que esta sob teste: sem o
+-- grant, a funcao existe e nao roda.
+create role service_role nologin;
 
 create table public.marcas (
   id bigint primary key,
@@ -172,6 +176,20 @@ select 2000 + n, 3, 'catalogo_candidato_br', 'Candidata ' || n,
        300, 300, '{"M": true}'::jsonb, current_date - 40
 from generate_series(1, 5) n;
 
+-- PECAS DE CATALOGO MORTO
+--
+-- Tres pecas da Grande vistas uma vez, 30 dias atras, e nunca mais. Sob a
+-- regra antiga (`s.data <= alvo`, sem piso) elas contariam como ofertaveis
+-- para sempre e inflariam o denominador de todo dia posterior. Sob a P17 o
+-- snapshot vale sete dias: elas contam no dia delas e em mais nenhum.
+insert into public.produtos (id, marca_id, segmento, titulo, url, imagem_url,
+                             ultimo_preco_atual, ultimo_preco_original,
+                             ultima_grade, ultimo_snapshot_em)
+select 600 + n, 1, 'feminino_casual_br', 'Peça abandonada ' || n,
+       'https://grande.example/p/x' || n, null,
+       100, 100, '{"M": true}'::jsonb, current_date - 40
+from generate_series(1, 3) n;
+
 -- ESTADO ATUAL
 --
 -- Painel visto em D0 = current_date - 15 (a pausa). Candidatas vistas em
@@ -180,7 +198,15 @@ from generate_series(1, 5) n;
 insert into public.estado_dos_produtos (produto_id, ultimo_avistamento_em,
                                         ofertavel, ultimo_snapshot_em)
 select id, current_date - 15, true, current_date - 15
-from public.produtos where segmento = 'feminino_casual_br';
+from public.produtos
+where segmento = 'feminino_casual_br' and id not between 601 and 603;
+
+-- O estado das abandonadas ainda diz `ofertavel`: e exatamente assim que o
+-- catalogo morto entra numa contagem que le o estado em vez do observado.
+insert into public.estado_dos_produtos (produto_id, ultimo_avistamento_em,
+                                        ofertavel, ultimo_snapshot_em)
+select id, current_date - 30, true, current_date - 30
+from public.produtos where id between 601 and 603;
 
 insert into public.estado_dos_produtos (produto_id, ultimo_avistamento_em,
                                         ofertavel, ultimo_snapshot_em)
@@ -197,6 +223,9 @@ select n, current_date - 15, n <= 400
 from generate_series(1, 500) n;
 
 insert into public.snapshots (produto_id, data, ofertavel)
+select 600 + n, current_date - 30, true from generate_series(1, 3) n;
+
+insert into public.snapshots (produto_id, data, ofertavel)
 select 1000 + n, current_date - 15, true from generate_series(1, 10) n;
 
 insert into public.snapshots (produto_id, data, ofertavel)
@@ -204,9 +233,9 @@ select 2000 + n, current_date - 5, true from generate_series(1, 5) n;
 
 -- EVENTOS DE REPOSIÇÃO
 --
--- Grande: 200 produtos distintos na janela e 230 eventos -- 30 produtos
--- voltaram duas vezes dentro da própria janela. Acima dos 120 da amostra
--- antiga de propósito.
+-- Grande: 200 produtos distintos na janela e 232 eventos -- 30 produtos
+-- voltaram duas vezes dentro da própria janela e 2 deles voltaram três.
+-- Acima dos 120 da amostra antiga de propósito.
 insert into public.eventos (produto_id, tipo, data, detalhe)
 select n, 'reposicao', current_date - 15 - (n % 7),
        jsonb_build_object('tamanhos', jsonb_build_array('M', 'G'))
@@ -216,6 +245,14 @@ insert into public.eventos (produto_id, tipo, data, detalhe)
 select n, 'reposicao', current_date - 15,
        jsonb_build_object('tamanhos', jsonb_build_array('P'))
 from generate_series(1, 30) n;
+
+-- Duas pecas voltaram uma TERCEIRA vez no mesmo dia, com os ids mais altos da
+-- janela. Elas sao a armadilha dos exemplos: sem `distinct on (produto_id)`,
+-- duas pecas ocupam quatro dos seis cartoes da marca.
+insert into public.eventos (produto_id, tipo, data, detalhe)
+select p, 'reposicao', current_date - 15,
+       jsonb_build_object('tamanhos', jsonb_build_array('GG'))
+from unnest(array[29, 30]) p;
 
 -- 10 desses produtos já tinham voltado ANTES da janela: são as "repetidas".
 insert into public.eventos (produto_id, tipo, data, detalhe)
@@ -259,3 +296,53 @@ insert into public.artigos (veiculo, url, titulo, data_pub, publico_editorial) v
    'Promo 50%_off com barra \ no titulo', current_date - 20, 'feminino'),
   ('Elle', 'https://ex.example/outro',
    'Promo 50 qualquer off sem curinga', current_date - 21, 'feminino');
+
+-- O MOTOR, O SUFICIENTE PARA PROVAR A ORDEM
+-- =========================================
+--
+-- `computar_motor` e o unico lugar onde a poda acontece, e a A58 encaixa a
+-- reconstrucao do denominador imediatamente antes dela. Os sete passos de
+-- calculo entram como talos: o que esta sob teste e a ORDEM, nao a aritmetica
+-- deles, que tem testes proprios. `podar_snapshots` vem copiada fiel da A42,
+-- porque apagar o cru de verdade e o que torna a ordem observavel.
+create or replace function public.computar_eventos() returns integer
+  language sql as $function$ select 0; $function$;
+create or replace function public.computar_serie_varejo() returns integer
+  language sql as $function$ select 0; $function$;
+create or replace function public.computar_serie_editorial() returns integer
+  language sql as $function$ select 0; $function$;
+create or replace function public.computar_z() returns integer
+  language sql as $function$ select 0; $function$;
+create or replace function public.computar_indice() returns integer
+  language sql as $function$ select 0; $function$;
+create or replace function public.computar_curva_tamanhos() returns integer
+  language sql as $function$ select 0; $function$;
+create or replace function public.computar_raridade() returns integer
+  language sql as $function$ select 0; $function$;
+
+create or replace function public.podar_snapshots(p_retencao_dias integer default 21)
+returns integer
+language plpgsql
+security invoker
+set search_path to 'public', 'pg_temp'
+as $function$
+declare
+  removidas integer := 0;
+begin
+  if p_retencao_dias < 21 then
+    raise exception 'retencao de snapshots abaixo do piso seguro de 21 dias';
+  end if;
+
+  delete from public.snapshots
+  where data < (current_date - p_retencao_dias);
+  get diagnostics removidas = row_count;
+  return removidas;
+end;
+$function$;
+
+grant execute on function public.podar_snapshots(integer) to service_role;
+grant usage on schema public to service_role, anon;
+-- No Supabase, `service_role` tem acesso pleno as tabelas e passa por cima da
+-- RLS. `podar_snapshots` roda como INVOKER: sem este grant ela falharia aqui
+-- por um motivo que nao existe em producao, e o teste mediria o laboratorio.
+grant all on all tables in schema public to service_role;
