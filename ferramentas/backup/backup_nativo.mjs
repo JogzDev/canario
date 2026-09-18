@@ -16,7 +16,7 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const PROJETO = 'tbluoqpnjqsflfoclmms';
 const ESQUEMAS = ['public', 'auth', 'storage', 'supabase_migrations'];
 // Somente a conexão administrativa de leitura. Não altera defaults do banco/papéis.
-const LEITURA_SETUP = "SET statement_timeout = '10min'; SET lock_timeout = '10s'; SET idle_in_transaction_session_timeout = '30min'; SET transaction_timeout = '30min';\n";
+export const LEITURA_SETUP = "SET statement_timeout = '10min'; SET default_transaction_read_only = on; SET lock_timeout = '10s'; SET idle_in_transaction_session_timeout = '30min'; SET transaction_timeout = '30min';\n";
 const BIN_PADRAO = path.join(os.homedir(), '.local/share/datadrobe-tools/Postgres.app/Contents/Versions/17/bin');
 const qid = s => '"' + s.replaceAll('"', '""') + '"';
 const lit = s => "'" + s.replaceAll("'", "''") + "'";
@@ -112,7 +112,10 @@ const BOOT_SQL = `SELECT json_build_object(
  'memberships', (SELECT coalesce(json_agg(json_build_object('role',r.rolname,'member',m.rolname,'admin',a.admin_option,'inherit',a.inherit_option,'set',a.set_option) ORDER BY r.rolname,m.rolname),'[]') FROM pg_auth_members a JOIN pg_roles r ON r.oid=a.roleid JOIN pg_roles m ON m.oid=a.member),
  'extensions', (SELECT json_agg(json_build_object('name',e.extname,'schema',n.nspname,'version',e.extversion) ORDER BY e.extname) FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace),
  'server_version', current_setting('server_version'), 'captured_at', current_timestamp,
- 'read_session', json_build_object('statement_timeout',current_setting('statement_timeout'),'default_transaction_read_only',current_setting('default_transaction_read_only')));`;
+ 'read_session', json_build_object('statement_timeout',current_setting('statement_timeout'),
+ 'statement_timeout_ms',(SELECT setting::int FROM pg_settings WHERE name='statement_timeout'),
+ 'default_transaction_read_only',current_setting('default_transaction_read_only'),
+ 'transaction_read_only',current_setting('transaction_read_only')));`;
 
 async function sequences(bin,c) {
   const list = await json(bin,c,`SELECT coalesce(json_agg(json_build_object('schema',n.nspname,'name',c.relname) ORDER BY n.nspname,c.relname),'[]') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='S' AND n.nspname IN (${ESQUEMAS.map(lit)}) AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid='pg_class'::regclass AND d.objid=c.oid AND d.deptype='e');`);
@@ -145,7 +148,9 @@ export async function capture(bin, c, dest) {
   try {
     const bootstrap = await json(bin, c, BOOT_SQL, snap.id);
     if (!bootstrap.server_version.startsWith('17.')) throw new Error('Produção não é PostgreSQL 17. Reavaliar compatibilidade.');
-    if (bootstrap.read_session.statement_timeout !== '10min' || bootstrap.read_session.default_transaction_read_only !== 'on') throw new Error('Sessão não confirmou os limites e o modo somente leitura esperados.');
+    if (bootstrap.read_session.statement_timeout_ms !== 600000 || bootstrap.read_session.default_transaction_read_only !== 'on' || bootstrap.read_session.transaction_read_only !== 'on') {
+      throw new Error(`Sessão não confirmou configurações: ${JSON.stringify(bootstrap.read_session)}. Nenhum dump gerado.`);
+    }
     const catalog = await json(bin, c, await readFile(path.join(AQUI, 'catalogo.sql'), 'utf8'), snap.id);
     const tables = await json(bin, c, TABLES_SQL, snap.id);
     const rows = {};
@@ -306,10 +311,18 @@ export async function main(argv = process.argv.slice(2)) {
   if (!c.password) throw new Error('Senha vazia; nenhuma conexão efetuada.');
   console.log('Consultando produção somente em leitura. Nenhuma migration será aplicada.');
   console.log(`Destino protegido: ${dest}`);
-  await capture(bin, c, dest);
-  c.password = '';
-  await restore(bin, dest);
-  console.log(`Arquivos preservados em ${dest}`);
+  try {
+    await capture(bin, c, dest);
+    c.password = '';
+    await restore(bin, dest);
+    console.log(`Arquivos preservados em ${dest}`);
+  } catch(error) {
+    // Apenas a mensagem sanitizada; nunca ambiente, URI, senha ou linhas COPY.
+    await save(path.join(dest, `falha-${Date.now()}.json`), {
+      status:'FALHOU_NAO_VERIFICADO', at:new Date().toISOString(), message:error.message
+    }).catch(()=>{});
+    throw error;
+  } finally { c.password = ''; }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

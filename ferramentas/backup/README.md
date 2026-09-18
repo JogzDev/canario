@@ -54,6 +54,13 @@ de 17/09 falhou na verificação anterior ao dump por `statement_timeout`; a pas
 daquela tentativa ficou vazia. O ensaio agora inclui um default local de 1 ms
 para verificar a sobreposição da sessão antes de tentar produção novamente.
 
+A segunda tentativa foi interrompida pela checagem de configuração da sessão,
+ainda antes do dump. O modo somente leitura agora também é configurado por
+`SET` explícito, além de `PGOPTIONS`, e o timeout é comparado numericamente em
+milissegundos. O ensaio passou sem opções de inicialização, reproduzindo um
+pooler que não as propaga. Falhas futuras deixam `falha-*.json` com mensagem
+sanitizada no destino; não é necessário expor o Terminal ou credenciais.
+
 Para repetir apenas a restauração:
 
 ```sh

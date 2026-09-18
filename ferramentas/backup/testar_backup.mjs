@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { capture, restore, localCluster } from './backup_nativo.mjs';
+import { capture, restore, localCluster, LEITURA_SETUP } from './backup_nativo.mjs';
 
 const bin = path.join(os.homedir(), '.local/share/datadrobe-tools/Postgres.app/Contents/Versions/17/bin');
 const root = await mkdtemp(path.join(os.tmpdir(), 'dd-backup-teste-'));
@@ -46,17 +46,28 @@ try {
     -- Reproduz um default curto; somente as conexões do backup devem sobrepô-lo.
     ALTER ROLE postgres SET statement_timeout = '1ms';
   `);
+  // A sessão precisa ficar protegida mesmo se um pooler descartar PGOPTIONS.
+  const semOpcoesDeInicio = JSON.parse((await origem.exec(LEITURA_SETUP + `
+    BEGIN READ ONLY;
+    SELECT json_build_object('default_read_only',current_setting('default_transaction_read_only'),
+      'read_only',current_setting('transaction_read_only'),
+      'timeout_ms',(SELECT setting::int FROM pg_settings WHERE name='statement_timeout'));
+    ROLLBACK;
+  `)).trim());
+  assert.deepEqual(semOpcoesDeInicio,{default_read_only:'on',read_only:'on',timeout_ms:600000});
   const dest = path.join(root, 'dump');
   const manifest = await capture(bin, origem.c, dest);
   assert.equal(manifest.rows['public.pecas'].count, 12000);
-  assert.equal(manifest.bootstrap.read_session.statement_timeout,'10min');
+  assert.equal(manifest.bootstrap.read_session.statement_timeout_ms,600000);
   assert.equal(manifest.bootstrap.read_session.default_transaction_read_only,'on');
+  assert.equal(manifest.bootstrap.read_session.transaction_read_only,'on');
   assert.equal((await stat(path.join(dest,'banco.dump'))).mode & 0o777, 0o600);
   assert.equal((await stat(dest)).mode & 0o777, 0o700);
   const report = await restore(bin, dest);
   assert.equal(report.result, 'VERIFICADO_NO_ESCOPO_DECLARADO');
   console.log('ok 1: dump real + restore real + Unicode/COPY + FKs/RLS/índices/funções');
   console.log('ok 1b: timeout curto herdado é sobreposto somente na sessão de leitura');
+  console.log('ok 1c: modo somente leitura e timeout confirmados sem depender de PGOPTIONS');
   const original = await readFile(path.join(dest,'manifesto.json'),'utf8');
   const wrong = JSON.parse(original);
   wrong.rows['public.pecas'].count++;
