@@ -202,7 +202,12 @@ jobs:
           xcrun simctl bootstatus 'DataDrobe-CI' -b
           # Estes dois exercitam dados reais e ficam na regressao local de nove
           # fluxos. O checkout do CI usa Config.xcconfig.example por desenho;
-          # portanto aqui rodam somente os sete fluxos realmente offline.
+          # portanto aqui rodam somente os fluxos realmente offline.
+          #
+          # Os cinco do bloco editorial entram sem rede por fixture
+          # (`-CanarioUITestImprensa`): a RPC da A58 ainda nao esta publicada,
+          # e os quatro estados que interessam -- achou, nao achou, falhou,
+          # trocou de pergunta no meio -- sao todos de tela.
           caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
             -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
             -derivedDataPath "$RUNNER_TEMP/CanarioDerivedData-$GITHUB_RUN_ID" \
@@ -214,4 +219,9 @@ jobs:
             -only-testing:CanarioUITests/CanarioUITests/testPrivacyAbrePeloCaminhoDeterministico \
             -only-testing:CanarioUITests/CanarioUITests/testImportacaoAbreSemRedeComAsEntradasPrincipais \
             -only-testing:CanarioUITests/CanarioUITests/testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaMostraAMateriaQueContemAExpressao \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaSemMateriaNaoAbreBlocoVazio \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaDeclaraFalhaDeRedeEmVozBaixa \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaCalaQuandoAFuncaoAindaNaoExiste \
+            -only-testing:CanarioUITests/CanarioUITests/testRespostaLentaNaoSobrescreveAPerguntaNova \
             CODE_SIGNING_ALLOWED=NO | tail -20

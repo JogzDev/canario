@@ -908,8 +908,12 @@ struct RelatorioDaPeca: View {
                 if let precoAlvo { argumentos["preco_alvo"] = precoAlvo }
                 return argumentos
             }()
+            // `_v2` desde a A57. A versão sem sufixo continua no banco,
+            // intacta, servindo os aparelhos que ainda não atualizaram: quem
+            // decide a versão instalada é a pessoa, e trocar o comportamento
+            // por baixo dela seria mudar a tela de quem não pediu.
             async let respostaSimilar: Similares.Resposta = Supabase.shared.chamar(
-                "similares_da_peca_amplo", args)
+                "similares_da_peca_amplo_v2", args)
             async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
                 "indice_do_cluster", ["termos": termoIds])
             async let respostaSerie: SerieDoCluster.Resposta = Supabase.shared.chamar(
@@ -930,18 +934,28 @@ struct RelatorioDaPeca: View {
             // continuam em voo e ocupam somente suas próprias seções.
             carregando = false
 
+            // Cancelamento nao e falha de rede: e a tela sendo fechada ou a
+            // pergunta sendo trocada. Escrever "The server could not be
+            // reached" nesse caso e acusar o servidor de um erro que foi
+            // nosso.
             do {
                 similares = try await respostaSimilar
+            } catch is CancellationError {
+                return
             } catch {
                 erroDosSimilares = mensagem(error)
             }
             carregandoSimilares = false
             do { cluster = try await respostaCluster }
+            catch is CancellationError { return }
             catch { erroDoCluster = mensagem(error) }
             carregandoCluster = false
             do { serie = try await respostaSerie }
+            catch is CancellationError { return }
             catch { erroDaSerie = mensagem(error) }
             carregandoSerie = false
+        } catch is CancellationError {
+            return
         } catch {
             erro = mensagem(error)
         }

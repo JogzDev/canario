@@ -285,6 +285,7 @@ struct Analisar: View {
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.primary.opacity(0.70))
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("imprensa-falhou")
         }
     }
 
@@ -337,28 +338,56 @@ struct Analisar: View {
             imprensaFalhou = false
             return
         }
-        // A pausa é a própria proteção: se a pessoa continuar digitando, esta
+        // A pausa é a primeira proteção: se a pessoa continuar digitando, esta
         // tarefa é cancelada antes de chegar ao banco.
         do { try await Task.sleep(nanoseconds: 350_000_000) } catch { return }
+        guard !Task.isCancelled else { return }
         do {
-            let r: ReferenciaEditorial.Resposta = try await Supabase.shared.chamar(
-                "buscar_referencia_editorial",
-                ["expressao": expressao, "limite": 5])
+            let r = try await buscar(expressao)
+            guard aindaVale(expressao) else { return }
             imprensa = r
             imprensaFalhou = false
         } catch {
+            guard aindaVale(expressao) else { return }
             imprensa = nil
             imprensaFalhou = !aFalhaEEsperada(error)
         }
     }
 
-    /// 404 é "o banco ainda não tem a função"; cancelamento é "a pessoa
-    /// digitou mais uma letra". Nenhum dos dois é falha para mostrar.
+    /// A resposta só escreve na tela se a pergunta ainda for esta.
+    ///
+    /// Duas condições, e as duas são necessárias. O cancelamento cobre a
+    /// tarefa que o SwiftUI já derrubou; a identidade cobre a janela em que
+    /// ela ainda não foi derrubada — uma consulta lenta de "lenta" respondendo
+    /// depois da resposta rápida de "rapida" apagaria a segunda com a
+    /// primeira, e a tela mostraria a matéria de uma pergunta que a pessoa já
+    /// abandonou.
+    private func aindaVale(_ expressao: String) -> Bool {
+        !Task.isCancelled
+            && expressao == texto.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func buscar(_ expressao: String) async throws
+    -> ReferenciaEditorial.Resposta {
+        if ImprensaDeTeste.ativa { return try await ImprensaDeTeste.responder(expressao) }
+        return try await Supabase.shared.chamar(
+            "buscar_referencia_editorial", ["expressao": expressao, "limite": 5])
+    }
+
+    /// Duas falhas não viram aviso: a função que ainda não existe no servidor
+    /// e o cancelamento pela tecla seguinte.
+    ///
+    /// O 404 é restrito ao **PGRST202**, que é o código do PostgREST para
+    /// função inexistente. Calar em qualquer 404 esconderia um caminho errado,
+    /// uma rota removida ou um proxy fora do ar — falhas reais, com a mesma
+    /// aparência e outra causa.
     private func aFalhaEEsperada(_ error: Error) -> Bool {
         if error is CancellationError { return true }
         if let erro = error as? Supabase.Falha {
             switch erro {
-            case .resposta(let codigo, _): return codigo == 404
+            case .resposta(let codigo, let corpo):
+                return codigo == 404
+                    && Supabase.Falha.codigoDoCorpo(corpo) == "PGRST202"
             case .rede(let causa): return (causa as? URLError)?.code == .cancelled
             default: return false
             }
@@ -401,6 +430,8 @@ struct Analisar: View {
             carregando = false
             let recentes = try await i
             indices = SelecaoDeEstado.porTermo(recentes)
+        } catch is CancellationError {
+            return
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }

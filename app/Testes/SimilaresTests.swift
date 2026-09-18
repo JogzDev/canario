@@ -121,6 +121,80 @@ final class SimilaresTests: XCTestCase {
         XCTAssertEqual(r.pecas.first?.vistoEm, "2026-09-02")
     }
 
+    /// O caso que a ancora por segmento permite: metade do conjunto visto
+    /// ontem, metade ha oito dias, porque a janela de frescor tolera sete dias
+    /// a partir da ancora. Se o "agora" olhasse so a ponta nova, uma semana de
+    /// atraso passaria por atual.
+    func testIdadesMistasNaoPassamPorAtual() {
+        var r = resumo()
+        r.observadoEm = "2026-09-17"
+        r.observadoMaisAntigoEm = "2026-09-10"
+        r.diasDesdeAObservacao = 1
+        r.diasDesdeAObservacaoMaisAntiga = 8
+        XCTAssertFalse(Similares.ehDeAgora(r),
+                       "a ponta velha é quem decide")
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("between 10/09/2026 and 17/09/2026"))
+        XCTAssertTrue(t.contains("the oldest 8 days ago"))
+        // Preço e grade foram lidos NAQUELA observação.
+        XCTAssertTrue(t.contains("were at full price then"))
+        XCTAssertTrue(t.contains("had missing sizes"))
+        XCTAssertTrue(t.contains("The median price then was"))
+        XCTAssertFalse(t.contains("remain at full price"))
+    }
+
+    /// Com tudo visto ontem, nada de ressalva: o conjunto é do presente e o
+    /// texto volta ao tempo presente.
+    func testConjuntoInteiroDeOntemContinuaNoPresente() {
+        var r = resumo()
+        r.observadoEm = "2026-09-17"
+        r.observadoMaisAntigoEm = "2026-09-17"
+        r.diasDesdeAObservacao = 1
+        r.diasDesdeAObservacaoMaisAntiga = 1
+        XCTAssertTrue(Similares.ehDeAgora(r))
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("remain at full price"))
+        XCTAssertTrue(t.contains("The median price is"))
+        XCTAssertFalse(t.contains("last seen"))
+    }
+
+    /// Zero também tem época. Sem a data do painel, "não encontrei nenhuma"
+    /// vira uma afirmação sobre hoje feita com um painel de duas semanas.
+    func testResultadoVazioDeclaraADataDoPainel() {
+        var r = resumo(similares: 0, marcas: 0, comTodos: 0, comPreco: 0,
+                       cheio: nil, quebrada: nil, esgotada: nil, mediana: nil)
+        r.painelObservadoEm = "2026-09-02"
+        r.painelDiasDesdeAObservacao = 15
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("no panel item with"))
+        XCTAssertTrue(t.contains("when the panel was last seen, on 02/09/2026"))
+        XCTAssertTrue(t.contains("2 weeks ago"))
+    }
+
+    /// Painel em dia: a frase diz a data sem transformar normalidade em
+    /// ressalva.
+    func testResultadoVazioComPainelEmDiaDizAData() {
+        var r = resumo(similares: 0, marcas: 0, comTodos: 0, comPreco: 0,
+                       cheio: nil, quebrada: nil, esgotada: nil, mediana: nil)
+        r.painelObservadoEm = "2026-09-17"
+        r.painelDiasDesdeAObservacao = 0
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("in the panel seen on 17/09/2026"))
+        XCTAssertFalse(t.contains("ago"))
+    }
+
+    /// Banco anterior à A57 não manda data nenhuma. A frase fica neutra: não
+    /// alegar período é melhor do que alegar o período errado.
+    func testResultadoVazioSemDataNaoAlegaPeriodo() {
+        let r = resumo(similares: 0, marcas: 0, comTodos: 0, comPreco: 0,
+                       cheio: nil, quebrada: nil, esgotada: nil, mediana: nil)
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("I found no panel item with"))
+        XCTAssertFalse(t.contains("panel seen on"))
+        XCTAssertFalse(t.contains("last seen"))
+        XCTAssertNil(Similares.quandoOPainelFoiConsultado(r))
+    }
+
     func testParagrafoTrazOsNumerosDoPainel() {
         let t = Similares.paragrafo(resumo(), atributos: atributos)
         XCTAssertTrue(t.contains("9 brands"))

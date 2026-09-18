@@ -282,6 +282,11 @@ actor Supabase {
     /// para o pool respirar, não para insistir.
     private func comUmaSegundaChance(_ req: URLRequest) async throws -> Data {
         for tentativa in 0...1 {
+            // Cancelamento nao e falha: e a tela dizendo que nao quer mais
+            // esta resposta. Repetir gastaria uma segunda chamada para jogar
+            // fora tambem -- e, pior, devolveria tarde o resultado de uma
+            // pergunta que ja foi substituida por outra.
+            try Task.checkCancellation()
             do {
                 let (dados, resposta) = try await sessao.data(for: req)
                 let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
@@ -291,6 +296,10 @@ actor Supabase {
                 }
             } catch let falha as Falha {
                 throw falha
+            } catch let erro as URLError where erro.code == .cancelled {
+                throw CancellationError()
+            } catch is CancellationError {
+                throw CancellationError()
             } catch let erro as URLError where erro.code == .timedOut {
                 // Tempo esgotado NÃO repete. Repetir custa outros 10s e o
                 // motivo mais provável de estourar é congestionamento -- que

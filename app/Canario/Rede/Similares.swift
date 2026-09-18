@@ -67,6 +67,20 @@ enum Similares {
         var observadoEm: String? = nil
         var observadoMaisAntigoEm: String? = nil
         var diasDesdeAObservacao: Int? = nil
+        /// A idade da ponta VELHA do conjunto.
+        ///
+        /// `dias_desde_a_observacao` sozinho é a idade da peça mais nova, e
+        /// isso esconde metade da resposta: a janela de frescor tolera sete
+        /// dias a partir da âncora, então um conjunto pode ter peças de
+        /// ontem ao lado de peças de oito dias atrás. Quem decide se o
+        /// conjunto pode ser apresentado como atual é esta.
+        var diasDesdeAObservacaoMaisAntiga: Int? = nil
+        /// A data do PAINEL CONSULTADO, que existe mesmo sem casamento
+        /// nenhum. Zero resultado também precisa de período: sem isto,
+        /// "nenhuma peça com estes atributos" é uma afirmação sem data sobre
+        /// um painel de duas semanas atrás.
+        var painelObservadoEm: String? = nil
+        var painelDiasDesdeAObservacao: Int? = nil
 
         enum CodingKeys: String, CodingKey {
             case nSimilares = "n_similares"
@@ -89,6 +103,9 @@ enum Similares {
             case observadoEm = "observado_em"
             case observadoMaisAntigoEm = "observado_mais_antigo_em"
             case diasDesdeAObservacao = "dias_desde_a_observacao"
+            case diasDesdeAObservacaoMaisAntiga = "dias_desde_a_observacao_mais_antiga"
+            case painelObservadoEm = "painel_observado_em"
+            case painelDiasDesdeAObservacao = "painel_dias_desde_a_observacao"
         }
     }
 
@@ -162,7 +179,12 @@ enum Similares {
     /// sim: é o comportamento que o app já tinha, e inventar uma ressalva
     /// sobre um dado que ninguém mediu seria pior do que não ter a ressalva.
     static func ehDeAgora(_ r: Resumo) -> Bool {
-        guard let dias = r.diasDesdeAObservacao else { return true }
+        // A ponta VELHA decide. Uma peça vista ontem não pode carimbar de
+        // atual outra vista há oito dias na mesma resposta -- e as duas cabem
+        // na mesma resposta, porque a janela de frescor tolera sete dias a
+        // partir da âncora do segmento.
+        guard let dias = r.diasDesdeAObservacaoMaisAntiga
+                ?? r.diasDesdeAObservacao else { return true }
         return dias <= diasParaSerAgora
     }
 
@@ -173,15 +195,33 @@ enum Similares {
     /// coleta parada em 02/09, "encontrei 20 peças" e "havia 20 peças quinze
     /// dias atrás" são afirmações diferentes sobre o mesmo número.
     static func quandoFoiVisto(_ r: Resumo) -> String? {
-        guard !ehDeAgora(r), let dias = r.diasDesdeAObservacao,
-              let observado = r.observadoEm else { return nil }
-        let intervalo: String
+        guard !ehDeAgora(r), let observado = r.observadoEm else { return nil }
+        let idadeDaPontaVelha = r.diasDesdeAObservacaoMaisAntiga
+            ?? r.diasDesdeAObservacao
+        guard let dias = idadeDaPontaVelha else { return nil }
+        // Quando as peças não foram vistas todas no mesmo dia, a frase declara
+        // o intervalo E diz a idade da ponta velha. Uma data só, no meio de um
+        // intervalo de uma semana, escolheria a ponta mais bonita.
         if let maisAntigo = r.observadoMaisAntigoEm, maisAntigo != observado {
-            intervalo = "between \(Formato.data(maisAntigo)) and \(Formato.data(observado))"
-        } else {
-            intervalo = "on \(Formato.data(observado))"
+            return "when these items were last seen, between "
+                 + "\(Formato.data(maisAntigo)) and \(Formato.data(observado)) — "
+                 + "the oldest \(Formato.periodo(dias: dias)) ago"
         }
-        return "when the panel was last seen, \(intervalo) — "
+        return "when the panel was last seen, on \(Formato.data(observado)) — "
+             + "\(Formato.periodo(dias: dias)) ago"
+    }
+
+    /// O período do painel consultado, para o resultado VAZIO.
+    ///
+    /// Sem casamento não há data de peça, e a frase "não encontrei nenhuma"
+    /// ficaria sem época — uma afirmação sobre hoje feita com um painel de
+    /// duas semanas atrás. Quando o banco não sabe a data (versão anterior à
+    /// A57), devolve `nil` e a frase fica neutra, sem alegar período nenhum.
+    static func quandoOPainelFoiConsultado(_ r: Resumo) -> String? {
+        guard let observado = r.painelObservadoEm else { return nil }
+        guard let dias = r.painelDiasDesdeAObservacao, dias > diasParaSerAgora
+        else { return "in the panel seen on \(Formato.data(observado))" }
+        return "when the panel was last seen, on \(Formato.data(observado)) — "
              + "\(Formato.periodo(dias: dias)) ago"
     }
 
@@ -215,7 +255,11 @@ enum Similares {
             let tentouMais = (r.dimensoesPedidas ?? 0) > 1
                 ? " I also tried a wider match, dropping the least distinctive dimension, and that found nothing either."
                 : ""
-            return ["I found no panel item with \(nomes).\(tentouMais) "
+            // Zero também tem época. A data não vem das peças -- não há peças
+            // --, vem do painel consultado. Sem ela a frase fica neutra: não
+            // alegar período é melhor do que alegar o período errado.
+            let onde = quandoOPainelFoiConsultado(r).map { " \($0)" } ?? ""
+            return ["I found no panel item with \(nomes)\(onde).\(tentouMais) "
                   + "It may be an uncommon combination, "
                   + "or the panel may not cover it yet; the data cannot distinguish those cases."]
         }
@@ -242,15 +286,25 @@ enum Similares {
             frases.append("Across \(marcas), I found \(pecas) with \(nomes).")
         }
 
-        // A porcentagem só entra quando o conjunto a sustenta.
+        // A porcentagem só entra quando o conjunto a sustenta. E o tempo
+        // verbal dela segue o do conjunto: preço e grade foram lidos NAQUELA
+        // observação, não agora. "22% remain at full price" sobre um painel
+        // de duas semanas atrás afirma um estoque que ninguém olhou hoje.
+        let entao = !ehDeAgora(r)
         if r.nSimilares >= minimoParaPorcentagem {
             if let cheio = r.pctPrecoCheio {
-                frases.append("\(Leitura.numero(cheio, casas: 0))% remain at full price.")
+                frases.append(entao
+                    ? "\(Leitura.numero(cheio, casas: 0))% were at full price then."
+                    : "\(Leitura.numero(cheio, casas: 0))% remain at full price.")
             }
             if let quebrada = r.pctGradeQuebrada {
-                var f = "\(Leitura.numero(quebrada, casas: 0))% have missing sizes"
+                var f = entao
+                    ? "\(Leitura.numero(quebrada, casas: 0))% had missing sizes"
+                    : "\(Leitura.numero(quebrada, casas: 0))% have missing sizes"
                 if let esgotada = r.pctEsgotada, esgotada >= 5 {
-                    f += ", and \(Leitura.numero(esgotada, casas: 0))% have no size left"
+                    f += entao
+                        ? ", and \(Leitura.numero(esgotada, casas: 0))% had no size left"
+                        : ", and \(Leitura.numero(esgotada, casas: 0))% have no size left"
                 }
                 frases.append(f + ".")
             }
@@ -259,7 +313,9 @@ enum Similares {
         }
 
         if let mediana = r.precoMediana {
-            frases.append("The median price is \(Formato.dinheiro(mediana)).")
+            frases.append(entao
+                ? "The median price then was \(Formato.dinheiro(mediana))."
+                : "The median price is \(Formato.dinheiro(mediana)).")
         }
         return frases
     }

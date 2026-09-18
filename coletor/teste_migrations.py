@@ -229,6 +229,7 @@ def main():
         # Como a tela deixa de contar por ali, ele passa a viajar no exemplo.
         "'ordinal', h.ordinal",
         "'dias_desde_a_primeira', h.dias_desde_a_primeira",
+        "'detalhe', e.detalhe",
         # Janela COMUM aos tres tipos, ancorada na observacao do painel ou num
         # `ate` explicito de quem pergunta.
         "ate date default null",
