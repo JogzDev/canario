@@ -1,9 +1,10 @@
 # Backup nativo e restauração verificada
 
-O trabalho de backup está isolado na branch `codex/backup-verificado`, em
-`/Users/jpscoliveira/Canario-backup-codex`. A branch de implementação do Claude
-permanece independente. Não aplicar migrations nem fazer manutenção em produção
-antes de verificar um dump real e avaliar as limitações abaixo.
+As ferramentas e a prova do backup estão integradas a este repositório. A
+worktree usada durante a investigação foi apenas um isolamento temporário e
+não é necessária para restaurar ou verificar o arquivo existente. Não aplicar
+migrations nem fazer manutenção em produção sem seguir o roteiro de capacidade
+e avaliar as limitações abaixo.
 
 ## Prova real concluída em 18/09/2026
 
@@ -39,7 +40,12 @@ Assinatura verificada com `codesign --verify --deep --strict`; Gatekeeper aceito
 como `Notarized Developer ID`, equipe `ZF84SJ5A3G`. Não é necessário Homebrew,
 Docker, abrir o app gráfico ou iniciar um serviço permanente.
 
-## Executar
+## Nova captura — somente se houver necessidade explícita
+
+O backup real descrito acima já está concluído e restaurado. **Não rode uma
+nova captura para continuar a etapa atual.** As instruções desta seção ficam
+como procedimento de recuperação para uma necessidade futura, depois de
+confirmar que o arquivo existente não atende ao objetivo.
 
 Abra `iniciar_backup.command` no Terminal. Ele usa a conexão sem senha já salva
 no projeto original em `supabase/.temp/pooler-url`, limitada ao session pooler
@@ -113,18 +119,18 @@ sequences não mudaram e calcula SHA-256 de cada linha no próprio servidor. Só
 transfere contagem, quatro somas exatas e quatro XORs dos segmentos64bits dos
 hashes. A representação usada é `record_out` (`r::text`), que distingue SQL NULL
 de JSON null e preserva limites inferiores de arrays, diferente de row_to_json.
-Isso evita reenviar centenas deMB pela conexão instável. Não usa sort
+Isso evita reenviar centenas de MB pela conexão instável. Não usa sort
 nem CTE materializado; a mesma assinatura é calculada no restore local. Todas
-as leituras compartilham um único snapshot novo, limitado a60min. O manifesto
+as leituras compartilham um único snapshot novo, limitado a 60 min. O manifesto
 declara explicitamente que a comparação usou um snapshot **posterior ao dump**;
 só há aprovação se todas as assinaturas forem iguais. Divergência não é
 ignorada ou atribuída automaticamente a "mudanças normais". Logs privados e
-hashes parciais não constituem aprovação. O método anterior em blocosctid
+hashes parciais não constituem aprovação. O método anterior em blocos `ctid`
 continua testado, mas não é o caminho padrão dessa recuperação.
 
-`restaurar_isolado.mjs` é um alias para o modo `restore`; o parser antigo de SQL/COPY foi
-retirado. O formato esperado agora é `banco.dump` + `manifesto.json`, não três
-arquivos SQL avulsos.
+`restaurar_isolado.mjs` é um alias para o modo `restore`; o parser antigo de
+SQL/COPY foi retirado. O formato esperado agora é `banco.dump` +
+`manifesto.json`, não três arquivos SQL avulsos.
 
 ## O que a prova significa
 
