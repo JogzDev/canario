@@ -353,3 +353,20 @@ declare r jsonb; begin
     and ep.ultimo_avistamento_em = current_date;
   raise notice 'ok 17 coleta recente sem eventos: zero na janela comum';
 end $$;
+
+-- 18. Noite vermelha nao deixa buraco: o motor alcanca o dia que faltou.
+do $$
+declare tocadas int; n int; begin
+  delete from public.sortimento_diario where data = current_date - 15;
+  -- Sem argumento: o dia mais novo e todo dia observado sem linha.
+  tocadas := public.computar_sortimento_diario();
+  assert tocadas = 2,
+    'deveriam voltar as 2 linhas do dia que faltava e voltaram ' || tocadas;
+  select pecas_ofertadas into n from public.sortimento_diario
+   where data = current_date - 15 and marca_id = 1;
+  assert n = 400, 'o dia recuperado deveria ter 400 e veio '
+    || coalesce(n::text, 'nulo');
+  assert public.computar_sortimento_diario() = 0,
+    'com tudo em dia, a chamada sem argumento nao escreve nada';
+  raise notice 'ok 18 dia que faltou e reconstruido antes da poda alcanca-lo';
+end $$;

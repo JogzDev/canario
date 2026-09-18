@@ -254,6 +254,9 @@ def main():
         # A coleta e o motor chamam com a chave de servico. Sem o grant a
         # funcao existe e nao roda.
         "grant execute on function public.computar_sortimento_diario(date) to service_role",
+        # Sem argumento, alcanca o dia que uma noite vermelha deixou para tras:
+        # depois da poda aquele dia nao existe mais.
+        "or not exists (select 1 from public.sortimento_diario sd",
     ]
     for trecho in exigencias_finais:
         if trecho not in estado_final:

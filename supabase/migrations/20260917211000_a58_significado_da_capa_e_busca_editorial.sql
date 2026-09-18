@@ -181,11 +181,28 @@ declare
   observado boolean;
   gravadas integer;
   removidas integer;
+  total integer := 0;
 begin
-  alvo := coalesce(dia, (select max(s.data) from public.snapshots s));
-  if alvo is null then
-    return 0;
+  -- Sem argumento, o alvo nao e so "o dia mais novo": e ele MAIS qualquer dia
+  -- observado que ainda nao tenha linha. Uma execucao do motor que falhasse
+  -- deixaria um buraco permanente no denominador -- a poda leva o cru em 21
+  -- dias (A42) e aquele dia deixa de ser reconstruivel. Em dia normal e uma
+  -- chamada so; depois de uma noite vermelha, ele se alcanca sozinho.
+  if dia is null then
+    for alvo in
+      select d.data
+      from (select distinct s.data from public.snapshots s) d
+      where d.data = (select max(s2.data) from public.snapshots s2)
+         or not exists (select 1 from public.sortimento_diario sd
+                         where sd.data = d.data)
+      order by 1
+    loop
+      total := total + public.computar_sortimento_diario(alvo);
+    end loop;
+    return total;
   end if;
+
+  alvo := dia;
 
   -- Dia sem snapshot na janela e dia NAO OBSERVADO. Pode ser um dia que nunca
   -- foi coletado ou um dia cujo cru a poda ja levou (21 dias, A42). Nos dois
