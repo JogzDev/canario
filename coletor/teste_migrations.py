@@ -119,6 +119,54 @@ def main():
             return falhar("portao de cobertura final nao garante: {}".format(
                 trecho))
 
+    # P22: as tres escritas de `series_semanais` so gravam o que mudou.
+    # Medido em 18/09/2026: 2.728.348 updates em 29.047 linhas, heap com 30,6%
+    # de dado vivo. Sem o predicado, qualquer compactacao volta a ser comida
+    # nas primeiras publicacoes depois que a coleta voltar.
+    exigencias_sem_reescrita = {
+        "computar_z": [
+            "and s.z is distinct from c.z",
+        ],
+        "computar_serie_varejo": [
+            "where series_semanais.valor_bruto is distinct from excluded.valor_bruto",
+            "or series_semanais.z is not null",
+            "or series_semanais.n_amostra is distinct from excluded.n_amostra",
+            "or (series_semanais.meta - 'computado_em')",
+            "is distinct from (excluded.meta - 'computado_em')",
+        ],
+        "computar_serie_editorial": [
+            "and (s.valor_bruto is distinct from n.valor_bruto",
+            "or s.meta is distinct from n.meta)",
+        ],
+    }
+    for funcao, trechos in exigencias_sem_reescrita.items():
+        _, corpo = ultima_definicao(
+            arquivos, "create or replace function public." + funcao)
+        for trecho in trechos:
+            if trecho not in corpo:
+                return falhar("{} voltou a reescrever sem mudanca: {}".format(
+                    funcao, trecho))
+
+    # P21: o portao decide pela cota como a plataforma a mede -- a soma de
+    # todos os bancos do cluster --, e mostra principal e overhead separados.
+    _, uso = ultima_definicao(
+        arquivos, "create or replace function public.uso_do_banco")
+    exigencias_uso = [
+        "from pg_database d",
+        "'bytes_da_cota', t.cota",
+        "'banco_principal_bytes', t.principal",
+        "'overhead_interno_bytes', t.overhead",
+        "'bytes', t.cota",
+        "revoke execute on function public.uso_do_banco()",
+        "grant execute on function public.uso_do_banco() to service_role",
+    ]
+    for trecho in exigencias_uso:
+        if trecho not in uso:
+            return falhar("uso_do_banco nao mede a cota: {}".format(trecho))
+    if "pg_database_size(current_database())" in uso.split("$function$;")[0] \
+            and "from pg_database d" not in uso:
+        return falhar("uso_do_banco voltou a medir so o banco principal")
+
     _, raridade = ultima_definicao(
         arquivos, "create or replace function public.computar_raridade")
     exigencias_raridade_atual = [
@@ -155,6 +203,12 @@ def main():
     estado_final = "\n".join(
         open(c, encoding="utf-8").read().lower() for c in arquivos)
     exigencias_finais = [
+        # P23: o log do pg_cron tem retencao. O dispatcher roda a cada minuto
+        # e, sem isto, o log cresce ~360 KB por dia com a coleta parada.
+        "'canario-retencao-do-log-do-cron'",
+        "where end_time < now() - interval '7 days'",
+        "and status = 'succeeded'",
+        "where end_time < now() - interval '30 days'",
         "unique nulls not distinct (data, fonte, marca_id)",
         "revoke execute on functions from public, anon, authenticated",
         "revoke select on table public.raridade_do_atributo",
@@ -232,6 +286,10 @@ def main():
         "p_retencao_dias < 21",
         "data < (current_date - p_retencao_dias)",
         "revoke execute on function public.podar_snapshots(integer)",
+        # P24: enquanto a A58 nao existir, o cru e a unica fonte do
+        # denominador. Medido em 18/09/2026: a primeira poda depois da
+        # retomada apagaria 202.050 de 254.736 linhas -- 16 dos 22 dias.
+        "if to_regclass('public.sortimento_diario') is null then",
     ]
     for trecho in exigencias_poda:
         if trecho not in poda:
