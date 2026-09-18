@@ -720,8 +720,23 @@ struct RelatorioDaPeca: View {
             // recorte de mercado que os atributos ocupam, e que o ponto
             // marcado é semana rala. Sem a primeira, um gráfico de dois anos
             // sobre uma peça criada hoje afirma um histórico que não existe.
-            Text("The panel items that share these attributes, week by week. "
-                 + "It is not your item: DataDrobe never tracks a piece you "
+            //
+            // A PRIMEIRA FRASE ERA FALSA, e era minha. "The panel items that
+            // share these attributes, week by week" descreve uma CONTAGEM DE
+            // PEÇAS, e é o que qualquer pessoa entende ao ler. A linha não é
+            // isso: `serie_do_cluster` devolve
+            // `sum(indice * peso) / sum(peso)` -- a média dos índices dos
+            // atributos, ponderada pela raridade de cada um (K5), e o índice
+            // de cada atributo é distância em desvios-padrão das 12 semanas
+            // anteriores DELE. O eixo Y já dizia isso ("distance from the
+            // usual behavior of the previous 12 weeks") e contradizia a
+            // legenda; quem lia os dois lia duas afirmações incompatíveis.
+            // Quantas peças existem com estes atributos é o bloco "Result",
+            // onde o número vem do painel e vem com a data em que foi visto.
+            Text("How unusual these attributes were each week, compared with "
+                 + "their own previous 12 weeks — one line, weighted by how "
+                 + "rare each attribute is. It is not a count of items, and "
+                 + "it is not your item: DataDrobe never tracks a piece you "
                  + "own. A marked point is a week built on fewer attributes "
                  + "than you selected, so the line is thinner there.")
                 .font(Tokens.Fonte.apoio)
@@ -770,6 +785,10 @@ struct RelatorioDaPeca: View {
                 .frame(height: 160)
                 .accessibilityLabel(
                     "Combined history across \(s.pontos.count) weeks")
+                // Onde a linha termina. A borda direita de um gráfico é lida
+                // como "agora"; aqui ela é a última semana publicada, e com a
+                // coleta parada as duas coisas estão a semanas de distância.
+                if let fim = SerieDoCluster.ateQuando(s) { LinhaInsumo(texto: fim) }
                 if let r = SerieDoCluster.ressalva(s) { LinhaInsumo(texto: r) }
                 if let c = s.categoriaUsada, c != "(todas)" {
                     let categoria = Traducao.rotuloExibido(id: c).lowercased()

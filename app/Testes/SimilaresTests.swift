@@ -59,6 +59,68 @@ final class SimilaresTests: XCTestCase {
 
     // MARK: O parágrafo da §29
 
+    // MARK: A idade do painel (A57)
+
+    /// Com a coleta de ontem, a frase é a de sempre: nada de ressalva sobre um
+    /// dado que está em dia.
+    func testColetaDeOntemNaoCarimbaData() {
+        var r = resumo()
+        r.observadoEm = "2026-09-16"
+        r.observadoMaisAntigoEm = "2026-09-16"
+        r.diasDesdeAObservacao = 1
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("I found 230 panel items"))
+        XCTAssertFalse(t.contains("last seen"))
+        XCTAssertNil(Similares.quandoFoiVisto(r))
+    }
+
+    /// O caso real de 17/09/2026: painel visto em 02/09, quinze dias atrás. A
+    /// frase muda de tempo verbal e leva a data junto -- sem isso a correção
+    /// da A57 só trocaria "não existe" por "isto é de hoje".
+    func testPainelParadoDizQuandoFoiVisto() {
+        var r = resumo()
+        r.observadoEm = "2026-09-02"
+        r.observadoMaisAntigoEm = "2026-09-02"
+        r.diasDesdeAObservacao = 15
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("230 panel items had"))
+        XCTAssertTrue(t.contains("when the panel was last seen, on 02/09/2026"))
+        XCTAssertTrue(t.contains("2 weeks ago"))
+        XCTAssertFalse(t.contains("I found 230"),
+                       "presente não pode sobreviver a um painel parado")
+    }
+
+    /// Quando as peças não foram todas vistas no mesmo dia, a frase declara o
+    /// intervalo em vez de escolher uma ponta.
+    func testIntervaloDeObservacaoApareceInteiro() {
+        var r = resumo()
+        r.observadoEm = "2026-09-02"
+        r.observadoMaisAntigoEm = "2026-08-27"
+        r.diasDesdeAObservacao = 15
+        let t = Similares.paragrafo(r, atributos: atributos)
+        XCTAssertTrue(t.contains("between 27/08/2026 and 02/09/2026"))
+    }
+
+    /// Banco anterior à A57 não manda as datas. A tela volta ao texto antigo,
+    /// que é o certo: ressalva inventada sobre dado que ninguém mediu é pior
+    /// do que ressalva nenhuma.
+    func testBancoSemAsDatasMantemAFraseAntiga() {
+        let t = Similares.paragrafo(resumo(), atributos: atributos)
+        XCTAssertTrue(t.contains("I found 230 panel items"))
+        XCTAssertFalse(t.contains("last seen"))
+    }
+
+    /// O contrato da A57 chega inteiro pelo decodificador -- inclusive o
+    /// `visto_em` de cada peça, que sustenta o intervalo declarado.
+    func testContratoDaA57ChegaPeloDecodificador() throws {
+        let json = #"{"resumo":{"n_similares":20,"n_marcas":3,"atributos_pedidos":2,"minimo_em_comum":2,"n_com_todos":20,"com_preco":18,"exibidos":8,"observado_em":"2026-09-02","observado_mais_antigo_em":"2026-08-27","dias_desde_a_observacao":15},"pecas":[{"id":7,"marca":"Farm","titulo":"Vestido","em_comum":2,"visto_em":"2026-09-02"}]}"#
+        let r = try JSONDecoder().decode(
+            Similares.Resposta.self, from: Data(json.utf8))
+        XCTAssertEqual(r.resumo?.diasDesdeAObservacao, 15)
+        XCTAssertEqual(r.resumo?.observadoMaisAntigoEm, "2026-08-27")
+        XCTAssertEqual(r.pecas.first?.vistoEm, "2026-09-02")
+    }
+
     func testParagrafoTrazOsNumerosDoPainel() {
         let t = Similares.paragrafo(resumo(), atributos: atributos)
         XCTAssertTrue(t.contains("9 brands"))

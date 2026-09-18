@@ -30,6 +30,7 @@
 		EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */; };
 		4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F27BA6A40F86F6D498DA29B /* Modelos.swift */; };
 		87483BC669B084000DC56F80 /* PecasSalvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD28D1CF99B38444C45479C0 /* PecasSalvas.swift */; };
+		5C70E6A3F37BB2A1DE52E8BF /* ReferenciaEditorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FFFA1A47043F7880BB85928 /* ReferenciaEditorial.swift */; };
 		FD257BCD1FC049D0AD24E2CC /* SemelhancaVisual.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */; };
 		39E616BFFE0F0474C732A319 /* SerieDoCluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */; };
 		578ADA6A037865606BC6408A /* Similares.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */; };
@@ -86,6 +87,7 @@
 		8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MiniaturaLocal.swift"; sourceTree = "<group>"; };
 		6F27BA6A40F86F6D498DA29B /* Modelos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Modelos.swift"; sourceTree = "<group>"; };
 		DD28D1CF99B38444C45479C0 /* PecasSalvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PecasSalvas.swift"; sourceTree = "<group>"; };
+		1FFFA1A47043F7880BB85928 /* ReferenciaEditorial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReferenciaEditorial.swift"; sourceTree = "<group>"; };
 		FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SemelhancaVisual.swift"; sourceTree = "<group>"; };
 		1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SerieDoCluster.swift"; sourceTree = "<group>"; };
 		C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Similares.swift"; sourceTree = "<group>"; };
@@ -219,6 +221,7 @@
 				8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */,
 				6F27BA6A40F86F6D498DA29B /* Modelos.swift */,
 				DD28D1CF99B38444C45479C0 /* PecasSalvas.swift */,
+				1FFFA1A47043F7880BB85928 /* ReferenciaEditorial.swift */,
 				FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */,
 				1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */,
 				C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */,
@@ -363,6 +366,7 @@
 				EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */,
 				4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */,
 				87483BC669B084000DC56F80 /* PecasSalvas.swift in Sources */,
+				5C70E6A3F37BB2A1DE52E8BF /* ReferenciaEditorial.swift in Sources */,
 				FD257BCD1FC049D0AD24E2CC /* SemelhancaVisual.swift in Sources */,
 				39E616BFFE0F0474C732A319 /* SerieDoCluster.swift in Sources */,
 				578ADA6A037865606BC6408A /* Similares.swift in Sources */,

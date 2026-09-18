@@ -50,6 +50,24 @@ enum Similares {
         let percentilDoAlvo: Double?
         let exibidos: Int
 
+        /// A57: quando o painel que sustenta estas peças foi visto.
+        ///
+        /// A correção que fez a busca parar de confundir pausa de coleta com
+        /// ausência de mercado tem duas metades. A primeira é do banco: a
+        /// janela de frescor passou a ser ancorada no último dia observado de
+        /// cada segmento, então uma coleta parada devolve o painel em vez de
+        /// devolver vazio. A segunda é desta tela: sem a data, a correção
+        /// apenas trocaria uma frase falsa ("não existe") por outra ("isto é
+        /// de hoje").
+        ///
+        /// `var` com valor padrão, e não `let`, porque um app novo pode falar
+        /// com um banco anterior à A57. Nesse caso as três chegam nulas e a
+        /// tela volta a escrever a frase antiga, sem data -- que é o
+        /// comportamento correto para um dado que ninguém mediu.
+        var observadoEm: String? = nil
+        var observadoMaisAntigoEm: String? = nil
+        var diasDesdeAObservacao: Int? = nil
+
         enum CodingKeys: String, CodingKey {
             case nSimilares = "n_similares"
             case nMarcas = "n_marcas"
@@ -68,6 +86,9 @@ enum Similares {
             case precoMediana = "preco_mediana"
             case percentilDoAlvo = "percentil_do_alvo"
             case exibidos
+            case observadoEm = "observado_em"
+            case observadoMaisAntigoEm = "observado_mais_antigo_em"
+            case diasDesdeAObservacao = "dias_desde_a_observacao"
         }
     }
 
@@ -92,9 +113,18 @@ enum Similares {
         /// ao P14; nesse caso a diferença simplesmente não é mostrada.
         let termosEmComum: [String]?
         let grade: Grade?
+        /// A57: o dia em que ESTA peça foi vista pela última vez.
+        ///
+        /// Não é desenhada no cartão de propósito -- data por peça, em oito
+        /// cartões, é ruído que a revisão de UX já pediu para tirar. Ela é o
+        /// caminho até a origem da frase do resumo (regra 3): o intervalo que
+        /// a tela declara sai de `observado_mais_antigo_em` e `observado_em`,
+        /// que são o mínimo e o máximo destas datas.
+        var vistoEm: String? = nil
 
         enum CodingKeys: String, CodingKey {
             case id, marca, titulo, url, imagem, preco, grade
+            case vistoEm = "visto_em"
             case papelDaMarca = "papel_da_marca"
             case precoDe = "preco_de"
             case quedaPct = "queda_pct"
@@ -116,6 +146,44 @@ enum Similares {
     /// Abaixo disto o conjunto é pequeno demais para uma porcentagem significar
     /// alguma coisa. Com 4 similares, "25% a preço cheio" é uma peça.
     static let minimoParaPorcentagem = 12
+
+    // MARK: A idade do que a resposta mostra (A57)
+
+    /// Abaixo disto a resposta é do presente e dizer a data seria ruído.
+    ///
+    /// Um dia de folga porque a coleta roda de madrugada: às 9h da manhã o
+    /// painel mais novo que existe é o de ontem, e chamar isso de "ontem"
+    /// assusta sem motivo.
+    static let diasParaSerAgora = 1
+
+    /// A resposta descreve o mercado de agora, ou o de uma observação antiga?
+    ///
+    /// Sem `dias_desde_a_observacao` -- banco anterior à A57 --, responde que
+    /// sim: é o comportamento que o app já tinha, e inventar uma ressalva
+    /// sobre um dado que ninguém mediu seria pior do que não ter a ressalva.
+    static func ehDeAgora(_ r: Resumo) -> Bool {
+        guard let dias = r.diasDesdeAObservacao else { return true }
+        return dias <= diasParaSerAgora
+    }
+
+    /// Quando o painel foi visto, para entrar DENTRO da frase do resultado.
+    ///
+    /// Não é uma frase separada de propósito. A ressalva em linha própria é
+    /// fácil de pular, e a que a pessoa precisa ler é justamente esta -- com a
+    /// coleta parada em 02/09, "encontrei 20 peças" e "havia 20 peças quinze
+    /// dias atrás" são afirmações diferentes sobre o mesmo número.
+    static func quandoFoiVisto(_ r: Resumo) -> String? {
+        guard !ehDeAgora(r), let dias = r.diasDesdeAObservacao,
+              let observado = r.observadoEm else { return nil }
+        let intervalo: String
+        if let maisAntigo = r.observadoMaisAntigoEm, maisAntigo != observado {
+            intervalo = "between \(Formato.data(maisAntigo)) and \(Formato.data(observado))"
+        } else {
+            intervalo = "on \(Formato.data(observado))"
+        }
+        return "when the panel was last seen, \(intervalo) — "
+             + "\(Formato.periodo(dias: dias)) ago"
+    }
 
     // MARK: O parágrafo (§29.1)
 
@@ -157,13 +225,21 @@ enum Similares {
         // afirmando o contrário do que os próprios cartões dizem logo abaixo
         // ("3 of 5 · no gray or solid"). Duas partes da mesma tela discordando
         // é a forma mais cara de mentir: a pessoa acredita na primeira.
-        if afrouxou(r) {
-            frases.append("Across \(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s"), "
-                        + "I found \(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s") "
+        let marcas = "\(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s")"
+        let pecas = "\(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s")"
+        // O tempo do verbo é o dado. "I found" é presente e vale quando a
+        // coleta é de agora; com o painel parado há duas semanas, o que existe
+        // é o passado -- "had", com a data junto.
+        if let quando = quandoFoiVisto(r) {
+            frases.append(afrouxou(r)
+                ? "Across \(marcas), \(pecas) were close to \(nomes) \(quando); "
+                + "none matched all of them."
+                : "Across \(marcas), \(pecas) had \(nomes) \(quando).")
+        } else if afrouxou(r) {
+            frases.append("Across \(marcas), I found \(pecas) "
                         + "close to \(nomes) — none matches all of them.")
         } else {
-            frases.append("Across \(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s"), "
-                        + "I found \(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s") with \(nomes).")
+            frases.append("Across \(marcas), I found \(pecas) with \(nomes).")
         }
 
         // A porcentagem só entra quando o conjunto a sustenta.
