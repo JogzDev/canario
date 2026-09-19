@@ -11,6 +11,10 @@ import coletor_varejo as varejo
 
 DOMINIO = "www.animale.com.br"
 URL_PRODUTO = "https://www.animale.com.br/vestido-de-linho/p"
+URL_UNICODE = ("https://www.animale.com.br/"
+               "short-prega-frente-marrom\u00a0rum-marrom-rum-25-05-4329-09032/p")
+URL_ASCII = ("https://www.animale.com.br/"
+             "short-prega-frente-marrom%C2%A0rum-marrom-rum-25-05-4329-09032/p")
 PASTA = os.path.dirname(os.path.abspath(__file__))
 FIXTURE = os.path.join(PASTA, "fixtures", "animale_next_data.json")
 
@@ -84,7 +88,7 @@ def main():
                 "https://{}/sitemap/category-0.xml".format(DOMINIO), mapa]),
             "https://{}/sitemap.xml".format(DOMINIO), {}),
         mapa: (200, xml("produtos", [
-            URL_PRODUTO, URL_PRODUTO,
+            URL_PRODUTO, URL_PRODUTO, URL_UNICODE, URL_ASCII,
             "https://{}/carteira-de-couro/p".format(DOMINIO)]), mapa, {}),
     }
 
@@ -98,9 +102,14 @@ def main():
         urls = varejo.animale_urls_publicas(DOMINIO, estado)
     finally:
         varejo.buscar_varejo = original_buscar
-    if (urls != [URL_PRODUTO] or estado.get("urls_no_sitemap") != 1
+    if (urls != [URL_PRODUTO, URL_ASCII]
+            or estado.get("urls_no_sitemap") != 2
             or estado.get("urls_bloqueadas_robots") != 1):
-        return falhar("sitemaps publicos nao foram deduplicados por URL")
+        return falhar("sitemaps nao normalizaram/deduplicaram a URL Unicode")
+    try:
+        URL_ASCII.encode("ascii")
+    except UnicodeEncodeError:
+        return falhar("URL normalizada ainda contem caractere fora de ASCII")
     if any("/api/" in u or "/_next/data/" in u for u in chamadas):
         return falhar("fallback tentou uma rota proibida")
 

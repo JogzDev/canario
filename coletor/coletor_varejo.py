@@ -179,6 +179,21 @@ def _url_publica_animale(url, dominio, tipo):
     return partes.path == SITEMAP_ANIMALE
 
 
+def _url_ascii_animale(url):
+    """Codifica caracteres Unicode do caminho sem alterar host ou estrutura.
+
+    O sitemap real da Animale inclui pelo menos um slug com U+00A0 literal.
+    `urllib` exige uma URL ASCII e falha antes do GET se o caminho vier cru.
+    Sequencias `%HH` ja publicadas ficam preservadas para que duas grafias da
+    mesma URL sejam deduplicadas depois desta normalizacao.
+    """
+    partes = urllib.parse.urlsplit(str(url or ""))
+    caminho = urllib.parse.quote(
+        partes.path, safe="/%:@-._~!$&'()*+,;=")
+    return urllib.parse.urlunsplit((
+        partes.scheme, partes.netloc, caminho, partes.query, partes.fragment))
+
+
 def _locs_xml(corpo):
     raiz = ET.fromstring(corpo)
     return [str(no.text or "").strip() for no in raiz.iter()
@@ -246,9 +261,13 @@ def animale_urls_publicas(dominio, estado):
         except ET.ParseError:
             estado["erro"] = "sitemap de produto da Animale devolveu XML invalido"
             return []
-        for url in produtos:
-            if not _url_publica_animale(url, dominio, "produto"):
+        for url_crua in produtos:
+            if not _url_publica_animale(url_crua, dominio, "produto"):
                 estado["erro"] = "URL de produto da Animale saiu do caminho autorizado"
+                return []
+            url = _url_ascii_animale(url_crua)
+            if not _url_publica_animale(url, dominio, "produto"):
+                estado["erro"] = "URL normalizada da Animale saiu do caminho autorizado"
                 return []
             # O sitemap hoje inclui tres carteiras cujo slug comeca por
             # `/cart`; RobotFileParser aplica corretamente o `Disallow: /cart`
