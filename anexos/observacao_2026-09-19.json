@@ -15,6 +15,40 @@
     "limite_operacional_bytes": 425000000,
     "margem_operacional_bytes": 6463755
   },
+  "compactacao_snapshots": {
+    "medido_em": "2026-09-19T19:46:51.235Z",
+    "procedimento": "ferramentas/capacidade/92_vacuum_full_snapshots_pos_poda.sql",
+    "verificacao": "ferramentas/capacidade/93_confere_snapshots_pos_compactacao.sql",
+    "comando": "VACUUM FULL public.snapshots",
+    "duracao_segundos": 1.6,
+    "antes": {
+      "cota_bytes": 418536245,
+      "snapshots_total_bytes": 73138176
+    },
+    "depois": {
+      "cota_bytes": 362999985,
+      "principal_bytes": 347726351,
+      "wal_bytes": 134218098,
+      "snapshots_total_bytes": 17768448,
+      "snapshots_heap_bytes": 13221888,
+      "snapshots_indices_bytes": 4538368,
+      "margem_operacional_bytes": 62000015
+    },
+    "conteudo": {
+      "linhas_antes": 83400,
+      "linhas_depois": 83400,
+      "primeira_data": "2026-08-29",
+      "ultima_data": "2026-09-19",
+      "assinatura_antes": "41d6f3e5ac90e59296e22ed382127f67",
+      "assinatura_depois": "41d6f3e5ac90e59296e22ed382127f67"
+    },
+    "indices": {
+      "snapshots_pkey": {"bytes": 1884160, "valido": true, "pronto": true},
+      "snapshots_produto_id_data_key": {"bytes": 2654208, "valido": true, "pronto": true}
+    },
+    "motor_em_andamento_depois": 0,
+    "resultado": "concluido_e_verificado"
+  },
   "tabelas": {
     "public.produtos": {"total_bytes": 85999616, "heap_bytes": 76759040, "indices_bytes": 9101312, "vivas_estimadas": 113854, "mortas_estimadas": 3889, "updates_acumulados": 4805666},
     "public.snapshots": {"total_bytes": 73138176, "heap_bytes": 50298880, "indices_bytes": 22790144, "vivas_estimadas": 83400, "mortas_estimadas": 0, "updates_acumulados": 294719},

@@ -56,6 +56,29 @@ esta recuperação.** Não foram instaladas extensões de diagnóstico.
 não é uma rotina diária. A documentação oficial confirma essas limitações:
 [PostgreSQL 17 — VACUUM](https://www.postgresql.org/docs/17/sql-vacuum.html).
 
+### Recuperação física executada e verificada
+
+Às 16h46 BRT de 19/09, depois de autorização explícita, o passo 92 executou
+`VACUUM FULL public.snapshots` em produção. O ensaio imediatamente anterior
+passou por todos os portões: backup restaurado e verificado, nenhum runner ou
+workflow ativo, motor parado, nenhum lock concorrente, exatamente os dois
+índices esperados, ganho material e espaço temporário suficiente.
+
+- duração da ação: **1,6 s**;
+- `snapshots`: **73.138.176 → 17.768.448 bytes**;
+- cota: **418.536.245 → 362.999.985 bytes**;
+- ganho físico: **55.536.260 bytes**;
+- margem até o teto operacional de 425 MB: **62.000.015 bytes**;
+- linhas antes/depois: **83.400 / 83.400**;
+- assinatura integral antes/depois:
+  `41d6f3e5ac90e59296e22ed382127f67`;
+- período preservado: **29/08 a 19/09**;
+- os dois índices ficaram válidos e prontos; motor em andamento: zero.
+
+O laboratório passou também pelos caminhos de recusa por volume divergente,
+motor ativo, índice inesperado e lock concorrente. Esta recuperação resolve o
+espaço físico retido pela poda; não prova crescimento sustentável futuro.
+
 Não atribuir crescimento diário pelos tamanhos acima: esta é uma baseline,
 não um par antes/depois de cada coleta. Os contadores de updates são
 acumulados. Os dias 18 e 19 também não são intercambiáveis: 44.554 snapshots
@@ -98,16 +121,13 @@ não resolve nem certifica esse outro segmento.
 
 ## Sequência recomendada, com limites explícitos
 
-1. Preparar uma única janela curta para recuperação física de `snapshots`:
-   conferir backup/recuperação, ausência de motor/coletas, locks e espaço
-   temporário; registrar contagem e assinatura antes/depois; manter timeouts
-   do executor. O comando de compactação de produção **não foi adicionado
-   a nenhum job nem executado**. Precisa de autorização para essa nova janela.
-2. Medir o ganho real e reavaliar margem para a Animale e o restante da coleta.
-   Somente então combinar o rollout da flag com a verificação de publicação.
-   Não liberar a flag só porque a estimativa parece suficiente.
-3. Fazer a coleta real controlada e verificar a data pública, a cobertura e
-   a cota ao final. Só contar como dia saudável quando esses critérios passarem.
+1. **Concluído:** recuperar fisicamente `snapshots`, preservar conteúdo e medir
+   o ganho real.
+2. Tratar o rollout da Animale como uma unidade reversível: flag explícita,
+   coleta isolada, cota medida e flag desligada automaticamente se a fonte ou
+   a capacidade falhar.
+3. Só depois da coleta isolada verde executar saúde + motor, comprovar a data
+   pública pela API e publicar o gate estrito junto desse caminho operacional.
 4. Seguir a observação, podendo desenvolver/testar o app offline durante ela.
 
 **Dependência do supervisor:** ele hoje interrompe futuras coletas se o pipeline
