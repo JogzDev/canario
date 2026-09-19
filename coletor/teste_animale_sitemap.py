@@ -11,6 +11,10 @@ import coletor_varejo as varejo
 
 DOMINIO = "www.animale.com.br"
 URL_PRODUTO = "https://www.animale.com.br/vestido-de-linho/p"
+URL_UNICODE = ("https://www.animale.com.br/"
+               "short-prega-frente-marrom\u00a0rum-marrom-rum-25-05-4329-09032/p")
+URL_ASCII = ("https://www.animale.com.br/"
+             "short-prega-frente-marrom%C2%A0rum-marrom-rum-25-05-4329-09032/p")
 PASTA = os.path.dirname(os.path.abspath(__file__))
 FIXTURE = os.path.join(PASTA, "fixtures", "animale_next_data.json")
 
@@ -38,6 +42,13 @@ def xml(tipo, urls):
 
 
 def main():
+    workflow = open(os.path.join(
+        PASTA, "..", ".github", "workflows", "coleta.yml"),
+        encoding="utf-8").read()
+    if ("COLETA_ANIMALE_PUBLICA:" not in workflow
+            or "vars.COLETA_ANIMALE_PUBLICA" not in workflow):
+        return falhar("workflow perdeu a chave explicita do rollout da Animale")
+
     dados = json.load(open(FIXTURE, encoding="utf-8"))
     produto = varejo.animale_extrair_pagina(html_do(dados), URL_PRODUTO)
     if produto["id_externo"] != "53085":
@@ -84,7 +95,7 @@ def main():
                 "https://{}/sitemap/category-0.xml".format(DOMINIO), mapa]),
             "https://{}/sitemap.xml".format(DOMINIO), {}),
         mapa: (200, xml("produtos", [
-            URL_PRODUTO, URL_PRODUTO,
+            URL_PRODUTO, URL_PRODUTO, URL_UNICODE, URL_ASCII,
             "https://{}/carteira-de-couro/p".format(DOMINIO)]), mapa, {}),
     }
 
@@ -98,9 +109,14 @@ def main():
         urls = varejo.animale_urls_publicas(DOMINIO, estado)
     finally:
         varejo.buscar_varejo = original_buscar
-    if (urls != [URL_PRODUTO] or estado.get("urls_no_sitemap") != 1
+    if (urls != [URL_PRODUTO, URL_ASCII]
+            or estado.get("urls_no_sitemap") != 2
             or estado.get("urls_bloqueadas_robots") != 1):
-        return falhar("sitemaps publicos nao foram deduplicados por URL")
+        return falhar("sitemaps nao normalizaram/deduplicaram a URL Unicode")
+    try:
+        URL_ASCII.encode("ascii")
+    except UnicodeEncodeError:
+        return falhar("URL normalizada ainda contem caractere fora de ASCII")
     if any("/api/" in u or "/_next/data/" in u for u in chamadas):
         return falhar("fallback tentou uma rota proibida")
 
@@ -121,6 +137,7 @@ def main():
     original_robots = varejo.robots_permite
     original_animale = varejo.animale_sitemap_todos
     original_gravar = varejo.gravar_lote
+    original_flag = os.environ.get(varejo.VAR_ANIMALE_PUBLICA)
     acessos = []
     varejo.robots_permite = lambda *_args: (False, "robots.txt lido")
     varejo.animale_sitemap_todos = lambda _d, estado: (
@@ -129,6 +146,11 @@ def main():
     varejo.gravar_lote = lambda _m, lote, _h: (acessos.append(list(lote)) or
                                                 (0, len(lote)))
     try:
+        os.environ.pop(varejo.VAR_ANIMALE_PUBLICA, None)
+        adiada = varejo.coletar_marca(
+            {"id": 18, "nome": "Animale", "dominio": DOMINIO,
+             "plataforma": "vtex"}, date(2026, 9, 20), {})
+        os.environ[varejo.VAR_ANIMALE_PUBLICA] = "1"
         metrica = varejo.coletar_marca(
             {"id": 18, "nome": "Animale", "dominio": DOMINIO,
              "plataforma": "vtex"}, date(2026, 9, 20), {})
@@ -136,9 +158,17 @@ def main():
             {"id": 99, "nome": "Outra", "dominio": "loja.test",
              "plataforma": "vtex"}, date(2026, 9, 20), {})
     finally:
+        if original_flag is None:
+            os.environ.pop(varejo.VAR_ANIMALE_PUBLICA, None)
+        else:
+            os.environ[varejo.VAR_ANIMALE_PUBLICA] = original_flag
         varejo.robots_permite = original_robots
         varejo.animale_sitemap_todos = original_animale
         varejo.gravar_lote = original_gravar
+    if (adiada["visitados"] != 0 or adiada["gravados"] != 0
+            or adiada["alertas"].get("adiado_por_capacidade") is not True
+            or acessos != [[produto]]):
+        return falhar("Animale escreveu sem autorizacao explicita de rollout")
     if (metrica["visitados"] != 1 or metrica["declarado"] != 1
             or metrica["alertas"]["origem"] != "sitemap + paginas publicas"
             or len(acessos) != 1):

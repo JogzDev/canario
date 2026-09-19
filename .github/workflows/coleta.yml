@@ -128,6 +128,10 @@ jobs:
           # Divisao de trabalho por plataforma: as Shopify (Amaro, PatBo) dao
           # 429 daqui e ficam com o runner residencial (coleta-shopify.yml).
           COLETA_PLATAFORMA: vtex
+          # O fallback da Animale percorre 5.104 paginas e fica desligado ate
+          # a observacao de capacidade autorizar seu custo. A variavel do
+          # repositorio deve ser exatamente "1" para o rollout.
+          COLETA_ANIMALE_PUBLICA: ${{ vars.COLETA_ANIMALE_PUBLICA || '0' }}
         run: "$PY coletor/coletor_varejo.py"
 
       # A main protegida exige PR. Cache e coleta sao responsabilidades
