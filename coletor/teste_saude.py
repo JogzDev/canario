@@ -83,6 +83,24 @@ def main():
         print("FALHOU: skip semanal do Trends foi tratado como pane")
         return 1
 
+    animale_adiada = linha("varejo", 0, marca_id=1)
+    animale_adiada["visitados"] = 0
+    animale_adiada["alertas"] = {
+        "adiado_por_capacidade": True,
+        "motivo": "fallback publico aguarda folga operacional",
+    }
+    por_capacidade = [animale_adiada, linha("editorial", 80),
+                      linha("busca", 40)]
+    crit, avisos = alertas_criticos(por_capacidade, MARCAS, HOJE)
+    if crit or not any("folga operacional" in x for x in avisos):
+        print("FALHOU: adiamento explicito por capacidade virou pane")
+        return 1
+    estado, detalhe = cobertura_da_marca(animale_adiada["alertas"])
+    if (estado != "incerta"
+            or detalhe.get("adiado_por_capacidade") is not True):
+        print("FALHOU: adiamento por capacidade declarou catalogo completo")
+        return 1
+
     queda = [linha("varejo", 20, marca_id=1),
              linha("editorial", 80), linha("busca", 40)]
     queda.extend(linha("varejo", 100, dias=d, marca_id=1)

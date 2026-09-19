@@ -130,6 +130,7 @@ def main():
     original_robots = varejo.robots_permite
     original_animale = varejo.animale_sitemap_todos
     original_gravar = varejo.gravar_lote
+    original_flag = os.environ.get(varejo.VAR_ANIMALE_PUBLICA)
     acessos = []
     varejo.robots_permite = lambda *_args: (False, "robots.txt lido")
     varejo.animale_sitemap_todos = lambda _d, estado: (
@@ -138,6 +139,11 @@ def main():
     varejo.gravar_lote = lambda _m, lote, _h: (acessos.append(list(lote)) or
                                                 (0, len(lote)))
     try:
+        os.environ.pop(varejo.VAR_ANIMALE_PUBLICA, None)
+        adiada = varejo.coletar_marca(
+            {"id": 18, "nome": "Animale", "dominio": DOMINIO,
+             "plataforma": "vtex"}, date(2026, 9, 20), {})
+        os.environ[varejo.VAR_ANIMALE_PUBLICA] = "1"
         metrica = varejo.coletar_marca(
             {"id": 18, "nome": "Animale", "dominio": DOMINIO,
              "plataforma": "vtex"}, date(2026, 9, 20), {})
@@ -145,9 +151,17 @@ def main():
             {"id": 99, "nome": "Outra", "dominio": "loja.test",
              "plataforma": "vtex"}, date(2026, 9, 20), {})
     finally:
+        if original_flag is None:
+            os.environ.pop(varejo.VAR_ANIMALE_PUBLICA, None)
+        else:
+            os.environ[varejo.VAR_ANIMALE_PUBLICA] = original_flag
         varejo.robots_permite = original_robots
         varejo.animale_sitemap_todos = original_animale
         varejo.gravar_lote = original_gravar
+    if (adiada["visitados"] != 0 or adiada["gravados"] != 0
+            or adiada["alertas"].get("adiado_por_capacidade") is not True
+            or acessos != [[produto]]):
+        return falhar("Animale escreveu sem autorizacao explicita de rollout")
     if (metrica["visitados"] != 1 or metrica["declarado"] != 1
             or metrica["alertas"]["origem"] != "sitemap + paginas publicas"
             or len(acessos) != 1):

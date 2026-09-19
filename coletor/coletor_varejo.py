@@ -79,6 +79,7 @@ SEGMENTO_PRINCIPAL = "feminino_casual_br"
 # administrativo da VTEX.
 ANIMALE_PUBLICA = ("Animale", "www.animale.com.br")
 SITEMAP_ANIMALE = "/sitemap.xml"
+VAR_ANIMALE_PUBLICA = "COLETA_ANIMALE_PUBLICA"
 
 _trava = threading.Lock()
 _ultima = [0.0]
@@ -1165,6 +1166,23 @@ def coletar_marca(marca, hoje, cache_deps):
         # permissivo da RFC. O caminho publico carrega o robots de novo com
         # semantica fail-closed antes de qualquer sitemap/pagina.
         usa_animale_publica = (nome, dominio) == ANIMALE_PUBLICA
+        # O fallback percorre mais de cinco mil paginas e materializa um
+        # catalogo que estava parado. Ele so entra em producao por uma chave
+        # explicita: o portao geral mede a cota antes da perna, mas nao sabe
+        # reservar o crescimento desta marca durante a propria coleta. Em
+        # 19/09 havia apenas 6,56 MB ate o limite operacional de 85%, menos que
+        # a soma conservadora da Animale com as demais pernas do dia.
+        if (usa_animale_publica
+                and os.environ.get(VAR_ANIMALE_PUBLICA, "").strip() != "1"):
+            return {
+                "marca_id": marca["id"], "nome": nome,
+                "plataforma": plataforma, "visitados": 0, "gravados": 0,
+                "declarado": None, "pct_campos_ok": None,
+                "alertas": {
+                    "adiado_por_capacidade": True,
+                    "motivo": "fallback publico aguarda folga operacional"
+                },
+            }
         api_permitida = (False if usa_animale_publica else robots_permite(
             dominio, "/api/catalog_system/pub/products/search")[0])
         if not api_permitida and not usa_animale_publica:
@@ -1380,6 +1398,13 @@ def alertas_criticos(registros, marcas_ativas, hoje):
                 avisos.append(
                     "busca não consultada hoje: séries já estavam em dia")
                 continue
+            if (fonte == "varejo" and
+                    alertas_da_linha.get("adiado_por_capacidade")):
+                avisos.append(
+                    "{} não coletada hoje: {}".format(
+                        rotulo, alertas_da_linha.get("motivo") or
+                        "aguarda folga operacional"))
+                continue
             motivo = ((atual.get("alertas") or {}).get("erro")
                       if isinstance(atual.get("alertas"), dict) else None)
             seguidos = _zeros_seguidos(historico.get(chave, {}), hoje_iso)
@@ -1444,6 +1469,12 @@ def cobertura_da_marca(alertas):
     """
     if not isinstance(alertas, dict):
         return "completa", None
+    if alertas.get("adiado_por_capacidade"):
+        return "incerta", {
+            "adiado_por_capacidade": True,
+            "motivo": str(alertas.get("motivo") or
+                          "aguarda folga operacional"),
+        }
     faixas = [f for f in (alertas.get("faixas_truncadas") or [])
               if isinstance(f, dict)]
     erro = alertas.get("erro")
