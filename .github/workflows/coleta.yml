@@ -22,6 +22,15 @@ on:
         required: false
         type: boolean
         default: true
+      data_operacional:
+        description: 'Data ISO comum ao pipeline (vazio = hoje em Sao Paulo)'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      data_operacional:
+        description: 'Data fixada para as pernas seguintes'
+        value: ${{ jobs.coletar.outputs.data_operacional }}
     secrets:
       SUPABASE_URL:
         required: true
@@ -42,6 +51,10 @@ on:
         required: false
         type: boolean
         default: true
+      data_operacional:
+        description: 'Data ISO comum ao pipeline (vazio = hoje em Sao Paulo)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -54,6 +67,8 @@ concurrency:
 
 jobs:
   coletar:
+    outputs:
+      data_operacional: ${{ steps.ancora.outputs.data }}
     runs-on: ${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}
     timeout-minutes: 350
     steps:
@@ -63,6 +78,15 @@ jobs:
       # Nao serve: no i7 o `python3` e um atalho que exige as Command Line Tools
       # do Xcode, que a maquina nao tem. A acao abaixo resolve os dois runners.
       - uses: ./.github/actions/python-mac
+
+      - name: Fixar data operacional da execução
+        id: ancora
+        env:
+          DATA_SOLICITADA: ${{ inputs.data_operacional }}
+        run: |
+          data="${DATA_SOLICITADA:-$(TZ=America/Sao_Paulo date +%F)}"
+          [[ "$data" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          echo "data=$data" >> "$GITHUB_OUTPUT"
 
       - name: Proteger capacidade do banco antes de escrever
         env:
@@ -100,6 +124,7 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           COLETA_MARCA: ${{ inputs.marca }}
           COLETA_SEGMENTO: ${{ inputs.segmento }}
+          DATA_OPERACIONAL: ${{ steps.ancora.outputs.data }}
           # Divisao de trabalho por plataforma: as Shopify (Amaro, PatBo) dao
           # 429 daqui e ficam com o runner residencial (coleta-shopify.yml).
           COLETA_PLATAFORMA: vtex

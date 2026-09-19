@@ -29,6 +29,10 @@ on:
         required: false
         type: string
         default: ''
+    outputs:
+      data_operacional:
+        description: 'Data propagada para o portão de saúde'
+        value: ${{ jobs.coletar.outputs.data_operacional }}
     secrets:
       SUPABASE_URL:
         required: true
@@ -64,12 +68,23 @@ concurrency:
 
 jobs:
   coletar:
+    outputs:
+      data_operacional: ${{ steps.ancora.outputs.data }}
     runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/python-mac
+
+      - name: Fixar data operacional da execução
+        id: ancora
+        env:
+          DATA_SOLICITADA: ${{ inputs.data_operacional }}
+        run: |
+          data="${DATA_SOLICITADA:-$(TZ=America/Sao_Paulo date +%F)}"
+          [[ "$data" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          echo "data=$data" >> "$GITHUB_OUTPUT"
 
       - name: Proteger capacidade do banco antes de escrever
         env:
@@ -90,5 +105,5 @@ jobs:
           # Operacao cirurgica: deriva `alertas.erro` das falhas ja gravadas.
           # Nao abre conexao com o Google nem repete um 429 conhecido.
           TRENDS_SOMENTE_RECONSOLIDAR: ${{ inputs.somente_reconsolidar }}
-          DATA_OPERACIONAL: ${{ inputs.data_operacional }}
+          DATA_OPERACIONAL: ${{ steps.ancora.outputs.data }}
         run: "$PY coletor/coletor_trends.py"

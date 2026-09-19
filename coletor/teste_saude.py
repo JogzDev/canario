@@ -5,6 +5,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 
 from gerar_saude import data_operacional
+from coletor_editorial import data_operacional as data_operacional_editorial
 from coletor_varejo import (alertas_criticos, cobertura_da_marca,
                             frase_de_cobertura, metricas_varejo_ativas,
                             resumo_de_cobertura)
@@ -39,6 +40,9 @@ def main():
         os.environ["DATA_OPERACIONAL"] = "2026-08-03"
         if data_operacional(depois_da_meia_noite_utc) != date(2026, 8, 3):
             print("FALHOU: recuperacao ignorou a data operacional fixada")
+            return 1
+        if data_operacional_editorial(depois_da_meia_noite_utc) != date(2026, 8, 3):
+            print("FALHOU: editorial ignorou a data operacional fixada")
             return 1
         os.environ["DATA_OPERACIONAL"] = "03-08-2026"
         try:
@@ -137,15 +141,28 @@ def main():
         print("FALHOU: a recusa sumiu em vez de virar aviso")
         return 1
 
-    # Motivo qualquer nao basta. So uma recusa HTTP conhecida pode usar a
-    # tolerancia; parse, contrato ou excecao interna continuam bloqueando.
+    # Motivo qualquer nao basta. Só uma recusa externa conhecida pode usar a
+    # tolerância; parse, contrato ou exceção interna continuam bloqueando.
     erro_interno = [zerada(0, erro="json inesperado"),
                     linha("editorial", 80), linha("busca", 40)]
     erro_interno.extend(
         linha("varejo", 100, dias=d, marca_id=1) for d in range(1, 8))
     crit, _ = alertas_criticos(erro_interno, MARCAS, HOJE)
-    if not any("erro nao HTTP" in x for x in crit):
+    if not any("erro interno/desconhecido" in x for x in crit):
         print("FALHOU: erro interno foi tolerado como recusa da fonte")
+        return 1
+
+    # Respeitar robots.txt é uma recusa explícita da origem, não pane do
+    # coletor. No primeiro dia preserva a última observação e avisa; três dias
+    # seguidos continuam bloqueando como fonte que deixou de ser observável.
+    robots = [zerada(0, erro="robots proibe a busca"),
+              linha("editorial", 80), linha("busca", 40)]
+    robots.extend(
+        linha("varejo", 100, dias=d, marca_id=1) for d in range(1, 8))
+    crit, avisos = alertas_criticos(robots, MARCAS, HOJE)
+    if any("Marca A" in x for x in crit) or not any(
+            "robots proibe" in x for x in avisos):
+        print("FALHOU: recusa por robots nao seguiu a tolerancia curta")
         return 1
 
     # Tres dias seguidos ja nao e um dia ruim.

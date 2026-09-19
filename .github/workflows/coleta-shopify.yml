@@ -41,6 +41,10 @@ on:
         required: false
         type: string
         default: ''
+    outputs:
+      data_operacional:
+        description: 'Data propagada para a próxima perna'
+        value: ${{ jobs.coletar.outputs.data_operacional }}
     secrets:
       SUPABASE_URL:
         required: true
@@ -91,6 +95,8 @@ concurrency:
 
 jobs:
   coletar:
+    outputs:
+      data_operacional: ${{ steps.ancora.outputs.data }}
     # O cabecalho deste arquivo diz que a perna Shopify existe por causa do IP:
     # Amaro e PatBo devolvem 429 do datacenter e 200 do residencial. O rotulo
     # virou parametro em 26/08 porque a maquina certa depende da hora -- o i7
@@ -102,6 +108,15 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/python-mac
+
+      - name: Fixar data operacional da execução
+        id: ancora
+        env:
+          DATA_SOLICITADA: ${{ inputs.data_operacional }}
+        run: |
+          data="${DATA_SOLICITADA:-$(TZ=America/Sao_Paulo date +%F)}"
+          [[ "$data" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          echo "data=$data" >> "$GITHUB_OUTPUT"
 
       - name: Proteger capacidade do banco antes de escrever
         env:
@@ -116,7 +131,7 @@ jobs:
           COLETA_PLATAFORMA: ${{ inputs.plataforma }}
           COLETA_MARCA: ${{ inputs.marca }}
           COLETA_SEGMENTO: ${{ inputs.segmento }}
-          DATA_OPERACIONAL: ${{ inputs.data_operacional }}
+          DATA_OPERACIONAL: ${{ steps.ancora.outputs.data }}
         run: "$PY coletor/coletor_varejo.py"
 
       - name: Provar isolamento do painel adicional
