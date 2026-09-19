@@ -54,6 +54,8 @@ jobs:
         run: "$PY coletor/teste_paginacao_vtex.py"
       - name: Presenca e oferta observadas no varejo
         run: "$PY coletor/teste_oferta_varejo.py"
+      - name: Fallback publico da Animale por sitemap
+        run: "$PY coletor/teste_animale_sitemap.py"
       - name: Planejamento diario do Google Trends
         run: "$PY coletor/teste_trends.py"
       - name: Fila da perna de busca (§19)
