@@ -1,0 +1,23 @@
+name: Sonda pública do backend A57/A58
+
+# Gate manual de rollout. Só deve ser disparado depois de A57 e A58 e do
+# refresh do schema do PostgREST; antes disso, falhar com PGRST202 é correto.
+# Usa a mesma chave pública do binário e não escreve no banco.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sondar:
+    runs-on: [self-hosted, macOS, sempre-ligado]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/python-mac
+      - name: Provar as três RPCs com a chave do app
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: "$PY coletor/sonda_significado_publico.py"

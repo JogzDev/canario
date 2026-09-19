@@ -1,0 +1,89 @@
+{
+  "medido_em": "2026-09-18T12:37:58Z/13:05Z",
+  "como": "consultas somente leitura ao banco de producao; as mesmas de ferramentas/capacidade/00_inventario.sql",
+  "servidor": "PostgreSQL 17.6",
+  "cota": {
+    "definicao": "sum(pg_database_size) sobre pg_database (documentacao do Supabase, Database size)",
+    "limite_bytes": 500000000,
+    "total_bytes": 501226293,
+    "total_pct": 100.25,
+    "por_banco": {"postgres": 485952659, "template0": 7520783, "template1": 7752851},
+    "overhead_interno_bytes": 15273634,
+    "o_que_o_portao_antigo_via_bytes": 485952659,
+    "default_transaction_read_only": "off",
+    "wal_bytes": 134218098
+  },
+  "crescimento_com_coleta_parada": {
+    "principal_02h33": 485772435,
+    "principal_12h37": 485952659,
+    "delta_bytes": 180224,
+    "log_do_cron_por_dia_bytes": 362000
+  },
+  "tabelas": {
+    "public.series_semanais": {"linhas": 29047, "bytes_vivos": 22624174, "heap": 73834496, "fillfactor": 70, "heap_reescrito_estimado": 32966654, "indices": 5177344, "updates": 2728348, "hot": 658980},
+    "public.produtos": {"linhas": 111390, "bytes_vivos": 47935843, "heap": 76759040, "fillfactor": 70, "heap_reescrito_estimado": 69849371},
+    "public.artigos": {"linhas": 172649, "bytes_vivos": 43094210, "heap": 55934976, "fillfactor": 100, "heap_reescrito_estimado": 43956094, "updates": 828725, "hot": 38943},
+    "public.snapshots": {"linhas": 254736, "bytes_vivos": 37759048, "heap": 50298880, "fillfactor": 100, "heap_reescrito_estimado": 38514229},
+    "public.indices_semanais": {"linhas": 9897, "bytes_vivos": 7258700, "heap": 17170432, "fillfactor": 70, "heap_reescrito_estimado": 10576963, "updates": 610443},
+    "cron.job_run_details": {"linhas": 65834, "bytes": 16670720, "linhas_por_dia": 1440, "sucesso_com_mais_de_7_dias": 55726, "com_mais_de_30_dias": 22632, "dono": "supabase_admin", "postgres_tem": ["DELETE", "TRUNCATE", "MAINTAIN"]}
+  },
+  "indices": {
+    "metodo": "MAXALIGN(8 + chave) + 4 por entrada, folhas a 90%, +1% internas; calibrado em produto_termos_pkey (11.861.076 estimado x 11.911.168 medido)",
+    "public.artigos_url_key": {"atual": 41951232, "recem_construido_estimado": 22088920},
+    "public.estado_produtos_oferta_recente": {"atual": 9093120, "recem_construido_estimado": 1938563},
+    "public.snapshots_produto_id_data_key": {"atual": 14049280, "recem_construido_estimado": 8004371},
+    "public.artigos_pkey": {"atual": 7733248, "recem_construido_estimado": 3875011},
+    "public.estado_dos_produtos_pkey": {"atual": 4546560, "recem_construido_estimado": 2500087},
+    "public.snapshots_pkey": {"atual": 7757824, "recem_construido_estimado": 5717408}
+  },
+  "snapshots_para_a_a58": {
+    "mais_antigo": "2026-08-12", "mais_novo": "2026-09-02", "dias": 22, "linhas": 254736,
+    "corte_da_poda_em_18_09": "2026-08-28",
+    "linhas_que_a_primeira_poda_apagaria": 202050, "dias_que_a_primeira_poda_apagaria": 16
+  },
+  "funcoes_hash_normalizado": {
+    "computar_serie_varejo": "4a1b76d8d0b9d81086474a563006d6b5",
+    "computar_serie_editorial": "a56488dcf1e732973339e50442882c5e",
+    "computar_z": "a84c63a5c5acd5fa95a25fe7fd0df120",
+    "uso_do_banco": "7c6355a6bd043f9d01108f01d465bc39",
+    "podar_snapshots": "c9b22fd0cc607449cbbf7b5aef7c77cf",
+    "computar_indice": "ce2ffa99841a237ee1001071b46ee772"
+  },
+  "sessoes": {"outras_ativas": 0, "locks_esperando": 0, "motor_em_andamento": 0, "idade_xid": 512267},
+  "leitura_sequencial": {"series_semanais_73_8_mb_ms": 419, "artigos_55_9_mb_ms": 1797},
+  "configuracao": {"maintenance_work_mem_kb": 32768, "max_wal_size_mb": 1024, "checkpoint_timeout_s": 300, "statement_timeout_ms_do_papel": 120000, "lock_timeout": "0"},
+  "deriva_repositorio_x_producao": {
+    "medido_em": "2026-09-18 (tarde)",
+    "metodo": "hash normalizado de pg_get_functiondef em producao contra a ultima definicao no repositorio carregada num PostgreSQL 17.10",
+    "computar_indice": {
+      "producao": "ce2ffa99841a237ee1001071b46ee772",
+      "repositorio_p1": "19eed500e061e0cbd91ea95836de498b",
+      "diferenca": "meta.por_que em producao nao tem a frase de medicao acrescentada depois ao arquivo"
+    },
+    "grade_em_texto": {
+      "producao": "beb9abbb0e43ab144708d237b51d7b88",
+      "repositorio_f5": "1019ce4be509fc229fa89de38d31389f",
+      "efeito": "nenhuma migration deste pacote a substitui; registrada"
+    },
+    "iguais": ["computar_curva_tamanhos", "computar_eventos", "computar_motor", "computar_raridade", "eventos_recentes", "executar_publicacao_motor", "publicar_motor", "similares_da_peca", "similares_da_peca_amplo", "url_publica_produto", "computar_serie_varejo", "computar_serie_editorial", "computar_z", "uso_do_banco", "podar_snapshots"]
+  },
+  "indices_semanais": {
+    "linhas": 9897, "termos": 42, "semanas": 261, "com_estado": 554,
+    "updates_desde_15_07": 610443, "updates_por_dia": 9391,
+    "estatisticas_zeradas_em": "2026-07-15T13:16:47Z"
+  },
+  "backlog": {
+    "curva_tamanhos": {"total": 5726208, "heap": 4726784, "bytes_vivos": 3536352, "linhas": 5034, "updates_por_dia": 379, "reescritas_por_linha": 4.9, "linhas_com_o_ultimo_carimbo": 1303, "carimbos_distintos": 7},
+    "raridade_do_atributo": {"total": 253952, "bytes_vivos": 70557, "linhas": 459, "updates_por_dia": 207, "reescritas_por_linha": 29.5, "carimbos_distintos": 1}
+  },
+  "coleta": {
+    "estado": "barrada pelo portao de capacidade, nao pausada",
+    "evidencia": "pipeline-diario agendado 06:00 UTC; execucoes de 11 a 16/09 falharam no portao de capacidade",
+    "workflows_agendados_que_escrevem": ["pipeline-diario.yml", "coleta-catalogo-candidato.yml"]
+  },
+  "permissoes": {
+    "postgres_bypassrls": true,
+    "cron_job_com_rls": true,
+    "ledger_colunas": ["version", "statements", "name", "created_by", "idempotency_key", "rollback"]
+  }
+}

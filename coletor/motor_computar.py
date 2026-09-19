@@ -48,6 +48,12 @@ PASSOS = [
     # erro do `computar_eventos` em 30/07: funcao criada nao e funcao chamada.
     ("computar_raridade",
      "peso de raridade por (categoria, termo) para o indice do cluster (§22, K5)"),
+    # ULTIMO, e logo antes da poda: reconstroi dos snapshots o sortimento
+    # ofertavel do dia, que e o denominador das comparacoes entre marcas
+    # (DAT-04). `podar_snapshots(21)` roda em seguida, na mesma transacao --
+    # dia podado e dia irreconstruivel, entao a ordem nao e preferencia.
+    ("computar_sortimento_diario",
+     "sortimento ofertavel por marca no dia observado (denominador, DAT-04)"),
 ]
 
 

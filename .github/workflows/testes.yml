@@ -95,6 +95,8 @@ jobs:
       # pergunta ao servidor, que e a unica que separa os dois casos.
       - name: Classificacao da sonda da rota paga (sem rede)
         run: "$PY coletor/teste_sonda_edge_luna.py"
+      - name: Contrato da sonda pública A57/A58 (sem rede)
+        run: "$PY coletor/teste_sonda_significado_publico.py"
       # Alarme que dispara todo dia deixa de ser lido: este confere que o
       # alerta agrupa noites seguidas numa issue so e fecha sozinho no verde.
       - name: Alerta do pipeline nao vira ruido (sem rede)
@@ -113,6 +115,72 @@ jobs:
       # trabalho ja feito.
       - name: Nome usado e nunca definido
         run: "$PY coletor/teste_nomes.py"
+
+  capacidade:
+    name: Laboratorio de capacidade (PostgreSQL 17 descartavel)
+    # Vai para o Mac do JP porque e la que o Node 24 esta verificado, e porque
+    # o `@embedded-postgres` baixa 133 MB na primeira instalacao. Se a maquina
+    # estiver parada, o job espera na fila em vez de ficar vermelho.
+    #
+    # `coletor/teste_migrations.py` le as migrations como texto. Este job as
+    # executa: prova que o "antes" e o codigo de producao (hash), que ele
+    # reescreve tudo, e que P21/P22/P24/P25 corrigem sem mudar o resultado. E
+    # ensaia cada passo do roteiro da etapa 1 pelo mesmo executor que rodaria
+    # em producao.
+    runs-on: [self-hosted, macOS, xcode]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Fora do workspace: `actions/checkout` limpa o diretorio a cada
+      # execucao. Com o lockfile igual, `npm install` nao baixa nada.
+      - name: Binarios do PostgreSQL embutido (uma vez por maquina)
+        run: |
+          set -euo pipefail
+          LAB="$HOME/.canario/laboratorio-capacidade"
+          mkdir -p "$LAB"
+          cp ferramentas/laboratorio_capacidade/package.json "$LAB/"
+          cp ferramentas/laboratorio_capacidade/package-lock.json "$LAB/"
+          cd "$LAB" && npm install --no-audit --no-fund
+
+      - name: P21, P22, P24 e P25 num banco de verdade
+        run: caffeinate -dimsu node ferramentas/laboratorio_capacidade/rodar.mjs
+
+      - name: Ensaio do roteiro da etapa 1
+        run: caffeinate -dimsu node ferramentas/capacidade/teste_roteiro.mjs
+
+  banco:
+    name: Laboratorio SQL (PostgreSQL 17 descartavel)
+    # Vai para o Mac do JP, e nao para o i7, porque e la que o Node 24 esta
+    # verificado -- e porque o `@embedded-postgres` baixa 133 MB de binario na
+    # primeira instalacao. Se a maquina estiver parada, o job espera na fila:
+    # fila e sinal honesto de "ninguem testou ainda"; vermelho por falta de
+    # runner nao e.
+    #
+    # `coletor/teste_migrations.py` (no job de cima) le as migrations como
+    # TEXTO: pega contrato apagado, nao pega `join` errado nem denominador
+    # tirado da data errada. Este job executa P24, A57 e A58 na ordem real,
+    # confere o portao 87 e roda os dados desenhados para que cada defeito
+    # conhecido apareca como falha.
+    runs-on: [self-hosted, macOS, xcode]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Fora do workspace de proposito: `actions/checkout` limpa o diretorio a
+      # cada execucao, e reinstalar 133 MB por push seria desperdicio. Com o
+      # lockfile igual, `npm install` nao baixa nada.
+      - name: Binarios do PostgreSQL embutido (uma vez por maquina)
+        run: |
+          set -euo pipefail
+          LAB="$HOME/.canario/laboratorio-significado"
+          mkdir -p "$LAB"
+          cp ferramentas/laboratorio_significado/package.json "$LAB/"
+          cp ferramentas/laboratorio_significado/package-lock.json "$LAB/"
+          cd "$LAB" && npm install --no-audit --no-fund
+
+      - name: P24, A57, A58 e portao final num banco de verdade
+        run: caffeinate -dimsu node ferramentas/laboratorio_significado/rodar.mjs
 
   app:
     name: App (Swift)
@@ -167,9 +235,14 @@ jobs:
           trap "xcrun simctl shutdown 'DataDrobe-CI' 2>/dev/null || true" EXIT
           xcrun simctl boot 'DataDrobe-CI'
           xcrun simctl bootstatus 'DataDrobe-CI' -b
-          # Estes dois exercitam dados reais e ficam na regressao local de nove
-          # fluxos. O checkout do CI usa Config.xcconfig.example por desenho;
-          # portanto aqui rodam somente os sete fluxos realmente offline.
+          # Estes dois exercitam dados reais e ficam na regressao local. O
+          # checkout do CI usa Config.xcconfig.example por desenho; portanto
+          # aqui rodam somente os outros 12 fluxos, todos realmente offline.
+          #
+          # Os cinco do bloco editorial entram sem rede por fixture
+          # (`-CanarioUITestImprensa`): a RPC da A58 ainda nao esta publicada,
+          # e os cinco estados que interessam -- achou, nao achou, falhou,
+          # funcao ausente e trocou de pergunta no meio -- sao todos de tela.
           caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
             -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
             -derivedDataPath "$RUNNER_TEMP/CanarioDerivedData-$GITHUB_RUN_ID" \
@@ -181,4 +254,9 @@ jobs:
             -only-testing:CanarioUITests/CanarioUITests/testPrivacyAbrePeloCaminhoDeterministico \
             -only-testing:CanarioUITests/CanarioUITests/testImportacaoAbreSemRedeComAsEntradasPrincipais \
             -only-testing:CanarioUITests/CanarioUITests/testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaMostraAMateriaQueContemAExpressao \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaSemMateriaNaoAbreBlocoVazio \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaDeclaraFalhaDeRedeEmVozBaixa \
+            -only-testing:CanarioUITests/CanarioUITests/testImprensaCalaQuandoAFuncaoAindaNaoExiste \
+            -only-testing:CanarioUITests/CanarioUITests/testRespostaLentaNaoSobrescreveAPerguntaNova \
             CODE_SIGNING_ALLOWED=NO | tail -20

@@ -24,12 +24,15 @@
 		D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C677A09E80A10C666280510 /* Explicacao.swift */; };
 		2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */; };
 		BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */; };
+		36FB9A621C32550D8CC52E7B /* ImprensaDeTeste.swift in Sources */ = {isa = PBXBuildFile; fileRef = B767765632F0BFDE20F1FAFD /* ImprensaDeTeste.swift */; };
 		D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
 		BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */; };
 		EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */; };
 		4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F27BA6A40F86F6D498DA29B /* Modelos.swift */; };
 		87483BC669B084000DC56F80 /* PecasSalvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD28D1CF99B38444C45479C0 /* PecasSalvas.swift */; };
+		5C70E6A3F37BB2A1DE52E8BF /* ReferenciaEditorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FFFA1A47043F7880BB85928 /* ReferenciaEditorial.swift */; };
+		1F5609CB8473613556E88962 /* ResumoDeEventos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BE8AEF58D621CE93D9794D /* ResumoDeEventos.swift */; };
 		FD257BCD1FC049D0AD24E2CC /* SemelhancaVisual.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */; };
 		39E616BFFE0F0474C732A319 /* SerieDoCluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */; };
 		578ADA6A037865606BC6408A /* Similares.swift in Sources */ = {isa = PBXBuildFile; fileRef = C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */; };
@@ -80,12 +83,15 @@
 		3C677A09E80A10C666280510 /* Explicacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explicacao.swift"; sourceTree = "<group>"; };
 		A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconesDaTaxonomia.swift"; sourceTree = "<group>"; };
 		F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Importacao.swift"; sourceTree = "<group>"; };
+		B767765632F0BFDE20F1FAFD /* ImprensaDeTeste.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImprensaDeTeste.swift"; sourceTree = "<group>"; };
 		14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IntencaoDoToque.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
 		A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MascaraDeInstancia.swift"; sourceTree = "<group>"; };
 		8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MiniaturaLocal.swift"; sourceTree = "<group>"; };
 		6F27BA6A40F86F6D498DA29B /* Modelos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Modelos.swift"; sourceTree = "<group>"; };
 		DD28D1CF99B38444C45479C0 /* PecasSalvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PecasSalvas.swift"; sourceTree = "<group>"; };
+		1FFFA1A47043F7880BB85928 /* ReferenciaEditorial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReferenciaEditorial.swift"; sourceTree = "<group>"; };
+		06BE8AEF58D621CE93D9794D /* ResumoDeEventos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResumoDeEventos.swift"; sourceTree = "<group>"; };
 		FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SemelhancaVisual.swift"; sourceTree = "<group>"; };
 		1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SerieDoCluster.swift"; sourceTree = "<group>"; };
 		C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Similares.swift"; sourceTree = "<group>"; };
@@ -213,12 +219,15 @@
 				3C677A09E80A10C666280510 /* Explicacao.swift */,
 				A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */,
 				F6B2EDA4EBF22940DF6CC1E8 /* Importacao.swift */,
+				B767765632F0BFDE20F1FAFD /* ImprensaDeTeste.swift */,
 				14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
 				A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */,
 				8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */,
 				6F27BA6A40F86F6D498DA29B /* Modelos.swift */,
 				DD28D1CF99B38444C45479C0 /* PecasSalvas.swift */,
+				1FFFA1A47043F7880BB85928 /* ReferenciaEditorial.swift */,
+				06BE8AEF58D621CE93D9794D /* ResumoDeEventos.swift */,
 				FC3E66CCDB963D7AF0B27B75 /* SemelhancaVisual.swift */,
 				1FC3218E29B9F31409816E48 /* SerieDoCluster.swift */,
 				C68C1C6F552EF1E47A5C8CD7 /* Similares.swift */,
@@ -357,12 +366,15 @@
 				D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */,
 				2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */,
 				BB2D1E22DF1B5541D5657A02 /* Importacao.swift in Sources */,
+				36FB9A621C32550D8CC52E7B /* ImprensaDeTeste.swift in Sources */,
 				D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
 				BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */,
 				EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */,
 				4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */,
 				87483BC669B084000DC56F80 /* PecasSalvas.swift in Sources */,
+				5C70E6A3F37BB2A1DE52E8BF /* ReferenciaEditorial.swift in Sources */,
+				1F5609CB8473613556E88962 /* ResumoDeEventos.swift in Sources */,
 				FD257BCD1FC049D0AD24E2CC /* SemelhancaVisual.swift in Sources */,
 				39E616BFFE0F0474C732A319 /* SerieDoCluster.swift in Sources */,
 				578ADA6A037865606BC6408A /* Similares.swift in Sources */,
