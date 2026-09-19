@@ -293,6 +293,7 @@ app, faz três leituras mínimas e exige os contratos de
 `similares_da_peca_amplo_v2`, `resumo_de_eventos` e
 `buscar_referencia_editorial`. Qualquer 404/PGRST202 ou campo ausente bloqueia
 a retomada; não espere o app publicado descobrir uma migration incompleta.
+Esse verde comprova **contrato**, não frescor, cobertura nem liberação do app.
 
 ```bash
 gh workflow run sonda-significado.yml
@@ -313,6 +314,27 @@ Acompanhe a primeira execução até o fim. Durante sete dias, uma vez por dia:
 ```bash
 "${CAP[@]}" ferramentas/capacidade/90_observacao.sql
 ```
+
+O pipeline diário tem uma segunda prova, depois do motor: a sonda com
+`--exigir-publicacao --data-operacional "$DATA_OPERACIONAL"`. Essa data vem do
+início da coleta, preservada mesmo que a execução atravesse a meia-noite.
+Ela exige que similares e resumo de eventos declarem o mesmo dia publicado,
+igual ou posterior ao esperado. Reexecução de dia já publicado pode passar
+mesmo com `observacoes_publicadas=0`; o contador de alterações não é o gate.
+
+O relatório `publicacao-painel.json` acompanha a run inclusive quando falha:
+saída 0 significa a verificação solicitada aprovada; 1, falha de leitura ou
+contrato; 2, publicação esperada não comprovada (antiga, ausente ou leituras
+divergentes). O alerta diário só encerra o incidente com essa prova verde.
+Não há retry de coleta, mudança de coorte nem escrita pela sonda. O modo
+manual `sonda-significado.yml` continua sendo somente teste de contrato.
+
+**Compatibilidade com o supervisor temporário:** ele interrompe futuras
+coletas quando o pipeline termina em falha. Portanto, publicar este gate
+enquanto a Animale continua adiada fará a ausência de atualização aparecer
+como falha e poderá acionar essa interrupção. Resolver capacidade/cobertura
+ou revisar explicitamente a política de acompanhamento antes do rollout;
+não remover o gate nem considerar os dias parciais como sete dias saudáveis.
 
 ## 7. O que está provado, e onde
 

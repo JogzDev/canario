@@ -209,6 +209,8 @@ def checar_orquestracao(workflows):
         falhar("pipeline-diario.yml", "pipeline unico sem `schedule`")
 
     jobs = pipeline.get("jobs", {})
+    for mensagem in checar_portao_publicacao(jobs):
+        falhar("pipeline-diario.yml", mensagem)
     cadeia = {
         "varejo-vtex": (None, individuais["coleta.yml"]),
         "varejo-shopify": ("varejo-vtex", individuais["coleta-shopify.yml"]),
@@ -482,6 +484,48 @@ def checar_orquestracao(workflows):
                                    trecho)))
         if texto_acao.find("shasum -a 256 -c -") > texto_acao.find("tar xzf"):
             falhas.append((acao, "tarball e extraido antes de validar SHA-256"))
+    return falhas
+
+
+def checar_portao_publicacao(jobs):
+    """Não confundir COMMIT do motor com avanço do dia público do painel."""
+    falhas = []
+    publicacao = jobs.get("publicacao", {})
+    if (set(publicacao.get("needs", [])) != {"motor", "saude-inicial"}
+            or "always()" not in str(publicacao.get("if", ""))
+            or "needs.motor.result == 'success'" not in str(publicacao.get("if", ""))
+            or publicacao.get("continue-on-error")):
+        falhas.append("publicacao deve aguardar motor e a data original, sem falhar aberto")
+    portoes = [p for p in publicacao.get("steps", [])
+               if "sonda_significado_publico.py" in str(p.get("run", ""))]
+    if len(portoes) != 1:
+        falhas.append("publicacao deve conferir a API uma vez, depois do motor")
+    else:
+        p = portoes[0]
+        comando, ambiente = str(p.get("run", "")), p.get("env", {})
+        if (p.get("continue-on-error") or p.get("if")
+                or "--exigir-publicacao" not in comando
+                or '--data-operacional "$DATA_OPERACIONAL"' not in comando
+                or "--relatorio publicacao-painel.json" not in comando
+                or ambiente.get("DATA_OPERACIONAL") !=
+                "${{ needs.saude-inicial.outputs.data_operacional }}"
+                or not {"SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY"}.issubset(ambiente)
+                or "SUPABASE_SECRET_KEY" in ambiente):
+            falhas.append("publicacao sem data propagada, chave publica ou falha fechada")
+    artefatos = [p for p in publicacao.get("steps", [])
+                if str(p.get("uses", "")).startswith("actions/upload-artifact@")
+                and p.get("with", {}).get("path") == "publicacao-painel.json"]
+    if len(artefatos) != 1 or "always()" not in str(artefatos[0].get("if", "")):
+        falhas.append("publicacao deve preservar o diagnostico quando falhar")
+    alerta = jobs.get("alerta", {})
+    ambiente_alerta = next((p.get("env", {}) for p in alerta.get("steps", [])
+                           if "ESTADO_DO_PIPELINE" in p.get("env", {})), {})
+    if ("publicacao" not in alerta.get("needs", [])
+            or "needs.publicacao.result == 'success'" not in
+            str(ambiente_alerta.get("ESTADO_DO_PIPELINE", ""))
+            or "publicacao=${{ needs.publicacao.result }}" not in
+            str(ambiente_alerta.get("JOBS_QUE_FALHARAM", ""))):
+        falhas.append("alerta nao pode encerrar incidente sem publicacao confirmada")
     return falhas
 
 

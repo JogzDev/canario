@@ -1,6 +1,7 @@
 name: Sonda pública do backend A57/A58
 
-# Gate manual de rollout. Só deve ser disparado depois de A57 e A58 e do
+# Prova manual de contrato, não de frescor nem autorização de liberar o app.
+# Só deve ser disparado depois de A57 e A58 e do
 # refresh do schema do PostgREST; antes disso, falhar com PGRST202 é correto.
 # Usa a mesma chave pública do binário e não escreve no banco.
 on:

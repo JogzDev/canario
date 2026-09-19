@@ -99,6 +99,8 @@ jobs:
         run: "$PY coletor/teste_sonda_edge_luna.py"
       - name: Contrato da sonda pública A57/A58 (sem rede)
         run: "$PY coletor/teste_sonda_significado_publico.py"
+      - name: Publicação do painel não passa só pelo motor (sem rede)
+        run: "$PY coletor/teste_publicacao_painel.py"
       # Alarme que dispara todo dia deixa de ser lido: este confere que o
       # alerta agrupa noites seguidas numa issue so e fecha sozinho no verde.
       - name: Alerta do pipeline nao vira ruido (sem rede)
