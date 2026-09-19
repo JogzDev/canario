@@ -24,6 +24,11 @@ on:
         required: false
         type: boolean
         default: false
+      data_operacional:
+        description: 'Data ISO da coleta encadeada (vazio = hoje em Sao Paulo)'
+        required: false
+        type: string
+        default: ''
     secrets:
       SUPABASE_URL:
         required: true
@@ -45,6 +50,10 @@ on:
         required: false
         type: boolean
         default: false
+      data_operacional:
+        description: 'Data ISO da coleta encadeada (vazio = hoje em Sao Paulo)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -81,4 +90,5 @@ jobs:
           # Operacao cirurgica: deriva `alertas.erro` das falhas ja gravadas.
           # Nao abre conexao com o Google nem repete um 429 conhecido.
           TRENDS_SOMENTE_RECONSOLIDAR: ${{ inputs.somente_reconsolidar }}
+          DATA_OPERACIONAL: ${{ inputs.data_operacional }}
         run: "$PY coletor/coletor_trends.py"

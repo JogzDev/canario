@@ -1,5 +1,6 @@
 """Regressões do portão operacional de saúde."""
 
+import os
 import sys
 from datetime import date, datetime, timedelta, timezone
 
@@ -32,6 +33,26 @@ def main():
     if data_operacional(depois_da_meia_noite_utc) != date(2026, 8, 4):
         print("FALHOU: portao trocou de dia antes de Sao Paulo")
         return 1
+
+    anterior = os.environ.get("DATA_OPERACIONAL")
+    try:
+        os.environ["DATA_OPERACIONAL"] = "2026-08-03"
+        if data_operacional(depois_da_meia_noite_utc) != date(2026, 8, 3):
+            print("FALHOU: recuperacao ignorou a data operacional fixada")
+            return 1
+        os.environ["DATA_OPERACIONAL"] = "03-08-2026"
+        try:
+            data_operacional(depois_da_meia_noite_utc)
+        except ValueError:
+            pass
+        else:
+            print("FALHOU: data operacional invalida nao falhou fechada")
+            return 1
+    finally:
+        if anterior is None:
+            os.environ.pop("DATA_OPERACIONAL", None)
+        else:
+            os.environ["DATA_OPERACIONAL"] = anterior
 
     saudavel = [linha("varejo", 100, marca_id=1),
                 linha("editorial", 80), linha("busca", 40)]
