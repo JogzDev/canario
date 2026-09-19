@@ -1,0 +1,99 @@
+{
+  "props": {
+    "pageProps": {
+      "data": {
+        "product": {
+          "additionalProperty": [
+            {
+              "name": "Tamanho",
+              "value": "P"
+            }
+          ],
+          "brand": {
+            "name": "ANIMALE"
+          },
+          "breadcrumbList": {
+            "itemListElement": [
+              {
+                "item": "/last-chance/",
+                "name": "LAST CHANCE",
+                "position": 1
+              }
+            ]
+          },
+          "image": [
+            {
+              "url": "https://lojaanimale.vtexassets.com/arquivos/ids/1/vestido.jpg"
+            }
+          ],
+          "isVariantOf": {
+            "hasVariant": [
+              {
+                "additionalProperty": [
+                  {
+                    "name": "Tamanho",
+                    "value": "P"
+                  }
+                ],
+                "offers": {
+                  "offers": [
+                    {
+                      "availability": "https://schema.org/InStock",
+                      "listPrice": 599,
+                      "price": 399,
+                      "quantity": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "additionalProperty": [
+                  {
+                    "name": "Tamanho",
+                    "value": "M"
+                  }
+                ],
+                "offers": {
+                  "offers": [
+                    {
+                      "availability": "https://schema.org/OutOfStock",
+                      "listPrice": 599,
+                      "price": 399,
+                      "quantity": 0
+                    }
+                  ]
+                }
+              }
+            ],
+            "name": "Vestido de linho",
+            "productGroupID": "53085"
+          },
+          "name": "Vestido de linho - P",
+          "offers": {
+            "offers": [
+              {
+                "availability": "https://schema.org/InStock",
+                "listPrice": 599,
+                "price": 399,
+                "quantity": 3
+              }
+            ]
+          },
+          "specificationGroups": [
+            {
+              "name": "Composição",
+              "specifications": [
+                {
+                  "name": "Composição",
+                  "values": [
+                    "100% Linho"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

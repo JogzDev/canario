@@ -26,11 +26,14 @@ import sys
 import threading
 import time
 import urllib.parse
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
+from html.parser import HTMLParser
+from urllib.robotparser import RobotFileParser
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from teste_30s import buscar, robots_permite  # noqa: E402
+from teste_30s import UA, buscar, robots_permite  # noqa: E402
 from mapa_categorias import (classificar, classificar_populacao,  # noqa: E402
                              loja_so_feminina)
 import supabase_rest  # noqa: E402
@@ -68,6 +71,14 @@ PRECO_TETO = 200000     # teto de preco para o particionamento (R$)
 NIVEL_MAXIMO = 4        # profundidade maxima da arvore de categorias da VTEX
 FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
 SEGMENTO_PRINCIPAL = "feminino_casual_br"
+
+# A Animale passou a proibir a Search API no robots.txt em setembro de 2026.
+# O fallback abaixo e deliberadamente estreito: apenas esse dominio/marca,
+# sitemap e paginas de produto publicas, todos autorizados pela politica
+# publicada pela propria loja. Nao toca em /api, /_next/data nem em host
+# administrativo da VTEX.
+ANIMALE_PUBLICA = ("Animale", "www.animale.com.br")
+SITEMAP_ANIMALE = "/sitemap.xml"
 
 _trava = threading.Lock()
 _ultima = [0.0]
@@ -113,6 +124,271 @@ def buscar_varejo(url, dominio):
         _ritmo()
         codigo, corpo, final, cab = buscar(url, dominio)
     return codigo, corpo, final, cab
+
+
+# ---------------------------------------------------------------------------
+# Animale: fallback publico por sitemap + dados inline da pagina
+# ---------------------------------------------------------------------------
+
+class _NextDataParser(HTMLParser):
+    """Extrai somente o JSON inline de <script id="__NEXT_DATA__">."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self._capturando = False
+        self._partes = []
+        self.encontrados = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() != "script":
+            return
+        atributos = {str(k).lower(): v for k, v in attrs}
+        if atributos.get("id") == "__NEXT_DATA__":
+            self._capturando = True
+            self._partes = []
+
+    def handle_data(self, data):
+        if self._capturando:
+            self._partes.append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "script" and self._capturando:
+            self.encontrados.append("".join(self._partes))
+            self._capturando = False
+            self._partes = []
+
+
+def _numero_positivo(valor):
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError):
+        return 0
+    return numero if numero > 0 else 0
+
+
+def _url_publica_animale(url, dominio, tipo):
+    """Valida URLs antes de qualquer GET; redirects passam pelo mesmo crivo."""
+    partes = urllib.parse.urlsplit(str(url or ""))
+    if (partes.scheme != "https" or partes.netloc.lower() != dominio
+            or partes.query or partes.fragment):
+        return False
+    if tipo == "sitemap_produto":
+        return bool(re.fullmatch(r"/sitemap/product-\d+\.xml", partes.path))
+    if tipo == "produto":
+        return partes.path.endswith("/p") and partes.path.count("/") >= 2
+    return partes.path == SITEMAP_ANIMALE
+
+
+def _locs_xml(corpo):
+    raiz = ET.fromstring(corpo)
+    return [str(no.text or "").strip() for no in raiz.iter()
+            if no.tag.rsplit("}", 1)[-1] == "loc" and str(no.text or "").strip()]
+
+
+def _politica_publica_animale(dominio, estado):
+    """Carrega robots uma vez e falha fechada neste caminho excepcional."""
+    url = "https://{}/robots.txt".format(dominio)
+    codigo, corpo, final, _ = buscar_varejo(url, dominio)
+    if (codigo != 200 or not corpo
+            or urllib.parse.urlsplit(final).hostname != dominio):
+        estado["erro"] = "robots publico da Animale indisponivel (http {})".format(codigo)
+        return None
+    parser = RobotFileParser()
+    parser.set_url(url)
+    parser.parse(corpo.splitlines())
+    return parser
+
+
+def animale_urls_publicas(dominio, estado):
+    """Descobre paginas de produto autorizadas, sem usar endpoints privados."""
+    politica = _politica_publica_animale(dominio, estado)
+    if politica is None:
+        return []
+
+    indice = "https://{}{}".format(dominio, SITEMAP_ANIMALE)
+    if not politica.can_fetch(UA, indice):
+        estado["erro"] = "robots proibe o sitemap publico da Animale"
+        return []
+    codigo, corpo, final, _ = buscar_varejo(indice, dominio)
+    if (codigo != 200 or not _url_publica_animale(final, dominio, "indice")):
+        estado["erro"] = "sitemap da Animale respondeu http {}".format(codigo)
+        return []
+    try:
+        mapas = _locs_xml(corpo)
+    except ET.ParseError:
+        estado["erro"] = "sitemap da Animale devolveu XML invalido"
+        return []
+
+    mapas_produto = []
+    for url in mapas:
+        if "/sitemap/product-" not in url:
+            continue
+        if (not _url_publica_animale(url, dominio, "sitemap_produto")
+                or not politica.can_fetch(UA, url)):
+            estado["erro"] = "sitemap de produto da Animale saiu do caminho autorizado"
+            return []
+        mapas_produto.append(url)
+    if not mapas_produto:
+        estado["erro"] = "indice da Animale nao declarou sitemaps de produto"
+        return []
+
+    urls = []
+    vistos = set()
+    bloqueadas = 0
+    for mapa in mapas_produto:
+        codigo, corpo, final, _ = buscar_varejo(mapa, dominio)
+        if (codigo != 200
+                or not _url_publica_animale(final, dominio, "sitemap_produto")):
+            estado["erro"] = "sitemap de produto da Animale respondeu http {}".format(codigo)
+            return []
+        try:
+            produtos = _locs_xml(corpo)
+        except ET.ParseError:
+            estado["erro"] = "sitemap de produto da Animale devolveu XML invalido"
+            return []
+        for url in produtos:
+            if not _url_publica_animale(url, dominio, "produto"):
+                estado["erro"] = "URL de produto da Animale saiu do caminho autorizado"
+                return []
+            # O sitemap hoje inclui tres carteiras cujo slug comeca por
+            # `/cart`; RobotFileParser aplica corretamente o `Disallow: /cart`
+            # por prefixo. Elas ficam de fora sem sequer receber um GET.
+            if not politica.can_fetch(UA, url):
+                bloqueadas += 1
+                continue
+            if url not in vistos:
+                vistos.add(url)
+                urls.append(url)
+    estado["urls_no_sitemap"] = len(urls)
+    estado["urls_bloqueadas_robots"] = bloqueadas
+    return urls
+
+
+def _propriedade(objeto, nome):
+    alvo = nome.casefold()
+    for prop in objeto.get("additionalProperty") or []:
+        if str(prop.get("name") or "").casefold() == alvo:
+            return prop.get("value")
+    return None
+
+
+def _composicao_animale(produto):
+    for grupo in produto.get("specificationGroups") or []:
+        for especificacao in grupo.get("specifications") or []:
+            nome = str(especificacao.get("name") or "").casefold()
+            valores = especificacao.get("values") or []
+            if (nome in ("composição", "composicao", "material")
+                    and valores):
+                return valores[0]
+    return None
+
+
+def animale_extrair_pagina(corpo, url):
+    """Converte o estado inline da pagina para o mesmo contrato do VTEX."""
+    parser = _NextDataParser()
+    parser.feed(corpo)
+    if len(parser.encontrados) != 1:
+        raise ValueError("pagina sem um unico __NEXT_DATA__ inline")
+    try:
+        produto = json.loads(parser.encontrados[0])["props"]["pageProps"]["data"]["product"]
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("__NEXT_DATA__ sem produto reconhecivel")
+
+    trilha = (produto.get("breadcrumbList") or {}).get("itemListElement") or []
+    no_last_chance = any(
+        str(no.get("name") or "").strip().casefold() == "last chance"
+        or urllib.parse.urlsplit(str(no.get("item") or "")).path.rstrip("/").casefold()
+        == "/last-chance"
+        for no in trilha)
+    if not no_last_chance:
+        return None
+
+    marca = str((produto.get("brand") or {}).get("name") or "").strip().upper()
+    grupo = produto.get("isVariantOf") or {}
+    id_externo = str(grupo.get("productGroupID") or "").strip()
+    if marca != "ANIMALE" or not id_externo:
+        raise ValueError("produto LAST CHANCE sem marca ou productGroupID esperado")
+
+    variantes = [produto] + list(grupo.get("hasVariant") or [])
+    grade = {}
+    preco_atual = preco_original = None
+    preco_fallback = preco_original_fallback = None
+    ofertavel = False
+    for variante in variantes:
+        tamanho = _propriedade(variante, "Tamanho")
+        disponivel = False
+        for oferta in (variante.get("offers") or {}).get("offers") or []:
+            em_estoque = str(oferta.get("availability") or "").endswith("/InStock")
+            esta_disponivel = em_estoque and _numero_positivo(oferta.get("quantity")) > 0
+            disponivel = disponivel or esta_disponivel
+            ofertavel = ofertavel or esta_disponivel
+            preco = oferta.get("price")
+            original = oferta.get("listPrice") or preco
+            if preco_fallback is None and _numero_positivo(preco):
+                preco_fallback, preco_original_fallback = preco, original
+            if esta_disponivel and preco_atual is None and _numero_positivo(preco):
+                preco_atual, preco_original = preco, original
+        if tamanho is not None and str(tamanho).strip():
+            chave = str(tamanho).strip()
+            grade[chave] = grade.get(chave, False) or disponivel
+    if preco_atual is None:
+        preco_atual, preco_original = preco_fallback, preco_original_fallback
+
+    imagem = None
+    for candidata in produto.get("image") or []:
+        if isinstance(candidata, dict) and candidata.get("url"):
+            imagem = candidata["url"]
+            break
+        if isinstance(candidata, str) and candidata:
+            imagem = candidata
+            break
+    categoria = next((no.get("name") for no in trilha
+                      if str(no.get("name") or "").strip().casefold() == "last chance"),
+                     "LAST CHANCE")
+    return {
+        # productGroupID e o antigo productId da Search API: manter esta chave
+        # evita duplicar todos os produtos ja conhecidos quando muda a fonte.
+        "id_externo": id_externo,
+        "url": url,
+        "titulo": grupo.get("name") or produto.get("name"),
+        "categoria_site": categoria,
+        "imagem_url": imagem,
+        "preco_original": preco_original,
+        "preco_atual": preco_atual,
+        "composicao": _composicao_animale(produto),
+        "grade_por_tamanho": grade or None,
+        "ofertavel": ofertavel,
+    }
+
+
+def animale_sitemap_todos(dominio, estado):
+    """Le o catalogo publico inteiro e devolve so o recorte LAST CHANCE."""
+    urls = animale_urls_publicas(dominio, estado)
+    if estado.get("erro"):
+        return
+    falhas = []
+    lidas = fora = 0
+    for url in urls:
+        codigo, corpo, final, _ = buscar_varejo(url, dominio)
+        if (codigo != 200 or not corpo
+                or not _url_publica_animale(final, dominio, "produto")):
+            falhas.append("{}:http{}".format(url, codigo))
+            continue
+        try:
+            produto = animale_extrair_pagina(corpo, final)
+        except ValueError as erro:
+            falhas.append("{}:{}".format(url, erro))
+            continue
+        lidas += 1
+        if produto is None:
+            fora += 1
+            continue
+        yield produto
+    estado["paginas_lidas"] = lidas
+    estado["fora_do_recorte"] = fora
+    if falhas:
+        estado["erro"] = ("{} paginas publicas da Animale falharam; exemplos: {}"
+                          .format(len(falhas), "; ".join(falhas[:3])))
 
 
 def _total_do_header(cab):
@@ -865,17 +1141,20 @@ def coletar_marca(marca, hoje, cache_deps):
             buffer = []
 
     if plataforma == "vtex":
-        if not robots_permite(dominio, "/api/catalog_system/pub/products/search")[0]:
+        # A excecao conhecida nunca consulta a API, nem se uma leitura
+        # transitoria do robots falhar e a funcao generica escolher o padrao
+        # permissivo da RFC. O caminho publico carrega o robots de novo com
+        # semantica fail-closed antes de qualquer sitemap/pagina.
+        usa_animale_publica = (nome, dominio) == ANIMALE_PUBLICA
+        api_permitida = (False if usa_animale_publica else robots_permite(
+            dominio, "/api/catalog_system/pub/products/search")[0])
+        if not api_permitida and not usa_animale_publica:
             return {"marca_id": marca["id"], "nome": nome, "plataforma": plataforma,
                     "visitados": 0, "gravados": 0, "declarado": None,
                     "pct_campos_ok": None, "alertas": {"erro": "robots proibe a busca"}}
-        deps, erro = vtex_departamentos_femininos(dominio, nome, cache_deps)
-        if erro:
-            estado["erro"] = erro
-            deps = []
-        for cat_id, _nome in deps:
-            for p in vtex_departamento(dominio, cat_id, estado):
-                d = vtex_extrair(p, dominio)
+        if usa_animale_publica:
+            estado["origem"] = "sitemap + paginas publicas"
+            for d in animale_sitemap_todos(dominio, estado):
                 if not d["id_externo"] or d["id_externo"] in vistos:
                     continue
                 vistos.add(d["id_externo"])
@@ -883,11 +1162,28 @@ def coletar_marca(marca, hoje, cache_deps):
                 buffer.append(d)
                 if len(buffer) >= BLOCO_ESCRITA:
                     descarregar()
-        if not visitados and estado.get("categorias_vazias") and not estado["erro"]:
-            _registrar_erro_vtex(
-                estado,
-                "catalogo VTEX declarou zero em todas as categorias {}".format(
-                    ", ".join(estado["categorias_vazias"])))
+            if not estado["erro"]:
+                estado["declarado"] = visitados
+        else:
+            deps, erro = vtex_departamentos_femininos(dominio, nome, cache_deps)
+            if erro:
+                estado["erro"] = erro
+                deps = []
+            for cat_id, _nome in deps:
+                for p in vtex_departamento(dominio, cat_id, estado):
+                    d = vtex_extrair(p, dominio)
+                    if not d["id_externo"] or d["id_externo"] in vistos:
+                        continue
+                    vistos.add(d["id_externo"])
+                    visitados += 1
+                    buffer.append(d)
+                    if len(buffer) >= BLOCO_ESCRITA:
+                        descarregar()
+            if not visitados and estado.get("categorias_vazias") and not estado["erro"]:
+                _registrar_erro_vtex(
+                    estado,
+                    "catalogo VTEX declarou zero em todas as categorias {}".format(
+                        ", ".join(estado["categorias_vazias"])))
     elif plataforma == "shopify":
         for p in shopify_todos(dominio, estado):
             d = shopify_extrair(p)
@@ -920,6 +1216,12 @@ def coletar_marca(marca, hoje, cache_deps):
             estado["indisponiveis_fora_do_universo"])
     if estado.get("faixas_truncadas"):
         alertas["faixas_truncadas"] = estado["faixas_truncadas"][:5]
+    if estado.get("origem"):
+        alertas["origem"] = estado["origem"]
+        alertas["urls_no_sitemap"] = estado.get("urls_no_sitemap")
+        alertas["urls_bloqueadas_robots"] = estado.get("urls_bloqueadas_robots")
+        alertas["paginas_lidas"] = estado.get("paginas_lidas")
+        alertas["fora_do_recorte"] = estado.get("fora_do_recorte")
     if plataforma == "vtex" and declarado and visitados < declarado * 0.98:
         alertas["divergencia"] = {
             "paginavel": declarado, "coletado": visitados,
