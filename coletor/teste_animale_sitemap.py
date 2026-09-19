@@ -42,6 +42,13 @@ def xml(tipo, urls):
 
 
 def main():
+    workflow = open(os.path.join(
+        PASTA, "..", ".github", "workflows", "coleta.yml"),
+        encoding="utf-8").read()
+    if ("COLETA_ANIMALE_PUBLICA:" not in workflow
+            or "vars.COLETA_ANIMALE_PUBLICA" not in workflow):
+        return falhar("workflow perdeu a chave explicita do rollout da Animale")
+
     dados = json.load(open(FIXTURE, encoding="utf-8"))
     produto = varejo.animale_extrair_pagina(html_do(dados), URL_PRODUTO)
     if produto["id_externo"] != "53085":
