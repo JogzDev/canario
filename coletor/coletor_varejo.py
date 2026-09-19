@@ -75,6 +75,12 @@ _ultima = [0.0]
 
 def data_operacional(agora=None):
     """Data de negocio em Sao Paulo, independente do fuso do runner."""
+    fixa = os.environ.get("DATA_OPERACIONAL", "").strip()
+    if fixa:
+        # Uma recuperação pode acontecer depois da meia-noite, mas ainda
+        # pertencer à coleta que começou no dia anterior. A data explícita é
+        # validada pelo parser ISO e falha fechada se o operador errar.
+        return date.fromisoformat(fixa)
     agora = agora or datetime.now(FUSO_OPERACIONAL)
     return agora.astimezone(FUSO_OPERACIONAL).date()
 

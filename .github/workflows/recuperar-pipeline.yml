@@ -11,6 +11,11 @@ on:
         required: false
         type: boolean
         default: false
+      data_operacional:
+        description: 'data ISO das coletas que serao recuperadas/validadas'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -23,6 +28,8 @@ jobs:
   recuperar-shopify:
     if: ${{ inputs.somente_validar != true }}
     uses: ./.github/workflows/coleta-shopify.yml
+    with:
+      data_operacional: ${{ inputs.data_operacional }}
     secrets: inherit
 
   recuperar-busca:
@@ -32,6 +39,7 @@ jobs:
     with:
       modo: ''
       tentativa: 1
+      data_operacional: ${{ inputs.data_operacional }}
     secrets: inherit
 
   saude:
@@ -50,6 +58,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          DATA_OPERACIONAL: ${{ inputs.data_operacional }}
         run: "$PY coletor/gerar_saude.py"
 
       - name: Validar recuperacao das duas fontes

@@ -36,6 +36,11 @@ on:
         required: false
         type: string
         default: 'sempre-ligado'
+      data_operacional:
+        description: 'Data ISO da coleta encadeada (vazio = hoje em Sao Paulo)'
+        required: false
+        type: string
+        default: ''
     secrets:
       SUPABASE_URL:
         required: true
@@ -72,6 +77,10 @@ on:
           - sempre-ligado
           - xcode
         default: sempre-ligado
+      data_operacional:
+        description: 'Data ISO da coleta encadeada (vazio = hoje em Sao Paulo)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -107,6 +116,7 @@ jobs:
           COLETA_PLATAFORMA: ${{ inputs.plataforma }}
           COLETA_MARCA: ${{ inputs.marca }}
           COLETA_SEGMENTO: ${{ inputs.segmento }}
+          DATA_OPERACIONAL: ${{ inputs.data_operacional }}
         run: "$PY coletor/coletor_varejo.py"
 
       - name: Provar isolamento do painel adicional

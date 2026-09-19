@@ -334,6 +334,9 @@ def checar_orquestracao(workflows):
     if "somente_validar" not in entrada_recuperacao.get("inputs", {}):
         falhar("recuperar-pipeline.yml",
                "recuperacao sem modo de reaproveitar coletas concluidas")
+    if "data_operacional" not in entrada_recuperacao.get("inputs", {}):
+        falhar("recuperar-pipeline.yml",
+               "recuperacao sem ancora explicita para virada de dia")
     if jobs_recuperacao.get("recuperar-shopify", {}).get(
             "uses") != individuais["coleta-shopify.yml"]:
         falhar("recuperar-pipeline.yml", "recuperacao nao chama Shopify")
@@ -359,6 +362,15 @@ def checar_orquestracao(workflows):
     if "somente_validar" not in str(dependencia_recuperacao.get("if", "")):
         falhar("recuperar-pipeline.yml",
                "modo somente validar ainda exige jobs pulados")
+    passo_portao_recuperacao = next((p for p in passos_saude_recuperacao
+                                    if p.get("id") == "portao"), {})
+    if "DATA_OPERACIONAL" not in passo_portao_recuperacao.get("env", {}):
+        falhar("recuperar-pipeline.yml",
+               "portao de recuperacao pode trocar de dia no meio da run")
+    for nome in ("recuperar-shopify", "recuperar-busca"):
+        if "data_operacional" not in jobs_recuperacao.get(nome, {}).get("with", {}):
+            falhar("recuperar-pipeline.yml",
+                   "{} nao recebe a ancora da recuperacao".format(nome))
 
     motor = workflows.get("motor.yml", {}).get("jobs", {}).get(
         "computar", {})

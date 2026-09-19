@@ -144,6 +144,9 @@ def alertas_com_motivo_http(alertas):
 
 
 def data_operacional(agora=None):
+    fixa = os.environ.get("DATA_OPERACIONAL", "").strip()
+    if fixa:
+        return date.fromisoformat(fixa)
     agora = agora or datetime.now(FUSO_OPERACIONAL)
     return agora.astimezone(FUSO_OPERACIONAL).date()
 
