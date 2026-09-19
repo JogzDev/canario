@@ -1015,7 +1015,7 @@ def alertas_criticos(registros, marcas_ativas, hoje):
 
     A distinção que passa a valer:
 
-    * zero **com motivo HTTP registrado** e por menos de
+    * zero **com recusa externa conhecida registrada** e por menos de
       `DIAS_DE_ZERO_PARA_BLOQUEAR` dias seguidos → a fonte recusou. Vira aviso.
     * zero **sem motivo nenhum** → não sabemos o que houve, e não saber é pior
       que saber que foi recusa. Bloqueia na hora.
@@ -1062,15 +1062,15 @@ def alertas_criticos(registros, marcas_ativas, hoje):
             motivo = ((atual.get("alertas") or {}).get("erro")
                       if isinstance(atual.get("alertas"), dict) else None)
             seguidos = _zeros_seguidos(historico.get(chave, {}), hoje_iso)
-            motivo_http = bool(re.search(
-                r"\bhttp\s+(?:429|5\d\d)\b", str(motivo or ""),
-                flags=re.IGNORECASE))
+            recusa_conhecida = bool(re.search(
+                r"\bhttp\s+(?:429|5\d\d)\b|robots\s+proibe",
+                str(motivo or ""), flags=re.IGNORECASE))
             if not motivo:
                 criticos.append(
                     "{} retornou zero sem dizer por quê".format(rotulo))
-            elif not motivo_http:
+            elif not recusa_conhecida:
                 criticos.append(
-                    "{} retornou zero por erro nao HTTP ({})".format(
+                    "{} retornou zero por erro interno/desconhecido ({})".format(
                         rotulo, motivo))
             elif seguidos >= DIAS_DE_ZERO_PARA_BLOQUEAR:
                 criticos.append("{} em zero há {} dias seguidos ({})".format(

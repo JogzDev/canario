@@ -122,6 +122,16 @@ def checar_orquestracao(workflows):
         if segmento.get("default") != "feminino_casual_br":
             falhar(arquivo, "coleta reutilizavel sem segmento brasileiro explicito")
 
+    for arquivo in ("coleta.yml", "coleta-shopify.yml",
+                    "coleta-editorial.yml", "coleta-trends.yml"):
+        dados = workflows.get(arquivo, {})
+        gatilhos = dados.get("on", dados.get(True, {})) or {}
+        chamada = gatilhos.get("workflow_call") or {}
+        if "data_operacional" not in chamada.get("inputs", {}):
+            falhar(arquivo, "workflow reutilizavel sem ancora de data")
+        if "data_operacional" not in chamada.get("outputs", {}):
+            falhar(arquivo, "workflow reutilizavel nao propaga a ancora")
+
     direcao = workflows.get("coleta-direcao-internacional.yml", {})
     job_direcao = direcao.get("jobs", {}).get("coletar", {})
     if (job_direcao.get("uses") != individuais["coleta-shopify.yml"] or
@@ -216,6 +226,11 @@ def checar_orquestracao(workflows):
                    "job `{}` deveria depender de `{}`".format(
                        job, dependencia))
 
+    for job in ("varejo-shopify", "editorial", "busca"):
+        if "data_operacional" not in jobs.get(job, {}).get("with", {}):
+            falhar("pipeline-diario.yml",
+                   "job `{}` pode trocar de dia no meio da run".format(job))
+
     motor_pipeline = jobs.get("motor", {})
     condicao_motor_pipeline = str(motor_pipeline.get("if", ""))
     if ("always()" not in condicao_motor_pipeline or
@@ -231,6 +246,9 @@ def checar_orquestracao(workflows):
     if "always()" not in str(saude_inicial.get("if", "")):
         falhar("pipeline-diario.yml",
                "saude inicial deve rodar mesmo quando uma coleta falhar")
+    if "data_operacional" not in saude_inicial.get("outputs", {}):
+        falhar("pipeline-diario.yml",
+               "saude inicial nao preserva a data das coletas")
 
     passos = saude_inicial.get("steps", [])
     ids = {p.get("id"): p for p in passos if p.get("id")}
@@ -262,6 +280,10 @@ def checar_orquestracao(workflows):
     ids_finais = {p.get("id") for p in saude.get("steps", []) if p.get("id")}
     if "portao" not in ids_finais:
         falhar("pipeline-diario.yml", "saude final ficou sem portao")
+    passo_portao_final = next((p for p in saude.get("steps", [])
+                              if p.get("id") == "portao"), {})
+    if "DATA_OPERACIONAL" not in passo_portao_final.get("env", {}):
+        falhar("pipeline-diario.yml", "saude final pode trocar de dia")
 
     def conferir_relatorio_fora_do_portao(arquivo, job):
         """Relatorio pode falhar; somente o dado pode impedir o motor.

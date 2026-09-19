@@ -32,6 +32,7 @@ import re
 import sys
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from descoberta_feeds import parse_data  # noqa: E402
@@ -45,6 +46,16 @@ VEICULOS = os.path.join(RAIZ, "anexos", "veiculos.csv")
 
 JANELA_SEMANAS = 4          # §18: janela movel da perna editorial
 SEGMENTO = "feminino_casual_br"
+FUSO_OPERACIONAL = ZoneInfo("America/Sao_Paulo")
+
+
+def data_operacional(agora=None):
+    """Data comum à execução inteira, inclusive quando cruza meia-noite."""
+    fixa = os.environ.get("DATA_OPERACIONAL", "").strip()
+    if fixa:
+        return date.fromisoformat(fixa)
+    agora = agora or datetime.now(FUSO_OPERACIONAL)
+    return agora.astimezone(FUSO_OPERACIONAL).date()
 
 
 def semana_de(d):
@@ -448,7 +459,7 @@ def main():
     # nulo aqui -- em Postgres NULL nao conflita com NULL, entao 17 linhas
     # entrariam duplicadas todo dia em vez de atualizar. O detalhe por veiculo
     # vai no jsonb de alertas, que e onde §20 quer o diagnostico.
-    hoje = date.today()
+    hoje = data_operacional()
     com_erro = {n: m["erro"] for n, m in por_veiculo.items() if m["erro"]}
     zerados = [n for n, m in por_veiculo.items()
                if not m["erro"] and m["itens"] == 0]

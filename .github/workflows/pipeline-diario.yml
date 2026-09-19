@@ -30,11 +30,15 @@ jobs:
   varejo-shopify:
     needs: varejo-vtex
     uses: ./.github/workflows/coleta-shopify.yml
+    with:
+      data_operacional: ${{ needs.varejo-vtex.outputs.data_operacional }}
     secrets: inherit
 
   editorial:
     needs: varejo-shopify
     uses: ./.github/workflows/coleta-editorial.yml
+    with:
+      data_operacional: ${{ needs.varejo-shopify.outputs.data_operacional }}
     secrets: inherit
 
   busca:
@@ -42,6 +46,7 @@ jobs:
     uses: ./.github/workflows/coleta-trends.yml
     with:
       modo: ''
+      data_operacional: ${{ needs.editorial.outputs.data_operacional }}
     secrets: inherit
 
   saude-inicial:
@@ -51,6 +56,7 @@ jobs:
     needs: [varejo-vtex, varejo-shopify, editorial, busca]
     outputs:
       saudavel: ${{ steps.resultado.outputs.saudavel }}
+      data_operacional: ${{ needs.varejo-vtex.outputs.data_operacional }}
     runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 15
     steps:
@@ -64,6 +70,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          DATA_OPERACIONAL: ${{ needs.varejo-vtex.outputs.data_operacional }}
         run: "$PY coletor/gerar_saude.py"
 
       - name: Validar execucao das quatro coletas
@@ -86,6 +93,8 @@ jobs:
     needs: saude-inicial
     if: ${{ needs.saude-inicial.outputs.saudavel != 'true' }}
     uses: ./.github/workflows/coleta-shopify.yml
+    with:
+      data_operacional: ${{ needs.saude-inicial.outputs.data_operacional }}
     secrets: inherit
 
   recuperar-busca:
@@ -116,6 +125,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          DATA_OPERACIONAL: ${{ needs.saude-inicial.outputs.data_operacional }}
         run: "$PY coletor/gerar_saude.py"
 
       # Relatorio e portao sao responsabilidades diferentes. A `main` exige
