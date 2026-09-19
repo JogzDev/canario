@@ -203,6 +203,25 @@ async function main() {
       }
       console.log(`aplicado ${path.relative(REPOSITORIO, arquivo)}`);
     }
+    // A consulta de capacidade/cobertura também precisa executar de verdade.
+    // READ ONLY torna uma escrita acidental uma falha do laboratório.
+    const diagnostico = await readFile(path.join(REPOSITORIO,
+      'ferramentas/capacidade/91_diagnostico_pos_poda.sql'), 'utf8');
+    await cliente.query('begin transaction read only');
+    try {
+      const resultados = await cliente.query(diagnostico);
+      const selects = [].concat(resultados).filter(r => r.command === 'SELECT');
+      if (selects.length !== 8) throw new Error('diagnóstico 91 perdeu uma consulta');
+      if (!selects[0].rows[0]?.cota_bytes
+          || !selects[1].rows.some(r => r.tabela === 'public.snapshots')
+          || !selects[6].rows.some(r => r.segmento === 'feminino_casual_br')
+          || selects[7].rows.length === 0) {
+        throw new Error('diagnóstico 91 não devolveu capacidade/cobertura esperadas');
+      }
+      console.log('ok 25 diagnóstico pós-poda: oito consultas executadas em READ ONLY');
+    } finally {
+      await cliente.query('rollback');
+    }
     console.log('LABORATORIO VERDE');
   } finally {
     await encerrar();
