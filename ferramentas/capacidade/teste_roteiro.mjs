@@ -472,7 +472,45 @@ async function main() {
       from public.snapshots s`)).rows[0];
     const antesCompactacao = await assinaturaSnapshots();
     const bytesAntesCompactacao = await tamanho('public.snapshots');
-    await op.query('vacuum full public.snapshots');
+
+    // Os quatro portões particulares do passo 92 falham fechados e deixam o
+    // alvo intacto antes de exercitarmos a ação.
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql');
+    conferir(r.codigo === 1 && /minimo esperado 80000/.test(r.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 recusa volume divergente sem a exceção exclusiva do laboratório');
+    await op.query("insert into public.motor_execucoes (status) values ('running')");
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 1 && /motor em andamento/.test(r.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 aborta com o motor rodando antes de tocar em snapshots');
+    await op.query("update public.motor_execucoes set status = 'success'");
+    await op.query('create index snapshots_extra_fixture on public.snapshots(ofertavel)');
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 1 && /inventario de indices/.test(r.saida),
+      '92 recusa inventário de índices diferente do medido');
+    await op.query('drop index public.snapshots_extra_fixture');
+    const leitorSnapshots = await conectar('lab');
+    await leitorSnapshots.query('begin');
+    await leitorSnapshots.query('select count(*) from public.snapshots');
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 1 && /outra sessao segura lock/.test(r.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 aborta com lock concorrente antes de tocar em snapshots');
+    await leitorSnapshots.query('rollback');
+    await leitorSnapshots.end();
+
+    const ensaio92 = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1');
+    conferir(ensaio92.codigo === 0 && /ENSAIO/.test(ensaio92.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 em ensaio valida as pré-condições sem compactar snapshots');
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 0, '92 executa pelo mesmo caminho usado em produção');
     const depoisCompactacao = await assinaturaSnapshots();
     const bytesDepoisCompactacao = await tamanho('public.snapshots');
     conferir(JSON.stringify(antesCompactacao) === JSON.stringify(depoisCompactacao),
@@ -484,6 +522,10 @@ async function main() {
       where indrelid='public.snapshots'::regclass`)).rows[0];
     conferir(indicesSnapshots.n === 2 && indicesSnapshots.validos,
       'snapshots pós-poda: os dois índices permanecem válidos');
+    r = passo('93_confere_snapshots_pos_compactacao.sql');
+    conferir(r.codigo === 0 && /assinatura/.test(r.saida)
+      && /motor_em_andamento/.test(r.saida),
+      '93 comprova conteúdo, índices, cota e motor somente em leitura');
 
     // A porta do pooler de transação é recusada antes de conectar.
     const recusa = spawnSync(process.execPath, [path.join(AQUI, 'passo.mjs'),
