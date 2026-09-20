@@ -68,6 +68,8 @@ jobs:
         run: "$PY coletor/teste_semana_da_busca.py"
       - name: Workflows do Actions
         run: "$PY coletor/teste_workflows.py"
+      - name: Runner residencial não duplica agendas
+        run: "$PY coletor/teste_runner_residencial.py"
       # Bundle, time e versao ja divergiram duas vezes sem ninguem ver, e nas
       # duas o sintoma so apareceu na hora de assinar para a loja.
       - name: Identidade do app e uma so

@@ -1,5 +1,28 @@
 # Retomada: publicação, capacidade e execução
 
+## Fechamento posterior da rodada
+
+As condições que estavam abertas abaixo foram concluídas ainda em 19/09:
+
+- a coleta isolada da Animale terminou verde, com 4.881/4.902 páginas lidas,
+  1.744 produtos gravados e 21 falhas HTTP externas;
+- saúde e motor publicaram uma observação; a API pública confirmou 19/09 em
+  similares e eventos;
+- a medição pós-motor fechou em 365.534.005 bytes (73,1%), abaixo de 85%;
+- a PR #30 foi integrada na `main` (`7af4825`) e os quatro jobs pós-merge
+  passaram;
+- o timeout editorial imediatamente após o motor foi transitório. O gate
+  diário passou a conferir somente as duas RPCs datadas; a sonda manual
+  continua conferindo as três RPCs de contrato;
+- o supervisor temporário deixou de repetir essa sonda manual depois do
+  pipeline. Ele apenas acompanha a run agendada e a medição read-only; o
+  runner durável preparado para depois da janela também recupera lock e
+  registro remoto órfãos após encerramento abrupto.
+
+O restante deste documento preserva a análise e as medições anteriores à
+execução para auditoria. Onde houver diferença, este fechamento e `ESTADO.md`
+são o estado atual.
+
 ## Resultado desta rodada
 
 Código na branch `codex/verificacao-publicacao-painel`, baseado na main

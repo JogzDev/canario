@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 31/08/2026, 12:12 em São Paulo
+**Última atualização:** 20/09/2026, 00:05 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -15,20 +15,46 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 > porque dois documentos afirmavam coisas diferentes sobre qual app estava na loja.
 > A regra passa a ser: **estado mora aqui, o resto é guia ou história datada.**
 
+## Atualização operacional de 19/09
+
+O backend A57/A58, o caminho público da Animale e a proteção de capacidade
+estão em produção. A coleta isolada da Animale concluiu com 4.881 de 4.902
+páginas lidas, 1.744 produtos gravados e 21 falhas HTTP externas; não houve
+erro de parser ou de código. Saúde e motor publicaram a observação operacional
+de **19/09**. A API pública confirmou a mesma data em similares e eventos.
+
+Depois da coleta e do motor, a cota foi medida em **365.534.005 / 500.000.000
+bytes (73,1%)**, com 134.465.995 bytes livres. O painel contém 80.595 produtos
+em 20 marcas, sem contaminação de segmento na verificação. A compactação
+autorizada de `snapshots` preservou 83.400 linhas e a assinatura integral,
+reduzindo a relação de 73,14 MB para 17,77 MB.
+
+A [PR #30](https://github.com/JogzDev/canario/pull/30) entrou na `main` no
+commit `7af4825`. O pipeline agora só fica verde depois de a API do app provar a
+data publicada. A busca editorial continua obrigatória na sonda manual de
+contrato, mas não pode mascarar a publicação diária com timeout transitório.
+Os quatro jobs do CI pós-merge passaram.
+
+O código consumidor do app já está integrado, porém sua publicação continua
+retida até completar sete dias de observação de capacidade e atualização. O
+runner residencial atual é temporário e se remove antes de 26/09; a substituição
+durável está versionada em `ferramentas/runner_residencial` e só deve ser
+instalada depois que o temporário sair, nunca em paralelo.
+
 ---
 
 ## Como ler em 30 segundos
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | editorial feminino recomposto; direção e catálogo candidato isolados | 170.813 artigos · 16.287 pares compactos · **17.760 produtos candidatos** |
-| Banco | plano gratuito; inchaço recuperado em 26/08 | **407.342.227 / 500.000.000 bytes (81,5%)** · 92.657.773 bytes livres |
+| Dados e pipeline | A57/A58 e Animale publicados; observação de sete dias em curso | painel em **19/09** · 80.595 produtos · 20 marcas |
+| Banco | plano gratuito; compactação de `snapshots` verificada | **365.534.005 / 500.000.000 bytes (73,1%)** · 134.465.995 bytes livres |
 | Rota paga de visão (Luna) | **v11 em produção** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
-| App na loja | **1.1 publicada; candidato 1.2 (1) fechado** | pacote visual integrado; testes verdes; Archive criado; exportação bloqueada pela conta/certificado Apple local |
+| App na loja | **1.1 publicada; consumidor novo ainda retido** | código integrado; liberar somente depois da observação de sete dias |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google nativo e e-mail validados no iPhone** | cliente iOS, callbacks, Keychain e Supabase configurados; relogin Google aprovado |
 | Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
-| Testes | **281 Swift** · **32 portões Python** · **9 UI** | sete fluxos UI offline rodam no CI; dois usam dados reais e ficam na regressão local |
+| Testes | CI pós-merge verde em quatro jobs | Python, dois laboratórios PostgreSQL, build e 12 fluxos UI offline |
 
 ## 0. Trabalho ativo — conta, capacidade, privacidade declarada e 1.2
 
