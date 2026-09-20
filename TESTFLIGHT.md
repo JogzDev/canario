@@ -1,21 +1,24 @@
-# TestFlight — DataDrobe 1.2 (build 1)
+# TestFlight — DataDrobe 1.2 (build 2)
 
 Checklist iniciado em 24/08/2026.
 
 - App publicado: **DataDrobe 1.1**.
-- Próximo beta: **1.2 (build 1)**.
+- Próximo beta: **1.2 (build 2)**.
 - Bundle: `br.com.canario.ch3.app`.
 - Team: `67AYPRFZH8`.
 - Idioma-fonte do app: inglês.
 - Destino: iPhone, iOS 17+.
 - Análise visual: Luna v11 ligada; cópia reduzida e sem metadados só é enviada
   após consentimento explícito.
-- Upload atual: **ainda não enviado**.
-- Archive: **ainda não gerado**.
+- Upload atual: **build 2 ainda não enviado**. O build 1 foi aceito pela Apple
+  em 31/08, mas antecede o consumidor A57/A58 e não é mais candidato.
+- Archive atual: **ainda não gerado**. Os Archives build 1 continuam no
+  Organizer apenas como registro; não devem ser distribuídos novamente.
 
 ## Envio
 
-1. Rode todos os portões de `RELEASE_DATADROBE.md`.
+1. Conclua os sete marcos de observação e rode todos os portões de
+   `RELEASE_DATADROBE.md` no mesmo commit.
 2. Gere um Archive Release para **Any iOS Device (arm64)**.
 3. No Organizer, use **Validate App**.
 4. Escolha **Distribute App > TestFlight & App Store > Upload**.
@@ -35,8 +38,10 @@ Please test camera, Photos and PDF/file import; target selection and crop;
 the cloud-consent disclosure; guest use; all three sign-in methods; confirmation
 and password-reset links; offline edits and conflict merge; signing out; account
 deletion; saving, editing and deleting Closet items; favorites; Similar Pieces
-and store links; scrolling over attribute chips; consistent light appearance,
-larger text and VoiceOver.
+and store links; the observation dates and past-tense wording when market data
+is not current; the distinct-item counts and editorial search on Explore;
+scrolling over attribute chips; consistent light appearance, larger text and
+VoiceOver.
 
 Report any number whose source or date is unclear, any stale store link, any
 photo sent without the separate confirmation, and any import wait that feels

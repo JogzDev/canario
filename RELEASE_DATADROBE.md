@@ -8,7 +8,7 @@ da 1.0 permanece apenas como registro histórico.
 | Produto | **DataDrobe** |
 | Bundle ID | `br.com.canario.ch3.app` |
 | Versão | **1.2** |
-| Build | **1** |
+| Build | **2** |
 | Team | `67AYPRFZH8` |
 | Plataforma | iPhone, iOS 17+ |
 | Idioma-fonte | inglês |
@@ -22,12 +22,23 @@ concluída e upload 1.1 (2) aceito às 09:18. O pacote entrou em processamento n
 TestFlight e não foi submetido à App Review. O Archive está preservado no
 Organizer como `DataDrobe 1.1 (2) 09.15.xcarchive`.
 
-**Candidato atual:** 1.2 build 1, ainda local. Inclui conta opcional por Apple,
+**Histórico do build 1:** o Archive de 31/08 foi preparado e enviado com
+sucesso à Apple no mesmo dia. Ele antecede o consumidor A57/A58 e ficou
+substituído; não deve ser reutilizado como candidato, mesmo que ainda apareça
+no Organizer ou no App Store Connect.
+
+**Candidato atual:** 1.2 build 2, ainda local. Inclui conta opcional por Apple,
 Google ou e-mail, sessão no Keychain, Closet offline-first com dados estruturados
 e miniatura reduzida sincronizados, recuperação de senha e exclusão integral
-iniciada dentro do app. A foto original nunca é enviada. O Archive foi gerado
-em 31/08; a exportação App Store aguarda conta Apple ativa, certificado Apple
-Distribution e perfil de loja atualizado. Ainda não existe upload deste candidato.
+iniciada dentro do app, além do consumidor versionado de significado A57/A58.
+A foto original nunca é enviada. O Archive build 2 só será gerado depois dos
+sete marcos de observação; ainda não existe upload deste candidato.
+
+Em 20/09, uma exportação diagnóstica do Archive antigo provou que a conta, a
+assinatura Apple Distribution gerenciada e o perfil App Store atual estão
+funcionais, incluindo Sign in with Apple e Associated Domains. A exportação
+diagnóstica não foi enviada. O número do build passa a ser preservado pelo
+`ExportOptions-AppStore.plist`, em vez de ser alterado silenciosamente pelo Xcode.
 
 ## Portões antes do Archive
 
@@ -55,7 +66,7 @@ Todos precisam estar verdes no mesmo commit:
 No Xcode, use **Any iOS Device (arm64)** e **Product > Archive**. Em seguida,
 no Organizer:
 
-1. abra o Archive 1.2 (1);
+1. abra o Archive 1.2 (2);
 2. escolha **Validate App**;
 3. confirme DataDrobe, `br.com.canario.ch3.app` e Team `67AYPRFZH8`;
 4. leia todos os warnings e corrija qualquer divergência de entitlement,

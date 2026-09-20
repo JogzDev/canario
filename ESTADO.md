@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 20/09/2026, 10:55 em São Paulo
+**Última atualização:** 20/09/2026, 12:50 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -514,13 +514,13 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
 * Loja: **1.1 publicada**
-* Repositório: **candidato 1.2 build 1 fechado**; todo o trabalho de
+* Repositório: **candidato 1.2 build 2 em preparação**; todo o trabalho de
   `development`, inclusive o pacote visual final e as correções de 30/08, foi
   integrado na branch de release para entrada na `main`
 * A `main` está protegida desde 26/08 — PR obrigatório, uma aprovação, `App
   (Swift)` e `Coletores (Python)` verdes, sem force-push nem deleção
 * TestFlight 1.1: upload aceito pela Apple em 21/08 e versão publicada
-* TestFlight 1.2: **ainda não enviado; Archive gerado em 31/08**
+* TestFlight 1.2: **build 1 enviado em 31/08 e substituído; build 2 ainda não enviado**
 * App Review 1.2: **não enviado**
 * Time: `67AYPRFZH8`
 * Alvo mínimo: iOS 17
@@ -534,10 +534,11 @@ assinatura válida. O App Store Connect aceitou o upload sem warning de pacote.
 O Archive 1.2 (1) foi criado com Xcode 26.2 e preservado no Organizer em
 `~/Library/Developer/Xcode/Archives/2026-08-31/DataDrobe 1.2 (1) 12.10.xcarchive`.
 O build, os sete fluxos UI do CI, 281 testes Swift e 32 portões Python passaram.
-A exportação App Store não foi concluída porque o Xcode deste Mac está sem conta
-Apple ativa e o Keychain não contém uma identidade Apple Distribution; o perfil
-de loja local também antecede Sign in with Apple e Associated Domains. Entrar
-na conta e regenerar certificado/perfil é o bloqueio operacional antes do upload.
+O Organizer registra que outro Archive 1.2 (1), das 16:28, foi preparado e
+enviado com sucesso à Apple em 31/08. Ele antecede A57/A58 e está substituído.
+Em 20/09, uma exportação diagnóstica confirmou assinatura Apple Distribution,
+perfil App Store, Sign in with Apple e Associated Domains. O próximo candidato
+é 1.2 (2); seu Archive só será criado depois dos sete marcos de observação.
 
 A identidade é conferida no CI a cada push por
 `coletor/teste_identidade_do_app.py`, que exige que gerador, `project.pbxproj`,

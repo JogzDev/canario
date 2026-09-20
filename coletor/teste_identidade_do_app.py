@@ -95,6 +95,10 @@ def main():
         print("FALHOU: ExportOptions usa teamID {!r}, projeto usa {!r}".format(
             opcoes.get("teamID"), gerador["TIME_DE_DESENVOLVIMENTO"]))
         return 1
+    if opcoes.get("manageAppVersionAndBuildNumber") is not False:
+        print("FALHOU: ExportOptions deixa o Xcode trocar o build durante a "
+              "exportacao; o numero precisa ser decidido no projeto")
+        return 1
 
     # 3. A versao tambem e unica, e vem do pbxproj -- o Info.plist a referencia
     #    por $(MARKETING_VERSION) desde 8ce22fd em vez de repetir o numero.
