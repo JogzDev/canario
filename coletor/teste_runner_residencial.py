@@ -2,12 +2,46 @@
 """Portões estáticos do runner residencial; não registra runner nem coleta."""
 
 from pathlib import Path
+import os
 import plistlib
 import subprocess
+import tempfile
 
 
 RAIZ = Path(__file__).resolve().parents[1]
 PASTA = RAIZ / "ferramentas" / "runner_residencial"
+
+
+def provar_recusa_de_atualizacao_durante_janela():
+    with tempfile.TemporaryDirectory(prefix="canario-runner-teste-") as tmp:
+        temporario = Path(tmp)
+        binarios = temporario / "bin"
+        binarios.mkdir()
+        launchctl = binarios / "launchctl"
+        launchctl.write_text(
+            "#!/bin/bash\n"
+            "if [ \"${1:-}\" = print ]; then\n"
+            "  printf 'state = running\\n'\n"
+            "  exit 0\n"
+            "fi\n"
+            "exit 99\n",
+            encoding="utf-8",
+        )
+        launchctl.chmod(0o700)
+
+        ambiente = os.environ.copy()
+        ambiente["HOME"] = str(temporario / "home")
+        ambiente["PATH"] = "{}:/usr/bin:/bin:/usr/sbin:/sbin".format(binarios)
+        resultado = subprocess.run(
+            ["/bin/bash", str(PASTA / "instalar.sh")],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=ambiente,
+        )
+        assert resultado.returncode == 1
+        assert "runner residencial esta executando uma janela" in resultado.stdout
+        assert not (temporario / "home/.canario/runner-residencial/runner.sh").exists()
 
 
 def main():
@@ -40,6 +74,7 @@ def main():
         "adquirir_lock",
         "limpar_registros_orfaos",
         "listener_local_ativo",
+        'kill -0 "$LISTENER_PID"',
         'rm -f -- "$LOCK/pid"',
         'rmdir "$LOCK"',
     )
@@ -56,10 +91,18 @@ def main():
 
     assert "LABEL_TEMPORARIO" in instalar
     assert "RECUSADO: o supervisor temporario ainda esta instalado" in instalar
+    assert "RECUSADO: o runner residencial esta executando uma janela" in instalar
+    assert "runner_permanente_em_execucao" in instalar
+    assert instalar.index('"$AQUI/runner.sh" --check') < instalar.index(
+        'install -m 700 "$AQUI/runner.sh"')
+    assert instalar.index('launchctl bootout "$DOMINIO/$LABEL"') < instalar.index(
+        'install -m 700 "$AQUI/runner.sh"')
     assert "launchctl bootstrap" in instalar
     assert "--check" in instalar
     assert "launchctl bootout" in remover
     assert "gh workflow" not in remover
+
+    provar_recusa_de_atualizacao_durante_janela()
 
     print("ok: runner duravel espera agendas, falha fechado e nao duplica coleta")
 

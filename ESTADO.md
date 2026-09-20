@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 20/09/2026, 00:05 em São Paulo
+**Última atualização:** 20/09/2026, 10:55 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -14,6 +14,32 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 > menos três retrabalhos, incluindo uma reversão de bundle que passou despercebida
 > porque dois documentos afirmavam coisas diferentes sobre qual app estava na loja.
 > A regra passa a ser: **estado mora aqui, o resto é guia ou história datada.**
+
+## Atualização operacional de 20/09
+
+A primeira execução diária agendada da janela, a
+[35504417793](https://github.com/JogzDev/canario/actions/runs/35504417793),
+terminou verde em todas as pernas: VTEX, Shopify, editorial, busca, saúde,
+motor, publicação e alerta. A API pública confirmou painel e eventos em
+**20/09**, ambos com idade zero. A verificação read-only
+[35513837999](https://github.com/JogzDev/canario/actions/runs/35513837999)
+mediu **367.270.709 / 500.000.000 bytes (73,5%)**, com 132.729.291 bytes
+livres. É crescimento de 1.736.704 bytes desde a baseline de 19/09, ainda
+11,5 pontos percentuais abaixo do portão operacional. O segmento
+`direcao_intl` permaneceu isolado: 3.768 produtos em cinco marcas e zero
+contaminação.
+
+O cron previsto para 03h entrou às 07h12. O runner aceitou a perna VTEX, mas
+o supervisor temporário havia sido editado enquanto o Bash ainda lia a cópia
+em execução; ao avançar no arquivo deslocado ele encerrou, removeu o registro
+do runner e deixou a perna seguinte na fila. A recuperação adotou **a mesma
+run**, sem repetir VTEX nem criar coleta concorrente. O runner durável passou
+a recusar atualização durante janela ativa e a detectar imediatamente a morte
+do listener.
+
+Com a baseline publicada em 19/09 e o ciclo agendado de 20/09, a observação
+tem **dois marcos diários válidos de sete**. Restam as execuções de 21 a 25/09;
+o app consumidor continua retido apenas para publicação.
 
 ## Atualização operacional de 19/09
 

@@ -1,11 +1,11 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 20/09/2026 às 00:05 BRT.** Esta lista substitui a triagem de
+**Atualizado em 20/09/2026 às 10:55 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Prioridade corrente — observação e liberação
 
-1. Acompanhar as execuções operacionais de 20 a 25/09. Cada dia precisa fechar
+1. A execução de 20/09 fechou verde. Acompanhar agora 21 a 25/09. Cada dia precisa fechar
    com pipeline verde, data pública comprovada e cota em até 85%. Um dia
    parcial, ausente ou inconclusivo não conta como observado.
 2. Não disparar coletas manuais para “completar” um dia: o runner acompanha a
@@ -21,8 +21,12 @@
    agenda para ela. O catálogo candidato mantém somente sua agenda existente
    de segunda e quinta.
 
-Baseline da janela: API em 19/09 e cota **365.534.005 bytes (73,1%)** depois da
-coleta isolada, saúde e motor. A PR #30 e seu CI pós-merge estão verdes.
+Janela acumulada: **2/7 marcos válidos**. Em 19/09, a baseline publicou a API
+e mediu **365.534.005 bytes (73,1%)** depois da coleta isolada, saúde e motor.
+Em 20/09, a run agendada `35504417793` publicou painel e eventos do próprio
+dia; a verificação `35513837999` mediu **367.270.709 bytes (73,5%)**, ou
++1.736.704 bytes, e confirmou zero contaminação em `direcao_intl`. Restam os
+cinco ciclos de 21 a 25/09.
 
 ## Pacote visual do Figma — entregue no candidato 1.2
 

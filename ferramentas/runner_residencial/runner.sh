@@ -114,6 +114,11 @@ obter_run_nova() {
 esperar_run() {
   local run_id="$1" limite_epoch="$2" estado conclusao
   while [ "$(date -u '+%s')" -lt "$limite_epoch" ]; do
+    if [ -n "${LISTENER_PID:-}" ] \
+        && ! kill -0 "$LISTENER_PID" 2>/dev/null; then
+      log "Runner local encerrou enquanto a execucao $run_id ainda precisava dele."
+      return 2
+    fi
     estado="$(gh run view "$run_id" --repo "$GH_REPO" --json status --jq '.status' 2>/dev/null || true)"
     if [ "$estado" = completed ]; then
       conclusao="$(gh run view "$run_id" --repo "$GH_REPO" --json conclusion --jq '.conclusion' 2>/dev/null || true)"
