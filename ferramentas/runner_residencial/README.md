@@ -17,6 +17,11 @@ exata, mede capacidade e remove credencial e diretório de trabalho ao terminar.
 - verifica o SHA-256 do GitHub Actions Runner antes de extrair;
 - recupera lock e registro remoto órfãos somente quando não existe processo
   local correspondente, sem apagar uma janela ainda ativa;
+- recusa atualização do script instalado enquanto uma janela estiver ativa,
+  porque o Bash lê o arquivo em blocos e uma sobrescrita no meio da execução
+  pode interromper o supervisor entre dois jobs;
+- trata o encerramento inesperado do listener como falha imediata, em vez de
+  deixar os jobs seguintes presos na fila até o timeout;
 - não grava senha de banco nem token de registro em disco.
 
 O job `publicacao` do próprio pipeline é a prova diária do painel. Este runner
