@@ -2,10 +2,18 @@
 """Teste sem rede da sonda pública A57/A58."""
 
 from io import BytesIO
+from contextlib import redirect_stdout
+from datetime import date
+from io import StringIO
 import json
+from pathlib import Path
+import tempfile
 import urllib.error
 
-from sonda_significado_publico import FalhaDaSonda, chamar_rpc, sondar
+from sonda_significado_publico import (
+    FalhaDaSonda, avaliar_publicacao, chamar_rpc, main, sondar,
+    sondar_painel,
+)
 
 
 class Resposta:
@@ -56,7 +64,7 @@ def testar_verde():
     chamadas = []
     resultado = sondar("https://projeto.supabase.co", "publica",
                        abrir_verde(chamadas))
-    assert resultado == {
+    assert resultado["amostras"] == {
         "similares_da_peca_amplo_v2": 0,
         "resumo_de_eventos": 0,
         "buscar_referencia_editorial": 0,
@@ -65,6 +73,19 @@ def testar_verde():
         "similares_da_peca_amplo_v2", "resumo_de_eventos",
         "buscar_referencia_editorial"]
     assert all(c[2] == "publica" and c[3] == 20 for c in chamadas)
+    assert resultado["observacao"]["painel_observado_em"] == "2026-09-02"
+
+
+def testar_publicacao_nao_depende_da_busca_editorial():
+    chamadas = []
+    resultado = sondar_painel(
+        "https://projeto.supabase.co", "publica", abrir_verde(chamadas))
+    assert [c[0] for c in chamadas] == [
+        "similares_da_peca_amplo_v2", "resumo_de_eventos"]
+    assert resultado["amostras"] == {
+        "similares_da_peca_amplo_v2": 0,
+        "resumo_de_eventos": 0,
+    }
 
 
 def testar_contrato_incompleto():
@@ -92,8 +113,112 @@ def testar_funcao_ausente():
         assert "cache de schema" in str(erro)
 
 
+HOJE = date(2026, 9, 19)
+
+
+def observacao(painel="2026-09-19", eventos="2026-09-19"):
+    def idade(valor):
+        return (HOJE - date.fromisoformat(valor)).days if valor else None
+    return {
+        "painel_observado_em": painel,
+        "painel_dias_desde_a_observacao": idade(painel),
+        "eventos_ate": eventos,
+        "eventos_dias_desde_o_fim": idade(eventos),
+    }
+
+
+def testar_publicacao():
+    casos = [
+        (observacao(), "2026-09-19", "atualizado", "data_publicada_confirmada"),
+        # Pode terminar depois da virada do dia ou ser reexecução idempotente.
+        (observacao(), "2026-09-18", "atualizado", "data_publicada_confirmada"),
+        (observacao("2026-09-18", "2026-09-18"), "2026-09-18",
+         "atualizado", "data_publicada_confirmada"),
+        (observacao("2026-09-02", "2026-09-02"), "2026-09-19",
+         "nao_atualizado", "observacao_anterior"),
+        (observacao(None, None), "2026-09-19",
+         "nao_atualizado", "observacao_ausente"),
+        (observacao(None, "2026-09-19"), "2026-09-19",
+         "nao_atualizado", "observacao_ausente"),
+        (observacao("2026-09-19", "2026-09-18"), "2026-09-19",
+         "inconclusivo", "leituras_divergentes"),
+    ]
+    for o, esperada, estado, motivo in casos:
+        assert avaliar_publicacao(o, esperada, HOJE) == {
+            "estado": estado, "motivo": motivo}
+
+
+def testar_datas_invalidas():
+    invalidos = [None, "", "2026-02-30", "19/09/2026", "20260919",
+                 "2026-09-20"]
+    for esperada in invalidos:
+        try:
+            avaliar_publicacao(observacao(), esperada, HOJE)
+        except FalhaDaSonda:
+            pass
+        else:
+            raise AssertionError("data esperada inválida aceita: {}".format(esperada))
+    for campo, valor in (
+            ("painel_observado_em", "2026-09-20"),
+            ("eventos_ate", "ontem"),
+            ("painel_dias_desde_a_observacao", True),
+            ("eventos_dias_desde_o_fim", -1),
+            ("eventos_dias_desde_o_fim", "0"),
+            ("eventos_ate", None)):
+        o = observacao()
+        o[campo] = valor
+        try:
+            avaliar_publicacao(o, "2026-09-19", HOJE)
+        except FalhaDaSonda:
+            pass
+        else:
+            raise AssertionError("metadado inválido aceito: {}".format(campo))
+
+
+def testar_cli_e_relatorio():
+    ambiente = {"SUPABASE_URL": "https://projeto.supabase.co",
+                "SUPABASE_PUBLISHABLE_KEY": "publica-nao-imprimir"}
+    with tempfile.TemporaryDirectory() as pasta:
+        destino = Path(pasta) / "publicacao.json"
+        for argumentos, codigo, estado in (
+                ([], 0, "contrato_valido"),
+                (["--exigir-publicacao", "--data-operacional", "2026-09-19"],
+                 2, "nao_atualizado"),
+                (["--exigir-publicacao", "--data-operacional", "2026-09-02"],
+                 0, "atualizado"),
+                (["--exigir-publicacao"], 1, "erro"),
+                (["--data-operacional", "2026-09-19"], 1, "erro")):
+            chamadas, saida = [], StringIO()
+            with redirect_stdout(saida):
+                retorno = main(argumentos + ["--relatorio", str(destino)],
+                               ambiente, abrir_verde(chamadas))
+            assert retorno == codigo
+            relatorio = json.loads(destino.read_text(encoding="utf-8"))
+            assert relatorio["estado"] == estado
+            esperadas = 0 if estado == "erro" else (2 if argumentos else 3)
+            assert len(chamadas) == esperadas
+            assert "publica-nao-imprimir" not in destino.read_text(encoding="utf-8")
+            assert "pronto para o app" not in saida.getvalue()
+            if estado == "contrato_valido":
+                assert "NÃO avaliada" in saida.getvalue()
+
+        # Indisponibilidade não vira dado velho nem mercado vazio.
+        def indisponivel(*_args, **_kwargs):
+            raise urllib.error.URLError("sem rede")
+        with redirect_stdout(StringIO()):
+            retorno = main(["--exigir-publicacao", "--data-operacional",
+                            "2026-09-19", "--relatorio", str(destino)],
+                           ambiente, indisponivel)
+        assert retorno == 1
+        assert json.loads(destino.read_text())["estado"] == "erro"
+
+
 if __name__ == "__main__":
     testar_verde()
+    testar_publicacao_nao_depende_da_busca_editorial()
     testar_contrato_incompleto()
     testar_funcao_ausente()
-    print("ok: sonda pública A57/A58 classifica rota e contrato sem rede")
+    testar_publicacao()
+    testar_datas_invalidas()
+    testar_cli_e_relatorio()
+    print("ok: sonda separa contrato, publicação do dia e falha de leitura sem rede")

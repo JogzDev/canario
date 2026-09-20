@@ -167,6 +167,36 @@ jobs:
       backfill_editorial: false
     secrets: inherit
 
+  publicacao:
+    # Motor concluído pode retornar observacoes_publicadas=0: o SQL mantém a
+    # âncora antiga quando falta cobertura. Só a leitura pública comprova o
+    # dia disponível ao app; não repetir coletas nem flexibilizar a coorte.
+    needs: [motor, saude-inicial]
+    if: ${{ always() && needs.motor.result == 'success' }}
+    runs-on: [self-hosted, macOS, sempre-ligado]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/python-mac
+      - name: Confirmar o dia publicado pela API do app
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          DATA_OPERACIONAL: ${{ needs.saude-inicial.outputs.data_operacional }}
+        run: >-
+          "$PY" coletor/sonda_significado_publico.py --exigir-publicacao
+          --data-operacional "$DATA_OPERACIONAL" --relatorio publicacao-painel.json
+
+      - name: Guardar diagnóstico mesmo sem atualização
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: publicacao-painel-${{ github.run_id }}-${{ github.run_attempt }}
+          path: publicacao-painel.json
+          if-no-files-found: warn
+          retention-days: 30
+
   alerta:
     # Ultimo job, sempre. Abre UMA issue por incidente, comenta nela nas noites
     # seguintes e fecha sozinho no primeiro verde -- assim "issue aberta"
@@ -185,7 +215,7 @@ jobs:
     # CINCO execucoes vermelhas de 14 a 17/08. NAO cobre "o pipeline nem
     # comecou". Esse buraco continua aberto e esta registrado no ESTADO.md.
     if: ${{ always() && github.ref_name == 'main' }}
-    needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor]
+    needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor, publicacao]
     runs-on: [self-hosted, macOS, sempre-ligado]
     timeout-minutes: 5
     steps:
@@ -195,7 +225,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ESTADO_DO_PIPELINE: >-
             ${{ (needs.saude.result == 'success' &&
-                 needs.motor.result == 'success') && 'verde' || 'vermelho' }}
+                 needs.motor.result == 'success' &&
+                 needs.publicacao.result == 'success') && 'verde' || 'vermelho' }}
           JOBS_QUE_FALHARAM: >-
             varejo-vtex=${{ needs.varejo-vtex.result }}
             varejo-shopify=${{ needs.varejo-shopify.result }}
@@ -203,4 +234,5 @@ jobs:
             busca=${{ needs.busca.result }}
             saude=${{ needs.saude.result }}
             motor=${{ needs.motor.result }}
+            publicacao=${{ needs.publicacao.result }}
         run: python3 ferramentas/alertar.py

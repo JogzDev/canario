@@ -85,7 +85,8 @@ def main():
         print("  {:26} -> {:>6} linhas   ({})".format(
             funcao, (resultados or {}).get(funcao, "?"), descricao),
             file=sys.stderr)
-    print("Motor publicado atomicamente em {:.1f}s.".format(duracao),
+    print("Cálculos do motor concluídos atomicamente em {:.1f}s; "
+          "a atualização pública do painel exige verificação separada.".format(duracao),
           file=sys.stderr)
     return 0
 

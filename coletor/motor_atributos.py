@@ -355,7 +355,8 @@ def main():
             on_conflict="execucao,produto_id,termo_id")
 
     publicado = publicar_e_aguardar(execucao, total)
-    print("Atributos e calculos publicados atomicamente: {}.".format(publicado),
+    print("Atributos e cálculos concluídos atomicamente: {}. "
+          "A atualização pública do painel exige verificação separada.".format(publicado),
           file=sys.stderr)
 
     pct = (100.0 * casados / total) if total else 0

@@ -453,6 +453,80 @@ async function main() {
     r = passo('90_observacao.sql');
     conferir(r.codigo === 0 && /cota_bytes/.test(r.saida), '90 mede em leitura');
 
+    // Pós-poda: ensaio LOCAL da hipótese medida em 19/09. Não acrescenta
+    // manutenção ao executor de produção nem muda retenção. As remoções
+    // abaixo fabricam espaço vazio só neste cluster descartável.
+    await op.query(`alter table public.snapshots
+      add column preco_atual numeric(10,2), add column composicao text,
+      add column grade_por_tamanho jsonb;
+      insert into public.snapshots
+        (produto_id, data, ofertavel, preco_atual, composicao, grade_por_tamanho)
+      select 10000+n, current_date, true, 99.90, repeat('algodao ',12),
+             '{"P":true,"M":false,"G":true}'::jsonb
+      from generate_series(1,90000) n;
+      delete from public.snapshots where produto_id>10000 and produto_id%3<>0;`);
+    await op.query('vacuum public.snapshots');
+    const assinaturaSnapshots = async () => (await op.query(`select
+      count(*)::int as linhas,
+      md5(string_agg(to_jsonb(s)::text, E'\\n' order by id)) as conteudo
+      from public.snapshots s`)).rows[0];
+    const antesCompactacao = await assinaturaSnapshots();
+    const bytesAntesCompactacao = await tamanho('public.snapshots');
+
+    // Os quatro portões particulares do passo 92 falham fechados e deixam o
+    // alvo intacto antes de exercitarmos a ação.
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql');
+    conferir(r.codigo === 1 && /minimo esperado 80000/.test(r.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 recusa volume divergente sem a exceção exclusiva do laboratório');
+    await op.query("insert into public.motor_execucoes (status) values ('running')");
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 1 && /motor em andamento/.test(r.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 aborta com o motor rodando antes de tocar em snapshots');
+    await op.query("update public.motor_execucoes set status = 'success'");
+    await op.query('create index snapshots_extra_fixture on public.snapshots(ofertavel)');
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 1 && /inventario de indices/.test(r.saida),
+      '92 recusa inventário de índices diferente do medido');
+    await op.query('drop index public.snapshots_extra_fixture');
+    const leitorSnapshots = await conectar('lab');
+    await leitorSnapshots.query('begin');
+    await leitorSnapshots.query('select count(*) from public.snapshots');
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 1 && /outra sessao segura lock/.test(r.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 aborta com lock concorrente antes de tocar em snapshots');
+    await leitorSnapshots.query('rollback');
+    await leitorSnapshots.end();
+
+    const ensaio92 = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1');
+    conferir(ensaio92.codigo === 0 && /ENSAIO/.test(ensaio92.saida)
+      && await tamanho('public.snapshots') === bytesAntesCompactacao,
+      '92 em ensaio valida as pré-condições sem compactar snapshots');
+    r = passo('92_vacuum_full_snapshots_pos_poda.sql',
+      '--definir', 'datadrobe.min_snapshots=1', '--executar');
+    conferir(r.codigo === 0, '92 executa pelo mesmo caminho usado em produção');
+    const depoisCompactacao = await assinaturaSnapshots();
+    const bytesDepoisCompactacao = await tamanho('public.snapshots');
+    conferir(JSON.stringify(antesCompactacao) === JSON.stringify(depoisCompactacao),
+      'snapshots pós-poda: compactação local preserva contagem e hash de todas as linhas');
+    conferir(bytesDepoisCompactacao < bytesAntesCompactacao,
+      `snapshots pós-poda: espaço físico ${bytesAntesCompactacao} -> ${bytesDepoisCompactacao} bytes`);
+    const indicesSnapshots = (await op.query(`select count(*)::int as n,
+      bool_and(indisvalid and indisready) as validos from pg_index
+      where indrelid='public.snapshots'::regclass`)).rows[0];
+    conferir(indicesSnapshots.n === 2 && indicesSnapshots.validos,
+      'snapshots pós-poda: os dois índices permanecem válidos');
+    r = passo('93_confere_snapshots_pos_compactacao.sql');
+    conferir(r.codigo === 0 && /assinatura/.test(r.saida)
+      && /motor_em_andamento/.test(r.saida),
+      '93 comprova conteúdo, índices, cota e motor somente em leitura');
+
     // A porta do pooler de transação é recusada antes de conectar.
     const recusa = spawnSync(process.execPath, [path.join(AQUI, 'passo.mjs'),
       path.join(AQUI, '90_observacao.sql'), '--host', 'exemplo.invalid',

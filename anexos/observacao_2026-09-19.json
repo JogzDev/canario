@@ -1,0 +1,109 @@
+{
+  "data": "2026-09-19",
+  "origem": "Consultas no SQL Editor do projeto Canario-CH3, em transações READ ONLY com timeout de 15 segundos, sem extensão nova. Valores de consultas distintas da mesma tarde; não representam snapshot transacional único.",
+  "consulta_repetivel": "ferramentas/capacidade/91_diagnostico_pos_poda.sql",
+  "cota_inicial": {
+    "medido_em": "2026-09-19T18:17:10.602884+00:00",
+    "cota_bytes": 418519861,
+    "principal_bytes": 403246227,
+    "stats_reset": "2026-07-15T13:16:47.376507+00:00"
+  },
+  "cota_ultima_consulta": {
+    "horario_exato_nao_capturado": true,
+    "cota_bytes": 418536245,
+    "wal_bytes": 134218098,
+    "limite_operacional_bytes": 425000000,
+    "margem_operacional_bytes": 6463755
+  },
+  "compactacao_snapshots": {
+    "medido_em": "2026-09-19T19:46:51.235Z",
+    "procedimento": "ferramentas/capacidade/92_vacuum_full_snapshots_pos_poda.sql",
+    "verificacao": "ferramentas/capacidade/93_confere_snapshots_pos_compactacao.sql",
+    "comando": "VACUUM FULL public.snapshots",
+    "duracao_segundos": 1.6,
+    "antes": {
+      "cota_bytes": 418536245,
+      "snapshots_total_bytes": 73138176
+    },
+    "depois": {
+      "cota_bytes": 362999985,
+      "principal_bytes": 347726351,
+      "wal_bytes": 134218098,
+      "snapshots_total_bytes": 17768448,
+      "snapshots_heap_bytes": 13221888,
+      "snapshots_indices_bytes": 4538368,
+      "margem_operacional_bytes": 62000015
+    },
+    "conteudo": {
+      "linhas_antes": 83400,
+      "linhas_depois": 83400,
+      "primeira_data": "2026-08-29",
+      "ultima_data": "2026-09-19",
+      "assinatura_antes": "41d6f3e5ac90e59296e22ed382127f67",
+      "assinatura_depois": "41d6f3e5ac90e59296e22ed382127f67"
+    },
+    "indices": {
+      "snapshots_pkey": {"bytes": 1884160, "valido": true, "pronto": true},
+      "snapshots_produto_id_data_key": {"bytes": 2654208, "valido": true, "pronto": true}
+    },
+    "motor_em_andamento_depois": 0,
+    "resultado": "concluido_e_verificado"
+  },
+  "tabelas": {
+    "public.produtos": {"total_bytes": 85999616, "heap_bytes": 76759040, "indices_bytes": 9101312, "vivas_estimadas": 113854, "mortas_estimadas": 3889, "updates_acumulados": 4805666},
+    "public.snapshots": {"total_bytes": 73138176, "heap_bytes": 50298880, "indices_bytes": 22790144, "vivas_estimadas": 83400, "mortas_estimadas": 0, "updates_acumulados": 294719},
+    "public.artigos": {"total_bytes": 71090176, "heap_bytes": 44130304, "indices_bytes": 26918912, "vivas_estimadas": 173444, "mortas_estimadas": 0, "updates_acumulados": 828725},
+    "public.series_semanais": {"total_bytes": 41803776, "heap_bytes": 38649856, "indices_bytes": 3088384, "vivas_estimadas": 29265, "mortas_estimadas": 0, "updates_acumulados": 2741823},
+    "public.produto_termos": {"total_bytes": 38895616, "heap_bytes": 15343616, "indices_bytes": 23511040, "vivas_estimadas": 276433, "mortas_estimadas": 237, "updates_acumulados": 0},
+    "public.eventos": {"total_bytes": 37527552, "heap_bytes": 22765568, "indices_bytes": 14721024, "vivas_estimadas": 92384, "mortas_estimadas": 0, "updates_acumulados": 0},
+    "public.estado_dos_produtos": {"total_bytes": 14548992, "heap_bytes": 6365184, "indices_bytes": 8151040, "vivas_estimadas": 113854, "mortas_estimadas": 5078, "updates_acumulados": 514996},
+    "public.indices_semanais": {"total_bytes": 13950976, "heap_bytes": 12804096, "indices_bytes": 1105920, "vivas_estimadas": 9978, "mortas_estimadas": 0, "updates_acumulados": 616302},
+    "public.curva_tamanhos": {"total_bytes": 6930432, "heap_bytes": 5693440, "indices_bytes": 1196032, "vivas_estimadas": 6339, "mortas_estimadas": 1305, "updates_acumulados": 26056},
+    "cron.job_run_details": {"total_bytes": 2727936, "heap_bytes": 2424832, "indices_bytes": 270336, "vivas_estimadas": 9919, "mortas_estimadas": 154, "updates_acumulados": 158},
+    "public.artigo_termos": {"total_bytes": 1777664, "heap_bytes": 843776, "indices_bytes": 892928, "vivas_estimadas": 17749, "mortas_estimadas": 0, "updates_acumulados": 0},
+    "public.saude": {"total_bytes": 278528, "heap_bytes": 163840, "indices_bytes": 81920, "vivas_estimadas": 677, "mortas_estimadas": 15, "updates_acumulados": 187}
+  },
+  "snapshots_por_dia": [
+    {"data": "2026-08-29", "linhas": 4930, "bytes_logicos": 751010},
+    {"data": "2026-08-30", "linhas": 4242, "bytes_logicos": 634826},
+    {"data": "2026-08-31", "linhas": 7029, "bytes_logicos": 1061097},
+    {"data": "2026-09-01", "linhas": 8834, "bytes_logicos": 1341970},
+    {"data": "2026-09-02", "linhas": 13295, "bytes_logicos": 1974467},
+    {"data": "2026-09-18", "linhas": 44554, "bytes_logicos": 6628698},
+    {"data": "2026-09-19", "linhas": 516, "bytes_logicos": 78052}
+  ],
+  "snapshots_reconstrucao_estimada": {
+    "linhas_exatas": 83400,
+    "heap_alinhado_estimado": 13445538,
+    "indice_id_estimado": 1871867,
+    "indice_produto_data_estimado": 2620614,
+    "toast_atual": 8192,
+    "reloptions": null,
+    "indices_confirmados": {
+      "snapshots_pkey": {"bytes": 8511488, "definicao": "CREATE UNIQUE INDEX snapshots_pkey ON public.snapshots USING btree (id)"},
+      "snapshots_produto_id_data_key": {"bytes": 14229504, "definicao": "CREATE UNIQUE INDEX snapshots_produto_id_data_key ON public.snapshots USING btree (produto_id, data)"}
+    },
+    "limitacao": "Estimativa por alinhamento e ocupação de páginas, não medição por pgstattuple. pgstattuple e pg_freespacemap não instaladas. Não inclui previsão de crescimento após a retomada completa. Nenhuma compactação executada."
+  },
+  "observacoes_publicadas": [
+    {"segmento": "feminino_casual_br", "observado_em": "2026-09-02", "produtos_observados": 25606, "marcas_observadas": 15},
+    {"segmento": "catalogo_candidato_br", "observado_em": "2026-08-25", "produtos_observados": 14891, "marcas_observadas": 13}
+  ],
+  "saude_varejo_19_09": [
+    {"nome": "Cantao", "visitados": 722, "media_7d": 722, "alertas": null},
+    {"nome": "PatBo", "visitados": 7578, "media_7d": 7578, "alertas": null},
+    {"nome": "Dress To", "visitados": 6705, "media_7d": 6705, "alertas": null},
+    {"nome": "Lanca Perfume", "visitados": 2118, "media_7d": 2127, "alertas": null},
+    {"nome": "Morena Rosa", "visitados": 1409, "media_7d": 1409, "alertas": null},
+    {"nome": "Zinzane", "visitados": 3047, "media_7d": 3048, "alertas": null},
+    {"nome": "Amaro", "visitados": 367, "media_7d": 367, "alertas": null},
+    {"nome": "C&A", "visitados": 7118, "media_7d": 7136, "alertas": {"indisponiveis_fora_do_universo": 66589}},
+    {"nome": "Hering", "visitados": 8237, "media_7d": 8238, "alertas": null},
+    {"nome": "Farm", "visitados": 2614, "media_7d": 2619, "alertas": null},
+    {"nome": "Animale", "visitados": 0, "media_7d": null, "alertas": {"erro": "robots proibe a busca"}},
+    {"nome": "Le Lis Blanc", "visitados": 1388, "media_7d": 1409, "alertas": null},
+    {"nome": "Bo.Bo", "visitados": 776, "media_7d": 777, "alertas": null},
+    {"nome": "NV", "visitados": 700, "media_7d": 700, "alertas": null},
+    {"nome": "Maria Filo", "visitados": 1714, "media_7d": 1719, "alertas": null}
+  ]
+}
