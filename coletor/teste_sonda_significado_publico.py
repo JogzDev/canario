@@ -12,6 +12,7 @@ import urllib.error
 
 from sonda_significado_publico import (
     FalhaDaSonda, avaliar_publicacao, chamar_rpc, main, sondar,
+    sondar_painel,
 )
 
 
@@ -73,6 +74,18 @@ def testar_verde():
         "buscar_referencia_editorial"]
     assert all(c[2] == "publica" and c[3] == 20 for c in chamadas)
     assert resultado["observacao"]["painel_observado_em"] == "2026-09-02"
+
+
+def testar_publicacao_nao_depende_da_busca_editorial():
+    chamadas = []
+    resultado = sondar_painel(
+        "https://projeto.supabase.co", "publica", abrir_verde(chamadas))
+    assert [c[0] for c in chamadas] == [
+        "similares_da_peca_amplo_v2", "resumo_de_eventos"]
+    assert resultado["amostras"] == {
+        "similares_da_peca_amplo_v2": 0,
+        "resumo_de_eventos": 0,
+    }
 
 
 def testar_contrato_incompleto():
@@ -182,7 +195,8 @@ def testar_cli_e_relatorio():
             assert retorno == codigo
             relatorio = json.loads(destino.read_text(encoding="utf-8"))
             assert relatorio["estado"] == estado
-            assert len(chamadas) == (0 if estado == "erro" else 3)
+            esperadas = 0 if estado == "erro" else (2 if argumentos else 3)
+            assert len(chamadas) == esperadas
             assert "publica-nao-imprimir" not in destino.read_text(encoding="utf-8")
             assert "pronto para o app" not in saida.getvalue()
             if estado == "contrato_valido":
@@ -201,6 +215,7 @@ def testar_cli_e_relatorio():
 
 if __name__ == "__main__":
     testar_verde()
+    testar_publicacao_nao_depende_da_busca_editorial()
     testar_contrato_incompleto()
     testar_funcao_ausente()
     testar_publicacao()

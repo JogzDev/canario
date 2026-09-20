@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Confere contrato público e, opcionalmente, publicação do dia operacional.
 
-Usa a publishable key -- a mesma credencial pública embutida no binário -- e
-faz apenas três leituras pequenas. A sonda deve rodar depois das migrations e
-do refresh do schema do PostgREST. Contrato válido NÃO prova atualização.
-O pipeline diário usa --exigir-publicacao e a data fixada no início da coleta.
+Usa a publishable key -- a mesma credencial pública embutida no binário.
+No modo de contrato, confere as três RPCs públicas. No modo de publicação,
+confere somente as duas RPCs que carregam a data do painel: a busca editorial
+não publica nem comprova esse marco e não pode mascará-lo com um timeout.
+A sonda deve rodar depois das migrations e do refresh do schema do PostgREST.
+Contrato válido NÃO prova atualização. O pipeline diário usa
+--exigir-publicacao e a data fixada no início da coleta.
 Saídas: 0 = verificação solicitada passou; 1 = leitura/contrato inválido;
 2 = contrato válido, mas publicação esperada não foi comprovada.
 """
@@ -97,7 +100,8 @@ def exigir_objeto(nome, resposta, chaves, listas=()):
             "{}: campos não são listas: {}".format(nome, ", ".join(invalidas)))
 
 
-def sondar(base, chave, abrir=urllib.request.urlopen):
+def sondar_painel(base, chave, abrir=urllib.request.urlopen):
+    """Confere os contratos e os marcos que comprovam a publicação diária."""
     similares = chamar_rpc(
         base, chave, "similares_da_peca_amplo_v2",
         {"termos": ["vestido", "preto"], "limite": 1,
@@ -128,6 +132,23 @@ def sondar(base, chave, abrir=urllib.request.urlopen):
             "resumo_de_eventos.marcas[0]", resumo["marcas"][0],
             ("marca", "pecas", "eventos", "exemplos"), ("exemplos",))
 
+    return {
+        "amostras": {
+            "similares_da_peca_amplo_v2": len(similares["pecas"]),
+            "resumo_de_eventos": len(resumo["marcas"]),
+        },
+        "observacao": {
+            "painel_observado_em": similares["resumo"]["painel_observado_em"],
+            "painel_dias_desde_a_observacao": similares["resumo"][
+                "painel_dias_desde_a_observacao"],
+            "eventos_ate": resumo["ate"],
+            "eventos_dias_desde_o_fim": resumo["dias_desde_o_fim"],
+        },
+    }
+
+
+def sondar_editorial(base, chave, abrir=urllib.request.urlopen):
+    """Confere separadamente o contrato público da busca editorial."""
     editorial = chamar_rpc(
         base, chave, "buscar_referencia_editorial",
         {"expressao": "napoleon", "limite": 1}, abrir)
@@ -139,20 +160,15 @@ def sondar(base, chave, abrir=urllib.request.urlopen):
             "buscar_referencia_editorial.materias[0]", editorial["materias"][0],
             ("titulo", "veiculo", "data", "url"))
 
-    return {
-        "amostras": {
-            "similares_da_peca_amplo_v2": len(similares["pecas"]),
-            "resumo_de_eventos": len(resumo["marcas"]),
-            "buscar_referencia_editorial": len(editorial["materias"]),
-        },
-        "observacao": {
-            "painel_observado_em": similares["resumo"]["painel_observado_em"],
-            "painel_dias_desde_a_observacao": similares["resumo"][
-                "painel_dias_desde_a_observacao"],
-            "eventos_ate": resumo["ate"],
-            "eventos_dias_desde_o_fim": resumo["dias_desde_o_fim"],
-        },
-    }
+    return len(editorial["materias"])
+
+
+def sondar(base, chave, abrir=urllib.request.urlopen):
+    """Confere o contrato público completo das três RPCs A57/A58."""
+    resultado = sondar_painel(base, chave, abrir)
+    resultado["amostras"]["buscar_referencia_editorial"] = sondar_editorial(
+        base, chave, abrir)
+    return resultado
 
 
 def data_iso(valor, nome):
@@ -221,12 +237,14 @@ def main(argv=None, ambiente=None, abrir=urllib.request.urlopen):
         elif args.data_operacional:
             raise FalhaDaSonda("data_operacional exige --exigir-publicacao")
         base, chave = configuracao(ambiente)
-        resultado.update(sondar(base, chave, abrir))
-        resultado["contrato"] = "valido"
         if args.exigir_publicacao:
+            resultado.update(sondar_painel(base, chave, abrir))
+            resultado["contrato_painel"] = "valido"
             resultado.update(avaliar_publicacao(
                 resultado["observacao"], args.data_operacional))
         else:
+            resultado.update(sondar(base, chave, abrir))
+            resultado["contrato"] = "valido"
             resultado.update(estado="contrato_valido",
                              motivo="atualizacao_nao_avaliada")
         codigo = 2 if resultado["estado"] in ("nao_atualizado", "inconclusivo") else 0

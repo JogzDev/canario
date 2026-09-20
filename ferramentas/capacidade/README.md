@@ -321,6 +321,9 @@ início da coleta, preservada mesmo que a execução atravesse a meia-noite.
 Ela exige que similares e resumo de eventos declarem o mesmo dia publicado,
 igual ou posterior ao esperado. Reexecução de dia já publicado pode passar
 mesmo com `observacoes_publicadas=0`; o contador de alterações não é o gate.
+A busca editorial não carrega o marco diário e fica fora desse modo: um
+timeout dela não pode transformar painel publicado em falso negativo. Seu
+contrato continua obrigatório na sonda manual das três RPCs descrita acima.
 
 O relatório `publicacao-painel.json` acompanha a run inclusive quando falha:
 saída 0 significa a verificação solicitada aprovada; 1, falha de leitura ou
