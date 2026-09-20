@@ -1,4 +1,4 @@
-# Ficha da App Store — DataDrobe 1.2 (build 1)
+# Ficha da App Store — DataDrobe 1.2 (build 2)
 
 ## What's New
 

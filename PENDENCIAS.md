@@ -1,6 +1,6 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 20/09/2026 às 10:55 BRT.** Esta lista substitui a triagem de
+**Atualizado em 20/09/2026 às 12:50 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Prioridade corrente — observação e liberação
@@ -181,10 +181,11 @@ dele — A48, A49 e o redeploy — estão feitas.
   escuro não é caso suportado.
 - **Suíte automatizada repetida:** 281 Swift, 32 portões Python, build iOS e
   sete fluxos UI verdes.
-- **Archive Release 1.2 (1) gerado e preservado no Organizer.** A exportação
-  está bloqueada até entrar na conta Apple no Xcode, instalar/criar a identidade
-  Apple Distribution e regenerar o perfil de loja com Sign in with Apple e
-  Associated Domains.
+- **Archive Release 1.2 (1) gerado, enviado à Apple em 31/08 e preservado no
+  Organizer.** Ele antecede A57/A58 e está substituído. A exportação diagnóstica
+  de 20/09 provou conta, assinatura de distribuição e perfil com Sign in with
+  Apple e Associated Domains. O candidato atual é 1.2 (2), cujo Archive só será
+  criado depois dos sete marcos.
 - Rodar a regressão visual no iPhone; é o aceite que precisa ser repetido porque
   as telas mudaram.
 - Depois da exportação verde, enviar ao TestFlight e repetir os fluxos críticos
