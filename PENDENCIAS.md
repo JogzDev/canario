@@ -1,7 +1,28 @@
 # Pendências do DataDrobe 1.2
 
-**Atualizado em 31/08/2026 às 12:12 BRT.** Esta lista substitui a triagem de
+**Atualizado em 20/09/2026 às 00:05 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
+
+## Prioridade corrente — observação e liberação
+
+1. Acompanhar as execuções operacionais de 20 a 25/09. Cada dia precisa fechar
+   com pipeline verde, data pública comprovada e cota em até 85%. Um dia
+   parcial, ausente ou inconclusivo não conta como observado.
+2. Não disparar coletas manuais para “completar” um dia: o runner acompanha a
+   execução de evento `schedule` e o próprio pipeline decide publicação.
+3. O supervisor temporário se remove antes de 26/09. Depois que ele sair,
+   instalar `ferramentas/runner_residencial`; o instalador recusa coexistência
+   para evitar dois runners disputando ou duplicando decisões.
+4. O app consumidor já está na `main`, mas não deve ser publicado durante a
+   janela. Depois de sete dias verdes: repetir regressão visual no iPhone,
+   gerar novas capturas, criar um Archive atualizado, enviar ao TestFlight e
+   validar o binário distribuído antes da App Store.
+5. A direção internacional continua manual. O runner durável não inventa uma
+   agenda para ela. O catálogo candidato mantém somente sua agenda existente
+   de segunda e quinta.
+
+Baseline da janela: API em 19/09 e cota **365.534.005 bytes (73,1%)** depois da
+coleta isolada, saúde e motor. A PR #30 e seu CI pós-merge estão verdes.
 
 ## Pacote visual do Figma — entregue no candidato 1.2
 
