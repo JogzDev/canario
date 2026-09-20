@@ -1,5 +1,41 @@
 # Ficha da App Store — DataDrobe 1.2 (build 2)
 
+## Inglês — locale principal
+
+### Subtitle
+
+```text
+Fashion market, measured
+```
+
+### Promotional text
+
+```text
+Add a garment and compare its confirmed attributes with observed prices, markdowns, size availability and similar pieces in Brazil's fashion market.
+```
+
+### Description
+
+```text
+DataDrobe organizes observed evidence from the Brazilian women's fashion market around the garment you are evaluating.
+
+Add a garment, confirm its attributes and compare it with the monitored panel: observed prices and markdowns, size availability, similar pieces with store links, weekly market readings and editorial references. Dates and coverage stay visible so old or incomplete evidence is not presented as current.
+
+Your Closet works without an account. You can optionally sign in with Apple, Google or email to synchronize and restore structured item details and a reduced, metadata-free thumbnail across your signed-in devices. Original photos stay on this iPhone. You can delete your account and synchronized data inside the app.
+
+When you choose a photo, DataDrobe reads color and visible text on the device. After you confirm the target garment, you may separately allow a reduced, metadata-free copy to be sent through Supabase to OpenAI for visual attribute suggestions. DataDrobe does not store the submitted copy, and you review or replace every suggestion before saving. Manual entry remains available if you decline or the service is unavailable.
+
+DataDrobe does not predict sales, rank a garment's chance of success or make purchasing decisions. It describes prices, availability, coverage and market signals that have already been observed.
+
+No advertising identifier, no advertising and no tracking.
+```
+
+### Keywords
+
+```text
+fashion,apparel,retail,pricing,markdown,brands,buying,merchandising,sizing,market,data
+```
+
 ## What's New
 
 ```text
@@ -11,7 +47,22 @@
 • Reliability and accessibility improvements.
 ```
 
-## Trecho da descrição que substitui “No account”
+## Português (Brasil) — se o locale continuar ativo no App Store Connect
+
+### Novidades
+
+```text
+• Conta opcional com início de sessão pela Apple, Google ou e-mail.
+• Sincronização offline-first do Closet entre seus aparelhos conectados, incluindo uma miniatura privada e reduzida por peça; suas fotos originais nunca saem do iPhone.
+• Exclusão da conta diretamente no DataDrobe.
+• Recuperação segura de senha e sessão protegida no Chaves do iOS.
+• Melhorias de confiabilidade e acessibilidade.
+```
+
+## Copy de apoio — já incorporada à Description acima
+
+Não copiar este bloco como um campo separado. Ele registra a substituição da
+frase antiga “No account” e serve para conferir outras superfícies da loja.
 
 ```text
 Your Closet works without an account. You may optionally sign in with Apple,

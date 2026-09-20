@@ -202,6 +202,53 @@ def main():
                 doc, ", ".join(repr(x) for x in ausentes)))
             return 1
 
+    # 6a. A ficha precisa ser copiavel, nao apenas lembrar o que mudou. Em
+    #     20/09 a ficha 1.2 tinha What's New e um trecho substituto, mas nao
+    #     continha Description, Promotional Text nem Keywords completos. Isso
+    #     so apareceria como campo vazio durante o preenchimento da loja.
+    ficha_atual = open(os.path.join(
+        RAIZ, "FICHA_APP_STORE_{}.md".format(gerador["VERSAO_DO_APP"])),
+        encoding="utf-8").read()
+
+    def bloco_da_ficha(titulo):
+        padrao = (r"(?mi)^#{2,3}\s+" + re.escape(titulo)
+                  + r"\s*$\s*```text\s*\n(.*?)\n```")
+        achado = re.search(padrao, ficha_atual, re.S)
+        return achado.group(1).strip() if achado else None
+
+    campos = {
+        "Subtitle": bloco_da_ficha("Subtitle"),
+        "Promotional text": bloco_da_ficha("Promotional text"),
+        "Description": bloco_da_ficha("Description"),
+        "Keywords": bloco_da_ficha("Keywords"),
+        "What's New": bloco_da_ficha("What's New"),
+    }
+    ausentes = [nome for nome, valor in campos.items() if not valor]
+    if ausentes:
+        print("FALHOU: ficha da App Store nao tem campos completos: {}".format(
+            ", ".join(ausentes)))
+        return 1
+
+    limites = {
+        "Subtitle": (30, "caracteres"),
+        "Promotional text": (170, "caracteres"),
+        "Description": (4000, "caracteres"),
+        "Keywords": (100, "bytes UTF-8"),
+    }
+    for nome, (limite, unidade) in limites.items():
+        valor = campos[nome]
+        tamanho = len(valor.encode("utf-8")) if nome == "Keywords" else len(valor)
+        if tamanho > limite:
+            print("FALHOU: {} tem {} {}, limite {}".format(
+                nome, tamanho, unidade, limite))
+            return 1
+    if any(c != c.strip() for c in campos["Keywords"].split(",")):
+        print("FALHOU: Keywords contem espaco desnecessario")
+        return 1
+    if "account" not in campos["Description"].lower():
+        print("FALHOU: Description da 1.2 omite a conta opcional")
+        return 1
+
     # 7. Os guias que uma pessoa segue tem que citar o mesmo bundle -- guia com
     #    bundle errado ja custou uma submissao. Mas apagar as mencoes antigas
     #    tambem e ruim: elas contam o que aconteceu, e sem esse registro alguem
