@@ -1,13 +1,19 @@
 // A26 — exclusão integral iniciada dentro do app.
 // A função valida o JWT recebido e usa service role somente no servidor.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.116.0";
 import { revogarTokenApple } from "../_shared/apple-sign-in.ts";
+
+const JSON_HEADERS = {
+  "content-type": "application/json",
+  "cache-control": "no-store",
+  "x-content-type-options": "nosniff",
+};
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), {
       status: 405,
-      headers: { "content-type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -15,7 +21,7 @@ Deno.serve(async (req) => {
   if (!authorization.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "missing_session" }), {
       status: 401,
-      headers: { "content-type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -25,7 +31,7 @@ Deno.serve(async (req) => {
   if (!url || !publishable || !serviceRole) {
     return new Response(JSON.stringify({ error: "service_not_configured" }), {
       status: 503,
-      headers: { "content-type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -37,7 +43,7 @@ Deno.serve(async (req) => {
   if (error || !data.user) {
     return new Response(JSON.stringify({ error: "invalid_session" }), {
       status: 401,
-      headers: { "content-type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -85,7 +91,7 @@ Deno.serve(async (req) => {
     if (listError) {
       return new Response(JSON.stringify({ error: "thumbnail_cleanup_failed" }), {
         status: 500,
-        headers: { "content-type": "application/json" },
+        headers: JSON_HEADERS,
       });
     }
     if (!objetos || objetos.length === 0) break;
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
     if (removeError) {
       return new Response(JSON.stringify({ error: "thumbnail_cleanup_failed" }), {
         status: 500,
-        headers: { "content-type": "application/json" },
+        headers: JSON_HEADERS,
       });
     }
   }
@@ -108,7 +114,7 @@ Deno.serve(async (req) => {
   if (deleteError) {
     return new Response(JSON.stringify({ error: "delete_failed" }), {
       status: 500,
-      headers: { "content-type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -120,6 +126,6 @@ Deno.serve(async (req) => {
     apple_revocation: revogacaoApple,
   }), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: JSON_HEADERS,
   });
 });

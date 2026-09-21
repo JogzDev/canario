@@ -43,6 +43,15 @@ final class AutenticacaoTests: XCTestCase {
         super.tearDown()
     }
 
+    func testEndpointDaContaExigeHTTPS() {
+        XCTAssertEqual(Autenticacao.endpointSeguro("conta.supabase.co").absoluteString,
+                       "https://conta.supabase.co")
+        XCTAssertEqual(Autenticacao.endpointSeguro("https://conta.supabase.co").host,
+                       "conta.supabase.co")
+        XCTAssertEqual(Autenticacao.endpointSeguro("http://conta.supabase.co").host,
+                       "invalido.invalido")
+    }
+
     func testEmailESenhaUsamTokenPasswordSemLogicaAdministrativa() async throws {
         ProtocoloAuthFalso.responder = { [usuario] pedido in
             XCTAssertEqual(pedido.url?.path, "/auth/v1/token")

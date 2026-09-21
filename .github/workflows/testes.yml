@@ -81,6 +81,8 @@ jobs:
       # confere codigo, manifesto, ficha, politica e exclusao de conta juntos.
       - name: Privacidade declarada bate com o binario
         run: "$PY coletor/teste_privacidade_declarada.py"
+      - name: Contratos de seguranca e cadeia de dependencias
+        run: "$PY coletor/teste_seguranca.py"
       - name: Regressões da experiência em aparelho
         run: "$PY coletor/teste_experiencia_app.py"
       # Icone faltando nao quebra nada: o termo aparece com um circulo

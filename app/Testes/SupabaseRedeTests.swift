@@ -67,6 +67,15 @@ final class SupabaseRedeTests: XCTestCase {
         super.tearDown()
     }
 
+    func testEndpointExigeHTTPSMesmoQuandoConfiguracaoTrazEsquema() {
+        XCTAssertEqual(Supabase.endpointSeguro("projeto.supabase.co").absoluteString,
+                       "https://projeto.supabase.co")
+        XCTAssertEqual(Supabase.endpointSeguro("https://projeto.supabase.co").host,
+                       "projeto.supabase.co")
+        XCTAssertEqual(Supabase.endpointSeguro("http://projeto.supabase.co").host,
+                       "invalido.invalido")
+    }
+
     func testBuscarMontaGETAutenticadoECodificaQuery() async throws {
         ProtocoloHTTPFalso.responder = { pedido in
             XCTAssertEqual(pedido.httpMethod, "GET")

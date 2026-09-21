@@ -1,10 +1,16 @@
 // A50 — troca o authorization code de Sign in with Apple no servidor e guarda
 // somente o refresh token necessário para a futura revogação REST.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.116.0";
 import { trocarCodigoApple } from "../_shared/apple-sign-in.ts";
 
+const JSON_HEADERS = {
+  "content-type": "application/json",
+  "cache-control": "no-store",
+  "x-content-type-options": "nosniff",
+};
+
 const json = (corpo: Record<string, unknown>, status = 200) => new Response(
-  JSON.stringify(corpo), { status, headers: { "content-type": "application/json" } },
+  JSON.stringify(corpo), { status, headers: JSON_HEADERS },
 );
 
 Deno.serve(async (req) => {

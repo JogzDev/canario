@@ -152,8 +152,7 @@ actor Autenticacao {
         let chaveConta = Self.valorConfigurado(info?["AUTH_SUPABASE_PUBLISHABLE_KEY"] as? String)
             ?? Self.valorConfigurado(info?["SUPABASE_PUBLISHABLE_KEY"] as? String)
             ?? ""
-        let normalizada = urlConta.hasPrefix("http") ? urlConta : "https://\(urlConta)"
-        self.url = URL(string: normalizada) ?? URL(string: "https://invalido.invalido")!
+        self.url = Self.endpointSeguro(urlConta)
         self.chave = chaveConta
 
         let cfg = URLSessionConfiguration.ephemeral
@@ -165,13 +164,25 @@ actor Autenticacao {
     }
 
     init(url: URL, chave: String, sessaoHTTP: URLSession) {
-        self.url = url
+        self.url = Self.endpointSeguro(url.absoluteString)
         self.chave = chave
         self.sessaoHTTP = sessaoHTTP
         self.sessaoEmMemoria = nil
     }
 
     var configurada: Bool { !chave.isEmpty && url.host != "invalido.invalido" }
+
+    /// Auth nunca aceita downgrade para HTTP. Uma configuração insegura fica
+    /// explicitamente desativada e o Closet local continua disponível.
+    static func endpointSeguro(_ bruto: String) -> URL {
+        let valor = bruto.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidato = valor.contains("://") ? valor : "https://\(valor)"
+        guard let url = URL(string: candidato),
+              url.scheme?.lowercased() == "https", url.host != nil else {
+            return URL(string: "https://invalido.invalido")!
+        }
+        return url
+    }
 
     func sessaoAtual() async -> SessaoDaConta? {
         guard var atual = sessaoEmMemoria else { return nil }
