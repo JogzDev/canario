@@ -196,7 +196,8 @@ jobs:
         working-directory: supabase/functions
         run: |
           deno install --entrypoint analisar-peca/index.ts excluir-conta/index.ts registrar-credencial-apple/index.ts --lock deno.lock --lockfile-only --frozen-lockfile --no-config
-          deno check --lock deno.lock --frozen-lockfile --no-config analisar-peca/index.ts excluir-conta/index.ts registrar-credencial-apple/index.ts
+          deno check --lock deno.lock --frozen-lockfile --no-config analisar-peca/index.ts excluir-conta/index.ts registrar-credencial-apple/index.ts _shared/apple-refresh-token-crypto.test.ts
+          deno test --lock deno.lock --frozen-lockfile --no-config _shared/apple-refresh-token-crypto.test.ts
           deno audit --lock deno.lock --frozen-lockfile
 
   capacidade:
@@ -258,6 +259,9 @@ jobs:
 
       - name: P24, A57, A58 e portao final num banco de verdade
         run: node ferramentas/laboratorio_significado/rodar.mjs
+
+      - name: A50 e A59 protegem token Apple sem perder linhas legadas
+        run: node ferramentas/laboratorio_apple/rodar.mjs
 
   app:
     name: App (Swift)

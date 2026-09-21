@@ -73,6 +73,10 @@ foi enviada nem mesclada.
   Apple, política de revisão/admin, App Attest ou DeviceCheck e auditoria de
   headers na 2.0 publicada. Histórico Git, árvore atual, Swift, npm e Deno têm
   varredura gratuita e reproduzível configurada no CI da integração.
+- A59 e as duas Edge Functions de transição estão preparadas localmente:
+  AES-256-GCM, chave versionada, oito testes Deno e laboratório PostgreSQL.
+  Sem secret, deploy e backfill em produção, o controle de criptografia segue
+  **parcial**.
 - PRs Dependabot #37 e #38 estão abertas e ainda precisam de compatibilidade e
   CI antes de qualquer merge.
 

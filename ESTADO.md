@@ -41,9 +41,12 @@ automáticas habilitados. O gabarito de vinte itens está em
 `AUDITORIA_SEGURANCA_2026-09-21.md`. A
 [PR #41](https://github.com/JogzDev/canario/pull/41) acrescentou o inventário
 e o portão de novas concessões públicas. Na branch local de integração, o
-Gitleaks passou sobre os 498 commits e a árvore atual, Swift/npm passaram pelo
+Gitleaks passou sobre o histórico inteiro e a árvore atual, Swift/npm passaram pelo
 OSV e o Deno ganhou lock e auditoria: agora são 15 atendidos, 4 parciais e
 1 não aplicável.
+Também na branch local, a A59 prepara cifra do refresh token Apple com chave
+versionada; ela não está aplicada. Há laboratório e oito testes Deno verdes,
+mas o controle continua parcial até secret, deploy e backfill auditado.
 
 As mudanças passaram na `main` em executor hospedado: 313 testes Swift, todos
 os portões Python e os dois laboratórios PostgreSQL. Nenhuma coleta ou migration
