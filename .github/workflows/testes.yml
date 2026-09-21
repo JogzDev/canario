@@ -15,10 +15,8 @@ permissions:
 jobs:
   coletores:
     name: Coletores (Python)
-    # Vai para o i7: com a conta bloqueada, job em runner do GitHub falha antes
-    # de comecar, e teste que nao roda nao protege ninguem. Custa pouco de todo
-    # jeito -- 1x o minuto, ~15 s.
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    # Lógica Python não depende de macOS nem de computador pessoal.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/python-mac
@@ -68,6 +66,10 @@ jobs:
         run: "$PY coletor/teste_semana_da_busca.py"
       - name: Workflows do Actions
         run: "$PY coletor/teste_workflows.py"
+      - name: Sonda de executor gerenciado
+        run: "$PY coletor/teste_sonda_origem_gerenciada.py"
+      - name: Contrato do Xcode Cloud
+        run: "$PY coletor/teste_xcode_cloud.py"
       - name: Runner residencial não duplica agendas
         run: "$PY coletor/teste_runner_residencial.py"
       # Bundle, time e versao ja divergiram duas vezes sem ninguem ver, e nas
@@ -124,16 +126,14 @@ jobs:
 
   capacidade:
     name: Laboratorio de capacidade (PostgreSQL 17 descartavel)
-    # Vai para o Mac do JP porque e la que o Node 24 esta verificado, e porque
-    # o `@embedded-postgres` baixa 133 MB na primeira instalacao. Se a maquina
-    # estiver parada, o job espera na fila em vez de ficar vermelho.
+    # O pacote baixa o PostgreSQL 17 para o próprio runner Linux descartável.
     #
     # `coletor/teste_migrations.py` le as migrations como texto. Este job as
     # executa: prova que o "antes" e o codigo de producao (hash), que ele
     # reescreve tudo, e que P21/P22/P24/P25 corrigem sem mudar o resultado. E
     # ensaia cada passo do roteiro da etapa 1 pelo mesmo executor que rodaria
     # em producao.
-    runs-on: [self-hosted, macOS, xcode]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -150,25 +150,21 @@ jobs:
           cd "$LAB" && npm install --no-audit --no-fund
 
       - name: P21, P22, P24 e P25 num banco de verdade
-        run: caffeinate -dimsu node ferramentas/laboratorio_capacidade/rodar.mjs
+        run: node ferramentas/laboratorio_capacidade/rodar.mjs
 
       - name: Ensaio do roteiro da etapa 1
-        run: caffeinate -dimsu node ferramentas/capacidade/teste_roteiro.mjs
+        run: node ferramentas/capacidade/teste_roteiro.mjs
 
   banco:
     name: Laboratorio SQL (PostgreSQL 17 descartavel)
-    # Vai para o Mac do JP, e nao para o i7, porque e la que o Node 24 esta
-    # verificado -- e porque o `@embedded-postgres` baixa 133 MB de binario na
-    # primeira instalacao. Se a maquina estiver parada, o job espera na fila:
-    # fila e sinal honesto de "ninguem testou ainda"; vermelho por falta de
-    # runner nao e.
+    # Também roda em Linux descartável; nenhum laboratório depende do Mac.
     #
     # `coletor/teste_migrations.py` (no job de cima) le as migrations como
     # TEXTO: pega contrato apagado, nao pega `join` errado nem denominador
     # tirado da data errada. Este job executa P24, A57 e A58 na ordem real,
     # confere o portao 87 e roda os dados desenhados para que cada defeito
     # conhecido apareca como falha.
-    runs-on: [self-hosted, macOS, xcode]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -186,83 +182,16 @@ jobs:
           cd "$LAB" && npm install --no-audit --no-fund
 
       - name: P24, A57, A58 e portao final num banco de verdade
-        run: caffeinate -dimsu node ferramentas/laboratorio_significado/rodar.mjs
+        run: node ferramentas/laboratorio_significado/rodar.mjs
 
   app:
     name: App (Swift)
-    # Era o maior gasto do projeto: em `macos-latest` custava ~30 minutos de
-    # cota por push, porque runner macOS do GitHub vale 10x o minuto do Linux.
-    # Nao dava para mandar ao i7, que nao tem Xcode -- medido em 15/08, la o
-    # `swift test` responde "XCTest not available". Agora vai para o Mac do JP,
-    # pelo rotulo `xcode`, e o custo cai a zero.
-    #
-    # Se o runner dele estiver parado, este job espera na fila em vez de
-    # falhar, e roda assim que ele ligar. Fila e sinal honesto de "ninguem
-    # testou ainda"; vermelho por falta de runner nao e.
-    runs-on: [self-hosted, macOS, xcode]
+    # A lógica pura termina em cerca de um minuto no macOS gerenciado. Build e
+    # UI completos ficam no Xcode Cloud, que tem franquia separada e usa o
+    # scheme compartilhado protegido por teste no job Python acima.
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Logica pura em macOS
         working-directory: app
-        # O runner e um MacBook. Em 24/08 ele dormiu durante o xcodebuild de UI:
-        # os testes terminaram com exit 0 quando a maquina acordou, mas o GitHub
-        # ja tinha encerrado o job por perda de contato. Cada etapa longa segura
-        # o sistema acordado sem alterar a configuracao de energia do usuario.
-        run: caffeinate -dimsu swift test
-      # O Config.xcconfig real esta no .gitignore (contem a chave). Para o CI
-      # so precisamos que o arquivo EXISTA, porque o projeto o referencia como
-      # base de configuracao -- sem ele o build falha antes de compilar. Os
-      # valores de exemplo bastam: aqui nao se conecta a servidor nenhum.
-      - name: Config de exemplo para o build
-        working-directory: app
-        run: cp ../Config.xcconfig.example ../Config.xcconfig
-
-      - name: Compilar para o simulador
-        working-directory: app
-        run: |
-          set -o pipefail
-          # Pacotes Swift não podem compartilhar o DerivedData global do Mac:
-          # um checkout anterior deixou modulemaps apontando para diretórios
-          # que já não existiam. Scheme + destino também evita compilar arm64
-          # e x86_64 ao mesmo tempo sem arquitetura ativa.
-          caffeinate -dimsu xcodebuild -project Canario.xcodeproj -scheme Canario \
-            -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
-            -derivedDataPath "$RUNNER_TEMP/CanarioDerivedData-$GITHUB_RUN_ID" build \
-            CODE_SIGNING_ALLOWED=NO | tail -5
-
-      - name: Fluxos criticos de interface no simulador
-        working-directory: app
-        run: |
-          set -o pipefail
-          # Aparelho exclusivo do runner: uma validacao local no iPhone 17
-          # nao pode deixar o SpringBoard ocupado e derrubar o CI com
-          # FBSOpenApplicationErrorDomain/Busy.
-          xcrun simctl shutdown 'DataDrobe-CI' 2>/dev/null || true
-          trap "xcrun simctl shutdown 'DataDrobe-CI' 2>/dev/null || true" EXIT
-          xcrun simctl boot 'DataDrobe-CI'
-          xcrun simctl bootstatus 'DataDrobe-CI' -b
-          # Estes dois exercitam dados reais e ficam na regressao local. O
-          # checkout do CI usa Config.xcconfig.example por desenho; portanto
-          # aqui rodam somente os outros 12 fluxos, todos realmente offline.
-          #
-          # Os cinco do bloco editorial entram sem rede por fixture
-          # (`-CanarioUITestImprensa`): a RPC da A58 ainda nao esta publicada,
-          # e os cinco estados que interessam -- achou, nao achou, falhou,
-          # funcao ausente e trocou de pergunta no meio -- sao todos de tela.
-          caffeinate -dimsu xcodebuild test -project Canario.xcodeproj -scheme Canario \
-            -destination 'platform=iOS Simulator,name=DataDrobe-CI,OS=26.2' \
-            -derivedDataPath "$RUNNER_TEMP/CanarioDerivedData-$GITHUB_RUN_ID" \
-            -destination-timeout 120 -parallel-testing-enabled NO \
-            -only-testing:CanarioUITests/CanarioUITests/testAddAbreComAcaoPrincipalEMenu \
-            -only-testing:CanarioUITests/CanarioUITests/testClosetContinuaAcessivelSemRede \
-            -only-testing:CanarioUITests/CanarioUITests/testAsTresTelasPrincipaisUsamOMesmoMenu \
-            -only-testing:CanarioUITests/CanarioUITests/testQEAAbreLegivelSobreATrends \
-            -only-testing:CanarioUITests/CanarioUITests/testPrivacyAbrePeloCaminhoDeterministico \
-            -only-testing:CanarioUITests/CanarioUITests/testImportacaoAbreSemRedeComAsEntradasPrincipais \
-            -only-testing:CanarioUITests/CanarioUITests/testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails \
-            -only-testing:CanarioUITests/CanarioUITests/testImprensaMostraAMateriaQueContemAExpressao \
-            -only-testing:CanarioUITests/CanarioUITests/testImprensaSemMateriaNaoAbreBlocoVazio \
-            -only-testing:CanarioUITests/CanarioUITests/testImprensaDeclaraFalhaDeRedeEmVozBaixa \
-            -only-testing:CanarioUITests/CanarioUITests/testImprensaCalaQuandoAFuncaoAindaNaoExiste \
-            -only-testing:CanarioUITests/CanarioUITests/testRespostaLentaNaoSobrescreveAPerguntaNova \
-            CODE_SIGNING_ALLOWED=NO | tail -20
+        run: swift test

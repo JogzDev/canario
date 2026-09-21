@@ -101,6 +101,26 @@ def main():
         print("FALHOU: adiamento por capacidade declarou catalogo completo")
         return 1
 
+    animale_semanal = linha("varejo", 0, marca_id=1)
+    animale_semanal["visitados"] = 0
+    animale_semanal["alertas"] = {
+        "adiado_por_cadencia": True,
+        "cadencia": "semanal",
+        "proxima_coleta_em": "2026-08-03",
+        "motivo": "varredura integral ocorre às segundas-feiras",
+    }
+    por_cadencia = [animale_semanal, linha("editorial", 80),
+                    linha("busca", 40)]
+    crit, avisos = alertas_criticos(por_cadencia, MARCAS, HOJE)
+    if crit or not any("segundas-feiras" in x for x in avisos):
+        print("FALHOU: cadencia semanal explicita virou pane")
+        return 1
+    estado, detalhe = cobertura_da_marca(animale_semanal["alertas"])
+    if (estado != "incerta"
+            or detalhe.get("adiado_por_cadencia") is not True):
+        print("FALHOU: dia sem varredura declarou catalogo completo")
+        return 1
+
     queda = [linha("varejo", 20, marca_id=1),
              linha("editorial", 80), linha("busca", 40)]
     queda.extend(linha("varejo", 100, dias=d, marca_id=1)

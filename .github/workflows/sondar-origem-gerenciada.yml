@@ -1,0 +1,41 @@
+name: Sondar origem gerenciada
+
+# Prova de egresso antes de criar qualquer executor novo. Só consulta cinco
+# URLs públicas já usadas pelo produto, respeita robots.txt e registra códigos
+# sem corpo. Não consulta Supabase, não recebe segredo, não tem cron e não
+# escreve no repositório.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonda-origem-gerenciada
+  cancel-in-progress: false
+
+jobs:
+  sondar:
+    strategy:
+      fail-fast: false
+      matrix:
+        executor: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.executor }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Sondar sem coletar ou gravar dados
+        run: >-
+          python3 coletor/sondar_origem_gerenciada.py
+          --saida "$RUNNER_TEMP/sonda-origem-gerenciada.json"
+
+      - name: Guardar diagnóstico por quatorze dias
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sonda-origem-gerenciada-${{ matrix.executor }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sonda-origem-gerenciada.json
+          if-no-files-found: error
+          retention-days: 14
