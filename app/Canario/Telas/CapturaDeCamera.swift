@@ -52,18 +52,13 @@ struct CapturaDeCamera: UIViewControllerRepresentable {
             let imagem = info[.originalImage] as? UIImage
             // Redesenha sempre: o bitmap cru não incorpora `imageOrientation`
             // e fotos verticais podiam chegar deitadas ao leitor e à miniatura.
-            // O renderer aplica a orientação sem criar arquivo temporário.
-            aoCapturar(imagem.flatMap(Self.redesenhar))
+            // O renderer aplica a orientação sem criar arquivo temporário e
+            // limita o bitmap antes que OCR e Vision o mantenham em memória.
+            aoCapturar(imagem.flatMap { MiniaturaLocal.normalizar($0) })
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             aoCapturar(nil)
-        }
-
-        private static func redesenhar(_ ui: UIImage) -> CGImage? {
-            UIGraphicsImageRenderer(size: ui.size).image { _ in
-                ui.draw(in: CGRect(origin: .zero, size: ui.size))
-            }.cgImage
         }
     }
 }

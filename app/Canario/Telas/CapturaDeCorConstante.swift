@@ -398,13 +398,11 @@ final class ControladorDeCorConstante: UIViewController {
         }
     }
 
-    /// Mesma normalização da `CapturaDeCamera`: o bitmap cru não carrega a
-    /// orientação, e uma foto vertical chegaria deitada ao leitor de cor.
+    /// Mesma normalização da `CapturaDeCamera`: aplica orientação e decodifica
+    /// já no teto de análise, sem materializar primeiro a foto inteira.
     fileprivate static func normalizar(_ dados: Data) -> CGImage? {
-        guard let ui = UIImage(data: dados) else { return nil }
-        return UIGraphicsImageRenderer(size: ui.size).image { _ in
-            ui.draw(in: CGRect(origin: .zero, size: ui.size))
-        }.cgImage
+        MiniaturaLocal.imagem(de: dados,
+                              ladoMaximo: MiniaturaLocal.ladoMaximoDeAnalise)
     }
 }
 

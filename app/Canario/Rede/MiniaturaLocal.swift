@@ -16,6 +16,10 @@ import Vision
 /// O resultado só é salvo quando o usuário confirma "Save to Closet".
 enum MiniaturaLocal {
     static let ladoMaximo: CGFloat = 720
+    /// Bitmap usado por OCR, cor e segmentação antes de virar miniatura.
+    /// 2400 px preserva detalhe de texto sem deixar uma foto de câmera ocupar
+    /// centenas de megabytes por causa da escala `@2x`/`@3x` do renderer.
+    static let ladoMaximoDeAnalise = 2_400
 
     /// Uma escolha visual apresentada antes da leitura da peça. `dados` já é
     /// uma imagem nova, sem EXIF, localização ou nome do arquivo original.
@@ -53,6 +57,41 @@ enum MiniaturaLocal {
             kCGImageSourceShouldCacheImmediately: true,
         ]
         return CGImageSourceCreateThumbnailAtIndex(fonte, 0, opcoes as CFDictionary)
+    }
+
+    /// Aplica a orientação de um `UIImage` num bitmap novo e limitado.
+    ///
+    /// O `UIImagePickerController` entrega a foto com orientação separada dos
+    /// pixels. `UIGraphicsImageRenderer(size:)` usa por padrão a escala da tela;
+    /// num aparelho `@3x`, isso pode triplicar cada eixo e multiplicar a memória
+    /// por nove. A escala 1 torna `tamanho` literalmente a contagem de pixels.
+    static func normalizar(_ imagem: UIImage,
+                           ladoMaximo: Int = ladoMaximoDeAnalise) -> CGImage? {
+        let larguraBruta: Int
+        let alturaBruta: Int
+        if let cg = imagem.cgImage {
+            switch imagem.imageOrientation {
+            case .left, .leftMirrored, .right, .rightMirrored:
+                larguraBruta = cg.height
+                alturaBruta = cg.width
+            default:
+                larguraBruta = cg.width
+                alturaBruta = cg.height
+            }
+        } else {
+            larguraBruta = Int((imagem.size.width * imagem.scale).rounded())
+            alturaBruta = Int((imagem.size.height * imagem.scale).rounded())
+        }
+        guard let pixels = DimensaoDaImagem.limitada(
+            largura: larguraBruta, altura: alturaBruta,
+            ladoMaximo: ladoMaximo) else { return nil }
+        let tamanho = CGSize(width: pixels.largura, height: pixels.altura)
+        let formato = UIGraphicsImageRendererFormat()
+        formato.scale = 1
+        formato.opaque = false
+        return UIGraphicsImageRenderer(size: tamanho, format: formato).image { _ in
+            imagem.draw(in: CGRect(origin: .zero, size: tamanho))
+        }.cgImage
     }
 
     /// Gera a prévia persistível. O recorte é deliberadamente conservador:
