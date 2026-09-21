@@ -263,6 +263,23 @@ def checar_orquestracao(workflows):
             falhar("pipeline-diario.yml",
                    "job `{}` pode trocar de dia no meio da run".format(job))
 
+    verificacao_final = jobs.get("verificacao-final", {})
+    passos_verificacao = verificacao_final.get("steps", [])
+    passo_capacidade_final = next((p for p in passos_verificacao
+                                  if "verificar_capacidade_banco.py" in
+                                  str(p.get("run", ""))), {})
+    passo_isolamento_final = next((p for p in passos_verificacao
+                                  if "verificar_isolamento_segmento.py" in
+                                  str(p.get("run", ""))), {})
+    if (verificacao_final.get("needs") != "publicacao" or
+            verificacao_final.get("runs-on") != "ubuntu-latest" or
+            passo_capacidade_final.get("env", {}).get(
+                "CAPACIDADE_MAXIMA_PCT") != "85" or
+            passo_isolamento_final.get("env", {}).get(
+                "SEGMENTO_VERIFICADO") != "direcao_intl"):
+        falhar("pipeline-diario.yml",
+               "verificacao final hospedada nao fecha capacidade e isolamento")
+
     motor_pipeline = jobs.get("motor", {})
     condicao_motor_pipeline = str(motor_pipeline.get("if", ""))
     if ("always()" not in condicao_motor_pipeline or
