@@ -39,7 +39,7 @@ ela não trata ausência de evidência como conclusão positiva.
 | 17 | Trim de respostas de API | **Atendido** | Views/RPCs enxutas removem metadados que o app não lê; Edge Functions não devolvem detalhe do provedor; respostas sensíveis usam `no-store`. |
 | 18 | Security headers | **Parcial** | As três Edge Functions agora devolvem `Cache-Control: no-store` e `X-Content-Type-Options: nosniff`. Headers do site Carrd e da borda Supabase são gerenciados pelos provedores e precisam ser conferidos na versão 2.0 publicada. |
 | 19 | Forçar HTTPS | **Atendido** | O cliente agora rejeita explicitamente `http://` e falha fechado; ATS permanece ativo e URLs públicas de produto já eram validadas como HTTPS. |
-| 20 | Scan de dependências | **Parcial** | Actions usam SHA imutável, imports Deno foram fixados em versões exatas, `npm audit` está limpo e Dependabot foi configurado para Actions e os dois laboratórios. Swift/Deno ainda precisam de alerta automatizado equivalente. |
+| 20 | Scan de dependências | **Parcial** | Actions usam SHA imutável com enforcement ligado no repositório, imports Deno foram fixados em versões exatas, `npm audit` está limpo, alertas/correções de vulnerabilidade estão ativos e Dependabot foi configurado para Actions e os dois laboratórios. Swift/Deno ainda precisam de alerta automatizado equivalente. |
 
 ## Mudanças desta rodada
 
@@ -51,15 +51,15 @@ ela não trata ausência de evidência como conclusão positiva.
 4. Dependabot acompanha Actions e os dois lockfiles npm.
 5. `teste_seguranca.py` impede regressão de HTTPS, headers, versões, SHA de
    Actions e inclusão de segredos servidores no app.
+6. O repositório passou a exigir SHA imutável em Actions e teve alertas de
+   vulnerabilidade e correções automáticas de segurança habilitados.
 
 ## Pendências priorizadas
 
-1. Habilitar alertas de vulnerabilidade/Dependabot Security Updates no GitHub,
-   conforme a disponibilidade do plano privado.
-2. Desenhar criptografia de aplicação e rotação para o refresh token Apple;
+1. Desenhar criptografia de aplicação e rotação para o refresh token Apple;
    não alterar a tabela antes de existir caminho de migração e revogação.
-3. Avaliar App Attest/DeviceCheck para o endpoint visual antes da versão 2.0.
-4. Criar um portão de migration que inventarie qualquer novo `GRANT` a
+2. Avaliar App Attest/DeviceCheck para o endpoint visual antes da versão 2.0.
+3. Criar um portão de migration que inventarie qualquer novo `GRANT` a
    `anon`/`authenticated` e exija justificativa explícita.
-5. Conferir headers externos de Carrd e Supabase na auditoria final da versão
+4. Conferir headers externos de Carrd e Supabase na auditoria final da versão
    2.0, junto com política e ficha da App Store.
