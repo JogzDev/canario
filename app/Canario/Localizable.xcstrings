@@ -2611,6 +2611,16 @@
         }
       }
     },
+    "Combine words to describe a piece, like black leather coat.": {
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combine palavras para descrever uma peça, como casaco de couro preto."
+          }
+        }
+      }
+    },
     "Combined history across %lld weeks": {
       "localizations": {
         "pt-BR": {
@@ -5661,6 +5671,26 @@
         }
       }
     },
+    "Search this attribute": {
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscar este atributo"
+          }
+        }
+      }
+    },
+    "See similar pieces, attributes and the combined reading.": {
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veja peças semelhantes, atributos e a leitura combinada."
+          }
+        }
+      }
+    },
     "Select %@": {
       "localizations": {
         "pt-BR": {
@@ -6232,6 +6262,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Planilha · com as leituras de mercado"
+          }
+        }
+      }
+    },
+    "Start with a word": {
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comece por uma palavra"
           }
         }
       }

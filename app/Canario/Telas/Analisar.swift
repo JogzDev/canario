@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Aba **Analisar** (§27): entrada por busca textual.
 ///
@@ -10,7 +11,6 @@ struct Analisar: View {
     var aoFechar: (() -> Void)?
     @State private var termos: [Termo] = []
     @State private var texto = ""
-    @State private var indices: [String: IndiceSemanal] = [:]
     @State private var carregando = true
     @State private var erro: String?
     /// A58: as matérias que contêm a expressão literal, e não a tradução dela.
@@ -31,29 +31,12 @@ struct Analisar: View {
         Traducao.descricaoAmigavel(casados, consulta: texto)
     }
 
-    // Cores do gradiente de fundo
-    private let azulBase = Tokens.Cor.ceuFixo
-    private let azulMaisClaro = Color(red: 212/255, green: 239/255, blue: 244/255)
-    private let corLinha = Color.white.opacity(0.65)
+    private let corLinha = Color.black.opacity(0.08)
 
     var body: some View {
         NavigationStack {
             ZStack {
-                // Fundo com degradê suave do azul base para um azul mais branquinho
-                LinearGradient(
-                    colors: [azulBase, azulMaisClaro],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-
-                // Ondas em SVG centralizadas e com largura de 410 pt
-                Image("SVG Background Search")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 410)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .ignoresSafeArea()
+                PapelDaBusca().ignoresSafeArea()
 
                 Group {
                     if carregando {
@@ -65,7 +48,8 @@ struct Analisar: View {
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Search")
+            .navigationBarTitleDisplayMode(.large)
             .searchable(text: textoDaBusca,
                         placement: .navigationBarDrawer(displayMode: .always),
                         prompt: "Search by garment, fabric, cut, pattern…")
@@ -82,12 +66,9 @@ struct Analisar: View {
         // `ilike` sobre 172 mil títulos, e disparar uma por tecla digitada
         // gastaria o banco para jogar 19 respostas fora.
         .task(id: texto) { await procurarNaImprensa() }
-        // A busca é `fullScreenCover` da `Raiz` e abre de QUALQUER aba,
-        // inclusive da Trends -- e a Trends deixa a cena em escuro. Como esta
-        // tela pinta o próprio fundo em #BBE5ED, sem declarar o esquema ela
-        // herdava tinta clara sobre fundo claro. É o mesmo defeito dos prints
-        // do Profile e do Q&A, só que numa tela que ninguém tinha aberto por
-        // esse caminho ainda.
+        .tint(CorDaBusca.bordo)
+        // A busca também abre sobre a aba de mercado, que usa outro esquema.
+        // Fixar o território evita herdar cores de uma tela que ficou atrás.
         .territorio(.armario)
     }
 
@@ -130,98 +111,127 @@ struct Analisar: View {
         }
     }
 
-    /// Estado vazio com textos dentro de uma pílula translúcida centralizada na tela
+    /// O vocabulário real ocupa o estado inicial: não há exemplos fictícios nem
+    /// uma tela vazia que dependa da pessoa adivinhar o que pode pesquisar.
     private var abertura: some View {
-        VStack {
-            Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Start with a word")
+                        .font(.system(.title, design: .serif, weight: .bold))
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Combine words to describe a piece, like black leather coat.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-            VStack(spacing: 6) {
-                Text("Search by garment, fabric, cut, pattern…")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.primary)
-
-                Text(frase("Try: \(sugestoes.prefix(3).joined(separator: ", "))"))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.80))
-                    .multilineTextAlignment(.center)
+                ForEach(gruposDoVocabulario, id: \.dimensao) { grupo in
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(verbatim: Traducao.rotuloDaDimensao(grupo.dimensao))
+                            .font(.system(.title3, design: .serif, weight: .semibold))
+                            .accessibilityAddTraits(.isHeader)
+                        FlowLayout(espaco: 8) {
+                            ForEach(grupo.termos) { termo in
+                                Button {
+                                    atualizarTextoDaBusca(Traducao.rotuloExibido(termo))
+                                } label: {
+                                    Text(verbatim: Traducao.rotuloExibido(termo))
+                                        .font(.subheadline.weight(.medium))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(CorDaBusca.papel, in: Capsule())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Search this attribute")
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(20)
+                    .modifier(FolhaDaBusca())
+                }
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.85), Color.white.opacity(0.55)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .padding(.horizontal, 24)
-
-            Spacer()
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scrollDismissesKeyboard(.immediately)
     }
 
-    /// Card de leitura combinada (Liquid Glass)
+    private var gruposDoVocabulario: [(dimensao: String, termos: [Termo])] {
+        let ordem = ["categoria", "cor", "estampa", "tecido", "comprimento",
+                     "silhueta", "cintura", "estetica"]
+        let extras = Set(termos.map(\.dimensao))
+            .subtracting(ordem)
+            .subtracting(["motivo_estampa"])
+            .sorted()
+        return (ordem + extras).compactMap { dimensao in
+            var vistos = Set<String>()
+            let disponiveis = termos.filter {
+                $0.dimensao == dimensao
+                    && vistos.insert(Traducao.rotuloExibido($0)).inserted
+            }
+            return disponiveis.isEmpty ? nil : (dimensao, disponiveis)
+        }
+    }
+
+    /// A combinação é uma porta para a leitura da coorte, nunca uma média dos
+    /// índices dos atributos. Essa média não é histórico da peça pesquisada.
     private var cardPecaCombinada: some View {
         NavigationLink {
             RelatorioDaPeca(termos: casados, pecaSalva: nil,
                            descricaoAmigavel: descricaoDaBusca)
         } label: {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(descricaoDaBusca)
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(.title3, design: .serif, weight: .bold))
                         .foregroundStyle(.primary)
 
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.primary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(CorDaBusca.bordo)
                 }
-
-                Rectangle()
-                    .fill(corLinha)
-                    .frame(height: 1)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Combined reading")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary.opacity(0.85))
-
-                    Text(leituraCombinadaFormatada)
-                        .font(.system(size: 38, weight: .bold))
-                        .foregroundStyle(.primary)
-                }
+                Text("See similar pieces, attributes and the combined reading.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            .padding(18)
-            .background(cardBackground)
+            .padding(20)
+            .modifier(FolhaDaBusca())
         }
         .buttonStyle(.plain)
     }
 
-    /// Card de atributos individuais com linhas e pílulas
+    /// A lista não antecipa números sem validar a cobertura da semana. Cada
+    /// linha leva à tela que já aplica o portão completo antes de mostrar o índice.
     private var cardAtributos: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(descreveUmaPeca ? "By attribute" : "Attributes")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
-
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Attributes")
+                .font(.system(.title3, design: .serif, weight: .bold))
+                .accessibilityAddTraits(.isHeader)
             VStack(spacing: 0) {
                 ForEach(Array(casados.enumerated()), id: \.element.id) { index, termo in
                     NavigationLink {
                         RelatorioDoTermo(termo: termo)
                     } label: {
-                        LinhaTermoGlass(
-                            termo: termo,
-                            indice: indices[termo.id],
-                            rotulo: Traducao.rotuloAmigavel(termo, na: texto)
-                        )
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(verbatim: Traducao.rotuloAmigavel(termo, na: texto))
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                Text(verbatim: Traducao.rotuloDaDimensao(termo.dimensao))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(CorDaBusca.bordo)
+                        }
+                        .contentShape(Rectangle())
+                        .padding(.vertical, 12)
                     }
                     .buttonStyle(.plain)
 
@@ -229,13 +239,12 @@ struct Analisar: View {
                         Rectangle()
                             .fill(corLinha)
                             .frame(height: 1)
-                            .padding(.horizontal, 18)
                     }
                 }
             }
-            .padding(.bottom, 8)
         }
-        .background(cardBackground)
+        .padding(20)
+        .modifier(FolhaDaBusca())
     }
 
     /// **In the press**: as matérias cujo TÍTULO contém o que foi digitado.
@@ -248,11 +257,12 @@ struct Analisar: View {
         if let r = imprensa, let manchete = ReferenciaEditorial.manchete(r) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("In the press")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(.title3, design: .serif, weight: .bold))
                     .foregroundStyle(.primary)
+                    .accessibilityAddTraits(.isHeader)
                 Text(manchete)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.85))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 VStack(spacing: 0) {
@@ -266,12 +276,12 @@ struct Analisar: View {
 
                 if let recorte = ReferenciaEditorial.recorte(r) {
                     Text(recorte)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary.opacity(0.70))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 Text(ReferenciaEditorial.ondeEstaOTexto)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.70))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // Controle deterministico, presente apenas no processo de
@@ -283,16 +293,16 @@ struct Analisar: View {
                         .accessibilityIdentifier("trocar-consulta-editorial")
                 }
             }
-            .padding(18)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(cardBackground)
+            .modifier(FolhaDaBusca())
         } else if imprensaFalhou {
             // Falha declarada, em voz baixa: este bloco é referência de fora,
             // não o resultado da busca, e não pode virar alarme vermelho no
             // meio de uma tela que respondeu o que sabia.
             Text("Press references could not be loaded.")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.70))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("imprensa-falhou")
         }
@@ -303,14 +313,14 @@ struct Analisar: View {
     private func materiaEmLinha(_ materia: ReferenciaEditorial.Materia) -> some View {
         let conteudo = VStack(alignment: .leading, spacing: 4) {
             Text(materia.titulo)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
             if !materia.procedencia.isEmpty {
                 Text(materia.procedencia)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.70))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -321,8 +331,8 @@ struct Analisar: View {
                 HStack(alignment: .top, spacing: 10) {
                     conteudo
                     Image(systemName: "arrow.up.right")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.primary)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(CorDaBusca.bordo)
                         .padding(.top, 12)
                 }
                 .contentShape(Rectangle())
@@ -431,25 +441,6 @@ struct Analisar: View {
         return (error as? URLError)?.code == .cancelled
     }
 
-    private var leituraCombinadaFormatada: String {
-        let leituras = casados.compactMap { indices[$0.id]?.indice }
-        guard !leituras.isEmpty else { return "--" }
-        let media = leituras.reduce(0, +) / Double(leituras.count)
-        let sinal = media >= 0 ? "+" : ""
-        return String(format: "\(sinal)%.2f", media).replacingOccurrences(of: ".", with: ",")
-    }
-
-    private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [Color.white.opacity(0.85), Color.white.opacity(0.50)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-    }
-
     private var sugestoes: [String] {
         var vistas = Set<String>()
         return termos.filter { vistas.insert($0.dimensao).inserted }
@@ -459,13 +450,20 @@ struct Analisar: View {
     private func carregar() async {
         carregando = true
         erro = nil
-        do {
-            async let t = CatalogoDeTermos.shared.carregar()
-            async let i = CatalogoDeIndices.shared.carregar()
-            termos = try await t
+        if ProcessInfo.processInfo.arguments.contains("-CanarioUITestBuscaVocabulario") {
+            termos = [
+                Termo(id: "vestido", rotulo: "Dress", dimensao: "categoria",
+                      exclusiva: true, sinonimos: nil, semPernaBusca: nil,
+                      palavrasPt: nil, palavrasEn: nil),
+                Termo(id: "preto", rotulo: "Black", dimensao: "cor",
+                      exclusiva: false, sinonimos: nil, semPernaBusca: nil,
+                      palavrasPt: nil, palavrasEn: nil),
+            ]
             carregando = false
-            let recentes = try await i
-            indices = SelecaoDeEstado.porTermo(recentes)
+            return
+        }
+        do {
+            termos = try await CatalogoDeTermos.shared.carregar()
         } catch is CancellationError {
             return
         } catch {
@@ -475,118 +473,60 @@ struct Analisar: View {
     }
 }
 
-/// Linha de atributo no padrão Figma / Liquid Glass com pílula de status
-struct LinhaTermoGlass: View {
-    let termo: Termo
-    let indice: IndiceSemanal?
-    var rotulo: String? = nil
+/// Primeiro recorte do sistema visual da 2.0. As mesmas superfícies serão
+/// extraídas para o design compartilhado quando os três percursos estiverem
+/// aprovados; por ora não mudam telas que ainda não passaram pelo redesenho.
+private enum CorDaBusca {
+    static let papel = dinamica(claro: 0xF7F5EF, escuro: 0x1A1917)
+    static let cartao = dinamica(claro: 0xFFFFFF, escuro: 0x262523)
+    static let bordo = dinamica(claro: 0x8A1C2E, escuro: 0xF0899A)
+    static let costura = dinamica(claro: 0x2743D6, escuro: 0x8FA2FF)
+
+    private static func dinamica(claro: UInt32, escuro: UInt32) -> Color {
+        Color(UIColor { tracos in
+            let valor = tracos.userInterfaceStyle == .dark ? escuro : claro
+            return UIColor(red: CGFloat((valor >> 16) & 0xFF) / 255,
+                           green: CGFloat((valor >> 8) & 0xFF) / 255,
+                           blue: CGFloat(valor & 0xFF) / 255, alpha: 1)
+        })
+    }
+}
+
+private struct PapelDaBusca: View {
+    @Environment(\.colorScheme) private var esquema
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text(rotulo ?? Traducao.rotuloExibido(termo))
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.primary)
-
-                    if let valor = indice?.indice {
-                        Text(formatarIndice(valor))
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.primary)
-                    }
-                }
-
-                if let indice {
-                    pilulaGenerica(para: indice)
+        Canvas { contexto, tamanho in
+            let ponto = esquema == .dark ? Color.white.opacity(0.08)
+                : Color.black.opacity(0.10)
+            for y in stride(from: CGFloat(9), through: tamanho.height, by: 18) {
+                for x in stride(from: CGFloat(9), through: tamanho.width, by: 18) {
+                    contexto.fill(Path(ellipseIn: CGRect(x: x, y: y,
+                                                         width: 1.5, height: 1.5)),
+                                  with: .color(ponto))
                 }
             }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.primary)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
+        .background(CorDaBusca.papel)
+        .accessibilityHidden(true)
     }
+}
 
-    @ViewBuilder
-    private func pilulaGenerica(para indice: IndiceSemanal) -> some View {
-        if let valor = indice.indice {
-            if valor >= 1.0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Far Above the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.15, green: 0.45, blue: 0.12))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.52, green: 0.85, blue: 0.38).opacity(0.85), in: Capsule())
-            } else if valor > 0.3 {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Above the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.18, green: 0.40, blue: 0.15))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.65, green: 0.90, blue: 0.55).opacity(0.85), in: Capsule())
-            } else if valor < -1.0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "chart.line.downtrend.xyaxis")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Far Below the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.60, green: 0.10, blue: 0.10))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.95, green: 0.50, blue: 0.50).opacity(0.85), in: Capsule())
-            } else if valor < -0.3 {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.down.right")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Below the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.55, green: 0.15, blue: 0.15))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.95, green: 0.65, blue: 0.65).opacity(0.85), in: Capsule())
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "equal")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Within the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(.primary.opacity(0.75))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(white: 0.55).opacity(0.35), in: Capsule())
+private struct FolhaDaBusca: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(CorDaBusca.cartao)
+                    .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
             }
-        } else {
-            HStack(spacing: 4) {
-                Image(systemName: "equal")
-                    .font(.system(size: 10, weight: .bold))
-                Text("Within the usual range")
-                    .font(.system(size: 10, weight: .bold))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                    .foregroundStyle(CorDaBusca.costura.opacity(0.25))
+                    .padding(6)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
-            .foregroundStyle(.primary.opacity(0.75))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color(white: 0.55).opacity(0.35), in: Capsule())
-        }
-    }
-
-    private func formatarIndice(_ valor: Double) -> String {
-        let sinal = valor >= 0 ? "+" : ""
-        return String(format: "\(sinal)%.2f", valor)
     }
 }

@@ -86,6 +86,28 @@ final class CanarioUITests: XCTestCase {
         return app
     }
 
+    func testBuscaDaEdicaoEnsinaVocabularioSemInventarMedia() {
+        let app = aplicativo(argumentos: ["-CanarioAbrirBusca",
+                                          "-CanarioUITestBuscaVocabulario",
+                                          "-CanarioUITestImprensa", "vazio"])
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Start with a word"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Dress"].exists)
+        XCTAssertTrue(app.buttons["Black"].exists)
+
+        let campo = app.searchFields.firstMatch
+        XCTAssertTrue(campo.waitForExistence(timeout: 5))
+        campo.tap()
+        campo.typeText("black dress")
+
+        XCTAssertTrue(app.staticTexts["See similar pieces, attributes and the combined reading."]
+            .waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Attributes"].exists)
+        XCTAssertFalse(app.staticTexts["Combined reading"].exists,
+                       "a busca nao pode fabricar a media dos indices dos atributos")
+    }
+
     func testImprensaMostraAMateriaQueContemAExpressao() {
         let app = abrirBusca("sucesso")
         app.searchFields.firstMatch.typeText("Napoleon Jacket")
