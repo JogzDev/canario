@@ -1,19 +1,20 @@
 # Pendências do DataDrobe 2.0
 
-**Atualizado em 21/09/2026 às 02:00 BRT.** Esta lista substitui a triagem de
+**Atualizado em 21/09/2026 às 07:30 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Prioridade corrente — observação e liberação
 
-1. A execução de 20/09 fechou verde. Acompanhar agora 21 a 25/09. Cada dia precisa fechar
+1. A execução de 20/09 fechou verde. O evento de 21/09 não apareceu e não
+   conta; acompanhar agora 22 a 26/09. Cada dia precisa fechar
    com pipeline verde, data pública comprovada e cota em até 85%. Um dia
    parcial, ausente ou inconclusivo não conta como observado.
-2. Não disparar coletas manuais para “completar” um dia: o runner acompanha a
-   execução de evento `schedule` e o próprio pipeline decide publicação.
-3. A PR #36 moveu o caminho regular para executores gerenciados. Manter o
-   supervisor local apenas até o primeiro ciclo agendado hospedado publicar o
-   dia e medir capacidade em até 85%; então desativá-lo, preservando scripts e
-   logs para reversão. **Não instalar outro runner residencial.**
+2. Não disparar coletas manuais para “completar” um dia: a automação acompanha
+   o evento `schedule` e o próprio pipeline decide publicação.
+3. PRs #36 e #42 moveram o caminho inteiro para executores gerenciados,
+   inclusive capacidade final e isolamento. O supervisor local está
+   desabilitado, sem listener ou vigília de energia; scripts e logs foram
+   preservados. **Não instalar nem reativar runner residencial.**
 4. O app consumidor já está na `main`, mas a próxima versão pública será 2.0,
    não 1.2. Ela só sai depois de sete dias verdes, regressão visual no iPhone,
    redesenho final, logo nova e decisão entre Garbo/Filo. Só então gerar
@@ -26,8 +27,8 @@ Janela acumulada: **2/7 marcos válidos**. Em 19/09, a baseline publicou a API
 e mediu **365.534.005 bytes (73,1%)** depois da coleta isolada, saúde e motor.
 Em 20/09, a run agendada `35504417793` publicou painel e eventos do próprio
 dia; a verificação `35513837999` mediu **367.270.709 bytes (73,5%)**, ou
-+1.736.704 bytes, e confirmou zero contaminação em `direcao_intl`. Restam os
-cinco ciclos de 21 a 25/09.
++1.736.704 bytes, e confirmou zero contaminação em `direcao_intl`. O cron de
+21/09 não gerou run e não conta. Restam cinco ciclos válidos, de 22 a 26/09.
 
 ## Autonomia e segurança entregues em 21/09
 
@@ -41,7 +42,7 @@ cinco ciclos de 21 a 25/09.
   restauram build e os fluxos UI completos no Xcode Cloud.
 - HTTPS é obrigatório no cliente; imports Deno e Actions estão fixados;
   Dependabot, alertas de vulnerabilidade e correções automáticas foram ligados.
-- O gabarito de segurança tem 12 itens atendidos, 7 parciais e 1 não aplicável.
+- O gabarito de segurança tem 13 itens atendidos, 6 parciais e 1 não aplicável.
   Os parciais permanecem visíveis em `AUDITORIA_SEGURANCA_2026-09-21.md`.
 
 ## Pacote visual herdado — base atual, não fechamento da 2.0

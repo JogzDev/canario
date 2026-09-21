@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 21/09/2026, 02:00 em São Paulo
+**Última atualização:** 21/09/2026, 07:30 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -38,14 +38,25 @@ auditoria sistemática de segurança: HTTPS obrigatório no cliente, headers de
 resposta, imports Deno fixados, Actions externos por SHA, Dependabot para
 Actions e os dois laboratórios npm, alertas de vulnerabilidade e correções
 automáticas habilitados. O gabarito de vinte itens está em
-`AUDITORIA_SEGURANCA_2026-09-21.md`: 12 atendidos, 7 parciais e 1 não aplicável.
+`AUDITORIA_SEGURANCA_2026-09-21.md`. A
+[PR #41](https://github.com/JogzDev/canario/pull/41) acrescentou o inventário
+e o portão de novas concessões públicas: agora são 13 atendidos, 6 parciais e
+1 não aplicável.
 
-As duas mudanças passaram na `main` em executor hospedado: 313 testes Swift,
-todos os portões Python e os dois laboratórios PostgreSQL. Nenhuma coleta ou
-migration foi executada por essas PRs. O supervisor local permanece carregado
-somente como reversão até o primeiro pipeline agendado hospedado publicar o dia
-e confirmar capacidade em até 85%; depois disso será desativado, sem apagar os
-logs.
+As mudanças passaram na `main` em executor hospedado: 313 testes Swift, todos
+os portões Python e os dois laboratórios PostgreSQL. Nenhuma coleta ou migration
+foi executada por essas PRs. A
+[PR #42](https://github.com/JogzDev/canario/pull/42) fechou o último elo local:
+o pipeline mede capacidade depois de todas as escritas, exige no máximo 85% na
+observação, prova isolamento e inclui isso no alerta. O cron saiu do minuto zero
+para **03:17 BRT**, fora do pico documentado do GitHub.
+
+O evento `schedule` de 21/09 não apareceu até 07:23 BRT, apesar de workflow,
+permissões e `main` estarem ativos. Ele é ausência externa de agendamento e
+**não conta como marco verde**; nenhuma coleta manual foi criada para mascarar
+o buraco. O supervisor local foi descarregado e desabilitado, seu registro
+remoto removido e a proteção de energia encerrada. Scripts e logs permanecem
+preservados. A observação continua de 22 a 26/09 inteiramente no GitHub.
 
 Por decisão do JP, a próxima versão pública deixa de ser tratada como 1.2 e
 será **2.0**. Ela só sai com o redesenho, logo nova e nome novo; os candidatos
@@ -110,8 +121,8 @@ pelos executores gerenciados descritos acima. Não instalar aquele substituto.
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | A57/A58 e Animale publicados; execução gerenciada entra no marco de 21/09 | 2/7 marcos confirmados antes da execução de 21/09 |
-| Banco | plano gratuito; compactação de `snapshots` verificada | **365.534.005 / 500.000.000 bytes (73,1%)** · 134.465.995 bytes livres |
+| Dados e pipeline | A57/A58 e Animale publicados; 21/09 não teve evento agendado e não conta | **2/7**; próximos marcos válidos: 22–26/09 |
+| Banco | plano gratuito; compactação de `snapshots` verificada | **367.270.709 / 500.000.000 bytes (73,5%)** · 132.729.291 bytes livres em 20/09 |
 | Rota paga de visão (Luna) | **v11 em produção** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
 | App na loja | **1.1 publicada; próxima pública será 2.0** | `main` para teste; nome, logo e redesenho antes de publicar |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
