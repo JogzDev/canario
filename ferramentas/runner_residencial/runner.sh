@@ -304,7 +304,7 @@ if [ "$MODO" = --adopt ]; then
   RUN_ID="$RUN_ADOTADA"
   log "Adotando pipeline agendado que ja estava na fila: $RUN_ID."
 else
-  # O cron do GitHub e 06:00 UTC. Nao criamos uma segunda execucao: esperamos
+  # O cron do GitHub e 06:17 UTC. Nao criamos uma segunda execucao: esperamos
   # a agendada dentro da maior janela sustentada pelos atrasos observados.
   ESPERA_ATE=$(( JANELA_INICIO_EPOCH + ESPERA_PIPELINE_SEGUNDOS ))
   while [ "$(date -u '+%s')" -lt "$ESPERA_ATE" ]; do

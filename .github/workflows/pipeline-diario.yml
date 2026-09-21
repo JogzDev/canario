@@ -6,8 +6,11 @@ name: Pipeline diario (coletas, motor e saude)
 on:
   workflow_dispatch:
   schedule:
-    # 03:00 BRT = 06:00 UTC (Brasil sem horario de verao desde 2019).
-    - cron: '0 6 * * *'
+    # 03:17 BRT = 06:17 UTC (Brasil sem horario de verao desde 2019).
+    # O GitHub documenta o inicio da hora como periodo de carga em que eventos
+    # agendados podem atrasar ou ate ser descartados. Em 19 e 20/09 este cron,
+    # antes no minuto 00, nasceu quase quatro horas depois do horario nominal.
+    - cron: '17 6 * * *'
 
 permissions:
   contents: write

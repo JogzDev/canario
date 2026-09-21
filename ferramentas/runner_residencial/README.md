@@ -1,6 +1,11 @@
 # Runner residencial durável
 
-Este pacote substitui o supervisor temporário da observação depois de 26/09.
+> **Arquivado como reversão, não instalar.** A PR #36 levou o caminho regular
+> aos executores gerenciados. O `ESTADO.md` é a autoridade operacional; este
+> pacote permanece apenas para auditoria do mecanismo temporário já usado.
+
+Este pacote foi escrito para substituir o supervisor temporário depois de
+26/09, plano revogado pela autonomia gerenciada de 21/09.
 Ele não hospeda um runner permanentemente: às 02h50 BRT o `launchd` cria uma
 credencial efêmera, espera o pipeline agendado pelo GitHub, acompanha a run
 exata, mede capacidade e remove credencial e diretório de trabalho ao terminar.

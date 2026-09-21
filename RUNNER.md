@@ -1,5 +1,10 @@
 # Runner residencial — o Mac i7 como servidor de coleta
 
+> **Documento histórico, não instalar.** Em 21/09/2026 o caminho regular foi
+> movido para executores gerenciados pela PR #36. O supervisor temporário só
+> permanece até o primeiro ciclo hospedado publicar e medir capacidade; depois
+> será desligado. O estado vigente está em `ESTADO.md`.
+
 **Resposta curta: dá, e resolve o problema sem gastar um centavo.**
 
 O coletor não é pesado de processador: ele passa quase todo o tempo *esperando*

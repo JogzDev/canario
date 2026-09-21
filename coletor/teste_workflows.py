@@ -99,6 +99,21 @@ def checar_orquestracao(workflows):
         if "schedule" in gatilhos:
             falhar(arquivo, "workflow individual voltou a ter cron proprio")
 
+    # O GitHub documenta o começo de cada hora como pico: `schedule` pode ser
+    # atrasado e, sob carga suficiente, ate descartado. Foi exatamente o que
+    # observamos em 19 e 20/09, quando `0 6 * * *` nasceu quase quatro horas
+    # tarde. Toda agenda autônoma precisa fugir do minuto zero.
+    for arquivo, dados in workflows.items():
+        gatilhos = dados.get("on", dados.get(True, {})) or {}
+        for agenda in gatilhos.get("schedule", []) or []:
+            cron = str(agenda.get("cron", "")).strip()
+            campos = cron.split()
+            if len(campos) != 5:
+                falhar(arquivo, "cron agendado fora do formato de cinco campos")
+            elif campos[0] == "0":
+                falhar(arquivo,
+                       "cron no minuto zero entra no pico documentado do GitHub")
+
     editorial = workflows.get("coleta-editorial.yml", {})
     entrada_editorial = (editorial.get("on", editorial.get(True, {})) or {})
     for gatilho in ("workflow_call", "workflow_dispatch"):

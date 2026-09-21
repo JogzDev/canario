@@ -9,7 +9,10 @@ uma estação opcional de desenvolvimento.
 
 ## Arquitetura escolhida
 
-- O pipeline diário das 03:00 BRT roda em `ubuntu-latest` do GitHub Actions.
+- O pipeline diário das 03:17 BRT roda em `ubuntu-latest` do GitHub Actions.
+  O minuto 17 evita o início da hora, pico em que o GitHub documenta atraso ou
+  descarte possível de eventos `schedule`; os dois ciclos anteriores no minuto
+  zero nasceram quase quatro horas tarde.
 - O catálogo candidato roda segunda e quinta, também em Ubuntu gerenciado.
 - A sonda da Edge Function e as verificações de produção rodam em Ubuntu.
 - Google Trends usa Ubuntu no caminho regular e `macos-latest` apenas como
