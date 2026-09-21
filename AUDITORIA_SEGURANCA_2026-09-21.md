@@ -6,8 +6,8 @@ ela não trata ausência de evidência como conclusão positiva.
 
 ## Resultado executivo
 
-- **13 controles atendidos** no escopo atual.
-- **6 controles parciais**, com risco e próxima ação declarados.
+- **14 controles atendidos** no escopo atual.
+- **5 controles parciais**, com risco e próxima ação declarados.
 - **1 controle não aplicável** ao app nativo (cookies de sessão).
 - A busca no histórico Git não encontrou chave OpenAI, chave secreta do
   Supabase, token GitHub, chave AWS nem chave privada. Os três acertos do padrão
@@ -39,7 +39,7 @@ ela não trata ausência de evidência como conclusão positiva.
 | 17 | Trim de respostas de API | **Atendido** | Views/RPCs enxutas removem metadados que o app não lê; Edge Functions não devolvem detalhe do provedor; respostas sensíveis usam `no-store`. |
 | 18 | Security headers | **Parcial** | As três Edge Functions agora devolvem `Cache-Control: no-store` e `X-Content-Type-Options: nosniff`. Headers do site Carrd e da borda Supabase são gerenciados pelos provedores e precisam ser conferidos na versão 2.0 publicada. |
 | 19 | Forçar HTTPS | **Atendido** | O cliente agora rejeita explicitamente `http://` e falha fechado; ATS permanece ativo e URLs públicas de produto já eram validadas como HTTPS. |
-| 20 | Scan de dependências | **Parcial** | Actions usam SHA imutável com enforcement ligado no repositório, imports Deno foram fixados em versões exatas, `npm audit` está limpo, alertas/correções de vulnerabilidade estão ativos e Dependabot foi configurado para Actions e os dois laboratórios. Swift/Deno ainda precisam de alerta automatizado equivalente. |
+| 20 | Scan de dependências | **Atendido** | Actions usam SHA imutável; OSV-Scanner 2.6.0 audita `Package.resolved` e os lockfiles npm no CI; as Edge Functions têm `deno.lock` com integridade da árvore inteira e passam por `deno check` e `deno audit --frozen-lockfile`. Alertas/correções de vulnerabilidade e Dependabot continuam ativos onde a plataforma oferece suporte. |
 
 ## Mudanças desta rodada
 
@@ -53,6 +53,10 @@ ela não trata ausência de evidência como conclusão positiva.
    Actions e inclusão de segredos servidores no app.
 6. O repositório passou a exigir SHA imutável em Actions e teve alertas de
    vulnerabilidade e correções automáticas de segurança habilitados.
+7. Swift e Deno ganharam portões gratuitos e reproduzíveis: OSV sobre o
+   `Package.resolved`; lock, verificação de tipos e auditoria nativa no Deno.
+   A execução local inicial encontrou 8 pacotes Swift e nenhuma vulnerabilidade
+   conhecida; o `deno.lock` também passou sem achados.
 
 ## Pendências priorizadas
 

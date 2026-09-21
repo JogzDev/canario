@@ -40,7 +40,7 @@ Actions e os dois laboratórios npm, alertas de vulnerabilidade e correções
 automáticas habilitados. O gabarito de vinte itens está em
 `AUDITORIA_SEGURANCA_2026-09-21.md`. A
 [PR #41](https://github.com/JogzDev/canario/pull/41) acrescentou o inventário
-e o portão de novas concessões públicas: agora são 13 atendidos, 6 parciais e
+e o portão de novas concessões públicas: agora são 14 atendidos, 5 parciais e
 1 não aplicável.
 
 As mudanças passaram na `main` em executor hospedado: 313 testes Swift, todos
@@ -659,7 +659,7 @@ entram na fila quando forem decididos.
    independente entrou na `main` em 21/09 e o CI já passou fora do Mac. Falta
    observar o pipeline agendado publicar o dia e medir a cota; depois o
    supervisor local é desativado.
-2. **Fechar os sete itens parciais de segurança por risco e evidência**, sem
+2. **Fechar os cinco itens parciais de segurança por risco e evidência**, sem
    adicionar controle cosmético. O inventário vivo está em
    `AUDITORIA_SEGURANCA_2026-09-21.md`.
 3. Nenhum outro defeito técnico reproduzível permanece aberto antes do novo

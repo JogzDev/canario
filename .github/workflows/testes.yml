@@ -140,6 +140,35 @@ jobs:
       - name: Nome usado e nunca definido
         run: "$PY coletor/teste_nomes.py"
 
+  dependencias-swift:
+    name: Dependencias Swift e lockfiles (OSV)
+    # O repositorio privado pessoal nao tem GitHub Code Security habilitado.
+    # O OSV cobre o Package.resolved e os lockfiles npm sem depender desse
+    # produto pago; SARIF fica desligado, mas qualquer vulnerabilidade falha.
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    with:
+      scan-args: |-
+        --recursive
+        ./
+      upload-sarif: false
+      fail-on-vuln: true
+
+  dependencias-deno:
+    name: Edge Functions (Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.7
+      - name: Lockfile reproduzivel, tipos e vulnerabilidades
+        working-directory: supabase/functions
+        run: |
+          deno install --entrypoint analisar-peca/index.ts excluir-conta/index.ts registrar-credencial-apple/index.ts --lock deno.lock --lockfile-only --frozen-lockfile --no-config
+          deno check --lock deno.lock --frozen-lockfile --no-config analisar-peca/index.ts excluir-conta/index.ts registrar-credencial-apple/index.ts
+          deno audit --lock deno.lock --frozen-lockfile
+
   capacidade:
     name: Laboratorio de capacidade (PostgreSQL 17 descartavel)
     # O pacote baixa o PostgreSQL 17 para o próprio runner Linux descartável.

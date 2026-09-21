@@ -42,7 +42,7 @@ dia; a verificação `35513837999` mediu **367.270.709 bytes (73,5%)**, ou
   restauram build e os fluxos UI completos no Xcode Cloud.
 - HTTPS é obrigatório no cliente; imports Deno e Actions estão fixados;
   Dependabot, alertas de vulnerabilidade e correções automáticas foram ligados.
-- O gabarito de segurança tem 13 itens atendidos, 6 parciais e 1 não aplicável.
+- O gabarito de segurança tem 14 itens atendidos, 5 parciais e 1 não aplicável.
   Os parciais permanecem visíveis em `AUDITORIA_SEGURANCA_2026-09-21.md`.
 
 ## Pacote visual herdado — base atual, não fechamento da 2.0

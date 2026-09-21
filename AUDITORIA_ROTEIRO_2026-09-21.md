@@ -66,10 +66,10 @@ foi enviada nem mesclada.
 - A janela está em 2/7. A ausência de run em 21/09 não é um marco verde.
 - Falta um alerta de “o agendamento nem nasceu” que seja independente da mesma
   agenda que pode falhar.
-- Permanecem seis controles parciais: secret scanning da plataforma, proteção
+- Permanecem cinco controles parciais: secret scanning da plataforma, proteção
   adicional do refresh token Apple, política de revisão/admin, App Attest ou
-  DeviceCheck, auditoria de headers na 2.0 publicada e scan automatizado
-  equivalente para Swift/Deno.
+  DeviceCheck e auditoria de headers na 2.0 publicada. Swift e Deno agora têm
+  lock e varredura automatizada equivalentes no CI.
 - PRs Dependabot #37 e #38 estão abertas e ainda precisam de compatibilidade e
   CI antes de qualquer merge.
 
