@@ -6,9 +6,11 @@
 ## Prioridade corrente — observação e liberação
 
 1. A execução de 20/09 fechou verde. O evento de 21/09 não apareceu e não
-   conta; acompanhar agora 22 a 26/09. Cada dia precisa fechar
-   com pipeline verde, data pública comprovada e cota em até 85%. Um dia
-   parcial, ausente ou inconclusivo não conta como observado.
+   conta. O plano de 17/09 exige **sete execuções agendadas consecutivas**;
+   portanto 19–20/09 são duas medições válidas, mas não autorizam encerrar a
+   porta após mais cinco dias. A sequência recomeça no próximo `schedule`
+   válido. Cada dia precisa fechar com pipeline verde, data pública comprovada
+   e cota em até 85%. Um dia parcial, ausente ou inconclusivo quebra a sequência.
 2. Não disparar coletas manuais para “completar” um dia: a automação acompanha
    o evento `schedule` e o próprio pipeline decide publicação.
 3. PRs #36 e #42 moveram o caminho inteiro para executores gerenciados,
@@ -23,12 +25,13 @@
    para ela. O catálogo candidato mantém a agenda de segunda e quinta em
    executor gerenciado.
 
-Janela acumulada: **2/7 marcos válidos**. Em 19/09, a baseline publicou a API
+Histórico acumulado: **2 dias válidos; sequência corrente: 0/7**. Em 19/09, a baseline publicou a API
 e mediu **365.534.005 bytes (73,1%)** depois da coleta isolada, saúde e motor.
 Em 20/09, a run agendada `35504417793` publicou painel e eventos do próprio
 dia; a verificação `35513837999` mediu **367.270.709 bytes (73,5%)**, ou
 +1.736.704 bytes, e confirmou zero contaminação em `direcao_intl`. O cron de
-21/09 não gerou run e não conta. Restam cinco ciclos válidos, de 22 a 26/09.
+21/09 não gerou run e interrompeu a consecutividade. O primeiro novo marco
+poderá ser 22/09, se a execução agendada nascer e passar em todos os portões.
 
 ## Autonomia e segurança entregues em 21/09
 
