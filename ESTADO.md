@@ -47,6 +47,10 @@ OSV e o Deno ganhou lock e auditoria: agora são 15 atendidos, 4 parciais e
 Também na branch local, a A59 prepara cifra do refresh token Apple com chave
 versionada; ela não está aplicada. Há laboratório e oito testes Deno verdes,
 mas o controle continua parcial até secret, deploy e backfill auditado.
+A integração local passou em 356 testes Swift e, no simulador iPhone 17/iOS
+26.2, em 12 fluxos UI offline sem falhas; dois casos de dados reais foram
+pulados. A configuração fictícia do ensaio foi removida. Ainda falta regressão
+no iPhone físico antes de PR ou distribuição.
 
 As mudanças passaram na `main` em executor hospedado: 313 testes Swift, todos
 os portões Python e os dois laboratórios PostgreSQL. Nenhuma coleta ou migration

@@ -47,6 +47,9 @@ dia; a verificação `35513837999` mediu **367.270.709 bytes (73,5%)**, ou
 - A integração acrescenta Gitleaks gratuito sobre o histórico inteiro e a árvore
   atual, OSV para Swift/npm e lock + auditoria do Deno. Tudo passou localmente;
   os jobs novos ainda precisam rodar no GitHub quando a branch for enviada.
+- O build e 12 fluxos offline de interface passaram no simulador iPhone 17;
+  dois casos dependentes de dados reais foram pulados. Falta o percurso no
+  iPhone físico com configuração real antes de propor integração na `main`.
 - A59 prepara a cifra do refresh token Apple, sem tocar produção. O controle
   ainda exige chave de produção, implantação coordenada e backfill das linhas
   A50; o procedimento está em `ferramentas/seguranca/ROTACAO_TOKEN_APPLE.md`.

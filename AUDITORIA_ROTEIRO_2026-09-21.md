@@ -59,6 +59,9 @@ foi enviada nem mesclada.
 - A integração local compila para simulador, tem 356 testes Swift verdes e
   catálogo com 637 chaves; das 582 usadas no código, zero está ausente e zero
   está sem português.
+- Em 21/09, os fluxos offline no simulador iPhone 17/iOS 26.2 fecharam com
+  **12 testes UI verdes e zero falhas**; dois testes de dados reais ficaram
+  pulados por exigirem opt-in. Isso não substitui regressão no iPhone físico.
 - Parser de preço localizado, ordem assíncrona das duas capturas e limite de
   bitmap antes da análise foram corrigidos e cobertos por regressão.
 
