@@ -32,6 +32,7 @@ As faixas continuam as mesmas: aviso em 85%, bloqueio em 96%. A faixa critica
 preserva 4% para operacao e indices.
 """
 
+import os
 import sys
 
 import supabase_rest
@@ -79,6 +80,19 @@ def ler_uso(leitura):
     return principal + OVERHEAD_MINIMO_MEDIDO, principal, OVERHEAD_MINIMO_MEDIDO, True
 
 
+def ler_teto_de_observacao(valor):
+    """Teto opcional pós-pipeline; o portão normal continua crítico em 96%."""
+    if valor in (None, ""):
+        return None
+    try:
+        teto = float(valor)
+    except (TypeError, ValueError):
+        raise ValueError("CAPACIDADE_MAXIMA_PCT invalida")
+    if not 0 < teto <= 100:
+        raise ValueError("CAPACIDADE_MAXIMA_PCT fora de 0..100")
+    return teto
+
+
 def main():
     if not supabase_rest.configurado():
         print("ERRO: SUPABASE_URL/SUPABASE_SECRET_KEY ausentes.", file=sys.stderr)
@@ -88,6 +102,8 @@ def main():
         cota, principal, overhead, estimado = ler_uso(leitura)
         limite = int(leitura.get("limite_bytes") or LIMITE_FREE)
         estado, fracao, livres = avaliar_capacidade(cota, limite)
+        teto_observacao = ler_teto_de_observacao(
+            os.environ.get("CAPACIDADE_MAXIMA_PCT"))
     except (KeyError, TypeError, ValueError, supabase_rest.SupabaseErro) as erro:
         print("ERRO: nao foi possivel medir a capacidade: {}".format(erro),
               file=sys.stderr)
@@ -101,6 +117,12 @@ def main():
     if estado == "critico":
         print("::error title=Capacidade critica::" + mensagem)
         print("Coleta bloqueada antes de novas escritas.", file=sys.stderr)
+        return 1
+    if (teto_observacao is not None and
+            fracao * 100 > teto_observacao):
+        print("::error title=Capacidade acima da observacao::" + mensagem)
+        print("A capacidade passou do teto pós-pipeline de {:.1f}%.".format(
+            teto_observacao), file=sys.stderr)
         return 1
     if estado == "aviso":
         print("::warning title=Capacidade do banco::" + mensagem)

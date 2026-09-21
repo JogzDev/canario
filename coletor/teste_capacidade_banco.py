@@ -4,7 +4,8 @@ import glob
 import os
 
 from verificar_capacidade_banco import (OVERHEAD_MINIMO_MEDIDO,
-                                        avaliar_capacidade, ler_uso)
+                                        avaliar_capacidade,
+                                        ler_teto_de_observacao, ler_uso)
 
 
 def main():
@@ -34,6 +35,20 @@ def main():
             pass
         else:
             print("FALHOU: tamanho invalido foi aceito: {}".format(usados))
+            return 1
+
+    if (ler_teto_de_observacao(None) is not None or
+            ler_teto_de_observacao("") is not None or
+            ler_teto_de_observacao("85") != 85.0):
+        print("FALHOU: teto opcional de observacao foi interpretado errado")
+        return 1
+    for invalido in ("abc", "0", "101"):
+        try:
+            ler_teto_de_observacao(invalido)
+        except ValueError:
+            pass
+        else:
+            print("FALHOU: teto invalido foi aceito: {}".format(invalido))
             return 1
 
     # P21: a medicao real de 18/09/2026. O portao antigo via 97,2% e o total
