@@ -138,6 +138,8 @@ def main():
     original_animale = varejo.animale_sitemap_todos
     original_gravar = varejo.gravar_lote
     original_flag = os.environ.get(varejo.VAR_ANIMALE_PUBLICA)
+    original_cadencia = os.environ.get(varejo.VAR_ANIMALE_CADENCIA)
+    original_forcar = os.environ.get(varejo.VAR_ANIMALE_FORCAR)
     acessos = []
     varejo.robots_permite = lambda *_args: (False, "robots.txt lido")
     varejo.animale_sitemap_todos = lambda _d, estado: (
@@ -154,6 +156,15 @@ def main():
         metrica = varejo.coletar_marca(
             {"id": 18, "nome": "Animale", "dominio": DOMINIO,
              "plataforma": "vtex"}, date(2026, 9, 20), {})
+        acessos_apos_metrica = len(acessos)
+        os.environ[varejo.VAR_ANIMALE_CADENCIA] = "semanal"
+        semanal = varejo.coletar_marca(
+            {"id": 18, "nome": "Animale", "dominio": DOMINIO,
+             "plataforma": "vtex"}, date(2026, 9, 22), {})
+        acessos_apos_skip = len(acessos)
+        segunda = varejo.coletar_marca(
+            {"id": 18, "nome": "Animale", "dominio": DOMINIO,
+             "plataforma": "vtex"}, date(2026, 9, 21), {})
         outra = varejo.coletar_marca(
             {"id": 99, "nome": "Outra", "dominio": "loja.test",
              "plataforma": "vtex"}, date(2026, 9, 20), {})
@@ -162,19 +173,34 @@ def main():
             os.environ.pop(varejo.VAR_ANIMALE_PUBLICA, None)
         else:
             os.environ[varejo.VAR_ANIMALE_PUBLICA] = original_flag
+        if original_cadencia is None:
+            os.environ.pop(varejo.VAR_ANIMALE_CADENCIA, None)
+        else:
+            os.environ[varejo.VAR_ANIMALE_CADENCIA] = original_cadencia
+        if original_forcar is None:
+            os.environ.pop(varejo.VAR_ANIMALE_FORCAR, None)
+        else:
+            os.environ[varejo.VAR_ANIMALE_FORCAR] = original_forcar
         varejo.robots_permite = original_robots
         varejo.animale_sitemap_todos = original_animale
         varejo.gravar_lote = original_gravar
     if (adiada["visitados"] != 0 or adiada["gravados"] != 0
             or adiada["alertas"].get("adiado_por_capacidade") is not True
-            or acessos != [[produto]]):
+            or acessos_apos_metrica != 1):
         return falhar("Animale escreveu sem autorizacao explicita de rollout")
     if (metrica["visitados"] != 1 or metrica["declarado"] != 1
             or metrica["alertas"]["origem"] != "sitemap + paginas publicas"
-            or len(acessos) != 1):
+            or acessos_apos_metrica != 1):
         return falhar("Animale nao percorreu o fallback allowlisted")
     if outra["visitados"] != 0 or outra["alertas"] != {"erro": "robots proibe a busca"}:
         return falhar("fallback vazou para outra marca VTEX")
+    if (semanal["visitados"] != 0
+            or semanal["alertas"].get("adiado_por_cadencia") is not True
+            or semanal["alertas"].get("proxima_coleta_em") != "2026-09-28"
+            or acessos_apos_skip != acessos_apos_metrica):
+        return falhar("cadencia semanal nao declarou o adiamento da Animale")
+    if segunda["visitados"] != 1 or len(acessos) != 2:
+        return falhar("segunda-feira nao executou a varredura semanal")
 
     print("Animale: fallback publico preserva universo, identidade e robots")
     return 0

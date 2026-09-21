@@ -6,11 +6,6 @@ name: Sondar origem gerenciada
 # escreve no repositório.
 on:
   workflow_dispatch:
-  push:
-    branches: [codex/autonomy-probe]
-    paths:
-      - .github/workflows/sondar-origem-gerenciada.yml
-      - coletor/sondar_origem_gerenciada.py
 
 permissions:
   contents: read

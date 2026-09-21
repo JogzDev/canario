@@ -1,13 +1,8 @@
-name: Coleta residencial (Shopify ou recuperação VTEX)
+name: Coleta Shopify ou recuperação VTEX
 
-# Existe por uma diferenca medida em 29/07: Amaro e PatBo devolvem 429 do
-# datacenter do GitHub e 200 do IP residencial. As duas sao Shopify; as 12 VTEX
-# coletam bem do datacenter. Entao a divisao de trabalho e por plataforma:
-#   * coleta.yml         -> VTEX, nos servidores do GitHub
-#   * coleta-shopify.yml -> Shopify, no Mac do JP (IP residencial)
-#
-# Amaro e nucleo e o termometro mais sensivel do painel: e a marca que mais
-# justifica o Mac existir no projeto.
+# A premissa residencial foi revalidada em 21/09/2026: Amaro respondeu 200 no
+# Linux e no macOS gerenciados. O job usa Linux hospedado; recusas transitórias
+# continuam registradas e sujeitas ao portão de saúde.
 on:
   workflow_call:
     inputs:
@@ -31,11 +26,6 @@ on:
         required: false
         type: boolean
         default: true
-      rotulo_do_runner:
-        description: 'Maquina que executa: sempre-ligado (i7) ou xcode (Mac do JP)'
-        required: false
-        type: string
-        default: 'sempre-ligado'
       data_operacional:
         description: 'Data ISO da coleta encadeada (vazio = hoje em Sao Paulo)'
         required: false
@@ -73,14 +63,6 @@ on:
         required: false
         type: boolean
         default: true
-      rotulo_do_runner:
-        description: 'Maquina que executa'
-        required: false
-        type: choice
-        options:
-          - sempre-ligado
-          - xcode
-        default: sempre-ligado
       data_operacional:
         description: 'Data ISO da coleta encadeada (vazio = hoje em Sao Paulo)'
         required: false
@@ -97,12 +79,7 @@ jobs:
   coletar:
     outputs:
       data_operacional: ${{ steps.ancora.outputs.data }}
-    # O cabecalho deste arquivo diz que a perna Shopify existe por causa do IP:
-    # Amaro e PatBo devolvem 429 do datacenter e 200 do residencial. O rotulo
-    # virou parametro em 26/08 porque a maquina certa depende da hora -- o i7
-    # fica ligado de madrugada, o Mac do JP fica ligado no horario comercial --
-    # e porque um runner sozinho e ponto unico de falha para a coleta inteira.
-    runs-on: [self-hosted, macOS, "${{ inputs.rotulo_do_runner || 'sempre-ligado' }}"]
+    runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -124,7 +101,7 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: "$PY coletor/verificar_capacidade_banco.py"
 
-      - name: Coletar plataforma pelo IP residencial
+      - name: Coletar plataforma no executor gerenciado
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

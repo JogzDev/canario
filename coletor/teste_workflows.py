@@ -193,6 +193,13 @@ def checar_orquestracao(workflows):
                    "portao de capacidade pode falhar aberto ou esta sem segredo")
 
     coleta_varejo = workflows.get("coleta.yml", {})
+    gatilhos_varejo = coleta_varejo.get(
+        "on", coleta_varejo.get(True, {})) or {}
+    for gatilho in ("workflow_call", "workflow_dispatch"):
+        entradas = (gatilhos_varejo.get(gatilho) or {}).get("inputs", {})
+        if "animale_forcar" not in entradas:
+            falhar("coleta.yml",
+                   "Animale semanal ficou sem override manual auditavel")
     passos_varejo = coleta_varejo.get("jobs", {}).get(
         "coletar", {}).get("steps", [])
     passos_pente = [p for p in passos_varejo
@@ -202,6 +209,14 @@ def checar_orquestracao(workflows):
             "inputs.pente_fino" not in str(passos_pente[0].get("if", ""))):
         falhar("coleta.yml",
                "coleta direcionada nao deve repetir o pente fino inteiro")
+    passo_coletor_varejo = next((p for p in passos_varejo
+                                 if "coletor_varejo.py" in str(p.get("run", ""))), {})
+    ambiente_varejo = passo_coletor_varejo.get("env", {})
+    if (ambiente_varejo.get("COLETA_ANIMALE_CADENCIA") != "semanal"
+            or "inputs.animale_forcar" not in str(
+                ambiente_varejo.get("COLETA_ANIMALE_FORCAR", ""))):
+        falhar("coleta.yml",
+               "cadencia semanal da Animale nao chega ao coletor")
 
     pipeline = workflows.get("pipeline-diario.yml", {})
     gatilhos = pipeline.get("on", pipeline.get(True, {})) or {}
@@ -425,38 +440,13 @@ def checar_orquestracao(workflows):
     testes = workflows.get("testes.yml", {}).get("jobs", {}).get("app", {})
     comandos_app = [str(p.get("run", ""))
                     for p in testes.get("steps", [])]
-    ui = [c for c in comandos_app
-          if "xcodebuild test" in c and "CanarioUITests" in c]
-    if len(ui) != 1:
+    swift = [c for c in comandos_app if c.strip() == "swift test"]
+    if testes.get("runs-on") != "macos-latest" or len(swift) != 1:
         falhar("testes.yml",
-               "alvo CanarioUITests existe, mas nao roda uma vez no CI")
-
-    # `-only-testing` com nome ERRADO nao falha: o xcodebuild roda zero testes e
-    # devolve `** TEST SUCCEEDED **`. Foi assim que
-    # `testFillInfoAbreClothingDetailsForaDaSheet` -- um nome que nunca existiu
-    # -- ficou listado como um dos cinco fluxos offline protegidos e nunca
-    # rodou, com o CI verde o tempo todo. Verde por ausencia e pior que
-    # vermelho: ele afirma cobertura que nao existe.
-    if ui:
-        fonte_ui = os.path.join(RAIZ, "app", "CanarioUITests",
-                                "CanarioUITests.swift")
-        try:
-            texto_ui = open(fonte_ui, encoding="utf-8").read()
-        except OSError as ex:
-            falhar("testes.yml", "CanarioUITests.swift ilegivel: {}".format(ex))
-        else:
-            existentes = set(re.findall(r"func (test[A-Za-z0-9_]*)", texto_ui))
-            pedidos = set(re.findall(
-                r"-only-testing:CanarioUITests/CanarioUITests/([A-Za-z0-9_]+)",
-                ui[0]))
-            if not pedidos:
-                falhar("testes.yml",
-                       "o passo de UI nao seleciona nenhum teste por nome")
-            for nome in sorted(pedidos - existentes):
-                falhar("testes.yml",
-                       "-only-testing pede {} , que nao existe em "
-                       "CanarioUITests.swift: o CI passa rodando zero testes"
-                       .format(nome))
+               "logica Swift deve rodar uma vez no macOS gerenciado")
+    if any("xcodebuild" in comando for comando in comandos_app):
+        falhar("testes.yml",
+               "build/UI completo deve usar a franquia separada do Xcode Cloud")
 
     sonda = workflows.get("sonda.yml", {}).get("jobs", {}).get("sondar", {})
     passos_sonda = sonda.get("steps", [])
@@ -567,21 +557,22 @@ Um dia inteiro perdido por uma perna que tinha dado certo. A saida nao e manter
 o notebook acordado -- e nao mandar trabalho de madrugada para ele. O rotulo
 `sempre-ligado` existe so no i7.
 """
-JOBS_QUE_NAO_PODEM_DEPENDER_DE_NOTEBOOK = {
+WORKFLOWS_QUE_DEVEM_SER_AUTONOMOS = {
     "pipeline-diario.yml", "coleta-shopify.yml", "coleta-trends.yml",
     "motor.yml", "recuperar-pipeline.yml", "sonda.yml",
-    "sonda-edge-luna.yml", "testes.yml",
+    "sonda-edge-luna.yml", "testes.yml", "coleta.yml",
+    "coleta-editorial.yml", "coleta-catalogo-candidato.yml",
+    "verificar-producao.yml", "sonda-significado.yml",
 }
-# Estes precisam do Xcode do Mac do JP (Vision, XCTest, xcodebuild) e por isso
-# sao disparados a mao, com alguem olhando.
-ROTULOS_QUE_EXIGEM_O_MAC_DO_JP = {"xcode"}
+ROTULOS_PESSOAIS = {"self-hosted", "sempre-ligado", "xcode", "X64"}
 
 
 def checar_runner_das_tarefas_automaticas(arquivos):
+    """O caminho regular não pode depender de nenhuma máquina do responsável."""
     falhas = []
     for caminho in arquivos:
         nome = os.path.basename(caminho)
-        if nome not in JOBS_QUE_NAO_PODEM_DEPENDER_DE_NOTEBOOK:
+        if nome not in WORKFLOWS_QUE_DEVEM_SER_AUTONOMOS:
             continue
         with open(caminho, encoding="utf-8") as arquivo:
             for numero, linha in enumerate(arquivo, 1):
@@ -589,18 +580,14 @@ def checar_runner_das_tarefas_automaticas(arquivos):
                 if not bruto.startswith("runs-on:"):
                     continue
                 alvo = bruto[len("runs-on:"):].strip()
-                if "${{" in alvo:
-                    # Vem de `vars.RUNNER_COLETA`, que aponta para o rotulo
-                    # exclusivo do i7. Conferido no proprio GitHub, nao aqui.
-                    continue
-                rotulos = {r.strip() for r in alvo.strip("[]").split(",")}
-                if rotulos & ROTULOS_QUE_EXIGEM_O_MAC_DO_JP:
-                    continue
-                if "sempre-ligado" not in rotulos and "X64" not in rotulos:
+                if any(rotulo in alvo for rotulo in ROTULOS_PESSOAIS):
                     falhas.append((caminho, (
-                        "linha {}: `{}` aceita qualquer Mac, inclusive o "
-                        "notebook. Tarefa automatica precisa de "
-                        "`sempre-ligado`.").format(numero, alvo)))
+                        "linha {}: `{}` ainda depende de runner pessoal."
+                    ).format(numero, alvo)))
+                elif "${{" in alvo and "inputs.executor" not in alvo:
+                    falhas.append((caminho, (
+                        "linha {}: executor variável não está restrito ao "
+                        "fallback gerenciado do Trends.").format(numero)))
     return falhas
 
 

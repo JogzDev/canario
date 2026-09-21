@@ -57,7 +57,7 @@ jobs:
     outputs:
       saudavel: ${{ steps.resultado.outputs.saudavel }}
       data_operacional: ${{ needs.varejo-vtex.outputs.data_operacional }}
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -100,7 +100,7 @@ jobs:
   recuperar-busca:
     needs: [saude-inicial, recuperar-shopify]
     if: ${{ always() && needs.saude-inicial.outputs.saudavel != 'true' }}
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    runs-on: ubuntu-latest
     steps:
       - name: Não repetir automaticamente uma fonte semanal que recusou
         run: >-
@@ -112,7 +112,7 @@ jobs:
     # muda limiar, nao mascara ausencia e nao libera motor com fonte parcial.
     if: ${{ always() }}
     needs: [saude-inicial, recuperar-shopify, recuperar-busca]
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -173,7 +173,7 @@ jobs:
     # dia disponível ao app; não repetir coletas nem flexibilizar a coorte.
     needs: [motor, saude-inicial]
     if: ${{ always() && needs.motor.result == 'success' }}
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -202,21 +202,12 @@ jobs:
     # seguintes e fecha sozinho no primeiro verde -- assim "issue aberta"
     # significa "esta quebrado agora", e dia bom nao notifica ninguem.
     #
-    # LIMITACAO CONHECIDA, escrita aqui porque escondida seria pior.
-    #
-    # O ideal seria rodar o alerta numa maquina diferente da que executa a
-    # coleta: se as duas sao a mesma, a falha que mais precisa de aviso -- a
-    # maquina parada -- e justamente a que nao avisa. Medido em 19/08/2026 com
-    # um job descartavel: `ubuntu-latest` FALHA ANTES DE COMECAR nesta conta,
-    # sem nem gerar log. E o bloqueio de billing, o mesmo que empurrou todo o
-    # projeto para o self-hosted.
-    #
-    # Entao o alerta cobre "o pipeline rodou e deu errado", que foi o caso das
-    # CINCO execucoes vermelhas de 14 a 17/08. NAO cobre "o pipeline nem
-    # comecou". Esse buraco continua aberto e esta registrado no ESTADO.md.
+    # Também roda hospedado: computador pessoal desligado deixa de ser ponto
+    # cego. Esgotar a franquia ainda impede o job de começar e deve ser
+    # acompanhado pelo orçamento mensal de minutos.
     if: ${{ always() && github.ref_name == 'main' }}
     needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor, publicacao]
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

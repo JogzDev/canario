@@ -1,8 +1,8 @@
 name: Coleta de busca (Google Trends)
 
-# RODA NO RUNNER RESIDENCIAL de proposito: o Google recusa IP de datacenter.
-# Verificado em 30/07 -- a API do Trends devolve 200 do IP de casa e bloqueia
-# no Actions hospedado.
+# As sondas de 21/09/2026 validaram warmup, explore e multiline tanto no Linux
+# quanto no macOS hospedados. Linux é o padrão barato; a recuperação manual
+# pode escolher macOS para diversificar o egresso depois de uma recusa.
 #
 # A primeira execucao e o backfill de 5 anos (§19) e traz ~261 semanas por
 # termo de uma vez. As seguintes sao incrementais e baratas.
@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: ''
+      executor:
+        description: 'Executor gerenciado (ubuntu-latest ou macos-latest)'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
     outputs:
       data_operacional:
         description: 'Data propagada para o portão de saúde'
@@ -58,6 +63,14 @@ on:
         description: 'Data ISO da coleta encadeada (vazio = hoje em Sao Paulo)'
         required: false
         default: ''
+      executor:
+        description: 'Executor gerenciado'
+        required: false
+        type: choice
+        options:
+          - ubuntu-latest
+          - macos-latest
+        default: ubuntu-latest
 
 permissions:
   contents: read
@@ -70,7 +83,7 @@ jobs:
   coletar:
     outputs:
       data_operacional: ${{ steps.ancora.outputs.data }}
-    runs-on: [self-hosted, macOS, sempre-ligado]
+    runs-on: ${{ inputs.executor || 'ubuntu-latest' }}
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

@@ -80,6 +80,8 @@ SEGMENTO_PRINCIPAL = "feminino_casual_br"
 ANIMALE_PUBLICA = ("Animale", "www.animale.com.br")
 SITEMAP_ANIMALE = "/sitemap.xml"
 VAR_ANIMALE_PUBLICA = "COLETA_ANIMALE_PUBLICA"
+VAR_ANIMALE_CADENCIA = "COLETA_ANIMALE_CADENCIA"
+VAR_ANIMALE_FORCAR = "COLETA_ANIMALE_FORCAR"
 
 _trava = threading.Lock()
 _ultima = [0.0]
@@ -95,6 +97,33 @@ def data_operacional(agora=None):
         return date.fromisoformat(fixa)
     agora = agora or datetime.now(FUSO_OPERACIONAL)
     return agora.astimezone(FUSO_OPERACIONAL).date()
+
+
+def _plano_animale(hoje):
+    """Decide a varredura cara sem fingir observação nos dias pulados.
+
+    O sitemap renova o mesmo `lastmod` para todas as páginas diariamente, por
+    isso ele não permite um incremental auditável. A coleta integral fica na
+    segunda-feira; nos demais dias gravamos saúde com cadência explícita e o
+    estado observado na última varredura continua envelhecendo normalmente.
+    """
+    modo = os.environ.get(VAR_ANIMALE_CADENCIA, "diaria").strip().lower()
+    forcar = os.environ.get(VAR_ANIMALE_FORCAR, "").strip().lower() in {
+        "1", "true", "yes"}
+    if forcar or modo in {"", "diaria"}:
+        return True, None
+    if modo != "semanal":
+        raise ValueError("COLETA_ANIMALE_CADENCIA deve ser diaria ou semanal")
+    if hoje.weekday() == 0:  # segunda-feira, no fuso/data operacional fixados
+        return True, None
+    dias = (7 - hoje.weekday()) % 7
+    proxima = hoje + timedelta(days=dias or 7)
+    return False, {
+        "adiado_por_cadencia": True,
+        "cadencia": "semanal",
+        "proxima_coleta_em": proxima.isoformat(),
+        "motivo": "varredura integral da Animale ocorre às segundas-feiras",
+    }
 
 
 def _ritmo():
@@ -1183,6 +1212,15 @@ def coletar_marca(marca, hoje, cache_deps):
                     "motivo": "fallback publico aguarda folga operacional"
                 },
             }
+        if usa_animale_publica:
+            executar_animale, adiamento = _plano_animale(hoje)
+            if not executar_animale:
+                return {
+                    "marca_id": marca["id"], "nome": nome,
+                    "plataforma": plataforma, "visitados": 0, "gravados": 0,
+                    "declarado": None, "pct_campos_ok": None,
+                    "alertas": adiamento,
+                }
         api_permitida = (False if usa_animale_publica else robots_permite(
             dominio, "/api/catalog_system/pub/products/search")[0])
         if not api_permitida and not usa_animale_publica:
@@ -1405,6 +1443,13 @@ def alertas_criticos(registros, marcas_ativas, hoje):
                         rotulo, alertas_da_linha.get("motivo") or
                         "aguarda folga operacional"))
                 continue
+            if (fonte == "varejo" and
+                    alertas_da_linha.get("adiado_por_cadencia")):
+                avisos.append(
+                    "{} não coletada hoje: {}".format(
+                        rotulo, alertas_da_linha.get("motivo") or
+                        "segue a cadência declarada"))
+                continue
             motivo = ((atual.get("alertas") or {}).get("erro")
                       if isinstance(atual.get("alertas"), dict) else None)
             seguidos = _zeros_seguidos(historico.get(chave, {}), hoje_iso)
@@ -1474,6 +1519,14 @@ def cobertura_da_marca(alertas):
             "adiado_por_capacidade": True,
             "motivo": str(alertas.get("motivo") or
                           "aguarda folga operacional"),
+        }
+    if alertas.get("adiado_por_cadencia"):
+        return "incerta", {
+            "adiado_por_cadencia": True,
+            "cadencia": str(alertas.get("cadencia") or "declarada"),
+            "proxima_coleta_em": alertas.get("proxima_coleta_em"),
+            "motivo": str(alertas.get("motivo") or
+                          "segue a cadência declarada"),
         }
     faixas = [f for f in (alertas.get("faixas_truncadas") or [])
               if isinstance(f, dict)]

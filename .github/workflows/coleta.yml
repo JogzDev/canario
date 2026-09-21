@@ -1,9 +1,8 @@
 name: Coleta de varejo + saude
 
-# Runner: definido pela variavel de repositorio RUNNER_COLETA.
-#   - nao definida  -> ubuntu-latest (datacenter do GitHub; a VTEX responde 429)
-#   - "self-hosted" -> o Mac do JP, em IP residencial (que a VTEX aceita)
-# Trocar de um para o outro e so mudar a variavel em Settings > Variables.
+# Executa no Linux gerenciado. A sonda de 21/09/2026 validou VTEX, Shopify e
+# FFW nesse egresso. A Animale fica semanal porque seu fallback visita mais de
+# cinco mil páginas; isso controla minutos sem usar computador pessoal.
 on:
   workflow_call:
     inputs:
@@ -27,6 +26,11 @@ on:
         required: false
         type: string
         default: ''
+      animale_forcar:
+        description: 'Forçar a varredura da Animale fora da segunda-feira'
+        required: false
+        type: boolean
+        default: false
     outputs:
       data_operacional:
         description: 'Data fixada para as pernas seguintes'
@@ -55,6 +59,11 @@ on:
         description: 'Data ISO comum ao pipeline (vazio = hoje em Sao Paulo)'
         required: false
         default: ''
+      animale_forcar:
+        description: 'Forçar a varredura da Animale fora da segunda-feira'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -69,7 +78,7 @@ jobs:
   coletar:
     outputs:
       data_operacional: ${{ steps.ancora.outputs.data }}
-    runs-on: ${{ vars.RUNNER_COLETA || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -125,13 +134,14 @@ jobs:
           COLETA_MARCA: ${{ inputs.marca }}
           COLETA_SEGMENTO: ${{ inputs.segmento }}
           DATA_OPERACIONAL: ${{ steps.ancora.outputs.data }}
-          # Divisao de trabalho por plataforma: as Shopify (Amaro, PatBo) dao
-          # 429 daqui e ficam com o runner residencial (coleta-shopify.yml).
+          # Divisao por plataforma preserva métricas e recuperação separadas.
           COLETA_PLATAFORMA: vtex
           # O fallback da Animale percorre 5.104 paginas e fica desligado ate
           # a observacao de capacidade autorizar seu custo. A variavel do
           # repositorio deve ser exatamente "1" para o rollout.
           COLETA_ANIMALE_PUBLICA: ${{ vars.COLETA_ANIMALE_PUBLICA || '0' }}
+          COLETA_ANIMALE_CADENCIA: semanal
+          COLETA_ANIMALE_FORCAR: ${{ inputs.animale_forcar && '1' || '0' }}
         run: "$PY coletor/coletor_varejo.py"
 
       # A main protegida exige PR. Cache e coleta sao responsabilidades
