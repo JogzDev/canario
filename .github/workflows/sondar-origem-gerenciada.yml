@@ -21,7 +21,11 @@ concurrency:
 
 jobs:
   sondar:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        executor: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.executor }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -36,7 +40,7 @@ jobs:
       - name: Guardar diagnóstico por quatorze dias
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: sonda-origem-gerenciada-${{ github.run_id }}-${{ github.run_attempt }}
+          name: sonda-origem-gerenciada-${{ matrix.executor }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/sonda-origem-gerenciada.json
           if-no-files-found: error
           retention-days: 14
