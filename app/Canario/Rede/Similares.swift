@@ -203,12 +203,9 @@ enum Similares {
         // o intervalo E diz a idade da ponta velha. Uma data só, no meio de um
         // intervalo de uma semana, escolheria a ponta mais bonita.
         if let maisAntigo = r.observadoMaisAntigoEm, maisAntigo != observado {
-            return "when these items were last seen, between "
-                 + "\(Formato.data(maisAntigo)) and \(Formato.data(observado)) — "
-                 + "the oldest \(Formato.periodo(dias: dias)) ago"
+            return frase("when these items were last seen, between \(Formato.data(maisAntigo)) and \(Formato.data(observado)) — the oldest \(Formato.periodo(dias: dias)) ago")
         }
-        return "when the panel was last seen, on \(Formato.data(observado)) — "
-             + "\(Formato.periodo(dias: dias)) ago"
+        return frase("when the panel was last seen, on \(Formato.data(observado)) — \(Formato.periodo(dias: dias)) ago")
     }
 
     /// O período do painel consultado, para o resultado VAZIO.
@@ -220,9 +217,8 @@ enum Similares {
     static func quandoOPainelFoiConsultado(_ r: Resumo) -> String? {
         guard let observado = r.painelObservadoEm else { return nil }
         guard let dias = r.painelDiasDesdeAObservacao, dias > diasParaSerAgora
-        else { return "in the panel seen on \(Formato.data(observado))" }
-        return "when the panel was last seen, on \(Formato.data(observado)) — "
-             + "\(Formato.periodo(dias: dias)) ago"
+        else { return frase("in the panel seen on \(Formato.data(observado))") }
+        return frase("when the panel was last seen, on \(Formato.data(observado)) — \(Formato.periodo(dias: dias)) ago")
     }
 
     // MARK: O parágrafo (§29.1)
@@ -267,21 +263,23 @@ enum Similares {
         // afirmando o contrário do que os próprios cartões dizem logo abaixo
         // ("3 of 5 · no gray or solid"). Duas partes da mesma tela discordando
         // é a forma mais cara de mentir: a pessoa acredita na primeira.
-        let marcas = "\(r.nMarcas) brand\(r.nMarcas == 1 ? "" : "s")"
-        let pecas = "\(r.nSimilares) panel item\(r.nSimilares == 1 ? "" : "s")"
+        let marcas = r.nMarcas == 1
+            ? frase("1 brand")
+            : frase("\(String(r.nMarcas)) brands")
+        let pecas = r.nSimilares == 1
+            ? frase("1 panel item")
+            : frase("\(String(r.nSimilares)) panel items")
         // O tempo do verbo é o dado. "I found" é presente e vale quando a
         // coleta é de agora; com o painel parado há duas semanas, o que existe
         // é o passado -- "had", com a data junto.
         if let quando = quandoFoiVisto(r) {
             frases.append(afrouxou(r)
-                ? "Across \(marcas), \(pecas) were close to \(nomes) \(quando); "
-                + "none matched all of them."
-                : "Across \(marcas), \(pecas) had \(nomes) \(quando).")
+                ? frase("Across \(marcas), \(pecas) were close to \(nomes) \(quando); none matched all of them.")
+                : frase("Across \(marcas), \(pecas) had \(nomes) \(quando)."))
         } else if afrouxou(r) {
-            frases.append("Across \(marcas), I found \(pecas) "
-                        + "close to \(nomes) — none matches all of them.")
+            frases.append(frase("Across \(marcas), I found \(pecas) close to \(nomes) — none matches all of them."))
         } else {
-            frases.append("Across \(marcas), I found \(pecas) with \(nomes).")
+            frases.append(frase("Across \(marcas), I found \(pecas) with \(nomes)."))
         }
 
         // A porcentagem só entra quando o conjunto a sustenta. E o tempo

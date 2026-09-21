@@ -106,10 +106,10 @@ enum SerieDoCluster {
         guard let ultima = r.pontos.filter({ $0.data != nil })
             .map(\.semana).max() else { return nil }
         let dias = Formato.diasDesde(ultima, hoje: hoje)
-        let fim = "The line ends on the week of \(Formato.data(ultima))"
+        let data = Formato.data(ultima)
+        let fim = frase("The line ends on the week of \(data)")
         guard dias >= diasParaCarimbarIdade else { return fim + "." }
-        return fim + " — \(Formato.periodo(dias: dias)) ago. "
-             + "No newer week has been published."
+        return frase("\(fim) — \(Formato.periodo(dias: dias)) ago. No newer week has been published.")
     }
 
     /// Duas semanas: uma semana de atraso é a cadência normal de uma série

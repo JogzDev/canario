@@ -27,5 +27,10 @@
   "invalid login": "trecho da resposta da API de conta, comparado para classificar o erro",
   "openid email": "escopo OAuth, contrato do provedor",
   "Invalid ISO date": "erro interno de decodificacao, nunca exibido",
-  "Offline interface test.": "rota deterministica de teste de UI, fora de build normal"
+  "Offline interface test.": "rota deterministica de teste de UI, fora de build normal",
+  "Resposta visivel da pergunta A": "titulo sintetico de fixture de UI; a fonte editorial nao e traduzida",
+  "Resposta tardia da pergunta B": "titulo sintetico de fixture de UI; a fonte editorial nao e traduzida",
+  "Resposta lenta da pergunta A": "titulo sintetico de fixture de UI; a fonte editorial nao e traduzida",
+  "Resposta rapida da pergunta B": "titulo sintetico de fixture de UI; a fonte editorial nao e traduzida",
+  "The Napoleon Jacket Is Making A Comeback This Fall": "manchete de fonte na fixture; a politica do produto proibe traduzir citacao"
 }
