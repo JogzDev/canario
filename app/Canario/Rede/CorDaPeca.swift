@@ -248,3 +248,79 @@ enum CorDaPeca {
         return (rgb, Double(canais[0].count) / Double(numeroDePixels))
     }
 }
+
+/// Reúne as duas entregas que o iOS pode fazer para um único disparo.
+///
+/// A ordem dos callbacks não faz parte do contrato que interessa ao produto:
+/// a foto natural pode chegar antes ou depois da foto de cor constante. Por
+/// isso nenhuma delas encerra a captura sozinha. O par só é decidido quando o
+/// `AVCapturePhotoCaptureDelegate` declara que o disparo inteiro terminou.
+///
+/// O tipo é genérico para que a regra seja testada sem câmera e sem UIKit.
+struct MontadorDeParDeCaptura<Imagem> {
+    struct Par {
+        let imagem: Imagem
+        let imagemDeMedicao: Imagem?
+        let confianca: Double?
+    }
+
+    enum Fechamento {
+        case captura(Par)
+        case tentarNovamente
+        case ignorar
+    }
+
+    private var natural: Imagem?
+    private var constante: Imagem?
+    private var confianca: Double?
+    private var encerrado = false
+
+    /// Devolve `false` quando a captura já foi encerrada ou cancelada.
+    @discardableResult
+    mutating func registrarNatural(_ imagem: Imagem) -> Bool {
+        guard !encerrado else { return false }
+        natural = imagem
+        return true
+    }
+
+    /// Devolve `false` quando a captura já foi encerrada ou cancelada.
+    @discardableResult
+    mutating func registrarConstante(_ imagem: Imagem,
+                                     confianca: Double?) -> Bool {
+        guard !encerrado else { return false }
+        constante = imagem
+        self.confianca = confianca
+        return true
+    }
+
+    /// Impede qualquer callback tardio de produzir uma segunda saída.
+    @discardableResult
+    mutating func cancelar() -> Bool {
+        guard !encerrado else { return false }
+        encerrado = true
+        natural = nil
+        constante = nil
+        confianca = nil
+        return true
+    }
+
+    mutating func concluir() -> Fechamento {
+        guard !encerrado else { return .ignorar }
+        encerrado = true
+
+        if let constante {
+            // Sem a natural, a constante ainda é uma foto válida. Ela assume
+            // também o papel visual em vez de apagar um disparo bem-sucedido.
+            return .captura(.init(imagem: natural ?? constante,
+                                  imagemDeMedicao: constante,
+                                  confianca: confianca))
+        }
+        if let natural {
+            // A medição constante falhou, mas a reserva preservou a foto.
+            return .captura(.init(imagem: natural,
+                                  imagemDeMedicao: nil,
+                                  confianca: nil))
+        }
+        return .tentarNovamente
+    }
+}

@@ -128,12 +128,8 @@ final class ControladorDeCorConstante: UIViewController {
 
     /// O veredito do sistema, conhecido só depois de configurar a sessão.
     private var suportaCorConstante = false
-    /// A foto natural da mesma cena, entregue pela reserva.
-    ///
-    /// Com `isConstantColorFallbackPhotoDeliveryEnabled` o delegate é chamado
-    /// duas vezes e a reserva costuma vir primeiro. Ela deixou de ser um plano
-    /// B descartável: é a foto que a pessoa vai olhar.
-    private var natural: CGImage?
+    /// Acumula as duas entregas sem supor qual callback chega primeiro.
+    private var montador = MontadorDeParDeCaptura<CGImage>()
     private var jaDevolveu = false
 
     private let aviso = UILabel()
@@ -336,12 +332,15 @@ final class ControladorDeCorConstante: UIViewController {
             ajustes.isConstantColorFallbackPhotoDeliveryEnabled = true
         }
         if saida.supportedFlashModes.contains(.on) { ajustes.flashMode = .on }
-        natural = nil
+        montador = MontadorDeParDeCaptura()
         jaDevolveu = false
         saida.capturePhoto(with: ajustes, delegate: self)
     }
 
-    @objc private func desistir() { devolver(nil) }
+    @objc private func desistir() {
+        montador.cancelar()
+        devolver(nil)
+    }
 
     /// O ÚNICO caminho de saída, e ele acontece na fila principal.
     ///
@@ -375,6 +374,30 @@ final class ControladorDeCorConstante: UIViewController {
         aoCapturar(resultado)
     }
 
+    /// Os callbacks do AVFoundation podem vir fora da fila principal. Todos
+    /// os eventos do mesmo disparo passam por ela antes de tocar o montador;
+    /// além de proteger o estado, isso preserva a ordem do ciclo do delegate.
+    private func registrarNatural(_ imagem: CGImage) {
+        guard !Thread.isMainThread else {
+            montador.registrarNatural(imagem)
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.montador.registrarNatural(imagem)
+        }
+    }
+
+    private func registrarConstante(_ imagem: CGImage,
+                                    confianca: Double?) {
+        guard !Thread.isMainThread else {
+            montador.registrarConstante(imagem, confianca: confianca)
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.montador.registrarConstante(imagem, confianca: confianca)
+        }
+    }
+
     /// Mesma normalização da `CapturaDeCamera`: o bitmap cru não carrega a
     /// orientação, e uma foto vertical chegaria deitada ao leitor de cor.
     fileprivate static func normalizar(_ dados: Data) -> CGImage? {
@@ -394,14 +417,12 @@ extension ControladorDeCorConstante: AVCapturePhotoCaptureDelegate {
               let dados = photo.fileDataRepresentation(),
               let imagem = Self.normalizar(dados) else { return }
 
-        // Com a entrega de reserva ligada, este método é chamado duas vezes: a
-        // foto comum e a de cor constante. Guardamos a primeira e preferimos a
-        // segunda; se a segunda não vier, a reserva é devolvida sem confiança.
+        // Com a entrega de reserva ligada, este método é chamado duas vezes.
+        // Nenhuma chamada entrega o resultado: só o fim do disparo fecha o
+        // par, então a ordem natural→constante ou constante→natural dá o mesmo.
         if #available(iOS 18.0, *) {
             if photo.isConstantColorFallbackPhoto {
-                // Guarda e NÃO devolve: a de cor constante ainda vem, e o
-                // resultado bom é o par, não uma das duas.
-                natural = imagem
+                registrarNatural(imagem)
                 return
             }
             if suportaCorConstante {
@@ -424,14 +445,11 @@ extension ControladorDeCorConstante: AVCapturePhotoCaptureDelegate {
                 // ausência de medida, não confiança máxima: vira `nil`.
                 let confianca = nivel.isFinite && nivel >= 0 && nivel <= 1
                     ? Double(nivel) : nil
-                // Sem a natural, a de cor constante faz os dois papéis: é
-                // melhor olhar uma foto com brilho do que não ter foto.
-                devolver(.init(imagem: natural ?? imagem,
-                               imagemDeMedicao: imagem, confianca: confianca))
+                registrarConstante(imagem, confianca: confianca)
                 return
             }
         }
-        devolver(.init(imagem: imagem, imagemDeMedicao: nil, confianca: nil))
+        registrarNatural(imagem)
     }
 
     func photoOutput(_ output: AVCapturePhotoOutput,
@@ -449,14 +467,16 @@ extension ControladorDeCorConstante: AVCapturePhotoCaptureDelegate {
             return
         }
         guard !jaDevolveu else { return }
-        if let natural {
-            // A de cor constante não veio: sobra a natural, sem confiança
-            // medida. `nil` aqui significa "não medida", e o formulário volta a
-            // sugerir cor como sempre sugeriu.
-            devolver(.init(imagem: natural, imagemDeMedicao: nil, confianca: nil))
-        } else {
+        switch montador.concluir() {
+        case let .captura(par):
+            devolver(.init(imagem: par.imagem,
+                           imagemDeMedicao: par.imagemDeMedicao,
+                           confianca: par.confianca))
+        case .tentarNovamente:
             girando.stopAnimating()
             obturador.isEnabled = true
+        case .ignorar:
+            break
         }
     }
 }
