@@ -148,6 +148,26 @@ def main() -> None:
         "remote", {}), "cliente remoto Supabase ficou fora do lock Deno"
 
     workflow_testes = ler(".github/workflows/testes.yml")
+    assert "Segredos no historico e na arvore (Gitleaks)" in workflow_testes
+    assert "GITLEAKS_VERSION: 8.30.1" in workflow_testes
+    assert "GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" in workflow_testes
+    assert "fetch-depth: 0" in workflow_testes, (
+        "scanner de segredos deixou de receber o historico Git completo")
+    assert '--redact=100' in workflow_testes, (
+        "scanner pode voltar a imprimir o proprio segredo no log")
+    assert '--log-opts="--full-history --all --diff-filter=tuxdb"' in workflow_testes
+    assert '"$scanner" dir' in workflow_testes, (
+        "scanner deixou de conferir a arvore atual")
+
+    gitleaks = ler(".gitleaks.toml")
+    assert "useDefault = true" in gitleaks, (
+        "configuracao local substituiu as regras oficiais em vez de estende-las")
+    assert 'id = "generic-api-key"' in gitleaks
+    assert 'condition = "AND"' in gitleaks, (
+        "excecao de checksum precisa casar valor e caminho simultaneamente")
+    assert "b38bb00b8c8702a568270aab85995c550f7f93d1503b818efdc5ff9a519b7168" in gitleaks
+    assert "ferramentas/backup/README\\.md" in gitleaks
+
     assert "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc" in workflow_testes, (
         "Package.resolved deixou de passar pelo OSV-Scanner fixado")
     assert "upload-sarif: false" in workflow_testes, (

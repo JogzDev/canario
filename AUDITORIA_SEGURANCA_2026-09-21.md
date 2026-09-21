@@ -6,12 +6,12 @@ ela não trata ausência de evidência como conclusão positiva.
 
 ## Resultado executivo
 
-- **14 controles atendidos** no escopo atual.
-- **5 controles parciais**, com risco e próxima ação declarados.
+- **15 controles atendidos** no escopo atual.
+- **4 controles parciais**, com risco e próxima ação declarados.
 - **1 controle não aplicável** ao app nativo (cookies de sessão).
-- A busca no histórico Git não encontrou chave OpenAI, chave secreta do
-  Supabase, token GitHub, chave AWS nem chave privada. Os três acertos do padrão
-  de URI de banco eram placeholders documentais, não credenciais.
+- O Gitleaks 8.30.1 não encontrou segredo nos 498 commits nem na árvore atual.
+  O único falso positivo era um checksum público documentado; a exceção exige
+  simultaneamente regra, caminho e valor exatos.
 - `npm audit` dos dois laboratórios retorna zero vulnerabilidades conhecidas.
 - Nenhuma conclusão abaixo depende de a chave publicável do Supabase ser
   secreta: ela é pública por desenho e a autorização depende de RLS.
@@ -21,7 +21,7 @@ ela não trata ausência de evidência como conclusão positiva.
 | # | Controle | Estado | Evidência e limite |
 |---|---|---|---|
 | 1 | Esconder API keys | **Atendido** | OpenAI e `service_role` existem apenas no servidor/Secrets. O app recebe somente chave publicável. `.gitignore` exclui `Config.xcconfig`, `.env`, PEM e KEY. |
-| 2 | Limpar secrets do Git | **Parcial** | Varredura integral do histórico não achou segredo real e o novo teste impede chaves servidoras dentro de `app/`. Secret scanning da plataforma ainda precisa ser habilitado se o plano do repositório privado oferecer o recurso. |
+| 2 | Limpar secrets do Git | **Atendido** | O CI faz checkout integral e executa Gitleaks 8.30.1, fixado por versão e SHA-256, sobre todo o histórico e sobre a árvore atual. Os valores ficam 100% redigidos no log. A varredura local inicial cobriu 498 commits sem achados; uma exceção de checksum público exige regra, arquivo e valor exatos. A proteção não depende do produto pago de secret scanning do GitHub. |
 | 3 | Public key do banco | **Atendido** | O binário usa `SUPABASE_PUBLISHABLE_KEY`; nenhuma `SUPABASE_SERVICE_ROLE_KEY` existe no alvo do app. |
 | 4 | Ativar RLS | **Atendido** | Tabelas internas têm RLS; `closet_items`, `estado_dos_produtos` e tokens Apple usam `FORCE ROW LEVEL SECURITY`. As políticas do Closet prendem leitura/escrita a `auth.uid()`. |
 | 5 | Criptografia de dados | **Parcial** | Tráfego exige HTTPS, sessão fica no Keychain `ThisDeviceOnly` e o provedor cifra armazenamento. O refresh token Apple ainda não tem criptografia de aplicação além da camada de disco do provedor; migrá-lo exige desenho de rotação e não deve ser improvisado. |
@@ -57,11 +57,16 @@ ela não trata ausência de evidência como conclusão positiva.
    `Package.resolved`; lock, verificação de tipos e auditoria nativa no Deno.
    A execução local inicial encontrou 8 pacotes Swift e nenhuma vulnerabilidade
    conhecida; o `deno.lock` também passou sem achados.
+8. O histórico e a árvore atual ganharam portão gratuito com Gitleaks fixado e
+   checksum verificado. O checkout do job é completo, a saída é redigida e a
+   configuração estende — não substitui — as regras oficiais.
 
 ## Pendências priorizadas
 
 1. Desenhar criptografia de aplicação e rotação para o refresh token Apple;
    não alterar a tabela antes de existir caminho de migração e revogação.
-2. Avaliar App Attest/DeviceCheck para o endpoint visual antes da versão 2.0.
-3. Conferir headers externos de Carrd e Supabase na auditoria final da versão
+2. Reavaliar revisão obrigatória/admin quando houver outra pessoa mantenedora,
+   sem criar um bloqueio que o único responsável não possa satisfazer.
+3. Avaliar App Attest/DeviceCheck para o endpoint visual antes da versão 2.0.
+4. Conferir headers externos de Carrd e Supabase na auditoria final da versão
    2.0, junto com política e ficha da App Store.

@@ -56,8 +56,11 @@ foi enviada nem mesclada.
 - A48/A49 e Luna v11; cor com prioridade no Closet.
 - Na integração local: A53–A56, interface em português/inglês, substrato neutro,
   Estúdio, captura de cor constante, correções do Xcode 27 e A57/A58 juntas.
-- A integração local compila para simulador, tem 338 testes Swift verdes e
-  catálogo com 579 chaves, zero ausente e zero sem português.
+- A integração local compila para simulador, tem 356 testes Swift verdes e
+  catálogo com 637 chaves; das 582 usadas no código, zero está ausente e zero
+  está sem português.
+- Parser de preço localizado, ordem assíncrona das duas capturas e limite de
+  bitmap antes da análise foram corrigidos e cobertos por regressão.
 
 ## O que não foi feito — e não pode desaparecer da fila
 
@@ -66,10 +69,10 @@ foi enviada nem mesclada.
 - A janela está em 2/7. A ausência de run em 21/09 não é um marco verde.
 - Falta um alerta de “o agendamento nem nasceu” que seja independente da mesma
   agenda que pode falhar.
-- Permanecem cinco controles parciais: secret scanning da plataforma, proteção
-  adicional do refresh token Apple, política de revisão/admin, App Attest ou
-  DeviceCheck e auditoria de headers na 2.0 publicada. Swift e Deno agora têm
-  lock e varredura automatizada equivalentes no CI.
+- Permanecem quatro controles parciais: proteção adicional do refresh token
+  Apple, política de revisão/admin, App Attest ou DeviceCheck e auditoria de
+  headers na 2.0 publicada. Histórico Git, árvore atual, Swift, npm e Deno têm
+  varredura gratuita e reproduzível configurada no CI da integração.
 - PRs Dependabot #37 e #38 estão abertas e ainda precisam de compatibilidade e
   CI antes de qualquer merge.
 
@@ -127,9 +130,9 @@ foi enviada nem mesclada.
 2. **Manter a observação em paralelo.** Os sete dias bloqueiam publicação e
    mudanças de produção, não bloqueiam código local, design, testes ou método
    em laboratório.
-3. **Fechar dívidas determinísticas do app.** Parser de preço, callbacks da
-   captura, limites de imagem/memória, tradução e estados de erro podem avançar
-   sem tocar produção.
+3. **Regredir as dívidas determinísticas já corrigidas.** Parser de preço,
+   callbacks da captura e limites de imagem/memória já têm testes; falta o
+   percurso físico/visual, tradução e estados de erro no aparelho.
 4. **Preparar a virada em laboratório.** Congelar baseline, escrever contrato
    versionado, rubrica de categoria e comparações de peso/coorte. Nenhuma
    recomputação pública antes do aceite e da janela verde.
