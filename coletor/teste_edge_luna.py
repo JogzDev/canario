@@ -42,6 +42,8 @@ def main():
         'Deno.env.get("OPENAI_API_KEY")',
         'Deno.env.get("AI_RATE_LIMIT_SALT")',
         'Cache-Control": "no-store"',
+        'X-Content-Type-Options": "nosniff"',
+        'npm:@supabase/server@1.7.0',
     ], "Edge Function")
     exigir(config, [
         "[functions.analisar-peca]",

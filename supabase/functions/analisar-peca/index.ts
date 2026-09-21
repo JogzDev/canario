@@ -1,4 +1,4 @@
-import { withSupabase } from "npm:@supabase/server";
+import { withSupabase } from "npm:@supabase/server@1.7.0";
 
 const MODEL = "gpt-5.6-luna";
 // v11: `print_motifs` saiu. A A48 reprovou os seis motivos de fruta, e
@@ -179,7 +179,11 @@ function schema() {
 function response(status: number, body: Record<string, unknown>) {
   return Response.json(body, {
     status,
-    headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "application/json",
+      "X-Content-Type-Options": "nosniff",
+    },
   });
 }
 

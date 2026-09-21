@@ -173,8 +173,7 @@ actor Supabase {
         let info = Bundle.main.infoDictionary
         let bruto = (info?["SUPABASE_URL"] as? String) ?? ""
         // O xcconfig engole `//`, então a URL pode chegar sem o esquema.
-        let normalizado = bruto.hasPrefix("http") ? bruto : "https://\(bruto)"
-        self.url = URL(string: normalizado) ?? URL(string: "https://invalido.invalido")!
+        self.url = Self.endpointSeguro(bruto)
         self.chave = (info?["SUPABASE_PUBLISHABLE_KEY"] as? String) ?? ""
 
         let cfg = URLSessionConfiguration.default
@@ -201,7 +200,7 @@ actor Supabase {
     /// teste da segunda tentativa instantâneo.
     init(url: URL, chave: String, sessao: URLSession,
          esperaEntreTentativas: UInt64 = 400_000_000) {
-        self.url = url
+        self.url = Self.endpointSeguro(url.absoluteString)
         self.chave = chave
         self.sessao = sessao
         self.esperaEntreTentativas = esperaEntreTentativas
@@ -209,6 +208,19 @@ actor Supabase {
 
     var configurado: Bool {
         !chave.isEmpty && url.host != "invalido.invalido"
+    }
+
+    /// A configuração pode omitir o esquema por uma limitação do xcconfig,
+    /// mas nunca pode reduzir TLS para HTTP. Um valor inseguro desativa o
+    /// cliente em vez de transmitir a chave publicável ou dados em claro.
+    static func endpointSeguro(_ bruto: String) -> URL {
+        let valor = bruto.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidato = valor.contains("://") ? valor : "https://\(valor)"
+        guard let url = URL(string: candidato),
+              url.scheme?.lowercased() == "https", url.host != nil else {
+            return URL(string: "https://invalido.invalido")!
+        }
+        return url
     }
 
     /// O interruptor só fica verde depois que a migração, a Edge Function e os
