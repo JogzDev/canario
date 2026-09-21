@@ -1,6 +1,6 @@
 # ESTADO — DataDrobe
 
-**Última atualização:** 20/09/2026, 12:50 em São Paulo
+**Última atualização:** 21/09/2026, 02:00 em São Paulo
 
 **Identidade atual:** `br.com.canario.ch3.app`; qualquer outro bundle citado
 neste documento é histórico, não uma instrução de configuração.
@@ -14,6 +14,44 @@ arquivo discordar dele, ele está velho — e provavelmente está em `historico/
 > menos três retrabalhos, incluindo uma reversão de bundle que passou despercebida
 > porque dois documentos afirmavam coisas diferentes sobre qual app estava na loja.
 > A regra passa a ser: **estado mora aqui, o resto é guia ou história datada.**
+
+## Atualização operacional de 21/09
+
+A dependência cotidiana do Mac pessoal foi retirada da `main` pela
+[PR #36](https://github.com/JogzDev/canario/pull/36). Pipeline diário,
+catálogo candidato, saúde, motor, publicação, sondas e laboratórios usam agora
+executores gerenciados. A sonda sem segredos validou VTEX, Shopify, FFW e o
+fluxo completo do Google Trends em Linux e macOS hospedados. O Business of
+Fashion respondeu 403 no `robots.txt` e permanece ausência declarada, sem
+contorno nem cobertura inventada.
+
+A Animale passa a ser varrida integralmente às segundas. Seu sitemap renova o
+mesmo `lastmod` nas 5.104 páginas todos os dias, portanto não existe
+incremental auditável. Nos outros dias, a saúde registra
+`adiado_por_cadencia`, mantém a última observação envelhecendo e não afirma
+coleta nova. A estimativa conservadora é de aproximadamente 1.822 minutos
+Linux por mês; os testes Swift rápidos ficam no macOS hospedado do GitHub e o
+build/UI completo usa a franquia separada do Xcode Cloud.
+
+A [PR #35](https://github.com/JogzDev/canario/pull/35) integrou a primeira
+auditoria sistemática de segurança: HTTPS obrigatório no cliente, headers de
+resposta, imports Deno fixados, Actions externos por SHA, Dependabot para
+Actions e os dois laboratórios npm, alertas de vulnerabilidade e correções
+automáticas habilitados. O gabarito de vinte itens está em
+`AUDITORIA_SEGURANCA_2026-09-21.md`: 12 atendidos, 7 parciais e 1 não aplicável.
+
+As duas mudanças passaram na `main` em executor hospedado: 313 testes Swift,
+todos os portões Python e os dois laboratórios PostgreSQL. Nenhuma coleta ou
+migration foi executada por essas PRs. O supervisor local permanece carregado
+somente como reversão até o primeiro pipeline agendado hospedado publicar o dia
+e confirmar capacidade em até 85%; depois disso será desativado, sem apagar os
+logs.
+
+Por decisão do JP, a próxima versão pública deixa de ser tratada como 1.2 e
+será **2.0**. Ela só sai com o redesenho, logo nova e nome novo; os candidatos
+de nome ainda são **Garbo** e **Filo**. Identidade, versão e metadata do projeto
+não mudam antes dessa decisão. Para testar todo o código integrado agora, a
+branch correta no Xcode é `main`.
 
 ## Atualização operacional de 20/09
 
@@ -63,9 +101,8 @@ Os quatro jobs do CI pós-merge passaram.
 
 O código consumidor do app já está integrado, porém sua publicação continua
 retida até completar sete dias de observação de capacidade e atualização. O
-runner residencial atual é temporário e se remove antes de 26/09; a substituição
-durável está versionada em `ferramentas/runner_residencial` e só deve ser
-instalada depois que o temporário sair, nunca em paralelo.
+plano de 20/09 previa outro runner residencial; ele foi substituído em 21/09
+pelos executores gerenciados descritos acima. Não instalar aquele substituto.
 
 ---
 
@@ -73,16 +110,16 @@ instalada depois que o temporário sair, nunca em paralelo.
 
 | Frente | Estado | Número que importa |
 |---|---|---|
-| Dados e pipeline | A57/A58 e Animale publicados; observação de sete dias em curso | painel em **19/09** · 80.595 produtos · 20 marcas |
+| Dados e pipeline | A57/A58 e Animale publicados; execução gerenciada entra no marco de 21/09 | 2/7 marcos confirmados antes da execução de 21/09 |
 | Banco | plano gratuito; compactação de `snapshots` verificada | **365.534.005 / 500.000.000 bytes (73,1%)** · 134.465.995 bytes livres |
 | Rota paga de visão (Luna) | **v11 em produção** | 57/72 categoria · 57/72 cor (79,2%); holdout de 300 não executado |
-| App na loja | **1.1 publicada; consumidor novo ainda retido** | código integrado; liberar somente depois da observação de sete dias |
+| App na loja | **1.1 publicada; próxima pública será 2.0** | `main` para teste; nome, logo e redesenho antes de publicar |
 | E-mail transacional | **Brevo SMTP ativo e validado de ponta a ponta** | Supabase → Brevo → Gmail: enviado, entregue e aberto |
 | Autenticação no aparelho | **Apple, Google nativo e e-mail validados no iPhone** | cliente iOS, callbacks, Keychain e Supabase configurados; relogin Google aprovado |
 | Closet privado | dados e miniaturas sincronizados com RLS; originais permanecem locais | bucket privado · hash verificado · limite de 3 MB |
-| Testes | CI pós-merge verde em quatro jobs | Python, dois laboratórios PostgreSQL, build e 12 fluxos UI offline |
+| Testes | CI pós-merge verde em executor hospedado | 313 Swift, Python, dois laboratórios; UI completo preparado no Xcode Cloud |
 
-## 0. Trabalho ativo — conta, capacidade, privacidade declarada e 1.2
+## 0. Base funcional herdada da 1.2 — conta, capacidade e privacidade
 
 A 1.2 revoga somente a antiga regra de ausência de conta. A conta continua
 opcional: Apple, Google ou e-mail; o app permanece utilizável como convidado.
@@ -514,14 +551,14 @@ Luna entra na 1.1 com confirmação humana; não estava ativa na 1.0 publicada.
 
 * Bundle: **`br.com.canario.ch3.app`** — este, e não `com.canario.app`
 * Loja: **1.1 publicada**
-* Repositório: **candidato 1.2 build 2 em preparação**; todo o trabalho de
-  `development`, inclusive o pacote visual final e as correções de 30/08, foi
-  integrado na branch de release para entrada na `main`
+* Repositório: todo o trabalho funcional do antigo candidato 1.2 está na
+  `main`; por decisão de 21/09, a próxima versão pública será **2.0** e depende
+  de redesenho, logo nova e decisão entre Garbo/Filo
 * A `main` está protegida desde 26/08 — PR obrigatório, uma aprovação, `App
   (Swift)` e `Coletores (Python)` verdes, sem force-push nem deleção
 * TestFlight 1.1: upload aceito pela Apple em 21/08 e versão publicada
-* TestFlight 1.2: **build 1 enviado em 31/08 e substituído; build 2 ainda não enviado**
-* App Review 1.2: **não enviado**
+* TestFlight 1.2: **build 1 enviado em 31/08 e substituído; não será o próximo candidato**
+* App Review 2.0: **não enviado**
 * Time: `67AYPRFZH8`
 * Alvo mínimo: iOS 17
 
@@ -538,7 +575,8 @@ O Organizer registra que outro Archive 1.2 (1), das 16:28, foi preparado e
 enviado com sucesso à Apple em 31/08. Ele antecede A57/A58 e está substituído.
 Em 20/09, uma exportação diagnóstica confirmou assinatura Apple Distribution,
 perfil App Store, Sign in with Apple e Associated Domains. O próximo candidato
-é 1.2 (2); seu Archive só será criado depois dos sete marcos de observação.
+é 2.0; seu Archive só será criado depois dos sete marcos, do redesenho, da logo
+e da identidade decidida.
 
 A identidade é conferida no CI a cada push por
 `coletor/teste_identidade_do_app.py`, que exige que gerador, `project.pbxproj`,
@@ -565,19 +603,20 @@ catálogo.
 
 ## 5. Testes
 
-* **281** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
-* **33** suítes Python no repositório; **32** rodam no CI a cada push. A 33ª,
+* **313** testes Swift de lógica pura — rodam em macOS sem simulador (`cd app && swift test`)
+* **40** suítes Python no repositório; **39** rodam no CI a cada push. A 40ª,
   `teste_30s.py`, é a sonda manual do README e não entra no portão
-* **9** testes de interface no alvo `CanarioUITests`; sete rotas offline rodam no CI
+* **14** testes de interface no alvo `CanarioUITests`; 12 rotas offline ficam
+  no Xcode Cloud e duas rotas com dados reais exigem opt-in explícito
 
 > Estes três números aparecem também no resumo de 30 segundos, e em 25/08 os
 > dois blocos discordavam — a tabela dizia 249/8, esta seção dizia 239/7. Um
 > documento que existe para nenhum outro contradizê-lo não pode contradizer a si
 > mesmo: quando um deles mudar, o outro muda no mesmo commit.
 
-O gerador é dono do alvo de UI test e o CI o executa num iPhone 17 simulado.
-Isso protege os caminhos estruturais enquanto as telas novas chegam sem
-transformar o `project.pbxproj` em edição manual recorrente.
+O gerador é dono do alvo de UI test. O scheme compartilhado entrega o alvo ao
+Xcode Cloud sem paralelismo; o GitHub fica com a lógica Swift curta para não
+consumir a franquia macOS em cada push.
 
 ---
 
@@ -585,11 +624,11 @@ transformar o `project.pbxproj` em edição manual recorrente.
 
 ### Só o JP pode fazer
 
-1. **Os quatro aceites físicos passaram em 26/08** — offline, Universal Links,
-   Dynamic Type e VoiceOver, confirmados pelo JP, somando-se a instalação
-   limpa, câmera, fototeca e relogin Google nativo. **Nenhum aceite manual
-   continua pendente antes do Figma**
-2. Repetir a regressão visual completa da 1.2 em aparelho físico e nas capturas
+1. Testar a `main` atual no iPhone; é a branch que contém todas as mudanças
+   integradas. Os aceites de 26/08 continuam como evidência histórica, mas não
+   substituem a regressão depois das mudanças de A57/A58.
+2. Fechar nome (Garbo/Filo), logo e direção visual da 2.0; depois repetir a
+   regressão visual completa em aparelho físico e nas capturas
 3. O app fixa `.preferredColorScheme(.light)` por decisão de produto; modo
    escuro não é uma variante suportada nem um caso de aceite da 1.2. As telas
    de Trends e de relatório de termo do Figma são desenhadas sobre fundo
@@ -605,13 +644,15 @@ entram na fila quando forem decididos.
 
 ### Técnico, em ordem de valor
 
-1. **Alerta de "o pipeline nem começou"** — o alerta de falha existe desde
-   19/08 (abre uma issue, agrupa noites seguidas, fecha sozinha no verde), mas
-   ele roda no mesmo Mac que executa a coleta. Se a máquina estiver parada,
-   ninguém é avisado. O certo seria um runner independente: medido em 19/08,
-   `ubuntu-latest` **falha antes de começar** nesta conta, por bloqueio de
-   billing. Sem gastar, a saída é algo fora do GitHub
-2. Nenhum defeito técnico reproduzível permanece aberto antes do Figma. O
+1. **Confirmar a primeira madrugada inteiramente hospedada.** A infraestrutura
+   independente entrou na `main` em 21/09 e o CI já passou fora do Mac. Falta
+   observar o pipeline agendado publicar o dia e medir a cota; depois o
+   supervisor local é desativado.
+2. **Fechar os sete itens parciais de segurança por risco e evidência**, sem
+   adicionar controle cosmético. O inventário vivo está em
+   `AUDITORIA_SEGURANCA_2026-09-21.md`.
+3. Nenhum outro defeito técnico reproduzível permanece aberto antes do novo
+   desenho. O
    artefato rosa, a espera de ~30 s e a repetição indevida do consentimento
    foram revalidados como resolvidos no iPhone em 26/08
 

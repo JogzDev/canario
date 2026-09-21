@@ -1,6 +1,6 @@
-# Pendências do DataDrobe 1.2
+# Pendências do DataDrobe 2.0
 
-**Atualizado em 20/09/2026 às 12:50 BRT.** Esta lista substitui a triagem de
+**Atualizado em 21/09/2026 às 02:00 BRT.** Esta lista substitui a triagem de
 20/08, que ainda chamava de pendente telas e funções já entregues.
 
 ## Prioridade corrente — observação e liberação
@@ -10,16 +10,17 @@
    parcial, ausente ou inconclusivo não conta como observado.
 2. Não disparar coletas manuais para “completar” um dia: o runner acompanha a
    execução de evento `schedule` e o próprio pipeline decide publicação.
-3. O supervisor temporário se remove antes de 26/09. Depois que ele sair,
-   instalar `ferramentas/runner_residencial`; o instalador recusa coexistência
-   para evitar dois runners disputando ou duplicando decisões.
-4. O app consumidor já está na `main`, mas não deve ser publicado durante a
-   janela. Depois de sete dias verdes: repetir regressão visual no iPhone,
-   gerar novas capturas, criar um Archive atualizado, enviar ao TestFlight e
-   validar o binário distribuído antes da App Store.
-5. A direção internacional continua manual. O runner durável não inventa uma
-   agenda para ela. O catálogo candidato mantém somente sua agenda existente
-   de segunda e quinta.
+3. A PR #36 moveu o caminho regular para executores gerenciados. Manter o
+   supervisor local apenas até o primeiro ciclo agendado hospedado publicar o
+   dia e medir capacidade em até 85%; então desativá-lo, preservando scripts e
+   logs para reversão. **Não instalar outro runner residencial.**
+4. O app consumidor já está na `main`, mas a próxima versão pública será 2.0,
+   não 1.2. Ela só sai depois de sete dias verdes, regressão visual no iPhone,
+   redesenho final, logo nova e decisão entre Garbo/Filo. Só então gerar
+   capturas, Archive, TestFlight e validar o binário distribuído.
+5. A direção internacional continua manual. O GitHub não inventa uma agenda
+   para ela. O catálogo candidato mantém a agenda de segunda e quinta em
+   executor gerenciado.
 
 Janela acumulada: **2/7 marcos válidos**. Em 19/09, a baseline publicou a API
 e mediu **365.534.005 bytes (73,1%)** depois da coleta isolada, saúde e motor.
@@ -28,11 +29,29 @@ dia; a verificação `35513837999` mediu **367.270.709 bytes (73,5%)**, ou
 +1.736.704 bytes, e confirmou zero contaminação em `direcao_intl`. Restam os
 cinco ciclos de 21 a 25/09.
 
-## Pacote visual do Figma — entregue no candidato 1.2
+## Autonomia e segurança entregues em 21/09
+
+- Pipeline, catálogo candidato, saúde, motor, publicação e sondas automáticas
+  deixaram de depender do Mac pessoal.
+- VTEX, Shopify, FFW e Google Trends foram provados em executores gerenciados,
+  sem segredo e sem escrita, antes da virada.
+- Animale integral ficou semanal porque não há `lastmod` incremental confiável;
+  os dias pulados são declarados, nunca chamados de catálogo observado.
+- GitHub executa a lógica Swift curta; scheme compartilhado e script protegido
+  restauram build e os fluxos UI completos no Xcode Cloud.
+- HTTPS é obrigatório no cliente; imports Deno e Actions estão fixados;
+  Dependabot, alertas de vulnerabilidade e correções automáticas foram ligados.
+- O gabarito de segurança tem 12 itens atendidos, 7 parciais e 1 não aplicável.
+  Os parciais permanecem visíveis em `AUDITORIA_SEGURANCA_2026-09-21.md`.
+
+## Pacote visual herdado — base atual, não fechamento da 2.0
 
 Arquivo `EZ58SkSJRlcTLOC6NDgdGR`, uma página só. As telas finais, a hierarquia
 do Market panel, Fill the info, busca, conta, ajustes, tendências, similares e
-os consertos de menu/paleta foram incorporados ao candidato em 31/08.
+os consertos de menu/paleta foram incorporados ao código em 31/08. Em 21/09 o
+JP decidiu que a próxima publicação será 2.0 e exigirá outro fechamento de
+design, logo nova e nome novo. Portanto este pacote é a base funcional atual,
+não o aceite visual da 2.0.
 
 **Regras de desenho combinadas em 26/08, válidas para todas as telas:**
 
@@ -170,7 +189,7 @@ dele — A48, A49 e o redeploy — estão feitas.
 - `POLITICA_PUBLICA_1.1.md`, `SONDA_CANDIDATAS.md` e `capturas_1.1/` continuam
   só na máquina. Nenhum foi apagado ou alterado por este corte.
 
-## Fechamento de release — estado em 31/08
+## Histórico do candidato 1.2 — substituído pelo plano da 2.0
 
 - **Já validados fisicamente em 26/08:** instalação limpa, login e relogin com o
   SDK Google nativo, câmera e fototeca — e também **offline, Universal Links,
@@ -184,14 +203,14 @@ dele — A48, A49 e o redeploy — estão feitas.
 - **Archive Release 1.2 (1) gerado, enviado à Apple em 31/08 e preservado no
   Organizer.** Ele antecede A57/A58 e está substituído. A exportação diagnóstica
   de 20/09 provou conta, assinatura de distribuição e perfil com Sign in with
-  Apple e Associated Domains. O candidato atual é 1.2 (2), cujo Archive só será
-  criado depois dos sete marcos.
+  Apple e Associated Domains. Não existe candidato atual para publicação; o
+  próximo será 2.0 depois dos sete marcos, redesenho, logo e nome.
 - Rodar a regressão visual no iPhone; é o aceite que precisa ser repetido porque
   as telas mudaram.
 - Depois da exportação verde, enviar ao TestFlight e repetir os fluxos críticos
   no binário distribuído.
 - Atualizar capturas e metadata da App Store com as telas finais; só então
-  submeter a 1.2 para revisão.
+  submeter a 2.0 para revisão.
 
 ## Fila do depois — decidido, sem prazo
 
@@ -218,7 +237,7 @@ dele — A48, A49 e o redeploy — estão feitas.
     só 1.100 receberam algum termo de `estampa`. São ~3.400 peças que o
     painel declara estampadas e o motor não consegue casar.
 
-## Para a virada de temporada — não mexer antes da 1.2
+## Virada metodológica e de temporada — ainda não executada
 
 - **`papel = grupo` conta como mercado externo, e não deveria.** A
   [`CANARIO.md`](CANARIO.md) diz, na linha 145, que Farm, Animale, Maria Filó e
@@ -279,7 +298,7 @@ dele — A48, A49 e o redeploy — estão feitas.
   81,5%, e o portão continua bloqueando expansão que leve a margem a zona
   insegura.
 
-## Entregue na 1.2 antes do Figma
+## Entregue no código atual antes do próximo redesenho
 
 - Apple, Google e e-mail/senha validados fisicamente no iPhone pelo JP em 24/08.
   O fluxo Google hospedado foi depois substituído pelo SDK oficial nativo para
