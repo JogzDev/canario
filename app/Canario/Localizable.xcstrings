@@ -676,6 +676,23 @@
         }
       }
     },
+    "%@% had missing sizes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@% had missing sizes"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@% estavam com tamanhos faltando"
+          }
+        }
+      }
+    },
     "%@% have missing sizes": {
       "extractionState": "manual",
       "localizations": {
@@ -774,6 +791,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@% ante a média da janela"
+          }
+        }
+      }
+    },
+    "%@% were at full price then.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@% were at full price then."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@% estavam a preço cheio naquela observação."
           }
         }
       }
@@ -948,6 +982,23 @@
           "stringUnit": {
             "state": "translated",
             "value": ", %@ nesta semana"
+          }
+        }
+      }
+    },
+    ", and %@% had no size left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": ", and %@% had no size left"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", e %@% estavam sem nenhum tamanho"
           }
         }
       }
@@ -3217,6 +3268,23 @@
         }
       }
     },
+    "How unusual these attributes were each week, compared with their own previous 12 weeks — one line, weighted by how rare each attribute is. It is not a count of items, and it is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "How unusual these attributes were each week, compared with their own previous 12 weeks — one line, weighted by how rare each attribute is. It is not a count of items, and it is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quão incomuns esses atributos foram em cada semana, comparados às 12 semanas anteriores de cada um — uma única linha, ponderada pela raridade de cada atributo. Não é uma contagem de peças nem representa a sua peça: o DataDrobe nunca acompanha uma roupa sua. Um ponto marcado é uma semana calculada com menos atributos do que você selecionou; por isso, a linha aparece mais fina ali."
+          }
+        }
+      }
+    },
     "I also tried a wider match, dropping the least distinctive dimension, and that found nothing either.": {
       "extractionState": "manual",
       "localizations": {
@@ -3366,6 +3434,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não consegui salvar essa foto. Sua peça atual não foi alterada."
+          }
+        }
+      }
+    },
+    "I found no panel item with %@%@.%@ It may be an uncommon combination, or the panel may not cover it yet; the data cannot distinguish those cases.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I found no panel item with %@%@.%@ It may be an uncommon combination, or the panel may not cover it yet; the data cannot distinguish those cases."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não encontrei nenhuma peça do painel com %@%@.%@ Pode ser uma combinação incomum ou o painel pode ainda não cobri-la; os dados não permitem distinguir esses casos."
           }
         }
       }
@@ -3528,6 +3613,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "In the press"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na imprensa"
           }
         }
       }
@@ -4689,6 +4780,12 @@
             "state": "translated",
             "value": "Press references could not be loaded."
           }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível carregar as referências da imprensa."
+          }
         }
       }
     },
@@ -4998,6 +5095,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Redefinir a senha"
+          }
+        }
+      }
+    },
+    "Resposta lenta da pergunta A": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Resposta lenta da pergunta A"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resposta lenta da pergunta A"
+          }
+        }
+      }
+    },
+    "Resposta rapida da pergunta B": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Resposta rapida da pergunta B"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resposta rápida da pergunta B"
+          }
+        }
+      }
+    },
+    "Resposta tardia da pergunta B": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Resposta tardia da pergunta B"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resposta tardia da pergunta B"
+          }
+        }
+      }
+    },
+    "Resposta visivel da pergunta A": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Resposta visivel da pergunta A"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resposta visível da pergunta A"
           }
         }
       }
@@ -5819,6 +5984,40 @@
         }
       }
     },
+    "Supply moves could not be read": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Supply moves could not be read"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível ler as movimentações de estoque"
+          }
+        }
+      }
+    },
+    "Switch press query": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Switch press query"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trocar busca na imprensa"
+          }
+        }
+      }
+    },
     "Take a color-accurate photo": {
       "comment": "Accessibility label for the \"Take a color-accurate photo\" button.",
       "isCommentAutoGenerated": true,
@@ -5886,6 +6085,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Termos"
+          }
+        }
+      }
+    },
+    "The Napoleon Jacket Is Making A Comeback This Fall": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The Napoleon Jacket Is Making A Comeback This Fall"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Napoleon Jacket Is Making A Comeback This Fall"
           }
         }
       }
@@ -6249,6 +6465,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "O preço mediano é %@."
+          }
+        }
+      }
+    },
+    "The median price then was %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The median price then was %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O preço mediano naquela observação era %@."
           }
         }
       }

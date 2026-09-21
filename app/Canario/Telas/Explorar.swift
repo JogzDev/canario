@@ -1047,7 +1047,9 @@ struct ListaDeEventos: View {
         // de cinza genérico nas listas Restocks/Markdowns. É uma tela de
         // mercado e precisa declarar isso por conta própria.
         .territorio(.mercado)
-        .navigationTitle("\(titulo) · \(marca)")
+        // `titulo` já chega localizado e `marca` é dado, não chave de catálogo.
+        // `Text(verbatim:)` evita que o Xcode tente localizar a interpolação.
+        .navigationTitle(Text(verbatim: "\(titulo) · \(marca)"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
