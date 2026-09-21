@@ -6,8 +6,8 @@ ela não trata ausência de evidência como conclusão positiva.
 
 ## Resultado executivo
 
-- **12 controles atendidos** no escopo atual.
-- **7 controles parciais**, com risco e próxima ação declarados.
+- **13 controles atendidos** no escopo atual.
+- **6 controles parciais**, com risco e próxima ação declarados.
 - **1 controle não aplicável** ao app nativo (cookies de sessão).
 - A busca no histórico Git não encontrou chave OpenAI, chave secreta do
   Supabase, token GitHub, chave AWS nem chave privada. Os três acertos do padrão
@@ -34,7 +34,7 @@ ela não trata ausência de evidência como conclusão positiva.
 | 12 | Bot protection | **Parcial** | Há limite por hash salgado de origem e teto global, mas não App Attest/DeviceCheck. O endpoint visual continua utilizável sem conta por decisão de produto, portanto rate limiting é mitigação, não prova de aparelho legítimo. |
 | 13 | Queries parametrizadas | **Atendido** | O app usa JSON/RPC e encoding PostgREST; coletores usam cliente REST. As rotas públicas não concatenam input humano em SQL. |
 | 14 | Validação de inputs | **Atendido** | A imagem aceita apenas JPEG/PNG, Base64 válido e até 3 MB; hint até 160 caracteres; saída da IA obedece schema fechado; URLs de produto exigem HTTPS; mudanças do Closet têm tipo e cardinalidade validados. |
-| 15 | Evitar vazamento de conteúdo | **Parcial** | RPCs públicas projetam apenas campos consumidos e Edge Functions devolvem erros genéricos. Falta um inventário automatizado de toda nova função/tabela exposta antes de cada migration. |
+| 15 | Evitar vazamento de conteúdo | **Atendido** | RPCs públicas projetam apenas campos consumidos e Edge Functions devolvem erros genéricos. `ACESSO_PUBLICO.md` inventaria a superfície; o CI fixa o histórico e reprova qualquer novo `GRANT` a `anon`, `authenticated` ou `PUBLIC` sem justificativa explícita. |
 | 16 | Restringir uploads | **Atendido** | Bucket de miniaturas é privado, JPEG, 3 MB, caminho iniciado por `auth.uid()` e políticas por proprietário; o app reduz para 720 px, remove metadados e verifica checksum. |
 | 17 | Trim de respostas de API | **Atendido** | Views/RPCs enxutas removem metadados que o app não lê; Edge Functions não devolvem detalhe do provedor; respostas sensíveis usam `no-store`. |
 | 18 | Security headers | **Parcial** | As três Edge Functions agora devolvem `Cache-Control: no-store` e `X-Content-Type-Options: nosniff`. Headers do site Carrd e da borda Supabase são gerenciados pelos provedores e precisam ser conferidos na versão 2.0 publicada. |
@@ -59,7 +59,5 @@ ela não trata ausência de evidência como conclusão positiva.
 1. Desenhar criptografia de aplicação e rotação para o refresh token Apple;
    não alterar a tabela antes de existir caminho de migração e revogação.
 2. Avaliar App Attest/DeviceCheck para o endpoint visual antes da versão 2.0.
-3. Criar um portão de migration que inventarie qualquer novo `GRANT` a
-   `anon`/`authenticated` e exija justificativa explícita.
-4. Conferir headers externos de Carrd e Supabase na auditoria final da versão
+3. Conferir headers externos de Carrd e Supabase na auditoria final da versão
    2.0, junto com política e ficha da App Store.
