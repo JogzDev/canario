@@ -187,14 +187,12 @@ struct ImportarPeca: View {
     @FocusState private var nomeDaPecaEmFoco: Bool
 
     /// §29.5 — contexto condicional.
+    private var leituraDoPreco: PrecoDigitado.Leitura {
+        PrecoDigitado.interpretar(precoDigitado)
+    }
+
     private var precoAlvo: Double? {
-        let limpo = precoDigitado
-            .replacingOccurrences(of: "R$", with: "")
-            .replacingOccurrences(of: ".", with: "")
-            .replacingOccurrences(of: ",", with: ".")
-            .trimmingCharacters(in: .whitespaces)
-        guard let v = Double(limpo), v > 0 else { return nil }
-        return v
+        leituraDoPreco.valor
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -620,6 +618,8 @@ struct ImportarPeca: View {
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .disabled(!leituraDoPreco.permiteAvancar)
+                    .opacity(leituraDoPreco.permiteAvancar ? 1 : 0.45)
                 }
             }
             .padding(Tokens.Espaco.m)
@@ -847,6 +847,25 @@ struct ImportarPeca: View {
                 .textFieldStyle(.roundedBorder)
                 .focused($precoEmFoco)
                 .submitLabel(.done)
+            switch leituraDoPreco {
+            case .vazio:
+                EmptyView()
+            case let .valor(valor):
+                Text(frase("Understood as \(Formato.dinheiroExato(valor))."))
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .accessibilityIdentifier("preco-entendido")
+            case .ambiguo:
+                Text("This price is ambiguous. Use 1299 or 1.299,00 for R$ 1.299.")
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.queda)
+                    .accessibilityIdentifier("erro-preco")
+            case .invalido:
+                Text("Enter a price such as 79,90 or 79.90.")
+                    .font(Tokens.Fonte.miudo)
+                    .foregroundStyle(Tokens.Cor.queda)
+                    .accessibilityIdentifier("erro-preco")
+            }
         }
     }
 

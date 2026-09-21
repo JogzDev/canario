@@ -9344,6 +9344,57 @@
         }
       }
     },
+    "Enter a price such as 79,90 or 79.90.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Enter a price such as 79,90 or 79.90."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Digite um preço como 79,90 ou 79.90."
+          }
+        }
+      }
+    },
+    "This price is ambiguous. Use 1299 or 1.299,00 for R$ 1.299.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This price is ambiguous. Use 1299 or 1.299,00 for R$ 1.299."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este preço é ambíguo. Use 1299 ou 1.299,00 para R$ 1.299."
+          }
+        }
+      }
+    },
+    "Understood as %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Understood as %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entendi como %@."
+          }
+        }
+      }
+    },
     "z": {
       "localizations": {
         "pt-BR": {
