@@ -223,6 +223,24 @@ jobs:
           SEGMENTO_VERIFICADO: direcao_intl
         run: "$PY coletor/verificar_isolamento_segmento.py"
 
+  heartbeat-externo:
+    # O alerta interno abaixo enxerga uma run que falhou. Este sinal cobre a
+    # lacuna complementar: se o evento schedule nem nascer, o Better Stack
+    # deixa de receber o heartbeat e avisa fora do GitHub.
+    needs: verificacao-final
+    if: >-
+      ${{ always() && github.event_name == 'schedule' &&
+          github.ref_name == 'main' &&
+          needs.verificacao-final.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Confirmar o ciclo verde ao watchdog independente
+        env:
+          PIPELINE_HEARTBEAT_URL: ${{ secrets.PIPELINE_HEARTBEAT_URL }}
+        run: python3 ferramentas/sinalizar_heartbeat.py
+
   alerta:
     # Ultimo job, sempre. Abre UMA issue por incidente, comenta nela nas noites
     # seguintes e fecha sozinho no primeiro verde -- assim "issue aberta"
@@ -232,7 +250,7 @@ jobs:
     # cego. Esgotar a franquia ainda impede o job de começar e deve ser
     # acompanhado pelo orçamento mensal de minutos.
     if: ${{ always() && github.ref_name == 'main' }}
-    needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor, publicacao, verificacao-final]
+    needs: [varejo-vtex, varejo-shopify, editorial, busca, saude, motor, publicacao, verificacao-final, heartbeat-externo]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -244,7 +262,9 @@ jobs:
             ${{ (needs.saude.result == 'success' &&
                  needs.motor.result == 'success' &&
                  needs.publicacao.result == 'success' &&
-                 needs.verificacao-final.result == 'success') && 'verde' || 'vermelho' }}
+                 needs.verificacao-final.result == 'success' &&
+                 (github.event_name != 'schedule' ||
+                  needs.heartbeat-externo.result == 'success')) && 'verde' || 'vermelho' }}
           JOBS_QUE_FALHARAM: >-
             varejo-vtex=${{ needs.varejo-vtex.result }}
             varejo-shopify=${{ needs.varejo-shopify.result }}
@@ -254,4 +274,5 @@ jobs:
             motor=${{ needs.motor.result }}
             publicacao=${{ needs.publicacao.result }}
             verificacao-final=${{ needs.verificacao-final.result }}
+            heartbeat-externo=${{ needs.heartbeat-externo.result }}
         run: python3 ferramentas/alertar.py

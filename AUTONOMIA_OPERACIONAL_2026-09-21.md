@@ -18,6 +18,9 @@ uma estação opcional de desenvolvimento.
 - O próprio pipeline mede a capacidade novamente depois de todas as escritas,
   exige no máximo 85% durante a observação e prova o isolamento internacional;
   esse fechamento não depende mais de um supervisor no Mac.
+- Um heartbeat externo recebe sinal somente depois desses portões. Se o
+  `schedule` não nascer, nenhum código do GitHub precisa rodar para a ausência
+  virar incidente: o Better Stack detecta o sinal vencido e envia e-mail.
 - Google Trends usa Ubuntu no caminho regular e `macos-latest` apenas como
   recuperação manual gerenciada. Nenhum dos dois é um computador pessoal.
 - A lógica Swift roda uma vez no macOS gerenciado do GitHub. O build do app e
@@ -91,16 +94,44 @@ capacidade automaticamente.
 9. Testes de interface que consultam dados reais exigem
    `CANARIO_REAL_DATA_UI_TESTS=1`; a automação não define essa variável.
 10. O script do Xcode Cloud recusa Archive e qualquer contexto fora do Cloud.
+11. O heartbeat aceita somente HTTPS no domínio e caminho do Better Stack,
+    fica em secret e nunca aparece em log ou arquivo do repositório.
+
+## Watchdog independente do agendador
+
+O alerta por issue continua cobrindo execuções que nasceram e terminaram
+vermelhas. Ele não consegue cobrir uma execução inexistente, porque nenhum job
+roda para abrir a issue. O complemento é um *dead man's switch* externo:
+
+1. criar um heartbeat diário no Better Stack, com período de 24 horas, oito
+   horas de tolerância e alerta por e-mail;
+2. guardar o URL recebido no secret `PIPELINE_HEARTBEAT_URL` do repositório;
+3. somente então integrar a mudança;
+4. o job `heartbeat-externo` sinaliza depois de publicação, capacidade e
+   isolamento verdes, somente em evento `schedule` da `main`; execução manual,
+   falha ou ausência não envia sinal.
+
+O plano gratuito informa até dez heartbeats e alertas por e-mail. O URL contém
+um token capaz de simular sucesso e, por isso, é tratado como credencial. O
+script recusa HTTP, outro host, query, credenciais embutidas e caminhos fora do
+endpoint escolhido; seus erros nunca imprimem o URL.
+
+Fonte oficial consultada em 21/09/2026:
+
+- https://betterstack.com/pricing
+- https://betterstack.com/community/guides/monitoring/what-is-cron-monitoring/
 
 ## Ordem segura da virada
 
-1. Integrar esta mudança com CI gerenciado verde.
-2. Confirmar um build/teste novo no Xcode Cloud.
-3. Manter o supervisor local somente até a primeira execução agendada
+1. Criar o heartbeat externo e cadastrar `PIPELINE_HEARTBEAT_URL` sem expor o
+   valor; a mudança não pode entrar antes do secret.
+2. Integrar esta mudança com CI gerenciado verde.
+3. Confirmar um build/teste novo no Xcode Cloud.
+4. Manter o supervisor local somente até a primeira execução agendada
    integralmente gerenciada concluir com publicação e capacidade em até 85%.
-4. Desativar e remover o supervisor local; não deixar dois executores com a
+5. Desativar e remover o supervisor local; não deixar dois executores com a
    mesma autoridade.
-5. Observar sete marcos consecutivos, incluindo uma segunda-feira com Animale
+6. Observar sete marcos consecutivos, incluindo uma segunda-feira com Animale
    e uma segunda/quinta de catálogo candidato.
 
 Não há coleta, migration, limpeza ou alteração de credencial nesta mudança de

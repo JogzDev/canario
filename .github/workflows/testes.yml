@@ -111,6 +111,8 @@ jobs:
       # alerta agrupa noites seguidas numa issue so e fecha sozinho no verde.
       - name: Alerta do pipeline nao vira ruido (sem rede)
         run: "$PY coletor/teste_alertar.py"
+      - name: Watchdog externo protege URL e token (sem rede)
+        run: "$PY coletor/teste_heartbeat_externo.py"
       - name: Pacote cego de revisao Luna (sem rede)
         run: "$PY coletor/teste_preparar_revisao_luna.py"
       - name: Consolidacao humana do Luna (sem rede)

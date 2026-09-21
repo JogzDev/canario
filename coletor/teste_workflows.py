@@ -280,6 +280,9 @@ def checar_orquestracao(workflows):
         falhar("pipeline-diario.yml",
                "verificacao final hospedada nao fecha capacidade e isolamento")
 
+    for mensagem in checar_heartbeat_externo(jobs):
+        falhar("pipeline-diario.yml", mensagem)
+
     motor_pipeline = jobs.get("motor", {})
     condicao_motor_pipeline = str(motor_pipeline.get("if", ""))
     if ("always()" not in condicao_motor_pipeline or
@@ -563,6 +566,41 @@ def checar_portao_publicacao(jobs):
             or "publicacao=${{ needs.publicacao.result }}" not in
             str(ambiente_alerta.get("JOBS_QUE_FALHARAM", ""))):
         falhas.append("alerta nao pode encerrar incidente sem publicacao confirmada")
+    return falhas
+
+
+def checar_heartbeat_externo(jobs):
+    """O sinal prova o cron verde; execução manual nunca pode substituí-lo."""
+    falhas = []
+    heartbeat = jobs.get("heartbeat-externo", {})
+    passos = heartbeat.get("steps", [])
+    sinal = next((p for p in passos
+                  if "sinalizar_heartbeat.py" in str(p.get("run", ""))), {})
+    condicao = str(heartbeat.get("if", ""))
+    if (heartbeat.get("needs") != "verificacao-final"
+            or "always()" not in condicao
+            or "github.event_name == 'schedule'" not in condicao
+            or "github.ref_name == 'main'" not in condicao
+            or "needs.verificacao-final.result == 'success'" not in condicao
+            or heartbeat.get("runs-on") != "ubuntu-latest"
+            or sinal.get("continue-on-error")
+            or sinal.get("env", {}).get("PIPELINE_HEARTBEAT_URL") !=
+            "${{ secrets.PIPELINE_HEARTBEAT_URL }}"):
+        falhas.append(
+            "heartbeat externo deve provar schedule da main depois dos portoes")
+
+    alerta = jobs.get("alerta", {})
+    ambiente = next((p.get("env", {}) for p in alerta.get("steps", [])
+                     if "ESTADO_DO_PIPELINE" in p.get("env", {})), {})
+    estado = str(ambiente.get("ESTADO_DO_PIPELINE", ""))
+    falharam = str(ambiente.get("JOBS_QUE_FALHARAM", ""))
+    if ("heartbeat-externo" not in alerta.get("needs", [])
+            or "github.event_name != 'schedule'" not in estado
+            or "needs.heartbeat-externo.result == 'success'" not in estado
+            or "heartbeat-externo=${{ needs.heartbeat-externo.result }}" not in
+            falharam):
+        falhas.append(
+            "alerta interno nao distingue dispatch do heartbeat agendado")
     return falhas
 
 
