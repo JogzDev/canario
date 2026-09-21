@@ -448,14 +448,29 @@ def checar_orquestracao(workflows):
         falhar("testes.yml",
                "build/UI completo deve usar a franquia separada do Xcode Cloud")
 
-    sonda = workflows.get("sonda.yml", {}).get("jobs", {}).get("sondar", {})
+    workflow_sonda = workflows.get("sonda.yml", {})
+    sonda = workflow_sonda.get("jobs", {}).get("sondar", {})
     passos_sonda = sonda.get("steps", [])
     publicadores = [p for p in passos_sonda
                     if "commitar.sh" in str(p.get("run", ""))]
-    if len(publicadores) != 1 or "github.ref_name == 'main'" not in str(
-            publicadores[0].get("if", "") if publicadores else ""):
+    artefatos = [p for p in passos_sonda
+                 if str(p.get("uses", "")).startswith(
+                     "actions/upload-artifact@")]
+    if publicadores:
         falhar("sonda.yml",
-               "sonda so pode commitar relatorio na branch main")
+               "sonda nao pode furar a protecao da main para gravar relatorio")
+    if workflow_sonda.get("permissions") != {"contents": "read"}:
+        falhar("sonda.yml", "sonda precisa somente de leitura no repositorio")
+    if len(artefatos) != 1:
+        falhar("sonda.yml", "diagnostico da sonda nao e guardado uma vez")
+    else:
+        parametros = artefatos[0].get("with", {})
+        if (parametros.get("path") != "SONDA_ACTIONS.md" or
+                parametros.get("if-no-files-found") != "error" or
+                parametros.get("retention-days") != 14 or
+                "always()" not in str(artefatos[0].get("if", ""))):
+            falhar("sonda.yml",
+                   "artefato da sonda nao preserva diagnostico parcial por 14 dias")
 
     acao = os.path.join(RAIZ, ".github", "actions", "python-mac",
                         "action.yml")
