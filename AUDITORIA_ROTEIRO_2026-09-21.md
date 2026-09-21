@@ -57,7 +57,7 @@ foi enviada nem mesclada.
 - Na integração local: A53–A56, interface em português/inglês, substrato neutro,
   Estúdio, captura de cor constante, correções do Xcode 27 e A57/A58 juntas.
 - A integração local compila para simulador, tem 338 testes Swift verdes e
-  catálogo com 554 chaves, zero ausente e zero sem português.
+  catálogo com 579 chaves, zero ausente e zero sem português.
 
 ## O que não foi feito — e não pode desaparecer da fila
 
