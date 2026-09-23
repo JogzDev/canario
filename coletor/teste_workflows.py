@@ -235,8 +235,26 @@ def checar_orquestracao(workflows):
 
     pipeline = workflows.get("pipeline-diario.yml", {})
     gatilhos = pipeline.get("on", pipeline.get(True, {})) or {}
-    if "schedule" not in gatilhos:
-        falhar("pipeline-diario.yml", "pipeline unico sem `schedule`")
+    # A63: o titular e o pg_cron do Supabase; o GitHub e reserva. Cron aqui
+    # voltaria a correr o pipeline duas vezes no mesmo dia.
+    if "schedule" in gatilhos or "workflow_dispatch" not in gatilhos:
+        falhar("pipeline-diario.yml",
+               "pipeline deve nascer so por disparo (Supabase ou reserva), sem cron")
+    vtex = (pipeline.get("jobs", {}).get("varejo-vtex") or {}).get("with") or {}
+    if vtex.get("pente_fino") is not False:
+        falhar("pipeline-diario.yml",
+               "pipeline disparado rodaria o pente fino todo dia")
+    reserva = workflows.get("gatilho-reserva.yml", {})
+    gatilhos_reserva = reserva.get("on", reserva.get(True, {})) or {}
+    texto_reserva = open(os.path.join(RAIZ, ".github", "workflows", "gatilho-reserva.yml"),
+                         encoding="utf-8").read()
+    if (not gatilhos_reserva.get("schedule")
+            or (reserva.get("permissions") or {}).get("actions") != "write"
+            or "gh run list --workflow pipeline-diario.yml" not in texto_reserva
+            or 'if [ "$execucoes" -gt 0 ]' not in texto_reserva
+            or "gh workflow run pipeline-diario.yml --ref main" not in texto_reserva):
+        falhar("gatilho-reserva.yml",
+               "a reserva precisa de cron e so disparar sem execucao no dia")
 
     jobs = pipeline.get("jobs", {})
     for mensagem in checar_portao_publicacao(jobs):

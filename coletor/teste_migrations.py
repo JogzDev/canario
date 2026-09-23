@@ -571,6 +571,30 @@ def main():
         return falhar("plataformas do coletor ({}) e do banco ({}) divergiram".format(
             ", ".join(materializar_anexos.PLATAFORMAS), ", ".join(sorted(declaradas))))
 
+    # A63: o Supabase e o titular do disparo diario. O token do GitHub mora
+    # so no Vault, nenhum papel do app alcanca as funcoes, e cada dia tem no
+    # maximo um disparo e uma acao da vigia.
+    caminho_a63 = next((c for c in arquivos if "_a63_" in c), None)
+    if caminho_a63 is None:
+        return falhar("A63 (gatilho e vigia do pipeline) sumiu")
+    a63 = open(caminho_a63, encoding="utf-8").read()
+    for trecho in (
+            "from vault.decrypted_secrets",
+            "where name = 'github_pipeline'",
+            "on conflict (tipo, data_operacional) do nothing;\n  if not found then",
+            "revoke all on function public._token_do_github() from public, anon, authenticated, service_role;",
+            "revoke all on function public._chamar_github(text, text, jsonb) from public, anon, authenticated, service_role;",
+            "revoke all on function public.disparar_pipeline_diario() from public, anon, authenticated, service_role;",
+            "revoke all on function public.vigiar_pipeline_diario() from public, anon, authenticated, service_role;",
+            "m.segmento = 'feminino_casual_br'",
+            "select cron.schedule('canario-disparo-diario', '17 6 * * *'",
+            "select cron.schedule('canario-vigia-do-pipeline', '0 15 * * *'",
+            "select cron.schedule('canario-respostas-do-github', '27 * * * *'"):
+        if trecho not in a63:
+            return falhar("gatilho do pipeline nao garante: {}".format(trecho.splitlines()[0]))
+    if re.search(r"gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}", a63):
+        return falhar("a A63 carrega um token do GitHub no texto")
+
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")
     exigencias_poda = [
