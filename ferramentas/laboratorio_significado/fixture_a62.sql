@@ -13,10 +13,10 @@
 -- Por isso o "hoje" da curva (H) é o maior entre o calendário e tudo o que já
 -- está no banco: os snapshots desta fixture em H passam a ser o maior dia, e
 -- a semana alvo é a de H em qualquer data de execução. O segmento pausado usa
--- o calendário (P = current_date - 20), para ficar sempre a mais de sete dias
--- tanto de H quanto de hoje.
+-- o calendário (P = current_date - 20): fica sempre antes da janela da curva,
+-- que começa no máximo 14 dias antes de H, e a mais de sete dias de hoje.
 --
--- OS DOIS SEGMENTOS
+-- OS TRÊS SEGMENTOS
 -- =================
 --
 -- `lab_curva` (âncora H), cinco tamanhos PP..GG por peça:
@@ -29,9 +29,14 @@
 --   8207 catálogo aposentado numa troca em H-2, vista em H-3    -> sai
 --   8208 catálogo novo da mesma marca, vista em H               -> entra
 --
--- `lab_curva_pausado` (âncora P, coleta parada há 20 dias):
---   8301 vista em P                                             -> entra
---   8302 vista em P-8                                           -> sai
+-- `lab_curva_semanal` (âncora H-7, coleta semanal atrasada):
+--   8401 vista em H-7, a âncora dele                            -> entra
+--   8402 vista em H-12: 5 dias antes da âncora DELE, 12 de H    -> entra
+--   8403 vista em H-15: 8 dias antes da âncora dele             -> sai
+--
+-- `lab_curva_pausado` (âncora P, parado há 20 dias, fora da janela da curva):
+--   8301 vista em P, 8302 vista em P-8. A P0 os põe na semana nova; a A62 não
+--   põe nenhum: a foto deles é de outra semana.
 
 drop function public.computar_curva_tamanhos();
 drop function public.ordem_do_tamanho(text);
@@ -76,7 +81,8 @@ insert into public.marcas
   (id, nome, papel, segmento, status_teste, plataforma, ativa) values
   (81, 'Lab curva', 'nucleo', 'lab_curva', 'vtex', 'vtex', true),
   (82, 'Lab curva troca', 'nucleo', 'lab_curva', 'shopify', 'shopify', true),
-  (83, 'Lab curva pausada', 'nucleo', 'lab_curva_pausado', 'vtex', 'vtex', true);
+  (83, 'Lab curva pausada', 'nucleo', 'lab_curva_pausado', 'vtex', 'vtex', true),
+  (84, 'Lab curva semanal', 'nucleo', 'lab_curva_semanal', 'vtex', 'vtex', true);
 
 -- A troca da marca 82 cai dentro da janela: sem a A61 na base, o catálogo
 -- antigo, visto um dia antes dela, ainda passaria no filtro de sete dias.
@@ -106,6 +112,12 @@ from (values
   (8301, 83, 'lab_curva_pausado', 'Pausada vista na ancora',
    '{"PP": true, "P": true, "M": false, "G": true, "GG": true}'),
   (8302, 83, 'lab_curva_pausado', 'Pausada vista 8 dias antes',
+   '{"PP": false, "P": false, "M": false, "G": false, "GG": true}'),
+  (8401, 84, 'lab_curva_semanal', 'Semanal vista na ancora',
+   '{"PP": true, "P": true, "M": true, "G": true, "GG": true}'),
+  (8402, 84, 'lab_curva_semanal', 'Semanal vista 5 dias antes da ancora',
+   '{"PP": true, "P": false, "M": true, "G": true, "GG": true}'),
+  (8403, 84, 'lab_curva_semanal', 'Semanal vista 8 dias antes da ancora',
    '{"PP": false, "P": false, "M": false, "G": false, "GG": true}')
 ) v(id, marca, segmento, titulo, grade);
 
@@ -123,7 +135,10 @@ cross join lateral (values
   (8207, r.h - 3, true),
   (8208, r.h, true),
   (8301, r.p, true),
-  (8302, r.p - 8, true)
+  (8302, r.p - 8, true),
+  (8401, r.h - 7, true),
+  (8402, r.h - 12, true),
+  (8403, r.h - 15, true)
 ) v(id, visto, ofertavel);
 
 -- A janela da curva vai de (segunda de H) - 7 a H: H-7 está sempre dentro,

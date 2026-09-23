@@ -18,17 +18,19 @@ declare curva text; ordem text; begin
   raise notice 'ok 39 antes: curva (P0) e ordem da grade (F4) com o md5 de producao';
 end $$;
 
--- 40. A P0 conta toda peça que já existiu: as oito do segmento ativo, as duas
---     do pausado e o termo que só tem estoque morto.
+-- 40. A P0 conta toda peça que já existiu: as oito do segmento ativo, as três
+--     do semanal, as duas do pausado e o termo que só tem estoque morto.
 do $$
-declare ativo integer; pausado integer; morto integer; begin
+declare ativo integer; semanal integer; pausado integer; morto integer; begin
   perform public.computar_curva_tamanhos();
   select grades into ativo from pg_temp.faixas_a62('lab_curva');
+  select grades into semanal from pg_temp.faixas_a62('lab_curva_semanal');
   select grades into pausado from pg_temp.faixas_a62('lab_curva_pausado');
   select count(*) into morto from public.curva_tamanhos
    where termo_id = 'lab_curva_morto' and semana = pg_temp.semana_a62();
   assert ativo = 8, 'a P0 deveria contar as 8 pecas e contou ' || coalesce(ativo, 0);
+  assert semanal = 3, 'a P0 deveria contar as 3 semanais e contou ' || coalesce(semanal, 0);
   assert pausado = 2, 'a P0 deveria contar as 2 pausadas e contou ' || coalesce(pausado, 0);
   assert morto > 0, 'a P0 deveria dar curva ao termo so de estoque morto';
-  raise notice 'ok 40 antes: a P0 conta 8 de 8 pecas, inclusive a morta, a esgotada ha meses e a aposentada';
+  raise notice 'ok 40 antes: a P0 conta 8 de 8 pecas, inclusive a morta, a esgotada ha meses e a aposentada, e poe o segmento parado na semana nova';
 end $$;

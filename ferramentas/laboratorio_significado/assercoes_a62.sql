@@ -55,28 +55,41 @@ end $$;
 
 -- 44. A âncora é o último dia observado de CADA segmento, e a idade viaja.
 do $$
-declare f record; r record; ancora_ativo date; ancora_pausado date; begin
+declare f record; r record; ancora_ativo date; ancora_semanal date; begin
   select * into r from relogio_a62;
-  select * into f from pg_temp.faixas_a62('lab_curva_pausado');
-  -- Pausa não é ausência: a peça vista no último dia do segmento fica, mesmo
-  -- vinte dias atrás do calendário e do outro segmento; a de oito dias antes
-  -- dela sai.
-  assert f.grades = 1 and f.pares = 5 and f.indisponivel = 1,
-    'segmento pausado errado: ' || coalesce(f.grades, 0) || ' pecas, '
-      || coalesce(f.indisponivel, 0) || ' de ' || coalesce(f.pares, 0);
+  select * into f from pg_temp.faixas_a62('lab_curva_semanal');
+  -- O semanal foi coletado sete dias antes do outro. Medida contra a data
+  -- dele, a peça de cinco dias antes fica; medida contra H, ou contra o
+  -- calendário, o segmento inteiro sumiria.
+  assert f.grades = 2 and f.pares = 10 and f.indisponivel = 1,
+    'segmento semanal errado: ' || coalesce(f.grades, 0) || ' pecas, '
+      || coalesce(f.indisponivel, 0) || ' de ' || coalesce(f.pares, 0)
+      || ' (esperado 2 pecas, 1 de 10)';
   select distinct (meta->>'base_observada_em')::date into ancora_ativo
     from public.curva_tamanhos
    where segmento = 'lab_curva' and semana = pg_temp.semana_a62();
-  select distinct (meta->>'base_observada_em')::date into ancora_pausado
+  select distinct (meta->>'base_observada_em')::date into ancora_semanal
     from public.curva_tamanhos
-   where segmento = 'lab_curva_pausado' and semana = pg_temp.semana_a62();
-  assert ancora_ativo = r.h and ancora_pausado = r.p,
+   where segmento = 'lab_curva_semanal' and semana = pg_temp.semana_a62();
+  assert ancora_ativo = r.h and ancora_semanal = r.h - 7,
     'a idade da base nao viaja com a linha: ' || coalesce(ancora_ativo::text, 'nulo')
-      || ' e ' || coalesce(ancora_pausado::text, 'nulo');
-  raise notice 'ok 44 ancora por segmento: o pausado fica com a propria data e a declara';
+      || ' e ' || coalesce(ancora_semanal::text, 'nulo');
+  raise notice 'ok 44 ancora por segmento: o semanal atrasado fica com a propria data e a declara';
 end $$;
 
--- 45. A semana alvo é substituída inteira; a semana anterior não é tocada.
+-- 45. Segmento sem observação na janela da curva não ganha a semana nova.
+do $$
+declare n integer; begin
+  select count(*) into n from public.curva_tamanhos
+   where segmento = 'lab_curva_pausado' and semana = pg_temp.semana_a62();
+  -- A P0 tinha posto as duas peças dele nesta semana; a foto é de 20 dias
+  -- antes e não pertence a ela.
+  assert n = 0,
+    'o segmento parado ficou com ' || n || ' linhas numa semana em que nao foi observado';
+  raise notice 'ok 45 segmento parado ha 20 dias sai da semana nova, em vez de republicar a foto velha';
+end $$;
+
+-- 46. A semana alvo é substituída inteira; a semana anterior não é tocada.
 do $$
 declare morto integer; vivo record; antiga record; begin
   select count(*) into morto from public.curva_tamanhos
@@ -91,10 +104,10 @@ declare morto integer; vivo record; antiga record; begin
     'o termo com uma peca viva deveria ter 1 grade e tem ' || coalesce(vivo.grades, 0);
   assert antiga.n_grades = 99 and antiga.meta = '{"publicada": true}'::jsonb,
     'a semana ja publicada foi reescrita ou apagada';
-  raise notice 'ok 45 semana alvo refeita inteira; a anterior ficou como foi publicada';
+  raise notice 'ok 46 semana alvo refeita inteira; a anterior ficou como foi publicada';
 end $$;
 
--- 46. A curva continua interna: o app lê a tabela, não roda a função.
+-- 47. A curva continua interna: o app lê a tabela, não roda a função.
 do $$
 begin
   begin
@@ -108,5 +121,5 @@ begin
   assert not has_function_privilege('authenticated',
     'public.computar_curva_tamanhos(integer)', 'execute'),
     'authenticated executa computar_curva_tamanhos';
-  raise notice 'ok 46 anon recebe 42501 na curva; so o servico a executa';
+  raise notice 'ok 47 anon recebe 42501 na curva; so o servico a executa';
 end $$;

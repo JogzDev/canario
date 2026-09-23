@@ -682,6 +682,8 @@ def main():
         # Ancora por segmento, no dado (A57): pausa nao e ausencia.
         "join _curva_ancora a on a.segmento = p.segmento",
         "ep.ultimo_avistamento_em >= a.observado_em - 7",
+        # Segmento parado de vez nao ganha a semana nova com a foto velha.
+        "having max(ep.ultimo_avistamento_em) > (semana_alvo + 6) - janela_dias",
         # Catalogo trocado de plataforma nao e sortimento (A61).
         "and not exists (select 1 from public.produtos_de_catalogo_aposentado ca\n"
         "                       where ca.produto_id = p.id)",

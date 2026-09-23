@@ -15,7 +15,8 @@
 --   segmento               base hoje   base nova   share_indisponivel
 --   feminino_casual_br        81.620      28.811       74,8% -> 43,2%
 --   catalogo_candidato_br     18.882      14.055       43,8% -> 33,8%
---   direcao_intl               2.754       2.540       26,6% -> 21,3%
+--   direcao_intl               2.754           0       sai da semana (ver
+--                                                      "segmento parado")
 --
 -- No feminino, as ligacoes termo x produto caem de 230.176 para 73.948. A
 -- `taxa_quebra`, a manchete, quase nao se move (6,06% -> 6,09%): peca morta
@@ -41,6 +42,18 @@
 -- dias. Para a curva isso tira da base exatamente a peca que esgotou DENTRO
 -- da janela -- que e a propria quebra. Medido no feminino: a taxa cairia de
 -- 6,09% para 5,31%, 775 quebras a menos. Vies de sobrevivencia na manchete.
+-- E o vies nao e uniforme: a peca que esgota inteira e a que perdeu os
+-- ULTIMOS tamanhos, quase sempre as pontas grandes. Por tamanho (letra):
+--
+--   tamanho   a venda na janela   so ofertavel hoje
+--   PP              7,00%               6,37%
+--   P               6,74%               6,04%
+--   M               7,17%               6,43%
+--   G               5,98%               4,92%
+--   GG              5,69%               4,68%
+--
+-- G e GG perderiam o dobro que PP e M: a curva diria "tamanho grande sobra"
+-- com mais forca do que o dado sustenta.
 --
 -- E por que nao "tudo que esta listado": 83% das pecas listadas da PatBo
 -- estao esgotadas em todos os tamanhos, 70% da Dress To, 62% da Hering;
@@ -68,6 +81,20 @@
 -- A ancora e o ultimo dia em que o segmento foi observado, e a idade viaja em
 -- `meta.base_observada_em`. Sem teto em current_date, como a `semana_alvo`,
 -- que tambem vem do dado: base e janela concordam sobre o "agora".
+--
+-- Nem o calendario: com a coleta parada por mais de sete dias (como de 02 a
+-- 17/09), a base esvaziaria e a semana seria apagada -- a tela diria "nao ha
+-- curva" quando quem parou foi a coleta (A57).
+--
+-- SEGMENTO PARADO DE VEZ
+-- ======================
+--
+-- A ancora por segmento sozinha deixava um furo: `direcao_intl` nao e
+-- observado desde 24/08, e a P0 o republicava toda semana com o rotulo da
+-- semana nova. Segmento sem nenhuma observacao na janela da curva (a semana
+-- alvo e a anterior, os mesmos 14 dias da quebra) nao entra na semana. A
+-- ultima curva dele continua na semana em que foi medida. Pausa geral da
+-- coleta nao cai aqui: a `semana_alvo` para junto, porque tambem vem do dado.
 --
 -- AS LINHAS DA SEMANA CORRENTE
 -- ============================
@@ -109,12 +136,15 @@ begin
 
   -- O "agora" de cada segmento e o ultimo dia em que ele foi observado. Uma
   -- data unica deixaria o segmento de cadencia mais rapida reprovar o outro.
+  -- Segmento sem observacao na janela da curva nao entra na semana: a foto
+  -- dele e de outra semana, e fica na semana em que foi tirada.
   create temp table _curva_ancora on commit drop as
   select p.segmento, max(ep.ultimo_avistamento_em) as observado_em
   from produtos p
   join estado_dos_produtos ep on ep.produto_id = p.id
   where p.segmento is not null
-  group by p.segmento;
+  group by p.segmento
+  having max(ep.ultimo_avistamento_em) > (semana_alvo + 6) - janela_dias;
 
   create temp table _curva_base on commit drop as
   with ativos as (

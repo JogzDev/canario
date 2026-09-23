@@ -72,6 +72,8 @@ const MUTACOES_A62 = [
   ['âncora única para todos os segmentos',
     'join _curva_ancora a on a.segmento = p.segmento',
     'cross join (select max(observado_em) as observado_em from _curva_ancora) a'],
+  ['segmento parado ganha a semana nova',
+    '\n  having max(ep.ultimo_avistamento_em) > (semana_alvo + 6) - janela_dias;', ';'],
   ['catálogo aposentado na base', 'where ca.produto_id = p.id)', 'where false)'],
   ['só o ofertável de hoje',
     'or exists (select 1 from snapshots s',
@@ -287,7 +289,7 @@ async function main() {
         }
         if (motivo === null) throw new Error(`mutação "${nome}" passou nas asserções da A62`);
         silencio = false;
-        console.log(`ok ${47 + indice} mutação reprovada (${nome}): ${motivo}`);
+        console.log(`ok ${48 + indice} mutação reprovada (${nome}): ${motivo}`);
       } finally {
         silencio = false;
         await cliente.query('rollback');
