@@ -50,7 +50,7 @@ const MIGRATIONS = [
   'supabase/migrations/20260917211000_a58_significado_da_capa_e_busca_editorial.sql',
 ];
 const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicacao.sql';
-const A61 = 'supabase/migrations/20260923130000_a61_troca_de_catalogo.sql';
+const A61 = 'supabase/migrations/20260923131757_a61_troca_de_catalogo.sql';
 const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
