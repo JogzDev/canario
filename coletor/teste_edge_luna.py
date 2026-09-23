@@ -24,8 +24,9 @@ def main():
 
     exigir(funcao, [
         'withSupabase({ auth: "publishable" }',
-        # 23/09/2026: 6 Luna principal, 5.6 de reserva, uma tentativa cada.
-        'const MODELOS = ["gpt-6-luna", "gpt-5.6-luna"] as const',
+        # 23/09/2026: 5.6 Luna principal (benchmark de foto), 6 Sol de
+        # reserva, uma tentativa cada.
+        'const MODELOS = ["gpt-5.6-luna", "gpt-6-sol"] as const',
         'for (const model of MODELOS)',
         'normalize(JSON.parse(text), model)',
         'return response(falha.status, { error: falha.error })',
