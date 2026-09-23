@@ -28,6 +28,11 @@ final class CurvaDeTamanhosTests: XCTestCase {
     // MARK: Quem a barra pode destacar
 
     /// O painel medido em 24/08/2026, que é onde o defeito apareceu.
+    ///
+    /// O risco destes números já vinha com o catálogo candidato somado (P:
+    /// 9.837 do feminino + 5.522 do candidato), que é o defeito que
+    /// `CurvaDeTamanhos.consulta` corrige. O teste continua valendo, porque
+    /// ele é sobre a regra do destaque, e a regra vale para qualquer curva.
     private var painel24: [CurvaDeTamanhos.Faixa] {
         [faixa("PP", "menores", emRisco: 11264, quebrou: 475, taxa: 4.217),
          faixa("P",  "menores", emRisco: 15359, quebrou: 716, taxa: 4.662),
@@ -64,6 +69,67 @@ final class CurvaDeTamanhosTests: XCTestCase {
     /// Curva vazia não estoura nem inventa um líder.
     func testCurvaVaziaNaoTemLider() {
         XCTAssertTrue(CurvaDeTamanhos.lideres([]).isEmpty)
+    }
+
+    // MARK: A consulta lê um segmento só
+
+    /// As três leituras de `curva_tamanhos` (curva do painel, curva do termo,
+    /// e o teste de cobertura do relatório) passam por aqui.
+    func testConsultaLeSoOSegmentoDoApp() {
+        for termo in [nil, "vestido"] as [String?] {
+            for porRotulo in [true, false] {
+                let q = CurvaDeTamanhos.consulta(termoId: termo, porRotulo: porRotulo)
+                XCTAssertTrue(q.contains("segmento=eq.feminino_casual_br"), q)
+                XCTAssertTrue(q.contains("segmento=eq.\(Recorte.segmento)"), q)
+            }
+        }
+    }
+
+    func testConsultaDoPainelEDoTermo() {
+        XCTAssertEqual(
+            CurvaDeTamanhos.consulta(termoId: nil, porRotulo: true),
+            "select=*&segmento=eq.feminino_casual_br&termo_id=is.null"
+                + "&sistema=eq.letra&rotulo=not.is.null&order=semana.desc&limit=60")
+        XCTAssertEqual(
+            CurvaDeTamanhos.consulta(termoId: "vestido", porRotulo: false),
+            "select=*&segmento=eq.feminino_casual_br&termo_id=eq.vestido"
+                + "&sistema=eq.letra&rotulo=is.null&order=semana.desc&limit=20")
+    }
+
+    /// O painel de 21/09/2026 como o banco guarda, por (faixa, rótulo).
+    private func painel21(_ segmento: String) -> [CurvaDeTamanhos.Faixa] {
+        let feminino: [(String, String, Int, Int)] = [
+            ("G", "maiores", 10239, 573), ("G", "meio", 1, 0),
+            ("GG", "maiores", 7947, 464),
+            ("M", "maiores", 585, 25), ("M", "meio", 8387, 548), ("M", "menores", 765, 33),
+            ("P", "meio", 5, 0), ("P", "menores", 9931, 600),
+            ("PP", "menores", 8012, 468)]
+        let candidato: [(String, String, Int, Int)] = [
+            ("G", "maiores", 4124, 0), ("G", "meio", 27, 0),
+            ("GG", "maiores", 2087, 0),
+            ("M", "maiores", 1284, 0), ("M", "meio", 1976, 0), ("M", "menores", 927, 0),
+            ("P", "meio", 153, 0), ("P", "menores", 4613, 0),
+            ("PP", "menores", 3080, 0)]
+        return (segmento == "feminino_casual_br" ? feminino : candidato).map {
+            faixa($0.0, $0.1, emRisco: $0.2, quebrou: $0.3, taxa: nil)
+        }
+    }
+
+    /// O que a mistura fazia com a tela. O candidato entra com risco e sem
+    /// quebra, e o risco dele não se espalha igual pela escada (tem menos GG).
+    /// Então ele não só baixa as taxas: ele inventa um líder.
+    func testCatalogoCandidatoMisturadoInventaLider() {
+        let feminino = CurvaDeTamanhos.consolidar(painel21("feminino_casual_br"))
+        let misturado = CurvaDeTamanhos.consolidar(
+            painel21("feminino_casual_br") + painel21("catalogo_candidato_br"))
+
+        XCTAssertTrue(CurvaDeTamanhos.lideres(feminino).isEmpty,
+                      "no feminino os cinco empatam na margem")
+        XCTAssertEqual(CurvaDeTamanhos.lideres(misturado), ["GG", "M", "PP"])
+
+        let m = { (l: [CurvaDeTamanhos.Faixa]) in l.first { $0.rotulo == "M" }!.taxaQuebra! }
+        XCTAssertEqual(m(feminino), 6.22, accuracy: 0.01)
+        XCTAssertEqual(m(misturado), 4.35, accuracy: 0.01)
     }
 
     // MARK: Consolidação — o defeito que a tela mostrou
