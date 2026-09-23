@@ -1,11 +1,14 @@
 import { withSupabase } from "npm:@supabase/server@1.7.0";
 
-// 23/09/2026: GPT-6 Luna (lançado em 22/09) vira o modelo principal -- aceita
-// imagem e saída estruturada, e custa menos da metade do 5.6. O 5.6 Luna fica
-// de reserva: se o principal recusar parâmetro, não responder ou quebrar o
-// contrato, a mesma análise tenta uma vez no modelo que já provou o prompt v11.
-// Cada resposta diz qual modelo respondeu, para o comparativo e para a tela.
-const MODELOS = ["gpt-6-luna", "gpt-5.6-luna"] as const;
+// O 5.6 Luna volta a ser o principal (decisão do JP em 23/09/2026, pela
+// qualidade). O benchmark de foto (ferramentas/benchmark_foto, gabarito
+// conferido pelo JP) mediu, na peça solta, que é a foto do Estúdio: 5.6 Luna
+// 96% de categoria, 6 Sol 94%, 6 Luna 82% -- a 6 Luna, adotada no dia 22 pelo
+// preço, errava saia lápis como short e camisa comprida como vestido, contra
+// o próprio contrato abaixo. O 6 Sol fica de reserva: é o melhor nas fotos
+// vestidas e só entra quando o principal recusar parâmetro, não responder ou
+// quebrar o contrato. Cada resposta diz qual modelo respondeu.
+const MODELOS = ["gpt-5.6-luna", "gpt-6-sol"] as const;
 // v11: `print_motifs` saiu. A A48 reprovou os seis motivos de fruta, e
 // pedir a ela um campo que a taxonomia não aceita mais é gastar token
 // para produzir um valor que o app descarta ao intersectar.
