@@ -3,14 +3,16 @@ name: Pipeline diario (coletas, motor e saude)
 # Um unico disparo fixa o mesmo commit e expressa dependencias reais. Horario
 # deixa de ser mecanismo de coordenacao: se uma coleta atrasar, a seguinte
 # espera; se falhar, o motor nao publica uma semana parcial.
+#
+# QUEM DISPARA (A63, 23/09/2026)
+# O agendamento do GitHub atrasou de 3,5 a 5 horas de 19 a 23/09 e nem nasceu
+# em 21/09. O disparo diario saiu dele: o pg_cron do Supabase, o mesmo que ja
+# despacha o motor a cada minuto, pede esta execucao as 03:17 BRT
+# (`disparar_pipeline_diario`) e vigia ao meio-dia (`vigiar_pipeline_diario`).
+# O GitHub ficou de reserva em `gatilho-reserva.yml`, que so dispara se o dia
+# ainda nao tiver execucao -- aqui nao ha cron, para nao correr duas vezes.
 on:
   workflow_dispatch:
-  schedule:
-    # 03:17 BRT = 06:17 UTC (Brasil sem horario de verao desde 2019).
-    # O GitHub documenta o inicio da hora como periodo de carga em que eventos
-    # agendados podem atrasar ou ate ser descartados. Em 19 e 20/09 este cron,
-    # antes no minuto 00, nasceu quase quatro horas depois do horario nominal.
-    - cron: '17 6 * * *'
 
 permissions:
   contents: write
@@ -28,6 +30,9 @@ jobs:
     uses: ./.github/workflows/coleta.yml
     with:
       marca: ''
+      # O pente fino e diagnostico manual. Chamado por um pipeline disparado
+      # (workflow_dispatch), o default `true` o faria rodar todo dia.
+      pente_fino: false
     secrets: inherit
 
   varejo-shopify:
