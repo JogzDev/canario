@@ -1,0 +1,56 @@
+name: Benchmark de foto (Lunas da OpenAI)
+
+# Experimento manual e com custo. Lê as 100 fotos de licença aberta do
+# manifesto (peça solta e peça vestida) com o mesmo pedido que o app manda à
+# Edge Function `analisar-peca`, trocando só o modelo. Nenhuma foto de usuário
+# passa por aqui; as imagens vêm das fontes públicas e não voltam ao Git. Os
+# modelos da Apple rodam à parte, no Mac, com o mesmo contrato.
+on:
+  workflow_dispatch:
+    inputs:
+      modelos:
+        description: 'Modelos separados por vírgula'
+        required: true
+        default: 'gpt-6-luna,gpt-5.6-luna,gpt-6-sol'
+      limite:
+        description: 'Só as N primeiras fotos (0 = as 100)'
+        required: true
+        default: '0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-foto
+  cancel-in-progress: false
+
+jobs:
+  ler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Instalar Pillow
+        run: python3 -m pip install --quiet 'pillow==11.3.0'
+
+      - name: Ler as fotos sem expor a chave
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MODELOS: ${{ inputs.modelos }}
+          LIMITE: ${{ inputs.limite }}
+        run: >-
+          python3 ferramentas/benchmark_foto/luna.py
+          --modelos "$MODELOS" --limite "$LIMITE"
+          --saida "$RUNNER_TEMP/benchmark-foto.jsonl"
+
+      - name: Guardar as respostas
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: benchmark-foto-${{ github.run_id }}
+          path: ${{ runner.temp }}/benchmark-foto.jsonl
+          if-no-files-found: warn
+          retention-days: 30
