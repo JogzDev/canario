@@ -56,6 +56,8 @@ jobs:
         run: "$PY coletor/teste_animale_sitemap.py"
       - name: Nuvemshop por sitemap e paginas publicas
         run: "$PY coletor/teste_nuvemshop.py"
+      - name: Benchmark de foto le o contrato do app
+        run: "$PY ferramentas/benchmark_foto/teste_contrato.py"
       - name: Planejamento diario do Google Trends
         run: "$PY coletor/teste_trends.py"
       - name: Fila da perna de busca (§19)
