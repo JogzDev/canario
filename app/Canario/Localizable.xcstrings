@@ -53,6 +53,74 @@
         }
       }
     },
+    "%@ brought back %@ items": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ brought back %@ items"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ trouxe de volta %@ peças"
+          }
+        }
+      }
+    },
+    "%@ cut prices on %@ items": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ cut prices on %@ items"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ baixou o preço de %@ peças"
+          }
+        }
+      }
+    },
+    "%@ of every 100 items on sale came back, the highest share among the brands.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ of every 100 items on sale came back, the highest share among the brands."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ de cada 100 peças à venda voltaram ao estoque, a maior proporção entre as marcas."
+          }
+        }
+      }
+    },
+    "%@ of every 100 items on sale got cheaper, the highest share among the brands.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ of every 100 items on sale got cheaper, the highest share among the brands."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ de cada 100 peças à venda ficaram mais baratas, a maior proporção entre as marcas."
+          }
+        }
+      }
+    },
     "%@ The index is %@, but a state requires two agreeing sources.": {
       "extractionState": "manual",
       "localizations": {
@@ -1799,6 +1867,23 @@
         }
       }
     },
+    "Also back in stock": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Also back in stock"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Também voltaram ao estoque"
+          }
+        }
+      }
+    },
     "Also observed, outside the market taxonomy: ": {
       "extractionState": "manual",
       "localizations": {
@@ -1940,6 +2025,23 @@
         }
       }
     },
+    "Archive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Archive"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acervo"
+          }
+        }
+      }
+    },
     "Ask me the first time": {
       "extractionState": "manual",
       "localizations": {
@@ -2007,6 +2109,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Perda de disponibilidade por tamanho"
+          }
+        }
+      }
+    },
+    "Back in stock": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Back in stock"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De volta ao estoque"
           }
         }
       }
@@ -3126,6 +3245,23 @@
         }
       }
     },
+    "events": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "events"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "eventos"
+          }
+        }
+      }
+    },
     "Every point has partial attribute or source coverage; the line shows the available index, not a directional state.": {
       "extractionState": "manual",
       "localizations": {
@@ -3464,6 +3600,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Foto inteira"
+          }
+        }
+      }
+    },
+    "Google searches in Brazil, each term against its own last 12 weeks. Week of %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Google searches in Brazil, each term against its own last 12 weeks. Week of %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscas no Google no Brasil, cada termo comparado às próprias últimas 12 semanas. Semana de %@."
           }
         }
       }
@@ -4119,6 +4272,40 @@
         }
       }
     },
+    "items back": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "items back"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "peças de volta"
+          }
+        }
+      }
+    },
+    "items cheaper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "items cheaper"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "peças mais baratas"
+          }
+        }
+      }
+    },
     "Knit & crochet": {
       "extractionState": "manual",
       "localizations": {
@@ -4149,6 +4336,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Idioma"
+          }
+        }
+      }
+    },
+    "Largest cut: %@%.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Largest cut: %@%."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maior desconto: %@%."
           }
         }
       }
@@ -4728,6 +4932,23 @@
         }
       }
     },
+    "No reading yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No reading yet"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ainda sem leitura"
+          }
+        }
+      }
+    },
     "No record in this window": {
       "extractionState": "manual",
       "localizations": {
@@ -4772,6 +4993,23 @@
         }
       }
     },
+    "No store movement in this window": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "No store movement in this window"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum movimento de loja neste período"
+          }
+        }
+      }
+    },
     "No useful set reached the usual %@-of-%@-dimension match. Showing the closest available matches at %@ of %@. %@": {
       "extractionState": "manual",
       "localizations": {
@@ -4785,6 +5023,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nenhum conjunto útil alcançou o casamento usual de %1$@ de %2$@ dimensões. Mostrando o mais próximo disponível, com %3$@ de %4$@. %5$@"
+          }
+        }
+      }
+    },
+    "of what is on sale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "of what is on sale"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "do que está à venda"
           }
         }
       }
@@ -5152,6 +5407,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Queda de preço desde a última leitura"
+          }
+        }
+      }
+    },
+    "Price cuts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Price cuts"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remarcações"
           }
         }
       }
@@ -5912,6 +6184,23 @@
         }
       }
     },
+    "Shows the items": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Shows the items"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra as peças"
+          }
+        }
+      }
+    },
     "Side by side": {
       "localizations": {
         "pt-BR": {
@@ -6123,6 +6412,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Os tamanhos %@ saem da disponibilidade no mesmo ritmo e são os mais rápidos do painel"
+          }
+        }
+      }
+    },
+    "Sizes that came back most: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Sizes that came back most: %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamanhos que mais voltaram: %@."
           }
         }
       }
@@ -6499,6 +6805,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Termos"
+          }
+        }
+      }
+    },
+    "The collection ran, and no monitored brand restocked or cut prices in the period above.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The collection ran, and no monitored brand restocked or cut prices in the period above."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A coleta rodou, e nenhuma marca monitorada repôs ou remarcou peças no período acima."
+          }
+        }
+      }
+    },
+    "The largest count this week; no assortment count covers this period, so there is no share.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The largest count this week; no assortment count covers this period, so there is no share."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A maior contagem do período; sem contagem de sortimento para ele, não há proporção."
           }
         }
       }
@@ -7595,6 +7935,40 @@
         }
       }
     },
+    "This week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This week"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta semana"
+          }
+        }
+      }
+    },
+    "This week could not load": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "This week could not load"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível carregar Esta semana"
+          }
+        }
+      }
+    },
     "This week in fashion": {
       "localizations": {
         "pt-BR": {
@@ -7985,6 +8359,23 @@
         }
       }
     },
+    "View in store": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "View in store"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver na loja"
+          }
+        }
+      }
+    },
     "View on the brand's website": {
       "localizations": {
         "pt-BR": {
@@ -8111,6 +8502,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "História semanal por fonte"
+          }
+        }
+      }
+    },
+    "What Brazil is searching": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What Brazil is searching"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que o Brasil está buscando"
           }
         }
       }

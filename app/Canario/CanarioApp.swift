@@ -90,14 +90,17 @@ struct Raiz: View {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirTrends") {
             return .dados
         }
-        return .adicionar
+        return .dados
     }()
     /// A busca abre direto em teste de interface. Ela é `fullScreenCover` da
     /// raiz e depende de um toque na barra; sem este atalho, um teste do
     /// bloco editorial gastaria metade do tempo chegando até a tela.
     @State private var buscaAberta = ProcessInfo.processInfo.arguments.contains(
         "-CanarioAbrirBusca")
-    @State private var menuAberto = ProcessInfo.processInfo.arguments.contains(
+    @State private var menuAberto = false
+    /// A conta abre como sheet do sistema, como nos Ajustes (v4). O antigo
+    /// argumento do menu lateral abre a mesma sheet.
+    @State private var contaAberta = ProcessInfo.processInfo.arguments.contains(
         "-CanarioMenuAberto")
     @State private var itemDoMenu: ItemDoMenu? = {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirPrivacy") {
@@ -128,7 +131,9 @@ struct Raiz: View {
         // É isto que veste o que token nenhum alcança -- barra de status,
         // indicador de rolagem, `Picker` segmentado -- e é o que faz o app
         // continuar claro no resto, que é a decisão de produto de sempre.
-        .preferredColorScheme(aba == .dados ? .dark : .light)
+        // Esta semana segue o sistema, claro ou escuro. As telas que ainda não
+        // passaram para a v4 continuam claras até serem refeitas.
+        .preferredColorScheme(aba == .dados ? nil : .light)
         // O menu não pode ultrapassar a borda e voltar. `.snappy` tem mola:
         // na gravação a 60 fps, a aresta chegou a 849 px e recuou para 845 px,
         // revelando por alguns quadros uma faixa do céu atrás do painel. O
@@ -136,6 +141,12 @@ struct Raiz: View {
         .animation(.easeOut(duration: 0.24), value: menuAberto)
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })
+        }
+        .sheet(isPresented: $contaAberta) {
+            ContaDaEdicao { entrada in
+                contaAberta = false
+                itemDoMenu = ItemDoMenu(entrada: entrada)
+            }
         }
         .fullScreenCover(item: $itemDoMenu) { item in
             TelaDoMenu(entrada: item.entrada)
@@ -152,20 +163,19 @@ struct Raiz: View {
     @available(iOS 26.0, *)
     private var navegacaoNativa: some View {
         TabView(selection: $aba) {
-            Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
-                value: .adicionar) {
-                TelaInicialAdicionar(menuAberto: menuAberto,
-                                     alternarMenu: { menuAberto.toggle() })
+            Tab(Aba.dados.titulo, systemImage: Aba.dados.simbolo,
+                value: .dados) {
+                EstaSemana(abrirConta: { contaAberta = true })
             }
             Tab(Aba.armario.titulo, systemImage: Aba.armario.simbolo,
                 value: .armario) {
-                MinhasPecas(menuAberto: menuAberto,
-                            alternarMenu: { menuAberto.toggle() })
+                MinhasPecas(menuAberto: false,
+                            alternarMenu: { contaAberta = true })
             }
-            Tab(Aba.dados.titulo, systemImage: Aba.dados.simbolo,
-                value: .dados) {
-                Explorar(menuAberto: menuAberto,
-                         alternarMenu: { menuAberto.toggle() })
+            Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
+                value: .adicionar) {
+                TelaInicialAdicionar(menuAberto: false,
+                                     alternarMenu: { contaAberta = true })
             }
             Tab(Aba.buscar.titulo, systemImage: Aba.buscar.simbolo,
                 value: .buscar, role: .search) {
@@ -173,7 +183,7 @@ struct Raiz: View {
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tint(Tokens.Cor.acao)
+        .tint(Edicao.bordo)
     }
 
     /// iOS 17–25 preserva a navegação compatível. O espaço inferior pertence
@@ -196,15 +206,14 @@ struct Raiz: View {
     @ViewBuilder
     private var conteudoDaAba: some View {
         switch aba {
-        case .adicionar:
-            TelaInicialAdicionar(menuAberto: menuAberto,
-                                 alternarMenu: { menuAberto.toggle() })
-        case .armario:
-            MinhasPecas(menuAberto: menuAberto,
-                        alternarMenu: { menuAberto.toggle() })
         case .dados:
-            Explorar(menuAberto: menuAberto,
-                     alternarMenu: { menuAberto.toggle() })
+            EstaSemana(abrirConta: { contaAberta = true })
+        case .armario:
+            MinhasPecas(menuAberto: false,
+                        alternarMenu: { contaAberta = true })
+        case .adicionar:
+            TelaInicialAdicionar(menuAberto: false,
+                                 alternarMenu: { contaAberta = true })
         case .buscar: Analisar()
         }
     }

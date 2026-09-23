@@ -48,9 +48,11 @@ public enum AbaDoApp: String, CaseIterable, Sendable {
     /// de um lugar — ver `EntradaDoMenu`, onde isso chegou a ser navegação.
     public var titulo: String {
         switch self {
+        // 2.0 (Seam): Esta semana · Acervo · Estúdio + Busca. Os casos mantêm o
+        // nome antigo porque viram argumento de teste e estado salvo.
         case .adicionar: return frase("Studio")
-        case .armario: return frase("Closet")
-        case .dados: return frase("Trends")
+        case .armario: return frase("Archive")
+        case .dados: return frase("This week")
         case .buscar: return frase("Search")
         }
     }
@@ -59,9 +61,9 @@ public enum AbaDoApp: String, CaseIterable, Sendable {
     /// identificam a mesma aba e separá-los recria o problema pela metade.
     public var simbolo: String {
         switch self {
-        case .adicionar: return "hanger"
-        case .armario: return "tshirt.fill"
-        case .dados: return "chart.line.uptrend.xyaxis"
+        case .adicionar: return "camera.aperture"
+        case .armario: return "hanger"
+        case .dados: return "newspaper"
         case .buscar: return "magnifyingglass"
         }
     }
@@ -74,7 +76,8 @@ public enum AbaDoApp: String, CaseIterable, Sendable {
     public var ehBusca: Bool { self == .buscar }
 
     /// As abas que aparecem lado a lado nas duas navegações, na mesma ordem.
+    /// A ordem da barra na 2.0; a do `allCases` é a da declaração.
     public static var principais: [AbaDoApp] {
-        allCases.filter { !$0.ehBusca }
+        [.dados, .armario, .adicionar]
     }
 }

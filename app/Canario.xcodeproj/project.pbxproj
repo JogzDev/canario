@@ -8,6 +8,7 @@
 /* Begin PBXBuildFile section */
 		0B4F1AFF779F42A33002C3BA /* CanarioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */; };
 		5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */; };
+		BC5528B0A10D88757E2410B9 /* Edicao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032DC06D559686BE8172486C /* Edicao.swift */; };
 		E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1ACCCE153B6FA384A39863 /* Formato.swift */; };
 		32ACEB21D089139092062D91 /* GlifosDeVestuario.swift in Sources */ = {isa = PBXBuildFile; fileRef = B659AA577D3A331CF4310B48 /* GlifosDeVestuario.swift */; };
 		B8DC71B90B4F61DE87FDD414 /* IconeDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */; };
@@ -20,6 +21,7 @@
 		8FC8DA501430F62731F31745 /* Compartilhamento.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E67FA7D9CC47EF0A49882DE /* Compartilhamento.swift */; };
 		9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */; };
 		26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */; };
+		669F9EAD3522862F822E23BE /* DadosDaSemana.swift in Sources */ = {isa = PBXBuildFile; fileRef = A27B13EA14D23685C22C29E6 /* DadosDaSemana.swift */; };
 		531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */; };
 		D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C677A09E80A10C666280510 /* Explicacao.swift */; };
 		2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */; };
@@ -49,6 +51,7 @@
 		88385EED03003FB44A18542E /* Comparar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4913E2A3FAD2255EF6E66096 /* Comparar.swift */; };
 		5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDF62FF20F46B96ACD76E75 /* Conta.swift */; };
 		8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */; };
+		CD614A77926A1DD201213A0B /* EstaSemana.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042AF15BFE436E932F4D3FA4 /* EstaSemana.swift */; };
 		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
 		2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */; };
 		863FB40FC2F188CC70B77180 /* MenuLateral.swift in Sources */ = {isa = PBXBuildFile; fileRef = D218A4BC208516935FDD7992 /* MenuLateral.swift */; };
@@ -69,6 +72,7 @@
 		3011FC45C44F537709537A2E /* CanarioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CanarioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		014F2AB2D2DACD836A3D32AE /* CanarioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CanarioApp.swift"; sourceTree = "<group>"; };
 		D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Componentes.swift"; sourceTree = "<group>"; };
+		032DC06D559686BE8172486C /* Edicao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Edicao.swift"; sourceTree = "<group>"; };
 		CD1ACCCE153B6FA384A39863 /* Formato.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Formato.swift"; sourceTree = "<group>"; };
 		B659AA577D3A331CF4310B48 /* GlifosDeVestuario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GlifosDeVestuario.swift"; sourceTree = "<group>"; };
 		CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconeDoTermo.swift"; sourceTree = "<group>"; };
@@ -81,6 +85,7 @@
 		4E67FA7D9CC47EF0A49882DE /* Compartilhamento.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Compartilhamento.swift"; sourceTree = "<group>"; };
 		CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CorDaPeca.swift"; sourceTree = "<group>"; };
 		94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhos.swift"; sourceTree = "<group>"; };
+		A27B13EA14D23685C22C29E6 /* DadosDaSemana.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DadosDaSemana.swift"; sourceTree = "<group>"; };
 		DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntradasDoMenu.swift"; sourceTree = "<group>"; };
 		3C677A09E80A10C666280510 /* Explicacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explicacao.swift"; sourceTree = "<group>"; };
 		A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconesDaTaxonomia.swift"; sourceTree = "<group>"; };
@@ -110,6 +115,7 @@
 		4913E2A3FAD2255EF6E66096 /* Comparar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Comparar.swift"; sourceTree = "<group>"; };
 		4DDF62FF20F46B96ACD76E75 /* Conta.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Conta.swift"; sourceTree = "<group>"; };
 		F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhosView.swift"; sourceTree = "<group>"; };
+		042AF15BFE436E932F4D3FA4 /* EstaSemana.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EstaSemana.swift"; sourceTree = "<group>"; };
 		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
 		330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportarPeca.swift"; sourceTree = "<group>"; };
 		D218A4BC208516935FDD7992 /* MenuLateral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuLateral.swift"; sourceTree = "<group>"; };
@@ -200,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				D7B7D5D5B5683F9EAC390D99 /* Componentes.swift */,
+				032DC06D559686BE8172486C /* Edicao.swift */,
 				CD1ACCCE153B6FA384A39863 /* Formato.swift */,
 				B659AA577D3A331CF4310B48 /* GlifosDeVestuario.swift */,
 				CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */,
@@ -219,6 +226,7 @@
 				4E67FA7D9CC47EF0A49882DE /* Compartilhamento.swift */,
 				CC0D48AA93DFFC74397DF3C6 /* CorDaPeca.swift */,
 				94FEBA8BF8A923FA0111D982 /* CurvaDeTamanhos.swift */,
+				A27B13EA14D23685C22C29E6 /* DadosDaSemana.swift */,
 				DD0B6E2C940EA54E66F62A0E /* EntradasDoMenu.swift */,
 				3C677A09E80A10C666280510 /* Explicacao.swift */,
 				A6BA05D5DCA0E7280CDEA942 /* IconesDaTaxonomia.swift */,
@@ -255,6 +263,7 @@
 				4913E2A3FAD2255EF6E66096 /* Comparar.swift */,
 				4DDF62FF20F46B96ACD76E75 /* Conta.swift */,
 				F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */,
+				042AF15BFE436E932F4D3FA4 /* EstaSemana.swift */,
 				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
 				330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */,
 				D218A4BC208516935FDD7992 /* MenuLateral.swift */,
@@ -356,6 +365,7 @@
 			files = (
 				0B4F1AFF779F42A33002C3BA /* CanarioApp.swift in Sources */,
 				5D802FCDC8FEB888F301DDB1 /* Componentes.swift in Sources */,
+				BC5528B0A10D88757E2410B9 /* Edicao.swift in Sources */,
 				E6CEF31F4EFD7BF6C0FB75F0 /* Formato.swift in Sources */,
 				32ACEB21D089139092062D91 /* GlifosDeVestuario.swift in Sources */,
 				B8DC71B90B4F61DE87FDD414 /* IconeDoTermo.swift in Sources */,
@@ -368,6 +378,7 @@
 				8FC8DA501430F62731F31745 /* Compartilhamento.swift in Sources */,
 				9B84A56D4F7EA890B5ABA5E5 /* CorDaPeca.swift in Sources */,
 				26CDB895DA2A2C71C872E038 /* CurvaDeTamanhos.swift in Sources */,
+				669F9EAD3522862F822E23BE /* DadosDaSemana.swift in Sources */,
 				531ABEB1BFB51D48DB7D732C /* EntradasDoMenu.swift in Sources */,
 				D681EE805EF868E9FAABAF82 /* Explicacao.swift in Sources */,
 				2F861F538E8771AAD769574F /* IconesDaTaxonomia.swift in Sources */,
@@ -397,6 +408,7 @@
 				88385EED03003FB44A18542E /* Comparar.swift in Sources */,
 				5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */,
 				8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */,
+				CD614A77926A1DD201213A0B /* EstaSemana.swift in Sources */,
 				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
 				2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */,
 				863FB40FC2F188CC70B77180 /* MenuLateral.swift in Sources */,
