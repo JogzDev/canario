@@ -140,8 +140,12 @@ def main():
     original_flag = os.environ.get(varejo.VAR_ANIMALE_PUBLICA)
     original_cadencia = os.environ.get(varejo.VAR_ANIMALE_CADENCIA)
     original_forcar = os.environ.get(varejo.VAR_ANIMALE_FORCAR)
+    original_ultima = varejo._ultima_varredura_animale
     acessos = []
     varejo.robots_permite = lambda *_args: (False, "robots.txt lido")
+    # Historico de saude: ultima varredura saudavel no domingo 20/09. A agenda
+    # de segunda 21/09 nao nasceu; o relogio e a idade, nao o dia da semana.
+    varejo._ultima_varredura_animale = lambda _id, _hoje: date(2026, 9, 20)
     varejo.animale_sitemap_todos = lambda _d, estado: (
         estado.update({"urls_no_sitemap": 1, "paginas_lidas": 1,
                        "fora_do_recorte": 0}) or iter([produto]))
@@ -162,9 +166,17 @@ def main():
             {"id": 18, "nome": "Animale", "dominio": DOMINIO,
              "plataforma": "vtex"}, date(2026, 9, 22), {})
         acessos_apos_skip = len(acessos)
-        segunda = varejo.coletar_marca(
+        vencida = varejo.coletar_marca(
             {"id": 18, "nome": "Animale", "dominio": DOMINIO,
-             "plataforma": "vtex"}, date(2026, 9, 21), {})
+             "plataforma": "vtex"}, date(2026, 9, 27), {})
+        # Sem historico legivel a varredura acontece: minuto gasto e melhor
+        # que marca envelhecendo sem ninguem saber.
+        def historico_quebrado(_id, _hoje):
+            raise RuntimeError("supabase fora")
+        varejo._ultima_varredura_animale = historico_quebrado
+        cega = varejo.coletar_marca(
+            {"id": 18, "nome": "Animale", "dominio": DOMINIO,
+             "plataforma": "vtex"}, date(2026, 9, 23), {})
         outra = varejo.coletar_marca(
             {"id": 99, "nome": "Outra", "dominio": "loja.test",
              "plataforma": "vtex"}, date(2026, 9, 20), {})
@@ -184,6 +196,7 @@ def main():
         varejo.robots_permite = original_robots
         varejo.animale_sitemap_todos = original_animale
         varejo.gravar_lote = original_gravar
+        varejo._ultima_varredura_animale = original_ultima
     if (adiada["visitados"] != 0 or adiada["gravados"] != 0
             or adiada["alertas"].get("adiado_por_capacidade") is not True
             or acessos_apos_metrica != 1):
@@ -196,11 +209,14 @@ def main():
         return falhar("fallback vazou para outra marca VTEX")
     if (semanal["visitados"] != 0
             or semanal["alertas"].get("adiado_por_cadencia") is not True
-            or semanal["alertas"].get("proxima_coleta_em") != "2026-09-28"
+            or semanal["alertas"].get("ultima_varredura_em") != "2026-09-20"
+            or semanal["alertas"].get("proxima_coleta_em") != "2026-09-27"
             or acessos_apos_skip != acessos_apos_metrica):
         return falhar("cadencia semanal nao declarou o adiamento da Animale")
-    if segunda["visitados"] != 1 or len(acessos) != 2:
-        return falhar("segunda-feira nao executou a varredura semanal")
+    if vencida["visitados"] != 1:
+        return falhar("varredura com 7 dias nao executou apos segunda perdida")
+    if cega["visitados"] != 1 or len(acessos) != 3:
+        return falhar("historico ilegivel deveria varrer, nao adiar")
 
     print("Animale: fallback publico preserva universo, identidade e robots")
     return 0
