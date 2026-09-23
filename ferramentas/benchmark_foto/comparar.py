@@ -82,7 +82,9 @@ def avaliar(gabarito, linhas):
                 erros_por_foto[modelo].append((linha["id"], categoria, foto["cat"]))
             if categoria == "ambiguo":
                 p["absteve"][0] += 1
-            if categoria != foto.get("alvo"):
+            alvos = foto.get("alvo")
+            alvos = [alvos] if isinstance(alvos, str) else (alvos or [])
+            if categoria not in alvos:
                 continue
             p["leu_o_alvo"][0] += 1
             if foto.get("estampa"):

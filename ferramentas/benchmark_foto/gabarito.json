@@ -21,14 +21,14 @@
    "liso"
   ],
   "cor": [
-   "cinza",
-   "terrosos"
+   "lilas_roxo"
   ],
   "comprimento": [
    "curto"
   ],
-  "nota": "ziper frontal, recortes em tom mais escuro",
-  "alvo": "vestido"
+  "nota": "conferido pelo JP em 23/09: vestido tipo tracksuit, dois tons de roxo; a camera deixou terroso",
+  "alvo": "vestido",
+  "conferido_por": "JP"
  },
  "s-c7e911d6": {
   "cat": [
@@ -112,17 +112,17 @@
  },
  "s-3175a932": {
   "cat": [
-   "blusa_top",
-   "vestido"
+   "blusa_top"
   ],
   "estampa": null,
   "cor": [
    "preto",
-   "cinza"
+   "azul"
   ],
   "comprimento": null,
-  "nota": "regata longa no cabide; a fonte rotulou vestido; grafico unico de borboleta",
-  "alvo": "blusa_top"
+  "nota": "conferido pelo JP em 23/09: regata; aceita azul marinho",
+  "alvo": "blusa_top",
+  "conferido_por": "JP"
  },
  "s-ce27bde3": {
   "cat": [
@@ -457,8 +457,7 @@
  },
  "s-2e11ac6b": {
   "cat": [
-   "calca",
-   "short"
+   "calca"
   ],
   "estampa": [
    "liso"
@@ -467,8 +466,9 @@
    "branco_cru"
   ],
   "comprimento": null,
-  "nota": "a fonte rotulou short; termina abaixo do joelho (capri), e o contrato manda calca",
-  "alvo": "calca"
+  "nota": "conferido pelo JP em 23/09: muito longo para short",
+  "alvo": "calca",
+  "conferido_por": "JP"
  },
  "s-dfd4079d": {
   "cat": [
@@ -548,8 +548,7 @@
  },
  "s-309ead9a": {
   "cat": [
-   "camisa",
-   "casaco_jaqueta"
+   "camisa"
   ],
   "estampa": [
    "liso"
@@ -559,8 +558,9 @@
    "cinza"
   ],
   "comprimento": null,
-  "nota": "camisa jeans aberta, barra desfiada; a fonte rotulou camisa",
-  "alvo": "camisa"
+  "nota": "conferido pelo JP em 23/09: camisa jeans usada como terceira peca",
+  "alvo": "camisa",
+  "conferido_por": "JP"
  },
  "s-4758e641": {
   "cat": [
@@ -626,8 +626,7 @@
  },
  "s-cbfb5bb7": {
   "cat": [
-   "casaco_jaqueta",
-   "blusa_top"
+   "casaco_jaqueta"
   ],
   "estampa": [
    "liso"
@@ -637,13 +636,13 @@
    "azul"
   ],
   "comprimento": null,
-  "nota": "fleece com capuz e ziper inteiro",
-  "alvo": "casaco_jaqueta"
+  "nota": "conferido pelo JP em 23/09: o ziper e inteiro",
+  "alvo": "casaco_jaqueta",
+  "conferido_por": "JP"
  },
  "s-ed28db5a": {
   "cat": [
-   "blusa_top",
-   "casaco_jaqueta"
+   "blusa_top"
   ],
   "estampa": [
    "liso"
@@ -652,8 +651,9 @@
    "azul"
   ],
   "comprimento": null,
-  "nota": "malha marinho com gola marinheira e botoes de ancora; a fonte rotulou casaco",
-  "alvo": "blusa_top"
+  "nota": "conferido pelo JP em 23/09: camiseta de manga comprida com estampa que imita roupa de marinheiro",
+  "alvo": "blusa_top",
+  "conferido_por": "JP"
  },
  "s-b9671bc8": {
   "cat": [
@@ -787,8 +787,9 @@
    "preto"
   ],
   "comprimento": null,
-  "nota": "regata de alca",
-  "alvo": "blusa_top"
+  "nota": "conferido pelo JP em 23/09: blusinha preta de alcinha",
+  "alvo": "blusa_top",
+  "conferido_por": "JP"
  },
  "s-c63ffea0": {
   "cat": [
@@ -821,7 +822,8 @@
   "comprimento": [
    "longo"
   ],
-  "nota": "blusa de cetim malva e saia plissada longa com cinto; pode ser vestido bicolor"
+  "nota": "conferido pelo JP em 23/09: foco na saia plissada",
+  "conferido_por": "JP"
  },
  "v-146a7ffb": {
   "cat": [
@@ -989,20 +991,18 @@
  "v-5acf7e31": {
   "cat": [
    "blusa_top",
-   "saia",
    "ambiguo"
   ],
-  "alvo": "saia",
+  "alvo": "blusa_top",
   "estampa": [
    "liso"
   ],
   "cor": [
-   "amarelo_laranja"
+   "azul"
   ],
-  "comprimento": [
-   "curto"
-  ],
-  "nota": "a blusa azul de renda domina a foto"
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: a leitura e da blusa azul com mangas de renda",
+  "conferido_por": "JP"
  },
  "v-7d9a29db": {
   "cat": [
@@ -1258,12 +1258,15 @@
  },
  "v-e224252e": {
   "cat": [
-   "short",
    "saia",
+   "short",
    "blusa_top",
    "ambiguo"
   ],
-  "alvo": "short",
+  "alvo": [
+   "saia",
+   "short"
+  ],
   "estampa": [
    "liso"
   ],
@@ -1276,7 +1279,8 @@
   "tecido": [
    "jeans"
   ],
-  "nota": "short ou saia jeans curta, camiseta menta"
+  "nota": "conferido pelo JP em 23/09: minissaia jeans; pode ser short-saia",
+  "conferido_por": "JP"
  },
  "v-8dbda3a2": {
   "cat": [
@@ -1427,7 +1431,6 @@
  },
  "v-169f7a7d": {
   "cat": [
-   "blusa_top",
    "camisa"
   ],
   "alvo": "camisa",
@@ -1439,7 +1442,8 @@
    "verde"
   ],
   "comprimento": null,
-  "nota": "polo: gola e carcela curta; pelo contrato tende a blusa"
+  "nota": "conferido pelo JP em 23/09: claramente uma camisa polo feminina",
+  "conferido_por": "JP"
  },
  "v-1a421f02": {
   "cat": [
@@ -1692,10 +1696,9 @@
  },
  "v-f5b8800e": {
   "cat": [
-   "macacao",
-   "vestido"
+   "blusa_top"
   ],
-  "alvo": "macacao",
+  "alvo": "blusa_top",
   "estampa": [
    "liso"
   ],
@@ -1703,6 +1706,7 @@
    "preto"
   ],
   "comprimento": null,
-  "nota": "selfie no espelho; pernas fora do quadro, pode ser vestido"
+  "nota": "conferido pelo JP em 23/09: camiseta preta com amarracao lateral; o all black confunde",
+  "conferido_por": "JP"
  }
 }
