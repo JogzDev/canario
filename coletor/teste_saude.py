@@ -121,6 +121,33 @@ def main():
         print("FALHOU: dia sem varredura declarou catalogo completo")
         return 1
 
+    # A60: dia de cadencia nao e falha. Seis adiamentos seguidos de uma recusa
+    # externa na volta sao UMA recusa, nao a setima -- o SQL conta igual.
+    volta_recusada = linha("varejo", 0, marca_id=1)
+    volta_recusada["alertas"] = {
+        "erro": "http 429 (persistiu apos backoff longo)"}
+    semana = [volta_recusada, linha("editorial", 80), linha("busca", 40),
+              linha("varejo", 100, dias=7, marca_id=1)]
+    for d in range(1, 7):
+        adiada = linha("varejo", 0, dias=d, marca_id=1)
+        adiada["alertas"] = {"adiado_por_cadencia": True,
+                             "cadencia": "semanal"}
+        semana.append(adiada)
+    crit, avisos = alertas_criticos(semana, MARCAS, HOJE)
+    if crit or not any("1º dia" in x for x in avisos):
+        print("FALHOU: dias de cadencia somaram como zeros: {}".format(crit))
+        return 1
+    # Tres recusas de verdade continuam bloqueando.
+    tres = [volta_recusada, linha("editorial", 80), linha("busca", 40)]
+    for d in (1, 2):
+        recusa = linha("varejo", 0, dias=d, marca_id=1)
+        recusa["alertas"] = {"erro": "http 503"}
+        tres.append(recusa)
+    if not any("3 dias seguidos" in x
+               for x in alertas_criticos(tres, MARCAS, HOJE)[0]):
+        print("FALHOU: terceira recusa seguida deixou de bloquear")
+        return 1
+
     queda = [linha("varejo", 20, marca_id=1),
              linha("editorial", 80), linha("busca", 40)]
     queda.extend(linha("varejo", 100, dias=d, marca_id=1)

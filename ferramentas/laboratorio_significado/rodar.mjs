@@ -49,6 +49,7 @@ const MIGRATIONS = [
   'supabase/migrations/20260917210000_a57_frescor_ancorado_no_dado.sql',
   'supabase/migrations/20260917211000_a58_significado_da_capa_e_busca_editorial.sql',
 ];
+const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicacao.sql';
 const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
@@ -182,11 +183,16 @@ async function main() {
     }
     if (!cliente) throw new Error('O cluster não aceitou conexão.');
 
+    // A A60 entra DEPOIS do portão 87 e das asserções 1-24: o 87 confere o
+    // hash que a A58 deixou em produção, e as 24 provam o contrato da A58. Só
+    // então a regra única de cobertura substitui o motor e é provada de novo.
     const arquivos = [
       path.join(AQUI, 'fixture.sql'),
       ...MIGRATIONS.map(m => path.join(REPOSITORIO, m)),
       path.join(REPOSITORIO, 'ferramentas/capacidade/87_confere_depois_da_a57_a58.sql'),
       path.join(AQUI, 'assercoes.sql'),
+      path.join(REPOSITORIO, A60),
+      path.join(AQUI, 'assercoes_a60.sql'),
     ];
     cliente.on('notice', aviso => {
       if (aviso.message) console.log(aviso.message);

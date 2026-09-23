@@ -99,13 +99,34 @@ def data_operacional(agora=None):
     return agora.astimezone(FUSO_OPERACIONAL).date()
 
 
-def _plano_animale(hoje):
+#: A publicacao (A60) aceita a Animale adiada enquanto a ultima varredura
+#: saudavel tiver ate 7 dias. A varredura vence exatamente ai.
+IDADE_MAXIMA_ANIMALE = 7
+
+
+def _ultima_varredura_animale(marca_id, hoje):
+    """Última data anterior a hoje em que a Animale foi varrida com volume."""
+    linhas = supabase_rest.selecionar(
+        "saude", "?fonte=eq.varejo&marca_id=eq.{}&visitados=gt.0"
+                 "&data=lt.{}&select=data&order=data.desc&limit=1".format(
+                     int(marca_id), hoje.isoformat()))
+    return date.fromisoformat(linhas[0]["data"]) if linhas else None
+
+
+def _plano_animale(hoje, ultima_varredura=None):
     """Decide a varredura cara sem fingir observação nos dias pulados.
 
     O sitemap renova o mesmo `lastmod` para todas as páginas diariamente, por
-    isso ele não permite um incremental auditável. A coleta integral fica na
-    segunda-feira; nos demais dias gravamos saúde com cadência explícita e o
-    estado observado na última varredura continua envelhecendo normalmente.
+    isso ele não permite um incremental auditável. A varredura integral é
+    semanal; nos demais dias gravamos saúde com cadência explícita e o estado
+    observado na última varredura continua envelhecendo normalmente.
+
+    O relógio é a idade da última varredura, não o dia da semana. Em 21/09 a
+    agenda de segunda não nasceu no GitHub; amarrada à segunda-feira, a
+    Animale só voltaria em 28/09, oito dias depois, e a publicação (A60)
+    travaria no oitavo. Pela idade, um dia perdido desloca a varredura um dia.
+    Sem histórico legível, varre: gastar minutos é melhor que deixar a marca
+    envelhecer sem saber.
     """
     modo = os.environ.get(VAR_ANIMALE_CADENCIA, "diaria").strip().lower()
     forcar = os.environ.get(VAR_ANIMALE_FORCAR, "").strip().lower() in {
@@ -114,15 +135,19 @@ def _plano_animale(hoje):
         return True, None
     if modo != "semanal":
         raise ValueError("COLETA_ANIMALE_CADENCIA deve ser diaria ou semanal")
-    if hoje.weekday() == 0:  # segunda-feira, no fuso/data operacional fixados
+    if ultima_varredura is None:
         return True, None
-    dias = (7 - hoje.weekday()) % 7
-    proxima = hoje + timedelta(days=dias or 7)
+    idade = (hoje - ultima_varredura).days
+    if idade >= IDADE_MAXIMA_ANIMALE:
+        return True, None
+    proxima = ultima_varredura + timedelta(days=IDADE_MAXIMA_ANIMALE)
     return False, {
         "adiado_por_cadencia": True,
         "cadencia": "semanal",
+        "ultima_varredura_em": ultima_varredura.isoformat(),
         "proxima_coleta_em": proxima.isoformat(),
-        "motivo": "varredura integral da Animale ocorre às segundas-feiras",
+        "motivo": "varredura integral da Animale a cada {} dias".format(
+            IDADE_MAXIMA_ANIMALE),
     }
 
 
@@ -1213,7 +1238,16 @@ def coletar_marca(marca, hoje, cache_deps):
                 },
             }
         if usa_animale_publica:
-            executar_animale, adiamento = _plano_animale(hoje)
+            ultima = None
+            semanal = os.environ.get(
+                VAR_ANIMALE_CADENCIA, "").strip().lower() == "semanal"
+            try:
+                if semanal:
+                    ultima = _ultima_varredura_animale(marca["id"], hoje)
+            except Exception as erro:  # noqa: BLE001 - sem historico, varre
+                print("  Animale: historico de saude ilegivel ({}); "
+                      "varredura integral hoje".format(erro))
+            executar_animale, adiamento = _plano_animale(hoje, ultima)
             if not executar_animale:
                 return {
                     "marca_id": marca["id"], "nome": nome,
@@ -1364,6 +1398,15 @@ def _valor_de_saude(linha):
 DIAS_DE_ZERO_PARA_BLOQUEAR = 3
 
 
+def _adiamento_declarado(linha):
+    """Zero que o próprio coletor declarou como plano, não como falha."""
+    alertas = linha.get("alertas")
+    if not isinstance(alertas, dict) or _valor_de_saude(linha) > 0:
+        return False
+    return bool(alertas.get("adiado_por_cadencia")
+                or alertas.get("adiado_por_capacidade"))
+
+
 def _zeros_seguidos(historico, hoje_iso):
     """Há quantos dias seguidos, contando hoje, esta fonte está em zero."""
     seguidos = 0
@@ -1411,7 +1454,10 @@ def alertas_criticos(registros, marcas_ativas, hoje):
             atuais[chave] = r
         else:
             anteriores.setdefault(chave, []).append(_valor_de_saude(r))
-        if r.get("data"):
+        # Dia de adiamento declarado nao e tentativa que falhou: somar os seis
+        # dias de cadencia da Animale faria uma unica recusa na volta parecer a
+        # setima falha seguida. A A60 conta do mesmo jeito no SQL.
+        if r.get("data") and not _adiamento_declarado(r):
             historico.setdefault(chave, {})[r["data"]] = _valor_de_saude(r)
 
     esperadas = {("editorial", None), ("busca", None)}

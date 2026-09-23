@@ -485,24 +485,54 @@ def main():
         return falhar("computar_motor nao preserva a ordem dos passos")
     if "revoke execute on function public.computar_motor()" not in motor:
         return falhar("computar_motor ficou executavel publicamente")
+    # A60: o motor nao julga cobertura sozinho; pergunta a funcao unica, que
+    # espelha `alertas_criticos` do coletor. Um portao por linguagem foi o que
+    # travou o painel em 22/09/2026.
     exigencias_publicacao_do_painel = [
-        "select m.segmento, m.id as marca_id",
-        "from public.marcas m",
-        "join marcas_esperadas me on me.segmento = c.segmento",
-        "s.data = c.observado_em",
-        "coalesce(s.visitados, 0) > 0",
-        "array['truncou', 'faixas_truncadas']",
-        "historico.media_positiva_7d is null",
-        "s.visitados::numeric\n                       >= historico.media_positiva_7d * 0.30",
-        "h.data >= c.observado_em - 7",
-        "h.data < c.observado_em",
-        "coalesce(h.visitados, 0) > 0",
-        "co.marcas_saudaveis = co.marcas_esperadas",
+        "public.cobertura_de_publicacao(\n      c.segmento, c.observado_em) cp",
+        "count(cp.marca_id) filter (where cp.coberta)",
+        "co.marcas_cobertas = co.marcas_esperadas",
     ]
     for trecho in exigencias_publicacao_do_painel:
         if trecho not in motor:
             return falhar(
                 "motor pode publicar painel parcial: {}".format(trecho))
+
+    _, cobertura = ultima_definicao(
+        arquivos, "create or replace function public.cobertura_de_publicacao")
+    exigencias_cobertura = [
+        # A coorte vem de `marcas`, nao de produtos: marca ativa sem produto
+        # ainda precisa comparecer.
+        "from public.marcas m",
+        "m.segmento = p_segmento",
+        "m.ativa is true",
+        # Saudavel continua sendo o criterio da A58, linha por linha.
+        "l.visitados > 0",
+        "array['truncou', 'faixas_truncadas']",
+        ">= historico.media_positiva_7d * 0.30",
+        "h.data >= l.data - 7",
+        "coalesce(h.visitados, 0) > 0",
+        # Tolerancia do Python: adiamento declarado e recusa externa conhecida
+        # por menos de 3 coletas, sempre com base saudavel nos 7 dias da P17.
+        "adiado_por_cadencia",
+        "\\yhttp\\s+(429|5[0-9]{2})\\y|robots\\s+proibe",
+        "s.data between p_data - 7 and p_data",
+        "when not tem_linha then false",
+        "when adiada_hoje then ultima_saudavel is not null",
+        "when recusa_hoje then ultima_saudavel is not null and falhas < 3",
+        "and not f.adiada",
+        "revoke all on function public.cobertura_de_publicacao(text, date)",
+    ]
+    for trecho in exigencias_cobertura:
+        if trecho not in cobertura:
+            return falhar(
+                "cobertura de publicacao nao garante: {}".format(trecho))
+    # As duas linguagens precisam mudar juntas: se o coletor passar a tolerar
+    # outro numero de zeros, o SQL tem de acompanhar na mesma PR.
+    coletor = open(os.path.join(os.path.dirname(__file__), "coletor_varejo.py"),
+                   encoding="utf-8").read()
+    if "DIAS_DE_ZERO_PARA_BLOQUEAR = 3\n" not in coletor:
+        return falhar("tolerancia de zeros do coletor divergiu da A60 (falhas < 3)")
 
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")
