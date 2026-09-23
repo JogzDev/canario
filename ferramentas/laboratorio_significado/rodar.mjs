@@ -53,7 +53,7 @@ const MIGRATIONS = [
 ];
 const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicacao.sql';
 const A61 = 'supabase/migrations/20260923131757_a61_troca_de_catalogo.sql';
-const A62 = 'supabase/migrations/20260923133000_a62_curva_so_com_produtos_ativos.sql';
+const A62 = 'supabase/migrations/20260923154011_a62_curva_so_com_produtos_ativos.sql';
 // O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
 // da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
 const ANTES_DA_A62 = [
