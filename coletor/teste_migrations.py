@@ -674,6 +674,31 @@ def main():
         return falhar("curva final ainda pode materializar a expansao por termo")
     if "join produto_termos pt on pt.produto_id = c.produto_id" not in curva:
         return falhar("curva final perdeu o recorte por termo")
+    # A62: a curva olha so a vitrine. Medido em 23/09/2026: 81.620 produtos na
+    # base do feminino, 28.811 na vitrine; share indisponivel de 74,8% para
+    # 43,2%. O laboratorio prova o efeito e reprova dez mutacoes; aqui fica o
+    # texto de cada regra.
+    exigencias_vitrine = [
+        # Ancora por segmento, no dado (A57): pausa nao e ausencia.
+        "join _curva_ancora a on a.segmento = p.segmento",
+        "ep.ultimo_avistamento_em >= a.observado_em - 7",
+        # Catalogo trocado de plataforma nao e sortimento (A61).
+        "and not exists (select 1 from public.produtos_de_catalogo_aposentado ca\n"
+        "                       where ca.produto_id = p.id)",
+        # A venda hoje OU em algum dia da janela: quem esgotou na janela e a
+        # quebra; so "ofertavel hoje" tirava 775 quebras da manchete.
+        "(ep.ofertavel is true",
+        "and s.ofertavel is true",
+        # A semana alvo e refeita inteira; as publicadas ficam.
+        "where c.semana = semana_alvo",
+        "'base_observada_em', an.observado_em",
+        "revoke all on function public.computar_curva_tamanhos(integer)",
+    ]
+    for trecho in exigencias_vitrine:
+        if trecho not in curva:
+            return falhar("curva nao se limita a vitrine: {}".format(trecho))
+    if "current_date" in curva:
+        return falhar("curva ancora a base no calendario, nao no dado")
 
     if ("alter table public.motor_termos_stage set unlogged" not in estado_final
             or "alter table public.motor_produtos_stage set unlogged" not in estado_final):
