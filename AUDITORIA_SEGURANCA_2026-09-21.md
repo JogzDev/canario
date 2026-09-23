@@ -9,7 +9,7 @@ ela não trata ausência de evidência como conclusão positiva.
 - **15 controles atendidos** no escopo atual.
 - **4 controles parciais**, com risco e próxima ação declarados.
 - **1 controle não aplicável** ao app nativo (cookies de sessão).
-- O Gitleaks 8.30.1 não encontrou segredo no histórico integral nem na árvore atual.
+- O Gitleaks 8.30.1 não encontrou segredo nos 498 commits nem na árvore atual.
   O único falso positivo era um checksum público documentado; a exceção exige
   simultaneamente regra, caminho e valor exatos.
 - `npm audit` dos dois laboratórios retorna zero vulnerabilidades conhecidas.
@@ -21,10 +21,10 @@ ela não trata ausência de evidência como conclusão positiva.
 | # | Controle | Estado | Evidência e limite |
 |---|---|---|---|
 | 1 | Esconder API keys | **Atendido** | OpenAI e `service_role` existem apenas no servidor/Secrets. O app recebe somente chave publicável. `.gitignore` exclui `Config.xcconfig`, `.env`, PEM e KEY. |
-| 2 | Limpar secrets do Git | **Atendido** | O CI faz checkout integral e executa Gitleaks 8.30.1, fixado por versão e SHA-256, sobre todo o histórico e sobre a árvore atual. Os valores ficam 100% redigidos no log. A varredura local inicial não achou segredos; uma exceção de checksum público exige regra, arquivo e valor exatos. A proteção não depende do produto pago de secret scanning do GitHub. |
+| 2 | Limpar secrets do Git | **Atendido** | O CI faz checkout integral e executa Gitleaks 8.30.1, fixado por versão e SHA-256, sobre todo o histórico e sobre a árvore atual. Os valores ficam 100% redigidos no log. A varredura local inicial cobriu 498 commits sem achados; uma exceção de checksum público exige regra, arquivo e valor exatos. A proteção não depende do produto pago de secret scanning do GitHub. |
 | 3 | Public key do banco | **Atendido** | O binário usa `SUPABASE_PUBLISHABLE_KEY`; nenhuma `SUPABASE_SERVICE_ROLE_KEY` existe no alvo do app. |
 | 4 | Ativar RLS | **Atendido** | Tabelas internas têm RLS; `closet_items`, `estado_dos_produtos` e tokens Apple usam `FORCE ROW LEVEL SECURITY`. As políticas do Closet prendem leitura/escrita a `auth.uid()`. |
-| 5 | Criptografia de dados | **Parcial** | Tráfego exige HTTPS, sessão fica no Keychain `ThisDeviceOnly` e o provedor cifra armazenamento. A59 prepara AES-256-GCM com chave versionada para o refresh token Apple, mas está somente na branch local. O controle só fecha depois de implantação coordenada, backfill das linhas A50 e contagem zero de valores legados em claro. |
+| 5 | Criptografia de dados | **Parcial** | Tráfego exige HTTPS, sessão fica no Keychain `ThisDeviceOnly` e o provedor cifra armazenamento. O refresh token Apple ainda não tem criptografia de aplicação além da camada de disco do provedor; migrá-lo exige desenho de rotação e não deve ser improvisado. |
 | 6 | Auth server-side | **Atendido** | Identidade é validada pelo Supabase Auth; operações administrativas e revogação Apple ficam nas Edge Functions com `service_role`, nunca no app. |
 | 7 | Restringir acessos | **Parcial** | RLS e permissões do workflow são restritas; `main` bloqueia force-push/deleção e exige os checks. Administrador não está submetido à regra e não há revisão obrigatória, decisão que evita bloquear um projeto hoje mantido por uma pessoa. O colaborador remanescente foi mantido por decisão explícita do responsável. |
 | 8 | Bloquear mass assignment | **Atendido** | `aplicar_mudancas_closet` tipa/seleciona campos, atribui `auth.uid()` no servidor, limita 250 mudanças por chamada, 200 itens ativos e 400 totais. |
@@ -63,10 +63,8 @@ ela não trata ausência de evidência como conclusão positiva.
 
 ## Pendências priorizadas
 
-1. Implantar A59 apenas depois dos portões de
-   `ferramentas/seguranca/ROTACAO_TOKEN_APPLE.md`, com secret, schema, funções,
-   testes reais e backfill auditado; não declarar cifragem completa antes de
-   zerar as linhas legadas.
+1. Desenhar criptografia de aplicação e rotação para o refresh token Apple;
+   não alterar a tabela antes de existir caminho de migração e revogação.
 2. Reavaliar revisão obrigatória/admin quando houver outra pessoa mantenedora,
    sem criar um bloqueio que o único responsável não possa satisfazer.
 3. Avaliar App Attest/DeviceCheck para o endpoint visual antes da versão 2.0.

@@ -44,10 +44,6 @@ APPLE_COMPARTILHADO = os.path.join(
     RAIZ, "supabase", "functions", "_shared", "apple-sign-in.ts")
 APPLE_MIGRACAO = os.path.join(
     RAIZ, "supabase", "migrations", "20260831152000_a50_tokens_de_revogacao_apple.sql")
-APPLE_MIGRACAO_CIFRA = os.path.join(
-    RAIZ, "supabase", "migrations", "20260921164500_a59_cifra_tokens_de_revogacao_apple.sql")
-APPLE_CIFRA = os.path.join(
-    RAIZ, "supabase", "functions", "_shared", "apple-refresh-token-crypto.ts")
 ANALISE = os.path.join(RAIZ, "supabase", "functions", "analisar-peca", "index.ts")
 BUCKET = "closet-thumbnails"
 
@@ -280,24 +276,6 @@ def main():
             or "revoke all on table public.apple_refresh_tokens" not in migracao_apple.lower()
             or "on delete cascade" not in migracao_apple.lower()):
         print("FALHOU: refresh token Apple nao esta protegido e acoplado a exclusao")
-        return 1
-
-    # A59: o novo login so grava cifra; Delete account suporta tanto a linha
-    # legada quanto a cifrada e falha para revogacao manual se a chave faltar.
-    cifra = ler(APPLE_CIFRA)
-    migracao_cifra = ler(APPLE_MIGRACAO_CIFRA)
-    if cifra is None or migracao_cifra is None:
-        return 1
-    if ("AES-GCM" not in cifra
-            or "additionalData: dadosAssociados(userId)" not in cifra
-            or "APPLE_REFRESH_TOKEN_KEY_VERSION" not in cifra
-            or "APPLE_REFRESH_TOKEN_KEY_V${versao}" not in cifra
-            or "refresh_token: null" not in registrar_apple
-            or "cifrarTokenAppleComChave" not in registrar_apple
-            or "recuperarTokenApple" not in codigo
-            or "manual_required" not in codigo
-            or "refresh_token_cifrado" not in migracao_cifra):
-        print("FALHOU: A59 perdeu cifra, rotacao ou fallback de exclusao Apple")
         return 1
 
     print("Privacidade declarada: app, manifesto, ficha, politica e "

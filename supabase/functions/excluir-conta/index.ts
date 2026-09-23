@@ -2,10 +2,6 @@
 // A função valida o JWT recebido e usa service role somente no servidor.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.116.0";
 import { revogarTokenApple } from "../_shared/apple-sign-in.ts";
-import {
-  type LinhaDeTokenApple,
-  recuperarTokenApple,
-} from "../_shared/apple-refresh-token-crypto.ts";
 
 const JSON_HEADERS = {
   "content-type": "application/json",
@@ -51,35 +47,24 @@ Deno.serve(async (req) => {
     });
   }
 
-  const admin = createClient(url, serviceRole, {
-    auth: { persistSession: false },
-  });
+  const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
 
   const providers = Array.isArray(data.user.app_metadata?.providers)
-    ? data.user.app_metadata.providers
-    : [];
+    ? data.user.app_metadata.providers : [];
   const usaApple = providers.includes("apple");
-  let revogacaoApple: "not_applicable" | "revoked" | "manual_required" =
-    "not_applicable";
+  let revogacaoApple: "not_applicable" | "revoked" | "manual_required" = "not_applicable";
   if (usaApple) {
     const { data: credencial, error: credentialError } = await admin
       .from("apple_refresh_tokens")
-      .select(
-        "refresh_token,refresh_token_cifrado,nonce_cifragem,versao_chave,algoritmo_cifragem",
-      )
+      .select("refresh_token")
       .eq("user_id", data.user.id)
       .maybeSingle();
     // Não interrompemos o direito de exclusão porque uma conta antiga pode
     // não ter token para a Apple revogar. Nesse caso o cliente abre o caminho
     // oficial manual depois de apagar os dados, como a Apple orienta.
-    if (!credentialError && credencial) {
-      const token = await recuperarTokenApple(
-        credencial as LinhaDeTokenApple,
-        data.user.id,
-      ).catch(() => null);
-      const revogado = token
-        ? await revogarTokenApple(token).catch(() => false)
-        : false;
+    if (!credentialError && credencial?.refresh_token) {
+      const revogado = await revogarTokenApple(credencial.refresh_token)
+        .catch(() => false);
       revogacaoApple = revogado ? "revoked" : "manual_required";
     } else {
       revogacaoApple = "manual_required";
@@ -99,18 +84,15 @@ Deno.serve(async (req) => {
   const prefixo = data.user.id;
   const paraApagar: string[] = [];
   const porPagina = 100;
-  for (let pagina = 0;; pagina += 1) {
+  for (let pagina = 0; ; pagina += 1) {
     const { data: objetos, error: listError } = await admin.storage
       .from("closet-thumbnails")
       .list(prefixo, { limit: porPagina, offset: pagina * porPagina });
     if (listError) {
-      return new Response(
-        JSON.stringify({ error: "thumbnail_cleanup_failed" }),
-        {
-          status: 500,
-          headers: JSON_HEADERS,
-        },
-      );
+      return new Response(JSON.stringify({ error: "thumbnail_cleanup_failed" }), {
+        status: 500,
+        headers: JSON_HEADERS,
+      });
     }
     if (!objetos || objetos.length === 0) break;
     for (const objeto of objetos) paraApagar.push(`${prefixo}/${objeto.name}`);
@@ -121,20 +103,14 @@ Deno.serve(async (req) => {
       .from("closet-thumbnails")
       .remove(paraApagar);
     if (removeError) {
-      return new Response(
-        JSON.stringify({ error: "thumbnail_cleanup_failed" }),
-        {
-          status: 500,
-          headers: JSON_HEADERS,
-        },
-      );
+      return new Response(JSON.stringify({ error: "thumbnail_cleanup_failed" }), {
+        status: 500,
+        headers: JSON_HEADERS,
+      });
     }
   }
 
-  const { error: deleteError } = await admin.auth.admin.deleteUser(
-    data.user.id,
-    false,
-  );
+  const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id, false);
   if (deleteError) {
     return new Response(JSON.stringify({ error: "delete_failed" }), {
       status: 500,
@@ -144,15 +120,12 @@ Deno.serve(async (req) => {
 
   // `miniaturas_removidas` existe para a exclusão ser auditável: sem ela, "deu
   // certo" e "não havia nada para apagar" respondem exatamente igual.
-  return new Response(
-    JSON.stringify({
-      deleted: true,
-      miniaturas_removidas: paraApagar.length,
-      apple_revocation: revogacaoApple,
-    }),
-    {
-      status: 200,
-      headers: JSON_HEADERS,
-    },
-  );
+  return new Response(JSON.stringify({
+    deleted: true,
+    miniaturas_removidas: paraApagar.length,
+    apple_revocation: revogacaoApple,
+  }), {
+    status: 200,
+    headers: JSON_HEADERS,
+  });
 });
