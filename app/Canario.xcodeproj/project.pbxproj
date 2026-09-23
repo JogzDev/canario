@@ -52,6 +52,7 @@
 		5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDF62FF20F46B96ACD76E75 /* Conta.swift */; };
 		8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */; };
 		CD614A77926A1DD201213A0B /* EstaSemana.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042AF15BFE436E932F4D3FA4 /* EstaSemana.swift */; };
+		DC37C7741A0382B77AA8FBB7 /* Estudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C907E72BEC39A2F73517842 /* Estudio.swift */; };
 		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
 		2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */; };
 		863FB40FC2F188CC70B77180 /* MenuLateral.swift in Sources */ = {isa = PBXBuildFile; fileRef = D218A4BC208516935FDD7992 /* MenuLateral.swift */; };
@@ -116,6 +117,7 @@
 		4DDF62FF20F46B96ACD76E75 /* Conta.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Conta.swift"; sourceTree = "<group>"; };
 		F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurvaDeTamanhosView.swift"; sourceTree = "<group>"; };
 		042AF15BFE436E932F4D3FA4 /* EstaSemana.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EstaSemana.swift"; sourceTree = "<group>"; };
+		3C907E72BEC39A2F73517842 /* Estudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Estudio.swift"; sourceTree = "<group>"; };
 		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
 		330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportarPeca.swift"; sourceTree = "<group>"; };
 		D218A4BC208516935FDD7992 /* MenuLateral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuLateral.swift"; sourceTree = "<group>"; };
@@ -264,6 +266,7 @@
 				4DDF62FF20F46B96ACD76E75 /* Conta.swift */,
 				F536B72304921ED98FCBFB1F /* CurvaDeTamanhosView.swift */,
 				042AF15BFE436E932F4D3FA4 /* EstaSemana.swift */,
+				3C907E72BEC39A2F73517842 /* Estudio.swift */,
 				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
 				330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */,
 				D218A4BC208516935FDD7992 /* MenuLateral.swift */,
@@ -409,6 +412,7 @@
 				5E8A5845311CBE51EA307BB5 /* Conta.swift in Sources */,
 				8DE31F0FD23D798D38B37F5A /* CurvaDeTamanhosView.swift in Sources */,
 				CD614A77926A1DD201213A0B /* EstaSemana.swift in Sources */,
+				DC37C7741A0382B77AA8FBB7 /* Estudio.swift in Sources */,
 				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
 				2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */,
 				863FB40FC2F188CC70B77180 /* MenuLateral.swift in Sources */,

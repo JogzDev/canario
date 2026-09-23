@@ -34,14 +34,20 @@ import Charts
 enum Edicao {
     // MARK: Cor
 
-    /// Ação. ≥ 4,5:1 contra `papel` e `cartao` nos dois temas.
-    static let bordo = cor(0x8A1C2E, 0xF0899A)
+    /// Ação. ≥ 4,5:1 contra `papel` e `cartao` nos dois temas (escuro: 5,9 e 5,1).
+    static let bordo = cor(0x8A1C2E, 0xE8707F)
+    /// Fundo de botão cheio. No escuro o bordô de texto é claro demais para
+    /// levar letra branca (2,4:1); este é o mesmo vermelho do ícone escuro,
+    /// 5,1:1 com branco. Medido em 23/09/2026.
+    static let bordoCheio = cor(0x8A1C2E, 0xC8374F)
     /// Anotação de dado: a esferográfica azul do caderno.
     static let caneta = cor(0x2743D6, 0x8FA2FF)
     static let marcaTexto = cor(0xF7E27A, 0x5E5421)
     /// Papel de caderno: quente no claro, grafite no escuro.
     static let papel = cor(0xF7F5EF, 0x1A1917)
     static let cartao = cor(0xFFFFFF, 0x262523)
+    /// A parede do Estúdio: o cinza da peça clareado para caber a tela inteira.
+    static let parede = cor(0xE7E5DF, 0x242321)
 
     /// Os riscadores das fontes de dado. Só em gráfico e legenda.
     static let sanguinea = cor(0xA84A24, 0xF0A07C)

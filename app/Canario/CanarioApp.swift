@@ -90,6 +90,9 @@ struct Raiz: View {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirTrends") {
             return .dados
         }
+        if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirEstudio") {
+            return .adicionar
+        }
         return .dados
     }()
     /// A busca abre direto em teste de interface. Ela é `fullScreenCover` da
@@ -133,7 +136,7 @@ struct Raiz: View {
         // continuar claro no resto, que é a decisão de produto de sempre.
         // Esta semana segue o sistema, claro ou escuro. As telas que ainda não
         // passaram para a v4 continuam claras até serem refeitas.
-        .preferredColorScheme(aba == .dados ? nil : .light)
+        .preferredColorScheme(aba == .dados || aba == .adicionar ? nil : .light)
         // O menu não pode ultrapassar a borda e voltar. `.snappy` tem mola:
         // na gravação a 60 fps, a aresta chegou a 849 px e recuou para 845 px,
         // revelando por alguns quadros uma faixa do céu atrás do painel. O
@@ -174,8 +177,7 @@ struct Raiz: View {
             }
             Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
                 value: .adicionar) {
-                TelaInicialAdicionar(menuAberto: false,
-                                     alternarMenu: { contaAberta = true })
+                Estudio(abrirConta: { contaAberta = true })
             }
             Tab(Aba.buscar.titulo, systemImage: Aba.buscar.simbolo,
                 value: .buscar, role: .search) {
@@ -212,8 +214,7 @@ struct Raiz: View {
             MinhasPecas(menuAberto: false,
                         alternarMenu: { contaAberta = true })
         case .adicionar:
-            TelaInicialAdicionar(menuAberto: false,
-                                 alternarMenu: { contaAberta = true })
+            Estudio(abrirConta: { contaAberta = true })
         case .buscar: Analisar()
         }
     }

@@ -5292,6 +5292,40 @@
         }
       }
     },
+    "Photograph a piece": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Photograph a piece"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografar uma peça"
+          }
+        }
+      }
+    },
+    "Photograph a piece to see what the market is doing with pieces like it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Photograph a piece to see what the market is doing with pieces like it."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografe uma peça para ver o que o mercado está fazendo com peças como ela."
+          }
+        }
+      }
+    },
     "Photos you choose": {
       "extractionState": "manual",
       "localizations": {
@@ -8519,6 +8553,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "O que o Brasil está buscando"
+          }
+        }
+      }
+    },
+    "What do you have in hand?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "What do you have in hand?"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que você tem em mãos?"
           }
         }
       }
