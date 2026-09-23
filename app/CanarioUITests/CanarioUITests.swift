@@ -26,14 +26,16 @@ final class CanarioUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    func testAddAbreComAcaoPrincipalEMenu() {
-        let app = aplicativo()
+    // 2.0: o manequim saiu; o Estúdio abre com a pergunta e a ação principal,
+    // e a conta é uma sheet do sistema no lugar do menu lateral.
+    func testEstudioAbreComAcaoPrincipalEConta() {
+        let app = aplicativo(argumentos: ["-CanarioAbrirEstudio"])
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Add your clothes"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["What do you have in hand?"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Add a clothing item"].exists)
 
-        app.buttons["Open menu"].tap()
+        app.buttons["Account"].tap()
         XCTAssertTrue(app.buttons["Privacy"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.buttons["Settings"].exists)
     }
@@ -43,7 +45,7 @@ final class CanarioUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Closet"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Open menu"].exists)
+        XCTAssertTrue(app.buttons["Account"].exists)
         XCTAssertTrue(app.buttons["Filter Closet"].exists)
         app.buttons["Filter Closet"].tap()
         XCTAssertTrue(app.navigationBars["Filter Closet"].waitForExistence(timeout: 2))
@@ -51,19 +53,19 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Done"].exists)
     }
 
-    func testAsTresTelasPrincipaisUsamOMesmoMenu() {
-        for argumento in [nil, "-CanarioAbrirCloset", "-CanarioAbrirTrends"] {
+    func testAsTresTelasPrincipaisAbremAMesmaConta() {
+        // Esta semana (padrão), Acervo e Estúdio.
+        for argumento in [nil, "-CanarioAbrirCloset", "-CanarioAbrirEstudio"] {
             let app = aplicativo(argumentos: argumento.map { [$0] } ?? [])
             app.launch()
 
-            XCTAssertTrue(app.buttons["Open menu"].waitForExistence(timeout: 5))
-            app.buttons["Open menu"].tap()
+            XCTAssertTrue(app.buttons["Account"].waitForExistence(timeout: 5))
+            app.buttons["Account"].tap()
             XCTAssertTrue(app.buttons["Privacy"].waitForExistence(timeout: 2))
-            let fechar = app.buttons.matching(identifier: "Close menu")
-            XCTAssertEqual(fechar.count, 1,
-                           "o botão coberto da barra não pode duplicar o X do painel")
-            fechar.element.tap()
-            XCTAssertTrue(app.buttons["Open menu"].waitForExistence(timeout: 2))
+            let pronto = app.buttons.matching(identifier: "Done")
+            XCTAssertEqual(pronto.count, 1, "a sheet da conta tem uma saída só")
+            pronto.element.tap()
+            XCTAssertTrue(app.buttons["Account"].waitForExistence(timeout: 2))
             app.terminate()
         }
     }
@@ -199,12 +201,12 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(rapida.exists)
     }
 
-    func testQEAAbreLegivelSobreATrends() {
-        let app = aplicativo(argumentos: ["-CanarioAbrirTrends"])
+    func testQEAAbreLegivelSobreEstaSemana() {
+        let app = aplicativo()
         app.launch()
 
-        XCTAssertTrue(app.buttons["Open menu"].waitForExistence(timeout: 5))
-        app.buttons["Open menu"].tap()
+        XCTAssertTrue(app.buttons["Account"].waitForExistence(timeout: 5))
+        app.buttons["Account"].tap()
         XCTAssertTrue(app.buttons["Q&A"].waitForExistence(timeout: 2))
         app.buttons["Q&A"].tap()
 

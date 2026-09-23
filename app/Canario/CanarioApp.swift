@@ -90,7 +90,10 @@ struct Raiz: View {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirTrends") {
             return .dados
         }
-        if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirEstudio") {
+        let argumentos = ProcessInfo.processInfo.arguments
+        if argumentos.contains("-CanarioAbrirEstudio")
+            || argumentos.contains("-CanarioUITestImportacao")
+            || argumentos.contains("-CanarioUITestDetalhes") {
             return .adicionar
         }
         return .dados

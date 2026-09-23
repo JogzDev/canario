@@ -256,10 +256,12 @@ struct BotaoDoMenu: View {
 
     var body: some View {
         if !menuAberto {
+            // 2.0: o menu lateral virou a sheet de conta; o botão das telas
+            // antigas é o mesmo das novas enquanto elas não são refeitas.
             Button(action: acao) {
-                Image(systemName: "ellipsis")
+                Image(systemName: "person.crop.circle")
             }
-            .accessibilityLabel("Open menu")
+            .accessibilityLabel("Account")
         }
         // Aberto, o painel opaco traz o próprio X. O botão da barra de trás
         // precisa sair da árvore, não só ficar visualmente coberto: o SwiftUI
