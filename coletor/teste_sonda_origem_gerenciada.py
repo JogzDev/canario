@@ -23,6 +23,8 @@ CORPOS_VALIDOS = {
     "shopify": b'{"products":[{"id":1}]}',
     "wp_json": b'[{"id":1,"link":"https://example/post","title":{"rendered":"x"}}]',
     "xml": b'<rss><channel><item><title>x</title></item></channel></rss>',
+    "sitemap": (b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                b'<url><loc>https://loja.example/produtos/x/</loc></url></urlset>'),
 }
 
 
@@ -128,8 +130,10 @@ class SondaGerenciadaTests(unittest.TestCase):
                 ("vtex_cantao", "catalogo_vtex",
                  "https://www.cantao.com.br/api/catalog_system/pub/products/search/vestido?_from=0&_to=0",
                  "vtex"),
-                ("shopify_amaro", "catalogo_shopify",
-                 "https://amaro.com/products.json?limit=1", "shopify"),
+                ("shopify_patbo", "catalogo_shopify",
+                 "https://www.patbo.com.br/products.json?limit=1", "shopify"),
+                ("nuvemshop_amaro", "catalogo_nuvemshop",
+                 "https://amaro.com/sitemap.xml", "sitemap"),
                 ("editorial_ffw", "feed_editorial_wp_json",
                  "https://ffw.com.br/wp-json/wp/v2/posts?per_page=1&_fields=id,link,date,title",
                  "wp_json"),

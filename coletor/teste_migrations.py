@@ -534,6 +534,43 @@ def main():
     if "DIAS_DE_ZERO_PARA_BLOQUEAR = 3\n" not in coletor:
         return falhar("tolerancia de zeros do coletor divergiu da A60 (falhas < 3)")
 
+    # A61: marca que troca de plataforma troca de identificadores. O catalogo
+    # aposentado nao sai de linha e nao conta duas vezes; o laboratorio prova
+    # o efeito, e aqui fica o contrato de texto de cada funcao.
+    exigencias_troca = {
+        "create or replace function public.computar_eventos": [
+            "from public.produtos_de_catalogo_aposentado ca\n"
+            "                     where ca.produto_id = u.produto_id);",
+        ],
+        "create or replace function public.sortimento_observado": [
+            "and ca.aposentado_em <= alvo",
+        ],
+        "create or replace function public.computar_serie_varejo": [
+            "left join public.produtos_de_catalogo_aposentado ca on ca.produto_id = p.id",
+            "and (e.aposentado_em is null or w.semana + 6 < e.aposentado_em)",
+        ],
+        "create or replace view public.produtos_de_catalogo_aposentado": [
+            "with (security_invoker = true)",
+            "where ep.ultimo_avistamento_em < t.em",
+        ],
+    }
+    for cabeca, trechos in exigencias_troca.items():
+        _, definicao = ultima_definicao(arquivos, cabeca)
+        for trecho in trechos:
+            if trecho not in definicao:
+                return falhar("troca de catalogo nao garante: {}".format(
+                    trecho.splitlines()[-1].strip()))
+    # O coletor e as restricoes de `marcas` precisam conhecer as mesmas
+    # plataformas: marca num lado so ou nao materializa ou nao e coletada.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import materializar_anexos
+    _, restricao = ultima_definicao(
+        arquivos, "add constraint marcas_plataforma_check")
+    declaradas = set(re.findall(r"'([a-z]+)'", restricao.split(";")[0]))
+    if declaradas != set(materializar_anexos.PLATAFORMAS):
+        return falhar("plataformas do coletor ({}) e do banco ({}) divergiram".format(
+            ", ".join(materializar_anexos.PLATAFORMAS), ", ".join(sorted(declaradas))))
+
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")
     exigencias_poda = [

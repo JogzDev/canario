@@ -47,10 +47,17 @@ ALVOS = (
         "validacao": "vtex",
     },
     {
-        "id": "shopify_amaro",
+        # A Amaro, sonda original desta classe, saiu da Shopify em 23/09/2026.
+        "id": "shopify_patbo",
         "classe": "catalogo_shopify",
-        "url": "https://amaro.com/products.json?limit=1",
+        "url": "https://www.patbo.com.br/products.json?limit=1",
         "validacao": "shopify",
+    },
+    {
+        "id": "nuvemshop_amaro",
+        "classe": "catalogo_nuvemshop",
+        "url": "https://amaro.com/sitemap.xml",
+        "validacao": "sitemap",
     },
     {
         "id": "editorial_ffw",
@@ -72,7 +79,7 @@ ALVOS = (
     },
 )
 
-VALIDACOES = frozenset({"vtex", "shopify", "wp_json", "xml", "trends"})
+VALIDACOES = frozenset({"vtex", "shopify", "wp_json", "xml", "sitemap", "trends"})
 
 
 def _normalizar_caminho_robots(texto, padrao=False):
@@ -397,6 +404,15 @@ def _validar_corpo_generico(tipo, resposta):
             itens = [elemento for elemento in raiz.iter()
                      if elemento.tag.rsplit("}", 1)[-1].lower() in {"item", "entry"}]
             valido = nome_raiz in {"rss", "feed"} and bool(itens)
+        elif tipo == "sitemap":
+            upper = corpo.upper()
+            if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+                return False, "xml_nao_seguro"
+            raiz = ElementTree.fromstring(corpo)
+            locs = [elemento for elemento in raiz.iter()
+                    if elemento.tag.rsplit("}", 1)[-1].lower() == "loc"
+                    and (elemento.text or "").strip()]
+            valido = raiz.tag.rsplit("}", 1)[-1].lower() == "urlset" and bool(locs)
         else:
             raise ValueError("estratégia de validação desconhecida")
     except (UnicodeDecodeError, json.JSONDecodeError, ElementTree.ParseError,
