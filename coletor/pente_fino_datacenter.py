@@ -33,7 +33,8 @@ _ultima = [0.0]
 ALVOS = [
     ("Colcci", "www.colcci.com.br", "vtex"),
     ("Centauro", "www.centauro.com.br", "vtex"),
-    ("Amaro", "amaro.com", "shopify"),
+    # A Amaro saiu da Shopify em 23/09/2026.
+    ("Charry", "www.charry.com.br", "shopify"),
     ("PatBo", "www.patbo.com.br", "shopify"),
 ]
 CAMINHO = {

@@ -54,6 +54,8 @@ jobs:
         run: "$PY coletor/teste_oferta_varejo.py"
       - name: Fallback publico da Animale por sitemap
         run: "$PY coletor/teste_animale_sitemap.py"
+      - name: Nuvemshop por sitemap e paginas publicas
+        run: "$PY coletor/teste_nuvemshop.py"
       - name: Planejamento diario do Google Trends
         run: "$PY coletor/teste_trends.py"
       - name: Fila da perna de busca (§19)

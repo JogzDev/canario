@@ -1,16 +1,20 @@
-name: Coleta Shopify ou recuperação VTEX
+name: Coleta Shopify e Nuvemshop ou recuperação VTEX
 
 # A premissa residencial foi revalidada em 21/09/2026: Amaro respondeu 200 no
 # Linux e no macOS gerenciados. O job usa Linux hospedado; recusas transitórias
 # continuam registradas e sujeitas ao portão de saúde.
+#
+# Desde 23/09/2026 a Amaro está na Nuvemshop. As duas plataformas leves correm
+# na mesma perna: são poucas marcas, e separar criaria mais um elo na corrente
+# do pipeline sem ganho de isolamento.
 on:
   workflow_call:
     inputs:
       plataforma:
-        description: 'Plataforma a coletar no IP residencial'
+        description: 'Plataformas a coletar, separadas por vírgula'
         required: false
         type: string
-        default: 'shopify'
+        default: 'shopify,nuvemshop'
       marca:
         description: 'Coletar só uma marca (vazio = todas da plataforma)'
         required: false
@@ -43,13 +47,15 @@ on:
   workflow_dispatch:
     inputs:
       plataforma:
-        description: 'Plataforma a coletar no IP residencial'
+        description: 'Plataformas a coletar'
         required: true
         type: choice
         options:
+          - shopify,nuvemshop
           - shopify
+          - nuvemshop
           - vtex
-        default: shopify
+        default: shopify,nuvemshop
       marca:
         description: 'Coletar só uma marca (vazio = todas da plataforma)'
         required: false

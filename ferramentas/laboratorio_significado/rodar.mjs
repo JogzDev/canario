@@ -50,6 +50,7 @@ const MIGRATIONS = [
   'supabase/migrations/20260917211000_a58_significado_da_capa_e_busca_editorial.sql',
 ];
 const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicacao.sql';
+const A61 = 'supabase/migrations/20260923131757_a61_troca_de_catalogo.sql';
 const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
@@ -193,6 +194,11 @@ async function main() {
       path.join(AQUI, 'assercoes.sql'),
       path.join(REPOSITORIO, A60),
       path.join(AQUI, 'assercoes_a60.sql'),
+      // A A61 troca tres passos que a fixture base deixa como talos. A
+      // fixture dela acrescenta so o que as versoes reais leem.
+      path.join(AQUI, 'fixture_a61.sql'),
+      path.join(REPOSITORIO, A61),
+      path.join(AQUI, 'assercoes_a61.sql'),
     ];
     cliente.on('notice', aviso => {
       if (aviso.message) console.log(aviso.message);

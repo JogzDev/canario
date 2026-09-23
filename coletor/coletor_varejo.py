@@ -25,6 +25,7 @@ import re
 import sys
 import threading
 import time
+import unicodedata
 import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
@@ -234,7 +235,7 @@ def _url_publica_animale(url, dominio, tipo):
     return partes.path == SITEMAP_ANIMALE
 
 
-def _url_ascii_animale(url):
+def _url_ascii(url):
     """Codifica caracteres Unicode do caminho sem alterar host ou estrutura.
 
     O sitemap real da Animale inclui pelo menos um slug com U+00A0 literal.
@@ -255,13 +256,19 @@ def _locs_xml(corpo):
             if no.tag.rsplit("}", 1)[-1] == "loc" and str(no.text or "").strip()]
 
 
-def _politica_publica_animale(dominio, estado):
-    """Carrega robots uma vez e falha fechada neste caminho excepcional."""
+def _politica_publica(dominio, estado, loja):
+    """Carrega robots uma vez e falha fechada nos caminhos por pagina publica.
+
+    A funcao generica `robots_permite` escolhe o padrao permissivo da RFC
+    quando o robots nao responde. Serve para uma API documentada; para varrer
+    paginas uma a uma, sem robots legivel nao ha autorizacao.
+    """
     url = "https://{}/robots.txt".format(dominio)
     codigo, corpo, final, _ = buscar_varejo(url, dominio)
     if (codigo != 200 or not corpo
             or urllib.parse.urlsplit(final).hostname != dominio):
-        estado["erro"] = "robots publico da Animale indisponivel (http {})".format(codigo)
+        estado["erro"] = "robots publico da {} indisponivel (http {})".format(
+            loja, codigo)
         return None
     parser = RobotFileParser()
     parser.set_url(url)
@@ -271,7 +278,7 @@ def _politica_publica_animale(dominio, estado):
 
 def animale_urls_publicas(dominio, estado):
     """Descobre paginas de produto autorizadas, sem usar endpoints privados."""
-    politica = _politica_publica_animale(dominio, estado)
+    politica = _politica_publica(dominio, estado, "Animale")
     if politica is None:
         return []
 
@@ -320,7 +327,7 @@ def animale_urls_publicas(dominio, estado):
             if not _url_publica_animale(url_crua, dominio, "produto"):
                 estado["erro"] = "URL de produto da Animale saiu do caminho autorizado"
                 return []
-            url = _url_ascii_animale(url_crua)
+            url = _url_ascii(url_crua)
             if not _url_publica_animale(url, dominio, "produto"):
                 estado["erro"] = "URL normalizada da Animale saiu do caminho autorizado"
                 return []
@@ -462,6 +469,358 @@ def animale_sitemap_todos(dominio, estado):
     estado["fora_do_recorte"] = fora
     if falhas:
         estado["erro"] = ("{} paginas publicas da Animale falharam; exemplos: {}"
+                          .format(len(falhas), "; ".join(falhas[:3])))
+
+
+# ---------------------------------------------------------------------------
+# Nuvemshop: sitemap publicado pela loja + pagina publica de cada produto
+# ---------------------------------------------------------------------------
+#
+# A Amaro saiu da Shopify para a Nuvemshop entre 22 e 23/09/2026: o
+# `/products.json` passou a responder 404 e o robots.txt declara a nova
+# plataforma. A Nuvemshop nao tem API publica de catalogo. O caminho que a
+# propria loja publica e o mesmo que ja usamos na Animale: o sitemap lista os
+# produtos e a pagina de cada um traz, no atributo que o tema usa para trocar
+# de variacao, preco, preco "de" e disponibilidade de TODAS as variacoes --
+# inclusive as esgotadas. A vitrine /produtos/ nao serve: ela esconde o que
+# esgotou, e sem ver o esgotado nao existe reposicao.
+
+SITEMAP_NUVEMSHOP = "/sitemap.xml"
+#: Os <loc> do sitemap usam o endereco da hospedagem, nao o dominio da loja
+#: (em 23/09: amaro32.lojavirtualnuvem.com.br). O caminho e o mesmo nos dois.
+HOST_NUVEMSHOP = ".lojavirtualnuvem.com.br"
+_CAMINHO_PRODUTO_NUVEMSHOP = re.compile(r"/produtos/[^/?#]+/")
+#: O sitemap de 23/09 tinha exatamente 500 enderecos, e nao sabemos se a
+#: plataforma corta ali. Ele lista paginas, depois produtos, depois
+#: categorias: enquanto o ultimo endereco for categoria, os produtos vieram
+#: inteiros. Com 500 ou mais e produto no fim, pode ter cortado.
+TETO_SITEMAP_NUVEMSHOP = 500
+#: Onde a espera pelo valor da composicao termina sem achar nada.
+_FIM_DA_COMPOSICAO = frozenset({"div", "ul", "ol", "li", "table", "section"})
+_TAGS_VAZIAS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
+    "meta", "param", "source", "track", "wbr"})
+
+
+def _url_produto_nuvemshop(url, dominio):
+    """Endereco canonico do produto no dominio da loja, ou None.
+
+    Levanta ValueError quando o caminho e de produto mas o host nao e nem a
+    loja nem a hospedagem da Nuvemshop: ai o sitemap saiu do que a loja
+    autorizou, e a coleta falha fechada em vez de seguir o endereco.
+    """
+    partes = urllib.parse.urlsplit(str(url or ""))
+    if not _CAMINHO_PRODUTO_NUVEMSHOP.fullmatch(partes.path):
+        return None
+    host = (partes.hostname or "").lower()
+    if (partes.scheme != "https" or partes.query or partes.fragment
+            or (host != dominio and not host.endswith(HOST_NUVEMSHOP))):
+        raise ValueError("produto fora do caminho autorizado: {}".format(url))
+    return "https://{}{}".format(dominio, partes.path)
+
+
+def nuvemshop_urls(dominio, estado):
+    """Paginas de produto declaradas no sitemap e permitidas pelo robots."""
+    politica = _politica_publica(dominio, estado, "Nuvemshop")
+    if politica is None:
+        return []
+    indice = "https://{}{}".format(dominio, SITEMAP_NUVEMSHOP)
+    if not politica.can_fetch(UA, indice):
+        estado["erro"] = "robots proibe o sitemap publico"
+        return []
+    codigo, corpo, final, _ = buscar_varejo(indice, dominio)
+    if (codigo != 200 or not corpo
+            or urllib.parse.urlsplit(final).hostname != dominio):
+        estado["erro"] = "sitemap da Nuvemshop respondeu http {}".format(codigo)
+        return []
+    try:
+        raiz = ET.fromstring(corpo)
+        locs = _locs_xml(corpo)
+    except ET.ParseError:
+        estado["erro"] = "sitemap da Nuvemshop devolveu XML invalido"
+        return []
+    if raiz.tag.rsplit("}", 1)[-1] != "urlset":
+        # Um indice de sitemaps muda o caminho. Seguir sem ler seria coletar
+        # uma fracao do catalogo com cara de catalogo inteiro.
+        estado["erro"] = "sitemap da Nuvemshop virou indice; caminho nao suportado"
+        return []
+
+    urls, vistos, bloqueadas = [], set(), 0
+    ultimo_e_produto = False
+    for loc in locs:
+        try:
+            url = _url_produto_nuvemshop(_url_ascii(loc), dominio)
+        except ValueError as erro:
+            estado["erro"] = str(erro)
+            return []
+        ultimo_e_produto = url is not None
+        if url is None:
+            continue
+        if not politica.can_fetch(UA, url):
+            bloqueadas += 1
+            continue
+        if url not in vistos:
+            vistos.add(url)
+            urls.append(url)
+    if len(locs) >= TETO_SITEMAP_NUVEMSHOP and ultimo_e_produto:
+        estado["truncou"] = True
+    estado["urls_no_sitemap"] = len(urls)
+    estado["urls_bloqueadas_robots"] = bloqueadas
+    if not urls:
+        estado["erro"] = "sitemap da Nuvemshop nao declarou produtos"
+    return urls
+
+
+class _PaginaNuvemshop(HTMLParser):
+    """Le da pagina so o produto principal.
+
+    A pagina de um produto traz tambem os produtos relacionados, cada um com
+    o mesmo atributo `data-variants` e o mesmo formulario de variacoes. O
+    principal e o conteiner `#single-product`; os rotulos das variacoes so
+    contam dentro dele, e o JSON-LD do documento da nome e categoria.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.principais = 0
+        self.variantes = None
+        self.rotulos = {}
+        self.ldjson = []
+        self.id_declarado = None
+        self.composicao = None
+        self._profundidade = 0
+        self._rotulo = None
+        self._negrito = None
+        self._esperando_composicao = False
+        self._texto = []
+        self._script = None
+        self._partes = []
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        atributos = {str(k).lower(): v or "" for k, v in attrs}
+        if self._profundidade:
+            if tag not in _TAGS_VAZIAS:
+                self._profundidade += 1
+            alvo = re.fullmatch(r"variation_(\d+)", atributos.get("for", ""))
+            if tag == "label" and alvo:
+                self._rotulo = int(alvo.group(1))
+                self._texto = []
+            if tag in ("strong", "b") and self.composicao is None:
+                self._negrito = []
+        elif atributos.get("id") == "single-product" and tag not in _TAGS_VAZIAS:
+            self.principais += 1
+            self.variantes = atributos.get("data-variants")
+            self._profundidade = 1
+        if tag in _FIM_DA_COMPOSICAO:
+            self._esperando_composicao = False
+        if tag == "script":
+            tipo = atributos.get("type", "").lower()
+            self._script = "ld" if tipo == "application/ld+json" else "js"
+            self._partes = []
+
+    def handle_startendtag(self, tag, attrs):
+        # `<div/>` nao abre nada: so conta como abertura o que tem fechamento.
+        self.handle_starttag(tag, attrs)
+        if self._profundidade and tag.lower() not in _TAGS_VAZIAS:
+            self._profundidade -= 1
+
+    def handle_data(self, data):
+        if self._rotulo is not None:
+            self._texto.append(data)
+        if self._negrito is not None:
+            self._negrito.append(data)
+        elif self._esperando_composicao and data.strip():
+            self.composicao = " ".join(data.split())
+            self._esperando_composicao = False
+        if self._script:
+            self._partes.append(data)
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in ("strong", "b") and self._negrito is not None:
+            # A descricao da Amaro escreve a composicao de tres jeitos:
+            # `<strong>Composição</strong><br>100% LINHO`, o valor noutro
+            # negrito no paragrafo seguinte, ou `<strong>Composição:</strong>`
+            # com o valor dentro. O rotulo sozinho abre a espera; bloco novo
+            # (div, lista, tabela) encerra sem valor.
+            texto = " ".join("".join(self._negrito).split())
+            titulo, _, resto = texto.partition(":")
+            if _sem_acento(titulo).casefold() == "composicao":
+                if resto.strip():
+                    self.composicao = resto.strip()
+                else:
+                    self._esperando_composicao = True
+            elif self._esperando_composicao and texto:
+                self.composicao = texto
+                self._esperando_composicao = False
+            self._negrito = None
+        if tag in _FIM_DA_COMPOSICAO:
+            self._esperando_composicao = False
+        if tag == "label" and self._rotulo is not None:
+            self.rotulos.setdefault(self._rotulo, " ".join(
+                "".join(self._texto).split()))
+            self._rotulo = None
+        if self._profundidade and tag not in _TAGS_VAZIAS:
+            self._profundidade -= 1
+        if tag == "script" and self._script:
+            texto = "".join(self._partes)
+            if self._script == "ld":
+                try:
+                    self.ldjson.append(json.loads(texto))
+                except ValueError:
+                    pass
+            elif self.id_declarado is None:
+                achado = re.search(r"LS\.product\s*=\s*\{\s*id\s*:\s*(\d+)", texto)
+                if achado:
+                    self.id_declarado = achado.group(1)
+            self._script = None
+            self._partes = []
+
+
+def _sem_acento(texto):
+    return "".join(c for c in unicodedata.normalize("NFD", texto)
+                   if unicodedata.category(c) != "Mn")
+
+
+def _ld_do_tipo(documentos, tipo):
+    for doc in documentos:
+        for item in (doc if isinstance(doc, list) else [doc]):
+            if isinstance(item, dict) and item.get("@type") == tipo:
+                return item
+    return {}
+
+
+def _categoria_nuvemshop(pagina, url):
+    """Trilha da pagina sem o Inicio e sem o proprio produto.
+
+    Vira `/MODA/ROUPAS/BLUSAS & CAMISAS/`, o mesmo formato da categoria VTEX.
+    A trilha inteira importa: e nela que aparece MODA INFANTIL ou MODA
+    MASCULINA, e o motor tira do segmento por esse texto.
+    """
+    itens = (pagina.get("breadcrumb") or {}).get("itemListElement") or []
+    itens = sorted((i for i in itens if isinstance(i, dict)),
+                   key=lambda i: i.get("position") or 0)
+    caminho_produto = urllib.parse.urlsplit(url).path
+    nomes = []
+    for posicao, item in enumerate(itens):
+        destino = urllib.parse.urlsplit(str(item.get("item") or "")).path
+        if (posicao == 0 or destino == caminho_produto
+                or _CAMINHO_PRODUTO_NUVEMSHOP.fullmatch(destino)):
+            continue
+        nome = " ".join(str(item.get("name") or "").split())
+        if nome:
+            nomes.append(nome)
+    return "/{}/".format("/".join(nomes)) if nomes else None
+
+
+def nuvemshop_extrair_pagina(corpo, url):
+    """Converte a pagina publica no mesmo contrato dos outros extratores."""
+    leitor = _PaginaNuvemshop()
+    leitor.feed(corpo)
+    leitor.close()
+    if leitor.principais != 1 or not leitor.variantes:
+        raise ValueError("pagina sem um unico #single-product com variacoes")
+    try:
+        variantes = json.loads(leitor.variantes)
+    except ValueError:
+        raise ValueError("variacoes ilegiveis no #single-product")
+    if not isinstance(variantes, list) or not variantes:
+        raise ValueError("#single-product sem variacoes")
+    ids = {str(v.get("product_id") or "") for v in variantes
+           if isinstance(v, dict)}
+    if len(ids) != 1 or "" in ids:
+        raise ValueError("variacoes de mais de um produto no #single-product")
+    id_externo = ids.pop()
+    if leitor.id_declarado and leitor.id_declarado != id_externo:
+        raise ValueError("LS.product diverge das variacoes")
+
+    # `for="variation_N"` rotula a opcao `option{N-1}` das variacoes. A
+    # primeira opcao da Amaro e COR, como era na Shopify (ver
+    # `_posicao_do_tamanho`): pegar a primeira as cegas grava cor como tamanho.
+    posicao = None
+    for numero, texto in sorted(leitor.rotulos.items()):
+        nome = texto.casefold()
+        if "tam" in nome or nome in ("size", "talla", "talle"):
+            posicao = numero - 1
+            break
+
+    grade = {}
+    preco_atual = preco_original = None
+    preco_fallback = preco_original_fallback = None
+    ofertavel = False
+    for v in variantes:
+        disponivel = v.get("available") is True
+        ofertavel = ofertavel or disponivel
+        tamanho = v.get("option{}".format(posicao)) if posicao is not None else None
+        if tamanho is not None and str(tamanho).strip():
+            chave = str(tamanho).strip()
+            grade[chave] = grade.get(chave, False) or disponivel
+        preco = _numero_positivo(v.get("price_number"))
+        original = _numero_positivo(v.get("compare_at_price_number")) or preco
+        if preco and preco_fallback is None:
+            preco_fallback, preco_original_fallback = preco, original
+        if preco and disponivel and preco_atual is None:
+            preco_atual, preco_original = preco, original
+    if preco_atual is None:
+        preco_atual, preco_original = preco_fallback, preco_original_fallback
+
+    produto = _ld_do_tipo(leitor.ldjson, "Product")
+    pagina = _ld_do_tipo(leitor.ldjson, "WebPage")
+    imagem = produto.get("image")
+    if isinstance(imagem, list):
+        imagem = imagem[0] if imagem else None
+    if not imagem:
+        imagem = next((v.get("image_url") for v in variantes
+                       if v.get("image_url")), None)
+    if isinstance(imagem, str) and imagem.startswith("//"):
+        imagem = "https:" + imagem
+    return {
+        "id_externo": id_externo,
+        "url": url,
+        "titulo": produto.get("name") or pagina.get("name"),
+        "categoria_site": _categoria_nuvemshop(pagina, url),
+        "imagem_url": imagem or None,
+        "preco_original": preco_original,
+        "preco_atual": preco_atual,
+        "composicao": leitor.composicao,
+        "grade_por_tamanho": grade or None,
+        "ofertavel": ofertavel,
+    }
+
+
+def nuvemshop_todos(dominio, estado):
+    """Le cada produto declarado no sitemap, uma pagina por vez."""
+    urls = nuvemshop_urls(dominio, estado)
+    if estado.get("erro"):
+        return
+    falhas = []
+    lidas = ausentes = 0
+    for url in urls:
+        codigo, corpo, final, _ = buscar_varejo(url, dominio)
+        if codigo == 404:
+            # Saiu da loja entre a geracao do sitemap e a nossa visita. A
+            # ausencia fica registrada; quem decide saida de linha e o motor.
+            ausentes += 1
+            continue
+        try:
+            final = _url_produto_nuvemshop(final, dominio) if codigo == 200 else None
+        except ValueError:
+            final = None
+        if codigo != 200 or not corpo or final is None:
+            falhas.append("{}:http{}".format(url, codigo))
+            continue
+        try:
+            produto = nuvemshop_extrair_pagina(corpo, final)
+        except ValueError as erro:
+            falhas.append("{}:{}".format(url, erro))
+            continue
+        lidas += 1
+        yield produto
+    estado["paginas_lidas"] = lidas
+    estado["paginas_ausentes"] = ausentes
+    if falhas:
+        estado["erro"] = ("{} paginas publicas falharam; exemplos: {}"
                           .format(len(falhas), "; ".join(falhas[:3])))
 
 
@@ -1303,6 +1662,18 @@ def coletar_marca(marca, hoje, cache_deps):
             buffer.append(d)
             if len(buffer) >= BLOCO_ESCRITA:
                 descarregar()
+    elif plataforma == "nuvemshop":
+        estado["origem"] = "sitemap + paginas publicas"
+        for d in nuvemshop_todos(dominio, estado):
+            if not d["id_externo"] or d["id_externo"] in vistos:
+                continue
+            vistos.add(d["id_externo"])
+            visitados += 1
+            buffer.append(d)
+            if len(buffer) >= BLOCO_ESCRITA:
+                descarregar()
+        # O sitemap e a declaracao do catalogo feita pela propria loja.
+        estado["declarado"] = estado.get("urls_no_sitemap") or 0
     else:
         return None
     descarregar()
@@ -1331,6 +1702,8 @@ def coletar_marca(marca, hoje, cache_deps):
         alertas["urls_bloqueadas_robots"] = estado.get("urls_bloqueadas_robots")
         alertas["paginas_lidas"] = estado.get("paginas_lidas")
         alertas["fora_do_recorte"] = estado.get("fora_do_recorte")
+        if "paginas_ausentes" in estado:
+            alertas["paginas_ausentes"] = estado["paginas_ausentes"]
     if plataforma == "vtex" and declarado and visitados < declarado * 0.98:
         alertas["divergencia"] = {
             "paginavel": declarado, "coletado": visitados,
@@ -1787,10 +2160,16 @@ def main():
     materializar_anexos.materializar_termos()
 
     filtro = os.environ.get("COLETA_MARCA", "").strip()  # particionar por marca se preciso
-    # COLETA_PLATAFORMA existe porque Amaro e PatBo (Shopify) devolvem 429 do
-    # datacenter do GitHub e 200 do IP residencial. Assim o runner do Mac cuida
-    # so delas, e o datacenter cuida das VTEX, que responde bem.
-    plataforma = os.environ.get("COLETA_PLATAFORMA", "").strip().lower()
+    # COLETA_PLATAFORMA separa as pernas do pipeline: a VTEX numa, as lojas
+    # leves (Shopify e Nuvemshop) noutra, com metricas e recuperacao proprias.
+    # Aceita lista separada por virgula.
+    plataformas = {p.strip() for p in os.environ.get(
+        "COLETA_PLATAFORMA", "").lower().split(",") if p.strip()}
+    desconhecidas = plataformas - set(materializar_anexos.PLATAFORMAS)
+    if desconhecidas:
+        print("ERRO: plataforma desconhecida em COLETA_PLATAFORMA: {}".format(
+            ", ".join(sorted(desconhecidas))), file=sys.stderr)
+        return 1
     # O pipeline principal continua congelado no segmento brasileiro. Outros
     # paineis rodam em execucoes próprias e não alteram nem o portão nem a
     # composição da série v1.
@@ -1798,13 +2177,14 @@ def main():
                 or SEGMENTO_PRINCIPAL)
     marcas = supabase_rest.selecionar(
         "marcas",
-        "?status_teste=in.(vtex,shopify)&ativa=eq.true&segmento=eq.{}"
+        "?status_teste=in.({})&ativa=eq.true&segmento=eq.{}"
         "&select=id,nome,dominio,plataforma,segmento&order=nome".format(
+            ",".join(materializar_anexos.PLATAFORMAS),
             urllib.parse.quote(segmento)))
     if filtro:
         marcas = [m for m in marcas if m["nome"].lower() == filtro.lower()]
-    if plataforma:
-        marcas = [m for m in marcas if (m["plataforma"] or "").lower() == plataforma]
+    if plataformas:
+        marcas = [m for m in marcas if (m["plataforma"] or "").lower() in plataformas]
     print("Marcas a coletar: {} no segmento {}{}".format(
         len(marcas), segmento,
         " (filtro: {})".format(filtro) if filtro else ""), file=sys.stderr)
