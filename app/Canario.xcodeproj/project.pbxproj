@@ -14,6 +14,7 @@
 		B8DC71B90B4F61DE87FDD414 /* IconeDoTermo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */; };
 		90BBD61C629F5B7911560245 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D66F3CA4E705669DD73EF9B /* Tokens.swift */; };
 		B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */; };
+		C0163530C1212D289FF8F886 /* AcervoDeDemonstracao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB44580A2E0828D013B3C40 /* AcervoDeDemonstracao.swift */; };
 		66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */; };
 		2A6115DD0E062A1927CE28D7 /* ArmarioVisivel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01A6B94C758ACD8D58F75D6 /* ArmarioVisivel.swift */; };
 		D4191FF2A6872250AA14D5B6 /* Autenticacao.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675971567B5B02959B863354 /* Autenticacao.swift */; };
@@ -79,6 +80,7 @@
 		CD9B3BF2EA4B257D5BA3C095 /* IconeDoTermo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconeDoTermo.swift"; sourceTree = "<group>"; };
 		7D66F3CA4E705669DD73EF9B /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tokens.swift"; sourceTree = "<group>"; };
 		8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AbasDoApp.swift"; sourceTree = "<group>"; };
+		9CB44580A2E0828D013B3C40 /* AcervoDeDemonstracao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AcervoDeDemonstracao.swift"; sourceTree = "<group>"; };
 		98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnalisesDeHoje.swift"; sourceTree = "<group>"; };
 		B01A6B94C758ACD8D58F75D6 /* ArmarioVisivel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ArmarioVisivel.swift"; sourceTree = "<group>"; };
 		675971567B5B02959B863354 /* Autenticacao.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Autenticacao.swift"; sourceTree = "<group>"; };
@@ -221,6 +223,7 @@
 			isa = PBXGroup;
 			children = (
 				8CBEE9789A4E079C158F9D30 /* AbasDoApp.swift */,
+				9CB44580A2E0828D013B3C40 /* AcervoDeDemonstracao.swift */,
 				98C790D636014E00E57AA2A5 /* AnalisesDeHoje.swift */,
 				B01A6B94C758ACD8D58F75D6 /* ArmarioVisivel.swift */,
 				675971567B5B02959B863354 /* Autenticacao.swift */,
@@ -374,6 +377,7 @@
 				B8DC71B90B4F61DE87FDD414 /* IconeDoTermo.swift in Sources */,
 				90BBD61C629F5B7911560245 /* Tokens.swift in Sources */,
 				B58739BE5CF4B83CBC6466D9 /* AbasDoApp.swift in Sources */,
+				C0163530C1212D289FF8F886 /* AcervoDeDemonstracao.swift in Sources */,
 				66D6D277D49A312FEDA6EB31 /* AnalisesDeHoje.swift in Sources */,
 				2A6115DD0E062A1927CE28D7 /* ArmarioVisivel.swift in Sources */,
 				D4191FF2A6872250AA14D5B6 /* Autenticacao.swift in Sources */,
@@ -452,6 +456,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 			};
 			name = "Debug";
 		};

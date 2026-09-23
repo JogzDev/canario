@@ -428,7 +428,11 @@ def main():
                                    'ENABLE_TESTABILITY = YES;',
                                    'GCC_OPTIMIZATION_LEVEL = 0;',
                                    'ONLY_ACTIVE_ARCH = YES;',
-                                   'SWIFT_OPTIMIZATION_LEVEL = "-Onone";']),
+                                   'SWIFT_OPTIMIZATION_LEVEL = "-Onone";',
+                                   # O padrão do Xcode, que o gerador não
+                                   # emitia: sem isto `#if DEBUG` nunca compila,
+                                   # e ferramenta de desenvolvimento some calada.
+                                   'SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;']),
         (cfg_proj_release, "Release", ['DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";',
                                        'ENABLE_NS_ASSERTIONS = NO;',
                                        'SWIFT_COMPILATION_MODE = wholemodule;',

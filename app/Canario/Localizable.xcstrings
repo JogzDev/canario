@@ -3086,6 +3086,23 @@
         }
       }
     },
+    "Delete from Archive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Delete from Archive"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagar do Acervo"
+          }
+        }
+      }
+    },
     "Delete from Closet": {
       "localizations": {
         "pt-BR": {
@@ -3450,6 +3467,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preencha os dados"
+          }
+        }
+      }
+    },
+    "Filter Archive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Filter Archive"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtrar Acervo"
           }
         }
       }
@@ -5027,6 +5061,23 @@
         }
       }
     },
+    "Nothing in the Archive yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Nothing in the Archive yet"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nada no Acervo ainda"
+          }
+        }
+      }
+    },
     "of what is on sale": {
       "extractionState": "manual",
       "localizations": {
@@ -5351,6 +5402,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Escolha até %lld, em ordem — a primeira é a cor principal."
+          }
+        }
+      }
+    },
+    "Pieces you bring through the Studio stay here, yours or references, ready to open again and compare.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pieces you bring through the Studio stay here, yours or references, ready to open again and compare."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As peças que você traz pelo Estúdio ficam aqui, suas ou de referência, prontas para abrir de novo e comparar."
           }
         }
       }

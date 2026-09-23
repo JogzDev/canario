@@ -44,11 +44,11 @@ final class CanarioUITests: XCTestCase {
         let app = aplicativo(argumentos: ["-CanarioAbrirCloset"])
         app.launch()
 
-        XCTAssertTrue(app.navigationBars["Closet"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Archive"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Account"].exists)
-        XCTAssertTrue(app.buttons["Filter Closet"].exists)
-        app.buttons["Filter Closet"].tap()
-        XCTAssertTrue(app.navigationBars["Filter Closet"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["Filter Archive"].exists)
+        app.buttons["Filter Archive"].tap()
+        XCTAssertTrue(app.navigationBars["Filter Archive"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.switches["Favorites only"].exists)
         XCTAssertTrue(app.buttons["Done"].exists)
     }

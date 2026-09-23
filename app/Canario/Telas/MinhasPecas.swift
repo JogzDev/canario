@@ -57,8 +57,8 @@ struct MinhasPecas: View {
                     grade
                 }
             }
-            .background(Tokens.Cor.ceu.ignoresSafeArea())
-            .navigationTitle("Closet")
+            .papelDaEdicao()
+            .navigationTitle(Text("Archive"))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if let alternarMenu {
@@ -70,7 +70,7 @@ struct MinhasPecas: View {
                         Button {
                             filtrando = true
                         } label: {
-                            Label("Filter Closet", systemImage: temFiltro
+                            Label("Filter Archive", systemImage: temFiltro
                                   ? "line.3.horizontal.decrease.circle.fill"
                                   : "line.3.horizontal.decrease.circle")
                         }
@@ -110,18 +110,15 @@ struct MinhasPecas: View {
     }
 
     private var vazio: some View {
-        VStack(spacing: Tokens.Espaco.m) {
-            Image(systemName: "tshirt")
-                .font(.system(size: 42))
-                .foregroundStyle(Tokens.Cor.acao)
-            Text("No clothes yet").font(Tokens.Fonte.secao)
-            Text("Clothes you save from Studio stay here, ready to open again and compare.")
-                .font(Tokens.Fonte.corpo)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+        ContentUnavailableView {
+            Label {
+                Text("Nothing in the Archive yet").font(Edicao.Tipo.secao)
+            } icon: {
+                Image(systemName: "hanger").foregroundStyle(Edicao.bordo)
+            }
+        } description: {
+            Text("Pieces you bring through the Studio stay here, yours or references, ready to open again and compare.")
         }
-        .padding(Tokens.Espaco.g)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var grade: some View {
@@ -337,7 +334,7 @@ private struct FiltroDoCloset: View {
                     }
                 }
             }
-            .navigationTitle("Filter Closet")
+            .navigationTitle("Filter Archive")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -537,14 +534,14 @@ private struct CartaoDoArmario: View {
                             Text(peca.temApelido
                                  ? peca.nome(comRotulos: rotulos)
                                  : (categoria ?? "Clothing"))
-                                .font(Tokens.Fonte.corpo.weight(.semibold))
+                                .font(Edicao.Tipo.nome)
                                 .foregroundStyle(.primary)
                                 .lineLimit(2)
                             if let detalhe = peca.detalhe(
                                 comRotulos: rotulos,
                                 semOsTermos: peca.temApelido ? [] : idsDeCategoria) {
                                 Text(detalhe)
-                                    .font(Tokens.Fonte.miudo)
+                                    .font(.footnote)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(2)
                             }
@@ -556,12 +553,12 @@ private struct CartaoDoArmario: View {
 
             }
 
-            Divider().opacity(0.32)
+            CosturaDaEdicao().padding(.top, 6)
             HStack(spacing: 4) {
                 Button(action: aoFavoritar) {
                     Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
+                        .foregroundStyle((peca.favorita ?? false) ? Edicao.bordo : .primary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
@@ -587,7 +584,7 @@ private struct CartaoDoArmario: View {
                         Label("Rename", systemImage: "pencil")
                     }
                     Button(role: .destructive, action: aoApagar) {
-                        Label("Delete from Closet", systemImage: "trash")
+                        Label("Delete from Archive", systemImage: "trash")
                     }
                 } label: {
                     Group {
@@ -596,7 +593,7 @@ private struct CartaoDoArmario: View {
                         } else {
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(Tokens.Cor.noite)
+                                .foregroundStyle(.primary)
                         }
                     }
                     .frame(width: 44, height: 44)
@@ -612,7 +609,12 @@ private struct CartaoDoArmario: View {
         // pelo nome/detalhe, que já são limitados a duas linhas.
         .frame(height: 268, alignment: .top)
         .clipped()
-        .background { Vidro(raio: 24) }
+        .background {
+            RoundedRectangle(cornerRadius: Edicao.raio, style: .continuous)
+                .fill(Edicao.cartao)
+                .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
+        }
+        .overlay { CosturaDaFolha() }
         .contextMenu {
             Button(action: aoFavoritar) {
                 Label((peca.favorita ?? false) ? "Unfavorite" : "Favorite",
@@ -622,7 +624,7 @@ private struct CartaoDoArmario: View {
                 Label("Rename", systemImage: "pencil")
             }
             Button(role: .destructive, action: aoApagar) {
-                Label("Delete from Closet", systemImage: "trash")
+                Label("Delete from Archive", systemImage: "trash")
             }
         }
         .photosPicker(isPresented: $escolhendoFoto,
@@ -643,7 +645,7 @@ private struct CartaoDoArmario: View {
             }
             miniatura = await MiniaturaParaTela.imagem(de: dados)
         }
-        .accessibilityAction(named: "Delete from Closet", aoApagar)
+        .accessibilityAction(named: "Delete from Archive", aoApagar)
     }
 }
 

@@ -139,7 +139,9 @@ struct Raiz: View {
         // continuar claro no resto, que é a decisão de produto de sempre.
         // Esta semana segue o sistema, claro ou escuro. As telas que ainda não
         // passaram para a v4 continuam claras até serem refeitas.
-        .preferredColorScheme(aba == .dados || aba == .adicionar ? nil : .light)
+        // Busca ainda é a tela da 1.x com a primeira fatia da v4; fica clara
+        // até ser refeita. As outras três já seguem o sistema.
+        .preferredColorScheme(aba == .buscar ? .light : nil)
         // O menu não pode ultrapassar a borda e voltar. `.snappy` tem mola:
         // na gravação a 60 fps, a aresta chegou a 849 px e recuou para 845 px,
         // revelando por alguns quadros uma faixa do céu atrás do painel. O
@@ -157,6 +159,13 @@ struct Raiz: View {
         .fullScreenCover(item: $itemDoMenu) { item in
             TelaDoMenu(entrada: item.entrada)
         }
+        #if DEBUG
+        .task {
+            if await AcervoDeDemonstracao.semearSePedido() {
+                NotificationCenter.default.post(name: .closetFoiSincronizado, object: nil)
+            }
+        }
+        #endif
         .sheet(item: $links.recebida) { peca in
             ReceberPecaCompartilhada(peca: peca)
                 .presentationDetents([.medium])

@@ -43,6 +43,9 @@ struct Estudio: View {
             ImportarPeca(termos: termos) { carregarPecas() }
                 .preferredColorScheme(.light)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .closetFoiSincronizado)) { _ in
+            carregarPecas()
+        }
         .task {
             carregarPecas()
             if ProcessInfo.processInfo.arguments.contains("-CanarioUITestImportacao")
@@ -193,8 +196,13 @@ struct ParedeDoAcervo: View {
         .background(Edicao.parede)
         // O título e a barra ficam sobre papel: a parede nasce do caderno.
         .overlay(alignment: .top) {
-            LinearGradient(colors: [Edicao.papel, Edicao.papel.opacity(0)], startPoint: .top, endPoint: .bottom)
-                .frame(height: 220)
+            // Papel cheio até abaixo do título grande, e só então a parede
+            // aparece: o título nunca fica sobre uma foto.
+            LinearGradient(stops: [.init(color: Edicao.papel, location: 0),
+                                   .init(color: Edicao.papel, location: 0.55),
+                                   .init(color: Edicao.papel.opacity(0), location: 1)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 330)
         }
         .overlay(alignment: .bottom) {
             LinearGradient(colors: [Edicao.papel.opacity(0), Edicao.papel], startPoint: .top, endPoint: .bottom)
