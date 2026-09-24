@@ -58,6 +58,8 @@ jobs:
         run: "$PY coletor/teste_nuvemshop.py"
       - name: Benchmark de foto le o contrato do app
         run: "$PY ferramentas/benchmark_foto/teste_contrato.py"
+      - name: Leitura especifica recusa frase sem prova
+        run: npx -y deno@2.9.6 test supabase/functions/ler-peca/leitura_test.ts
       - name: Planejamento diario do Google Trends
         run: "$PY coletor/teste_trends.py"
       - name: Fila da perna de busca (§19)
