@@ -20,8 +20,8 @@
    redesenho final, logo nova e decisão entre Garbo/Filo. Só então gerar
    capturas, Archive, TestFlight e validar o binário distribuído.
 5. A direção internacional continua manual. O GitHub não inventa uma agenda
-   para ela. O catálogo candidato mantém a agenda de segunda e quinta em
-   executor gerenciado.
+   para ela. O catálogo candidato passou de segunda e quinta para **todo dia**
+   em 23/09, porque o JP decidiu promovê-lo (ver a virada abaixo).
 
 Janela acumulada: **2/7 marcos válidos**. Em 19/09, a baseline publicou a API
 e mediu **365.534.005 bytes (73,1%)** depois da coleta isolada, saúde e motor.
@@ -250,11 +250,29 @@ dele — A48, A49 e o redeploy — estão feitas.
   de `feminino_casual_br`. Isso é divergência entre a regra escrita e o código,
   medida em 26/08, e vale independentemente de qualquer marca nova.
   **Não corrigir agora:** o conserto muda todo share histórico, que é operação
-  de virada com recomputação.
-- **Promover as 13 candidatas ao painel medido.** Elas já entregam o benefício
-  visível (similares com foto, preço e marca) de dentro de
-  `catalogo_candidato_br`, sem tocar em índice, raridade ou z-score. Promovê-las
-  exige virada explícita, recomputação e folga de banco — nesta ordem.
+  de virada com recomputação. **Decidido pelo JP em 23/09: vai junto com a
+  promoção das candidatas**, porque as duas mexem no denominador e juntas a
+  série quebra uma vez só.
+- **Promover as 13 candidatas ao painel medido — decidido pelo JP em 23/09:
+  "o mais cedo possível".** Elas já entregam o benefício visível (similares
+  com foto, preço e marca) de dentro de `catalogo_candidato_br`, sem tocar em
+  índice, raridade ou z-score. O caminho, nesta ordem:
+  1. Coleta diária desde 24/09, ainda como candidatas. A trava de publicação
+     (A60) exige toda marca do painel vista todo dia; promover antes congelaria
+     o painel, como a Animale semanal em 22/09.
+  2. Quatorze dias de histórico diário, para a curva e a série não receberem
+     marca com janela vazia. De 03 a 14/09 a coleta delas falhou quatro vezes
+     seguidas (banco a 96,9%), e só a de 21/09 passou.
+  3. A virada por volta de 08/10: segmento trocado, `papel = grupo` fora do
+     mercado externo, recomputação e quebra declarada, sem eventos falsos
+     (o mesmo cuidado da A61).
+  **Banco:** 73,5% em 23/09, mas baixo por acaso, porque faltam as fotos de
+  03 a 17/09. Com a retenção de 21 dias cheia de novo, o feminino volta a uns
+  79%; com as 13 diárias, uns 81% do banco, perto dos 85% do dia verde.
+  Medir nos três primeiros ciclos e parar a coleta diária se a projeção passar
+  de 85%. Marca nova (Loja 3, Mondepars, Carmim) custa bytes de verdade e não
+  cabe antes de liberar espaço; `series_semanais` (1,4 KB por linha) é o
+  primeiro lugar a olhar.
 - **Suéter/quarter zip cai em duas categorias diferentes.** Medido em 26/08:
   1.281 títulos dizem suéter/pullover e eles se dividem em **819 dentro de
   `casaco_jaqueta` e 361 dentro de `blusa_top`** — a mesma peça em duas

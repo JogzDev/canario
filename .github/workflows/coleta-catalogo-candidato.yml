@@ -1,13 +1,19 @@
 name: Coleta do catalogo candidato brasileiro
 
 # Amplia o universo de similares sem alterar a coorte estatistica congelada.
-# E manual enquanto a primeira carga prova o consumo real de cada marca. Cada
-# perna reutiliza o mesmo portao de capacidade das coletas regulares.
+# Cada perna reutiliza o mesmo portao de capacidade das coletas regulares.
 on:
   schedule:
-    # Segunda e quinta, 08:35 BRT. O intervalo maximo de quatro dias mantém o
-    # avistamento dentro dos sete dias mesmo se uma execução isolada falhar.
-    - cron: '35 11 * * 1,4'
+    # Todo dia, 08:35 BRT, depois do pipeline diario (03:17 BRT).
+    #
+    # Era segunda e quinta ate 23/09/2026. Diario porque o JP decidiu promover
+    # as 13 candidatas ao painel medido, e a promocao precisa de duas coisas
+    # que duas coletas por semana nao dao: a trava de publicacao (A60) exige
+    # toda marca do painel vista todo dia, e a curva e a serie precisam de
+    # historico diario antes da virada, senao a marca entra com janela vazia e
+    # o salto no share parece mercado. Enquanto for candidata, nada disso toca
+    # o painel. Custo medido no primeiro ciclo: ver PENDENCIAS.md.
+    - cron: '35 11 * * *'
   workflow_dispatch:
     inputs:
       plataforma:
