@@ -608,7 +608,7 @@ def main():
     # A64: a leitura especifica procura pecas pelo nome. Sinal vindo da Luna
     # e texto escapado, nunca padrao; so peca ativa do painel publicado conta;
     # so a Edge Function (chave de servico) chama.
-    caminho_a64 = next((c for c in arquivos if "_a64_" in c), None)
+    caminho_a64 = next((c for c in arquivos if "_a64_candidatas_e_fatos_da_leitura" in c), None)
     if caminho_a64 is None:
         return falhar("A64 (candidatas e fatos da leitura) sumiu")
     a64 = open(caminho_a64, encoding="utf-8").read()
