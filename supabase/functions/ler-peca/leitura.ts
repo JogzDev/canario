@@ -278,3 +278,28 @@ export function pedidoLimpo(texto: unknown): string {
   if (typeof texto !== "string") return "";
   return texto.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
 }
+
+// ---------------------------------------------------------------------------
+// 6. Quando nada é a peça: a frase sai dos números, sem IA
+// ---------------------------------------------------------------------------
+
+/** Leitura vazia não pode ser silêncio: diz que não há e o que há perto. */
+export function fraseSemPeca(nome: string, parecidas: { marca?: string }[]): Frase {
+  const marcas = new Set(parecidas.map((p) => p.marca).filter(Boolean)).size;
+  if (!parecidas.length) {
+    return { texto: `Nenhuma peça do painel é ${artigo(nome)} ${nome} agora.`, fatos: [] };
+  }
+  const pecas = parecidas.length === 1 ? "1 peça" : `${parecidas.length} peças`;
+  const deMarcas = marcas === 1 ? "de 1 marca" : `de ${marcas} marcas`;
+  return {
+    texto: `Nenhuma peça do painel é ${artigo(nome)} ${nome} agora. As mais próximas são ${pecas} ${deMarcas}.`,
+    fatos: ["parecidas"],
+  };
+}
+
+function artigo(nome: string): string {
+  // Peças do painel: saia, calça, camisa, jaqueta, blusa... são femininas; vestido,
+  // macacão, short, casaco, blazer, cardigã, top são masculinos.
+  return /^(vestido|macac|short|casaco|blazer|cardig|top|colete|body|sueter|trench|kimono|quimono)/i
+    .test(nome.trim()) ? "um" : "uma";
+}

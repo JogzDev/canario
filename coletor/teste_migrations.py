@@ -626,6 +626,13 @@ def main():
             "revoke all on function public.candidatas_da_leitura(text[], text[], text[], text[], integer) from public, anon, authenticated;"):
         if trecho not in candidatas:
             return falhar("candidatas finais da leitura nao garantem: {}".format(trecho))
+    caminho_a67 = next((c for c in arquivos if "_a67_" in c), None)
+    a67 = open(caminho_a67, encoding="utf-8").read() if caminho_a67 else ""
+    for trecho in ("check (chave ~ '^[0-9a-f]{64}$')",
+                   "revoke all on public.interpretacoes_da_leitura from public, anon, authenticated;",
+                   "where criado_em < now() - interval '7 days'"):
+        if trecho not in a67:
+            return falhar("interpretacao estavel da leitura nao garante: {}".format(trecho))
 
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")

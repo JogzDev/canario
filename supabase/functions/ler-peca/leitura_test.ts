@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { numerosDoFato, numerosDoTexto, pedidoLimpo, semCitacao, termosDeBusca, verificarFrases } from "./leitura.ts";
+import { fraseSemPeca, numerosDoFato, numerosDoTexto, pedidoLimpo, semCitacao, termosDeBusca, verificarFrases } from "./leitura.ts";
 
 const fatos = {
   total: { id: "total", pecas: 18, marcas: 5, provas: [101, 102, 103] },
@@ -58,4 +58,10 @@ Deno.test("citação escrita dentro da frase sai antes da verificação", () => 
   assertEquals(semCitacao("Duas marcas (Amaro e C&A) vendem."), "Duas marcas (Amaro e C&A) vendem.");
   const { aceitas } = verificarFrases([{ texto: "São 18 peças. (fatos: total)", fatos: ["total"] }], fatos);
   assertEquals(aceitas[0].texto, "São 18 peças.");
+});
+
+Deno.test("sem peça confirmada, a leitura diz isso e o que há perto", () => {
+  assertEquals(fraseSemPeca("jaqueta napoleão", [{ marca: "Amaro" }, { marca: "Amaro" }, { marca: "Amaro" }]).texto,
+    "Nenhuma peça do painel é uma jaqueta napoleão agora. As mais próximas são 3 peças de 1 marca.");
+  assertEquals(fraseSemPeca("vestido de noiva", []).texto, "Nenhuma peça do painel é um vestido de noiva agora.");
 });

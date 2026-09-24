@@ -1,6 +1,6 @@
 import { withSupabase } from "npm:@supabase/server@1.7.0";
 import {
-  ATRIBUTOS, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase,
+  ATRIBUTOS, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase, fraseSemPeca,
   INTERPRETACAO, MODELOS, pedidoLimpo, REDACAO, termosDeBusca, VERIFICACAO, VERSAO,
   verificarFrases,
 } from "./leitura.ts";
@@ -107,8 +107,20 @@ export default {
       refinamento ? `Chosen follow-up answer: <answer>${refinamento}</answer>` : "",
       analiseSegura ? `Visual analysis of the person's photo: ${JSON.stringify(analiseSegura)}` : "",
     ].filter(Boolean).join("\n");
-    const interpretacao = await luna(apiKey, "interpretacao_da_peca", INTERPRETACAO, entrada, esquemaDaInterpretacao());
-    if (!interpretacao) return response(502, { error: "reading_provider_error" });
+    // O mesmo pedido lê o mesmo significado por sete dias (A67): a Luna não
+    // escolhe sinais diferentes a cada vez. Só o hash do pedido fica guardado.
+    const chave = await sha256(`${VERSAO}:${entrada}`);
+    const { data: guardada } = await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
+      .select("interpretacao").eq("chave", chave)
+      .gte("criado_em", new Date(Date.now() - 7 * 864e5).toISOString()).maybeSingle();
+    let interpretacao: { dados: any; modelo: string } | null = guardada
+      ? { dados: guardada.interpretacao, modelo: "guardada" } : null;
+    if (!interpretacao) {
+      interpretacao = await luna(apiKey, "interpretacao_da_peca", INTERPRETACAO, entrada, esquemaDaInterpretacao());
+      if (!interpretacao) return response(502, { error: "reading_provider_error" });
+      await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
+        .upsert({ chave, interpretacao: interpretacao.dados, versao: VERSAO, criado_em: new Date().toISOString() });
+    }
     const peca = interpretacao.dados;
     if (peca.fora_de_escopo) {
       return response(200, { versao: VERSAO, fora_de_escopo: true, nome: peca.nome, explicacao: peca.explicacao });
@@ -136,7 +148,8 @@ export default {
       busca: { categorias, atributos, sinais, vetos, candidatas: candidatas?.total ?? 0 } as Record<string, unknown>,
     };
     if (!lista.length) {
-      return response(200, { ...base, frases: [], fatos: {}, pecas: [], modelo: interpretacao.modelo });
+      return response(200, { ...base, frases: [fraseSemPeca(peca.nome, [])], fatos: {}, pecas: [],
+                             parecidas: [], modelo: interpretacao.modelo });
     }
 
     // 3. Verificação pelo título. Id que a Luna invente não entra: o esquema
@@ -164,7 +177,11 @@ export default {
     const vizinhas = lista.filter((p) => parecidas.includes(Number(p.id))).slice(0, MAXIMO_DE_PARECIDAS)
       .map((p) => ({ ...p, veredito: "parecida" }));
     if (!lidas.length) {
-      return response(200, { ...base, frases: [], fatos: {}, pecas: [], parecidas: vizinhas, modelo: verificacao.modelo });
+      const fatosDasParecidas = vizinhas.length
+        ? { parecidas: { id: "parecidas", pecas: vizinhas.length, provas: vizinhas.map((p) => p.id) } }
+        : {};
+      return response(200, { ...base, frases: [fraseSemPeca(peca.nome, vizinhas)], fatos: fatosDasParecidas,
+                             pecas: [], parecidas: vizinhas, modelo: verificacao.modelo });
     }
 
     // 4. Fatos das verificadas (A64).
