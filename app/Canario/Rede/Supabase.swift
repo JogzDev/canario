@@ -416,6 +416,56 @@ actor Supabase {
     }
 }
 
+extension Supabase {
+    /// A leitura específica (Edge Function `ler-peca`).
+    ///
+    /// Uma chamada só, sem segunda chance: cada leitura custa três chamadas da
+    /// Luna e conta no limite diário de análise. O servidor leva de 15 a 40 s
+    /// (interpretar, buscar, verificar, calcular, escrever), por isso o prazo
+    /// é bem maior que o das outras chamadas.
+    func lerPeca(texto: String?, refinamento: String? = nil,
+                 analise: [String: String]? = nil, preco: Double? = nil) async throws -> LeituraEspecifica {
+        guard configurado, Self.analiseRemotaHabilitada else { throw Falha.semConfiguracao }
+        var corpo: [String: Any] = [:]
+        if let texto, !texto.isEmpty { corpo["texto"] = String(texto.prefix(200)) }
+        if let refinamento, !refinamento.isEmpty { corpo["refinamento"] = String(refinamento.prefix(200)) }
+        if let analise { corpo["analise"] = analise }
+        if let preco, preco > 0 { corpo["preco_da_pessoa"] = preco }
+
+        var req = URLRequest(url: url.appendingPathComponent("functions/v1/ler-peca"),
+                             cachePolicy: .reloadIgnoringLocalCacheData,
+                             timeoutInterval: 90)
+        req.httpMethod = "POST"
+        req.setValue(chave, forHTTPHeaderField: "apikey")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.httpBody = try JSONSerialization.data(withJSONObject: corpo)
+
+        let dados: Data
+        do {
+            let (recebidos, resposta) = try await sessao.data(for: req)
+            let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
+            guard (200..<300).contains(codigo) else {
+                throw Falha.resposta(codigo, String(data: recebidos, encoding: .utf8) ?? "")
+            }
+            dados = recebidos
+        } catch let erro as URLError where erro.code == .cancelled {
+            throw CancellationError()
+        } catch let falha as Falha {
+            throw falha
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw Falha.rede(error)
+        }
+        do {
+            return try LeituraEspecifica.decodificar(dados)
+        } catch {
+            throw Falha.resposta(502, "reading_contract_failed")
+        }
+    }
+}
+
 /// Taxonomia com cache local stale-while-revalidate.
 ///
 /// Ela muda raramente, era buscada novamente por Home, Closet, Search e

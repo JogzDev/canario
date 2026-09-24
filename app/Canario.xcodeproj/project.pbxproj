@@ -31,6 +31,7 @@
 		36FB9A621C32550D8CC52E7B /* ImprensaDeTeste.swift in Sources */ = {isa = PBXBuildFile; fileRef = B767765632F0BFDE20F1FAFD /* ImprensaDeTeste.swift */; };
 		D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
+		0A52080A6CF90DF66C695DF9 /* LeituraEspecifica.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A2B2F86300A3C6AE88A60F /* LeituraEspecifica.swift */; };
 		BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */; };
 		EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */; };
 		4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F27BA6A40F86F6D498DA29B /* Modelos.swift */; };
@@ -56,6 +57,7 @@
 		DC37C7741A0382B77AA8FBB7 /* Estudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C907E72BEC39A2F73517842 /* Estudio.swift */; };
 		DAB23DD224A87622E3973229 /* Explorar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */; };
 		2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */; };
+		288E43DEAA26533491C1C152 /* LeituraDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240DCFBA09795A2088880A69 /* LeituraDaPeca.swift */; };
 		863FB40FC2F188CC70B77180 /* MenuLateral.swift in Sources */ = {isa = PBXBuildFile; fileRef = D218A4BC208516935FDD7992 /* MenuLateral.swift */; };
 		F74BC81F9574E9A897EBDA2E /* MinhasPecas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918F2D159B1FA7F2DB11A730 /* MinhasPecas.swift */; };
 		60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */; };
@@ -97,6 +99,7 @@
 		B767765632F0BFDE20F1FAFD /* ImprensaDeTeste.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImprensaDeTeste.swift"; sourceTree = "<group>"; };
 		14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IntencaoDoToque.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
+		F3A2B2F86300A3C6AE88A60F /* LeituraEspecifica.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeituraEspecifica.swift"; sourceTree = "<group>"; };
 		A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MascaraDeInstancia.swift"; sourceTree = "<group>"; };
 		8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MiniaturaLocal.swift"; sourceTree = "<group>"; };
 		6F27BA6A40F86F6D498DA29B /* Modelos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Modelos.swift"; sourceTree = "<group>"; };
@@ -122,6 +125,7 @@
 		3C907E72BEC39A2F73517842 /* Estudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Estudio.swift"; sourceTree = "<group>"; };
 		3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Explorar.swift"; sourceTree = "<group>"; };
 		330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImportarPeca.swift"; sourceTree = "<group>"; };
+		240DCFBA09795A2088880A69 /* LeituraDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeituraDaPeca.swift"; sourceTree = "<group>"; };
 		D218A4BC208516935FDD7992 /* MenuLateral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MenuLateral.swift"; sourceTree = "<group>"; };
 		918F2D159B1FA7F2DB11A730 /* MinhasPecas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MinhasPecas.swift"; sourceTree = "<group>"; };
 		7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RelatorioDaPeca.swift"; sourceTree = "<group>"; };
@@ -240,6 +244,7 @@
 				B767765632F0BFDE20F1FAFD /* ImprensaDeTeste.swift */,
 				14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
+				F3A2B2F86300A3C6AE88A60F /* LeituraEspecifica.swift */,
 				A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */,
 				8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */,
 				6F27BA6A40F86F6D498DA29B /* Modelos.swift */,
@@ -272,6 +277,7 @@
 				3C907E72BEC39A2F73517842 /* Estudio.swift */,
 				3F41FFF9C3501CB4F9CA7C7A /* Explorar.swift */,
 				330A5FC2D5BD085DED44EC0A /* ImportarPeca.swift */,
+				240DCFBA09795A2088880A69 /* LeituraDaPeca.swift */,
 				D218A4BC208516935FDD7992 /* MenuLateral.swift */,
 				918F2D159B1FA7F2DB11A730 /* MinhasPecas.swift */,
 				7F8D8E42E9F1C5EFD21BC0A4 /* RelatorioDaPeca.swift */,
@@ -394,6 +400,7 @@
 				36FB9A621C32550D8CC52E7B /* ImprensaDeTeste.swift in Sources */,
 				D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
+				0A52080A6CF90DF66C695DF9 /* LeituraEspecifica.swift in Sources */,
 				BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */,
 				EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */,
 				4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */,
@@ -419,6 +426,7 @@
 				DC37C7741A0382B77AA8FBB7 /* Estudio.swift in Sources */,
 				DAB23DD224A87622E3973229 /* Explorar.swift in Sources */,
 				2589A828531FB7909F6729E6 /* ImportarPeca.swift in Sources */,
+				288E43DEAA26533491C1C152 /* LeituraDaPeca.swift in Sources */,
 				863FB40FC2F188CC70B77180 /* MenuLateral.swift in Sources */,
 				F74BC81F9574E9A897EBDA2E /* MinhasPecas.swift in Sources */,
 				60F3BBCC237CDBFC4244DC48 /* RelatorioDaPeca.swift in Sources */,

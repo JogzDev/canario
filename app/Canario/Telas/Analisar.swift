@@ -16,6 +16,9 @@ struct Analisar: View {
     /// A58: as matérias que contêm a expressão literal, e não a tradução dela.
     @State private var imprensa: ReferenciaEditorial.Resposta?
     @State private var imprensaFalhou = false
+    /// 2.0: o pedido que abre a leitura específica. Só ao confirmar: cada
+    /// leitura custa três chamadas da Luna e conta no limite diário.
+    @State private var leituraPedida: String?
 
     /// A tradução vive em `Traducao`, que é testada. Aqui a tela só consome.
     private var casados: [Termo] {
@@ -53,6 +56,10 @@ struct Analisar: View {
             .searchable(text: textoDaBusca,
                         placement: .navigationBarDrawer(displayMode: .always),
                         prompt: "Search by garment, fabric, cut, pattern…")
+            .onSubmit(of: .search) { lerAgora() }
+            .navigationDestination(item: $leituraPedida) { pedido in
+                LeituraDaPeca(pedido: pedido)
+            }
             .toolbar {
                 if let aoFechar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -61,7 +68,18 @@ struct Analisar: View {
                 }
             }
         }
-        .task { await carregar() }
+        .task {
+            await carregar()
+            #if DEBUG
+            // Captura e teste: `-CanarioLeituraPedida "jaqueta napoleão"` abre a
+            // leitura direto, sem digitar.
+            let argumentos = ProcessInfo.processInfo.arguments
+            if let i = argumentos.firstIndex(of: "-CanarioLeituraPedida"), i + 1 < argumentos.count {
+                texto = argumentos[i + 1]
+                lerAgora()
+            }
+            #endif
+        }
         // Reroda a cada mudança do texto, com uma pausa antes: a busca é um
         // `ilike` sobre 172 mil títulos, e disparar uma por tecla digitada
         // gastaria o banco para jogar 19 respostas fora.
@@ -79,11 +97,10 @@ struct Analisar: View {
         } else if casados.isEmpty {
             ScrollView {
                 VStack(spacing: 20) {
-                    CoberturaInsuficiente(
-                        titulo: "This term isn't tracked yet",
-                        explicacao: "“\(texto)” is outside the reviewed vocabulary, so there is no market reading for it yet.",
-                        oQueTem: frase("Try: \(sugestoes.joined(separator: ", "))")
-                    )
+                    // 2.0: fora do vocabulário não é mais "sem leitura". A
+                    // leitura específica acha a peça pelo nome e pela
+                    // construção -- o caso da Napoleon Jacket.
+                    botaoDaLeitura
                     // O vocabulário não cobre a expressão, mas a imprensa pode
                     // tê-la escrito -- foi exatamente o caso de "Napoleon
                     // Jacket". Este é o lugar onde a busca deixa de terminar
@@ -95,6 +112,7 @@ struct Analisar: View {
         } else {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
+                    botaoDaLeitura
                     if descreveUmaPeca {
                         cardPecaCombinada
                     }
@@ -108,6 +126,50 @@ struct Analisar: View {
                 .padding(.top, 12)
                 .padding(.bottom, 32)
             }
+        }
+    }
+
+    private var textoLimpo: String {
+        texto.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func lerAgora() {
+        guard Supabase.analiseRemotaHabilitada, textoLimpo.count >= 3 else { return }
+        leituraPedida = String(textoLimpo.prefix(200))
+    }
+
+    @ViewBuilder
+    private var botaoDaLeitura: some View {
+        if Supabase.analiseRemotaHabilitada, textoLimpo.count >= 3 {
+            Button(action: lerAgora) {
+                HStack(spacing: 12) {
+                    Image(systemName: "text.magnifyingglass")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Edicao.caneta)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(frase("Read “\(textoLimpo)” in the panel"))
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("The reading finds the pieces, checks each one and shows the proof.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    SetaDaLinha()
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background {
+                    RoundedRectangle(cornerRadius: Edicao.raio, style: .continuous)
+                        .fill(Edicao.cartao)
+                }
+                .overlay { CosturaDaFolha() }
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text("Opens a reading with the pieces that prove each sentence"))
         }
     }
 

@@ -91,6 +91,9 @@ struct Raiz: View {
             return .dados
         }
         let argumentos = ProcessInfo.processInfo.arguments
+        if argumentos.contains("-CanarioLeituraPedida") {
+            return .buscar
+        }
         if argumentos.contains("-CanarioAbrirEstudio")
             || argumentos.contains("-CanarioUITestImportacao")
             || argumentos.contains("-CanarioUITestDetalhes") {
