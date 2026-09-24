@@ -10,7 +10,7 @@ entra se acrescentar um sinal definido, reproduzível e permitido.
 |---|---|---|---|
 | Google Trends API (alpha) | interesse de busca | inscrição já enviada; acesso limitado e sem SLA de aprovação | **Manter como substituição prioritária**, mas não pode sustentar a operação hoje |
 | Pinterest Trends API | intenção/inspiração visual e busca dentro do Pinterest | conta Business, app aprovado e OAuth; até 50 tendências atuais; confirmar `trends_read` no token concedido | **Melhor candidata nova; fazer piloto após aprovação Trial** |
-| Guardian Open Platform | publicação editorial, filtrável por seção/tag | chave gratuita para uso acadêmico/não comercial, 500 chamadas/dia | **Viável como veículo editorial**, não como confirmação de demanda |
+| Guardian Open Platform | publicação editorial, filtrável por seção/tag | chave gratuita para uso não comercial, 500 chamadas/dia | **Recusado em 23/09/2026**: os termos proíbem mineração para tendências e guardar conteúdo por mais de 24 horas (ver §3) |
 | YouTube Data API | publicação/engajamento em vídeo | chave Google; 100 buscas/dia por padrão | **Não priorizar**: muita capacidade de busca, pouco controle de relevância e viés de creator |
 | Wikimedia Analytics | visualizações de verbetes | aberta, sem chave | **Não usar no índice de moda**: mede consulta enciclopédica, não procura por produto/estilo |
 | TikTok Research API | conteúdo e métricas públicas | no Brasil, elegibilidade oficial está limitada a pesquisa de segurança juvenil por instituição acadêmica/sem fins lucrativos | **Inviável para o Canário** |
@@ -69,9 +69,28 @@ RSS: título, URL, veículo e data — nunca o texto integral.
 - Acesso: <https://open-platform.theguardian.com/access/>
 - Documentação: <https://open-platform.theguardian.com/documentation/>
 
-Decisão: **tecnicamente viável**, mas sua inclusão em `veiculos.csv` ainda
-precisa da aprovação nominal do JP (§14). Ele melhora diversidade editorial
-internacional; não mede intenção de compra e não deve ganhar peso de busca.
+Decisão de 13/08: **tecnicamente viável**, com inclusão em `veiculos.csv`
+dependendo da aprovação nominal do JP (§14).
+
+**Recusado em 23/09/2026, depois de ler os termos inteiros** (Open Platform
+Terms, lidos na página oficial nessa data). O JP aprovou a entrada e perguntou
+se a publicação na App Store mudava algo. A App Store não é o problema.
+O problema é o que o editorial faz:
+
+- os termos proíbem usar o conteúdo, a API ou a rede digital do Guardian
+  (que inclui os RSS) para fins de "text and data aggregation, analysis or
+  mining", inclusive para gerar padrões e tendências, e para fins de IA. A
+  perna editorial é exatamente isso: conta matérias por termo e semana para
+  achar tendência, e a Luna lê o resultado;
+- os termos exigem apagar ou renovar todo conteúdo obtido a cada 24 horas. A
+  série editorial guarda título, URL, veículo e data por semanas;
+- o tier gratuito é só para uso não comercial. O comercial é negociado caso
+  a caso, mas não resolve os dois pontos acima, que valem para qualquer tier.
+
+Não entra nem pela API nem pelos RSS do Guardian. Outra fonte editorial
+internacional precisa ter os termos lidos com a mesma pergunta, antes da
+sonda técnica: **pode contar para achar tendência, e pode guardar a contagem
+por meses?**
 
 ## 4. Fontes rejeitadas ou apenas exploratórias
 
