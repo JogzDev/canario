@@ -126,7 +126,7 @@ export default {
     const base = {
       versao: VERSAO, nome: peca.nome, explicacao: peca.explicacao, perguntas: peca.perguntas ?? [],
       painel_observado_em: candidatas?.painel_observado_em ?? null,
-      busca: { categorias: peca.categorias, sinais, vetos, candidatas: candidatas?.total ?? 0 },
+      busca: { categorias: peca.categorias, sinais, vetos, candidatas: candidatas?.total ?? 0 } as Record<string, unknown>,
     };
     if (!lista.length) {
       return response(200, { ...base, frases: [], fatos: {}, pecas: [], modelo: interpretacao.modelo });
@@ -145,6 +145,9 @@ export default {
     for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
     const confirmadas = ids.filter((id) => veredito.get(id) === "e_a_peca");
     const parecidas = ids.filter((id) => veredito.get(id) === "parecida");
+    Object.assign(base.busca, {
+      verificadas: ids.length, confirmadas: confirmadas.length, parecidas: parecidas.length,
+    });
     // Com menos de três iguais, a leitura olha também as parecidas, e diz isso.
     const ampliada = confirmadas.length < MINIMO_PARA_LER;
     const lidas = ampliada ? [...confirmadas, ...parecidas] : confirmadas;

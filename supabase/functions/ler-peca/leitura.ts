@@ -111,7 +111,9 @@ export const REDACAO = `Write the reading of one garment for a Brazilian fashion
 Brazilian Portuguese, using ONLY the facts JSON.
 
 - 3 to 6 short sentences, journalistic and direct. Each sentence lists the ids
-  of the facts it uses.
+  of the facts it uses in "fatos" -- never inside "texto": no fact ids, no
+  "(fatos: ...)", no sources in parentheses. The app shows the proof itself.
+- Do not repeat the same number in consecutive sentences.
 - Every number you write must appear in the facts you cite. Do not compute new
   numbers: use "de_cada_100" as given, never derive other percentages.
 - No dates. The app shows the panel date next to the reading.
@@ -187,10 +189,16 @@ function sustentado(numero: number, permitidos: number[]): boolean {
     (p >= 50 && Number.isInteger(numero) && Math.abs(p - numero) < 1));
 }
 
+/** Tira do texto a citação que a Luna às vezes escreve: "(fatos: total)". */
+export function semCitacao(texto: string): string {
+  return texto.replace(/\s*[([](?:fatos?|facts?|fonte)\b[^)\]]*[)\]]/gi, "").replace(/\s+([.,;:])/g, "$1").trim();
+}
+
 /** Separa as frases sustentadas das que citam fato inexistente ou número sem fato. */
-export function verificarFrases(frases: Frase[], fatos: Record<string, Fato>) {
+export function verificarFrases(frasesBrutas: Frase[], fatos: Record<string, Fato>) {
   const aceitas: Frase[] = [];
   const recusadas: { frase: Frase; motivo: string }[] = [];
+  const frases = frasesBrutas.map((f) => ({ ...f, texto: semCitacao(f.texto ?? "") }));
   for (const frase of frases) {
     const citados = frase.fatos.filter((id) => fatos[id]);
     if (!frase.texto.trim() || citados.length === 0 || citados.length !== frase.fatos.length) {

@@ -48,6 +48,10 @@ jobs:
                    "",
                    ((.frases // [])[] | "- " + .texto + "  _(" + (.fatos | join(", ")) + ")_"),
                    "",
+                   "Verificadas " + ((.busca.verificadas // 0) | tostring) + ": " + ((.busca.confirmadas // 0) | tostring)
+                     + " sao a peca, " + ((.busca.parecidas // 0) | tostring) + " parecidas",
+                   ((.pecas // [])[] | "  - " + .marca + " | " + .titulo + " | " + (.preco | tostring) + " | " + .veredito),
+                   "",
                    "Sinais: " + ((.busca.sinais // []) | join(", ")) + " · vetos: " + ((.busca.vetos // []) | join(", ")),
                    (if .error then "Erro: " + .error else empty end)' resposta.json
           } >> "$GITHUB_STEP_SUMMARY"
