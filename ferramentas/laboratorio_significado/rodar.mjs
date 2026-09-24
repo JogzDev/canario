@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Laboratório de significado: roda P24, A57, A58, A60, A61, A62 e A64 num
- * PostgreSQL 17.10 real, descartável, acessível somente pelo socket deste
- * processo. A A62 é provada também por mutação: cada regra dela é retirada
+ * Laboratório de significado: roda P24, A57, A58, A60, A61, A62 e as duas
+ * A64 (cobertura e leitura) num PostgreSQL 17.10 real, descartável,
+ * acessível somente pelo socket deste processo. A A62 é provada também por mutação: cada regra dela é retirada
  * por vez, e as asserções precisam reprovar todas as versões mutantes.
  *
  * POR QUE NÃO BASTA O PORTÃO DE TEXTO
@@ -54,7 +54,7 @@ const MIGRATIONS = [
 const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicacao.sql';
 const A61 = 'supabase/migrations/20260923131757_a61_troca_de_catalogo.sql';
 const A62 = 'supabase/migrations/20260923154011_a62_curva_so_com_produtos_ativos.sql';
-const A64 = 'supabase/migrations/20260924013645_a64_cobertura_espera_a_nuvemshop.sql';
+const A64 = 'supabase/migrations/20260924012854_a64_candidatas_e_fatos_da_leitura.sql';
 // O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
 // da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
 const ANTES_DA_A62 = [
@@ -85,6 +85,10 @@ const MUTACOES_A62 = [
     'where c.semana = semana_alvo', 'where false and c.semana = semana_alvo'],
   ['apaga também as semanas já publicadas', 'where c.semana = semana_alvo', 'where true'],
 ];
+// Duas migrations nasceram com o rótulo A64 na noite de 23/09. Esta é a da
+// cobertura de publicação; a `A64` acima é a da leitura específica.
+const COBERTURA_NUVEMSHOP =
+  'supabase/migrations/20260924013645_a64_cobertura_espera_a_nuvemshop.sql';
 const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
@@ -252,15 +256,6 @@ async function main() {
     };
     for (const arquivo of arquivos) await aplicar(arquivo);
 
-    // A62. O antes entra como função solta, não como migration: a P0 e a F4
-    // já estão no histórico de produção e não se reaplicam por inteiro.
-    await aplicar(path.join(AQUI, 'fixture_a62.sql'));
-    for (const [arquivo, nome] of ANTES_DA_A62) {
-      await cliente.query(await definicaoNaMigration(arquivo, nome));
-      console.log(`aplicado ${nome} de ${arquivo}`);
-    }
-    await aplicar(path.join(AQUI, 'linha_de_base_a62.sql'));
-
     // Uma prova só vale se reprova o defeito que diz pegar. `preparo` (uma
     // migration mutante, ou nada) e as asserções rodam numa transação desfeita
     // no fim, e só uma asserção (P0004) conta como reprovação: erro de
@@ -291,6 +286,25 @@ async function main() {
       }
     };
 
+    // A64 da cobertura. Sem ela, a regra da A60 deixa a marca da Nuvemshop
+    // fora da coorte: a asserção 59 tem de reprovar antes e passar depois.
+    const assercoesCobertura = await readFile(
+      path.join(AQUI, 'assercoes_cobertura_nuvemshop.sql'), 'utf8');
+    const antesDaCobertura = await exigirReprovacao(
+      'antes da cobertura com a Nuvemshop', null, assercoesCobertura);
+    console.log(`ok 59 antes: a cobertura da A60 ignora a Nuvemshop: ${antesDaCobertura}`);
+    await aplicar(path.join(REPOSITORIO, COBERTURA_NUVEMSHOP));
+    await aplicar(path.join(AQUI, 'assercoes_cobertura_nuvemshop.sql'));
+
+    // A62. O antes entra como função solta, não como migration: a P0 e a F4
+    // já estão no histórico de produção e não se reaplicam por inteiro.
+    await aplicar(path.join(AQUI, 'fixture_a62.sql'));
+    for (const [arquivo, nome] of ANTES_DA_A62) {
+      await cliente.query(await definicaoNaMigration(arquivo, nome));
+      console.log(`aplicado ${nome} de ${arquivo}`);
+    }
+    await aplicar(path.join(AQUI, 'linha_de_base_a62.sql'));
+
     // As mutações rodam ANTES da A62 verdadeira, cada uma sobre a semana que
     // a P0 deixou.
     const a62 = await readFile(path.join(REPOSITORIO, A62), 'utf8');
@@ -307,12 +321,9 @@ async function main() {
 
     await aplicar(path.join(REPOSITORIO, A62));
     await aplicar(path.join(AQUI, 'assercoes_a62.sql'));
-
-    // A64. Sem ela, a cobertura da A60 deixa a marca da Nuvemshop fora da
-    // coorte: a asserção 60 tem de reprovar antes e passar depois.
-    const assercoesA64 = await readFile(path.join(AQUI, 'assercoes_a64.sql'), 'utf8');
-    const antesDaA64 = await exigirReprovacao('antes da A64', null, assercoesA64);
-    console.log(`ok 59 antes da A64 a cobertura ignora a Nuvemshop: ${antesDaA64}`);
+    // A64: candidatas e fatos da leitura especifica, sobre o painel que a
+    // A62 deixou publicado.
+    await aplicar(path.join(AQUI, 'fixture_a64.sql'));
     await aplicar(path.join(REPOSITORIO, A64));
     await aplicar(path.join(AQUI, 'assercoes_a64.sql'));
     // A consulta de capacidade/cobertura também precisa executar de verdade.

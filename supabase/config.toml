@@ -20,6 +20,11 @@ otp_length = 8
 [functions.analisar-peca]
 verify_jwt = false
 
+# A leitura especifica valida a chave publica do app no proprio codigo
+# (`withSupabase({ auth: "publishable" })`), como a analise de foto.
+[functions.ler-peca]
+verify_jwt = false
+
 [functions.excluir-conta]
 verify_jwt = true
 
