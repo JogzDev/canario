@@ -2000,6 +2000,17 @@ def frase_de_cobertura(contagem):
     return "cobertura completa nas {} marcas".format(total)
 
 
+def marcas_esperadas(marcas, segmento):
+    """Marcas que o portao de saude cobra no dia: ativas, do segmento e de uma
+    plataforma que o coletor coleta. A lista e a mesma que decide a coleta
+    (`materializar_anexos.PLATAFORMAS`) e a da `cobertura_de_publicacao` no
+    SQL (A64): marca coletada e nao cobrada publica em silencio quando falha."""
+    return [m for m in marcas
+            if m.get("ativa")
+            and m.get("segmento") == segmento
+            and m.get("status_teste") in materializar_anexos.PLATAFORMAS]
+
+
 def metricas_varejo_ativas(atuais, nomes, marcas_ativas):
     """Mantem o relatorio do dia coerente com o escopo operacional atual."""
     ids_ativos = {m["id"] for m in marcas_ativas}
@@ -2026,10 +2037,7 @@ def renderizar_saude(hoje, fallback_varejo=None,
     inicio = hoje - timedelta(days=7)
     marcas = supabase_rest.selecionar(
         "marcas", "?select=id,nome,plataforma,status_teste,ativa,segmento&order=nome")
-    marcas_ativas = [m for m in marcas
-                     if m.get("ativa")
-                     and m.get("segmento") == segmento
-                     and m.get("status_teste") in ("vtex", "shopify")]
+    marcas_ativas = marcas_esperadas(marcas, segmento)
     nomes = {m["id"]: (m["nome"], m.get("plataforma") or "?") for m in marcas}
     registros = supabase_rest.selecionar(
         "saude", "?data=gte.{}&data=lte.{}&select=id,data,fonte,marca_id,"
