@@ -643,6 +643,10 @@ def main():
                    "where criado_em < now() - interval '7 days'"):
         if trecho not in a67:
             return falhar("interpretacao estavel da leitura nao garante: {}".format(trecho))
+    caminho_a68 = next((c for c in arquivos if "_a68_veredictos_da_leitura_estaveis" in c), None)
+    a68 = open(caminho_a68, encoding="utf-8").read() if caminho_a68 else ""
+    if "add column if not exists veredictos jsonb not null default '{}'::jsonb" not in a68:
+        return falhar("veredictos estaveis da leitura sumiram (A68)")
 
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")

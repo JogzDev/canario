@@ -111,7 +111,7 @@ export default {
     // escolhe sinais diferentes a cada vez. Só o hash do pedido fica guardado.
     const chave = await sha256(`${VERSAO}:${entrada}`);
     const { data: guardada } = await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
-      .select("interpretacao").eq("chave", chave)
+      .select("interpretacao, veredictos").eq("chave", chave)
       .gte("criado_em", new Date(Date.now() - 7 * 864e5).toISOString()).maybeSingle();
     let interpretacao: { dados: any; modelo: string } | null = guardada
       ? { dados: guardada.interpretacao, modelo: "guardada" } : null;
@@ -153,16 +153,26 @@ export default {
     }
 
     // 3. Verificação pelo título. Id que a Luna invente não entra: o esquema
-    // só aceita os ids das candidatas.
+    // só aceita os ids das candidatas. O veredito de cada peça fica guardado
+    // com a interpretação (A68): só peça nova passa de novo pelo verificador,
+    // e a mesma peça não muda de lado entre duas leituras.
     const ids = lista.map((p) => Number(p.id));
-    const verificacao = await luna(
-      apiKey, "verificacao_das_candidatas", VERIFICACAO,
-      JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao },
-                       candidatas: lista.map((p) => ({ id: p.id, titulo: p.titulo })) }),
-      esquemaDaVerificacao(ids));
-    if (!verificacao) return response(502, { error: "reading_provider_error" });
     const veredito = new Map<number, string>();
-    for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
+    for (const [id, v] of Object.entries(guardada?.veredictos ?? {})) veredito.set(Number(id), String(v));
+    const novas = lista.filter((p) => !veredito.has(Number(p.id)));
+    let modeloDaVerificacao = "guardada";
+    if (novas.length) {
+      const verificacao = await luna(
+        apiKey, "verificacao_das_candidatas", VERIFICACAO,
+        JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao },
+                         candidatas: novas.map((p) => ({ id: p.id, titulo: p.titulo })) }),
+        esquemaDaVerificacao(novas.map((p) => Number(p.id))));
+      if (!verificacao) return response(502, { error: "reading_provider_error" });
+      modeloDaVerificacao = verificacao.modelo;
+      for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
+      await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
+        .update({ veredictos: Object.fromEntries(veredito) }).eq("chave", chave);
+    }
     const confirmadas = ids.filter((id) => veredito.get(id) === "e_a_peca");
     const parecidas = ids.filter((id) => veredito.get(id) === "parecida");
     Object.assign(base.busca, {
@@ -181,7 +191,7 @@ export default {
         ? { parecidas: { id: "parecidas", pecas: vizinhas.length, provas: vizinhas.map((p) => p.id) } }
         : {};
       return response(200, { ...base, frases: [fraseSemPeca(peca.nome, vizinhas)], fatos: fatosDasParecidas,
-                             pecas: [], parecidas: vizinhas, modelo: verificacao.modelo });
+                             pecas: [], parecidas: vizinhas, modelo: modeloDaVerificacao });
     }
 
     // 4. Fatos das verificadas (A64).
