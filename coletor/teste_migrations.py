@@ -774,6 +774,31 @@ def main():
             return falhar("curva nao se limita a vitrine: {}".format(trecho))
     if "current_date" in curva:
         return falhar("curva ancora a base no calendario, nao no dado")
+    # A68: a curva mede a janela que observou. Medido em 23/09/2026, janela de
+    # 19 a 23/09: a regra antiga achava 1.614 quebras (4,92%); partindo da
+    # ultima foto ate o primeiro dia, 5.478 (6,13%). O laboratorio reprova
+    # oito mutacoes; aqui fica o texto de cada regra.
+    exigencias_janela = [
+        # Dias de coleta saudavel da marca, com a linha da A58/A60.
+        "from saude s",
+        "and not (l.alertas ?| array['truncou', 'faixas_truncadas'])",
+        "or l.visitados::numeric >= historico.media_positiva_7d * 0.30)",
+        # Marca com uma coleta so nao tem o que comparar.
+        "having max(data) > min(data)",
+        # Estado do inicio: a ultima foto ate o primeiro dia, de no maximo
+        # seis dias, de peca vista dali em diante.
+        "where s.data <= m.inicio",
+        "and s.data > m.inicio - 7",
+        "where ep.ultimo_avistamento_em >= mj.inicio",
+        # A tela declara a janela real, nao os 14 nominais.
+        "'janela_observada'",
+        "'dias', js.fim - js.inicio,",
+    ]
+    for trecho in exigencias_janela:
+        if trecho not in curva:
+            return falhar("curva nao mede a janela observada: {}".format(trecho))
+    if "first_value(t.value = 'true'::jsonb) over w" in curva:
+        return falhar("curva voltou a ler so as fotos de dentro da janela")
 
     if ("alter table public.motor_termos_stage set unlogged" not in estado_final
             or "alter table public.motor_produtos_stage set unlogged" not in estado_final):

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Laboratório de significado: roda P24, A57, A58, A60, A61, A62 e as duas
- * A64 (cobertura e leitura) num PostgreSQL 17.10 real, descartável,
- * acessível somente pelo socket deste processo. A A62 é provada também por mutação: cada regra dela é retirada
- * por vez, e as asserções precisam reprovar todas as versões mutantes.
+ * Laboratório de significado: roda P24, A57, A58, A60, A61, A62, as duas
+ * A64 (cobertura e leitura), A65, A66 e A68 num PostgreSQL 17.10 real,
+ * descartável, acessível somente pelo socket deste processo. A A62 e a A68
+ * são provadas também por mutação: cada regra delas é retirada por vez, e as
+ * asserções precisam reprovar todas as versões mutantes.
  *
  * POR QUE NÃO BASTA O PORTÃO DE TEXTO
  * ===================================
@@ -57,6 +58,7 @@ const A62 = 'supabase/migrations/20260923154011_a62_curva_so_com_produtos_ativos
 const A64 = 'supabase/migrations/20260924012854_a64_candidatas_e_fatos_da_leitura.sql';
 const A65 = 'supabase/migrations/20260924013846_a65_novidade_nao_e_estreia_de_catalogo.sql';
 const A66 = 'supabase/migrations/20260924014452_a66_atributos_da_taxonomia_na_leitura.sql';
+const A68 = 'supabase/migrations/20260924015133_a68_curva_mede_a_janela_observada.sql';
 // O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
 // da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
 const ANTES_DA_A62 = [
@@ -91,6 +93,26 @@ const MUTACOES_A62 = [
 // cobertura de publicação; a `A64` acima é a da leitura específica.
 const COBERTURA_NUVEMSHOP =
   'supabase/migrations/20260924013645_a64_cobertura_espera_a_nuvemshop.sql';
+// Cada mutação tira ou afrouxa UMA regra da A68. O `visitados > 0` não está
+// aqui: com histórico positivo nos sete dias, o piso de 30% já barra o dia
+// zerado, e sem histórico a marca não tem outro dia na janela. Fica por
+// paridade com a linha saudável da A60.
+const MUTACOES_A68 = [
+  ['início sem limite de idade da foto', 'and s.data > m.inicio - 7', 'and true'],
+  ['peça não vista no início também conta',
+    'where ep.ultimo_avistamento_em >= mj.inicio', 'where true'],
+  ['início estrito, antes do primeiro dia observado',
+    'where s.data <= m.inicio', 'where s.data < m.inicio'],
+  ['início pela foto mais recente da janela',
+    'where s.data <= m.inicio', 'where s.data <= m.fim'],
+  ['marca de uma coleta só ganha janela', '\n  having max(data) > min(data);', ';'],
+  ['coleta truncada conta como observação',
+    "and not (l.alertas ?| array['truncou', 'faixas_truncadas'])", 'and true'],
+  ['coleta parcial conta como observação',
+    'or l.visitados::numeric >= historico.media_positiva_7d * 0.30)', 'or true)'],
+  ['janela declarada nos 14 dias nominais',
+    "'dias', js.fim - js.inicio,", "'dias', janela_dias,"],
+];
 const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
@@ -334,6 +356,25 @@ async function main() {
     await aplicar(path.join(AQUI, 'fixture_a66.sql'));
     await aplicar(path.join(REPOSITORIO, A66));
     await aplicar(path.join(AQUI, 'assercoes_a66.sql'));
+
+    // A68: a curva mede a janela que observou. A fixture dá às marcas da A62
+    // os dias de coleta que as contas dela pedem; depois da A68 verdadeira, as
+    // asserções da A62 rodam de novo, inteiras: a base e a vitrine não mudam.
+    await aplicar(path.join(AQUI, 'fixture_a68.sql'));
+    const a68 = await readFile(path.join(REPOSITORIO, A68), 'utf8');
+    const assercoesA68 = await readFile(path.join(AQUI, 'assercoes_a68.sql'), 'utf8');
+    for (const [indice, [nome, trecho, troca]] of MUTACOES_A68.entries()) {
+      const ocorrencias = a68.split(trecho).length - 1;
+      if (ocorrencias !== 1) {
+        throw new Error(`mutação "${nome}": o trecho aparece ${ocorrencias} vezes na A68`);
+      }
+      const motivo = await exigirReprovacao(
+        `mutação "${nome}"`, a68.replace(trecho, () => troca), assercoesA68);
+      console.log(`ok ${86 + indice} mutação reprovada (${nome}): ${motivo}`);
+    }
+    await aplicar(path.join(REPOSITORIO, A68));
+    await aplicar(path.join(AQUI, 'assercoes_a68.sql'));
+    await aplicar(path.join(AQUI, 'assercoes_a62.sql'));
     // A consulta de capacidade/cobertura também precisa executar de verdade.
     // READ ONLY torna uma escrita acidental uma falha do laboratório.
     const diagnostico = await readFile(path.join(REPOSITORIO,
