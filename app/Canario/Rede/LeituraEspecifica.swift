@@ -100,3 +100,54 @@ struct LeituraEspecifica: Decodable {
         return saida
     }
 }
+
+/// O que se sabe de uma peça da pessoa, no vocabulário da análise de foto.
+///
+/// A peça do Acervo guarda os termos da taxonomia; a Edge Function entende a
+/// análise de foto (`category`, `pattern`, `colors`...). Os ids são os mesmos,
+/// então a tradução é só de formato -- e a Leitura da peça salva não precisa
+/// de foto nem de nova análise.
+struct DescricaoDaPeca: Sendable, Hashable {
+    var categoria: String?
+    var estampa: String?
+    var comprimento: String?
+    var silhueta: String?
+    var cores: [String] = []
+    var tecidos: [String] = []
+
+    static func dosTermos(_ ids: [String], em termos: [Termo]) -> DescricaoDaPeca {
+        let dimensao = Dictionary(termos.map { ($0.id, $0.dimensao) }, uniquingKeysWith: { a, _ in a })
+        var d = DescricaoDaPeca()
+        for id in ids {
+            switch dimensao[id] {
+            case "categoria": d.categoria = d.categoria ?? id
+            case "estampa": d.estampa = d.estampa ?? id
+            case "comprimento": d.comprimento = d.comprimento ?? id
+            case "silhueta": d.silhueta = d.silhueta ?? id
+            case "cor": if !d.cores.contains(id) { d.cores.append(id) }
+            case "tecido": if !d.tecidos.contains(id) { d.tecidos.append(id) }
+            default: continue
+            }
+        }
+        return d
+    }
+
+    /// O formato da análise de foto que a `ler-peca` aceita. Só os campos que
+    /// ela lê; o que a peça não tem sai como "not_visible" ou lista vazia.
+    var comoAnalise: [String: Any] {
+        [
+            "category": categoria ?? "not_visible",
+            "pattern": estampa ?? "not_visible",
+            "length": comprimento ?? "not_visible",
+            "silhouette": silhueta ?? "not_visible",
+            "colors": Array(cores.prefix(3)),
+            "fabrics": Array(tecidos.prefix(3)),
+            "additional_visual_attributes": [String](),
+        ]
+    }
+
+    var vazia: Bool {
+        categoria == nil && estampa == nil && comprimento == nil && silhueta == nil
+            && cores.isEmpty && tecidos.isEmpty
+    }
+}

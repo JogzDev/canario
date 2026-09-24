@@ -148,6 +148,15 @@ actor Supabase {
                 return frase("The analysis came back in a shape I do not accept, so I discarded it rather than guess. \(manual)")
             case "BOOT_ERROR":
                 return frase("The visual analysis service is not responding. \(manual)")
+            // Leitura específica (2.0): nada a ver com adicionar peça.
+            case "reading_provider_error", "reading_contract_failed":
+                return frase("The reading service did not answer this time. Try again in a moment.")
+            case "reading_without_signals":
+                return frase("I couldn't tell which garment you meant. Try describing it with its cut or detail.")
+            case "panel_unavailable":
+                return frase("The panel is unavailable right now. Try again in a few minutes.")
+            case "reading_not_configured":
+                return frase("The reading is off in this build.")
             default:
                 // Codigo desconhecido continua aparecendo -- some-lo esconderia
                 // um caso novo de quem pode consertar.
@@ -424,12 +433,12 @@ extension Supabase {
     /// (interpretar, buscar, verificar, calcular, escrever), por isso o prazo
     /// é bem maior que o das outras chamadas.
     func lerPeca(texto: String?, refinamento: String? = nil,
-                 analise: [String: String]? = nil, preco: Double? = nil) async throws -> LeituraEspecifica {
+                 descricao: DescricaoDaPeca? = nil, preco: Double? = nil) async throws -> LeituraEspecifica {
         guard configurado, Self.analiseRemotaHabilitada else { throw Falha.semConfiguracao }
         var corpo: [String: Any] = [:]
         if let texto, !texto.isEmpty { corpo["texto"] = String(texto.prefix(200)) }
         if let refinamento, !refinamento.isEmpty { corpo["refinamento"] = String(refinamento.prefix(200)) }
-        if let analise { corpo["analise"] = analise }
+        if let descricao, !descricao.vazia { corpo["analise"] = descricao.comoAnalise }
         if let preco, preco > 0 { corpo["preco_da_pessoa"] = preco }
 
         var req = URLRequest(url: url.appendingPathComponent("functions/v1/ler-peca"),

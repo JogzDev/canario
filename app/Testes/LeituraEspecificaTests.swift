@@ -68,3 +68,25 @@ final class LeituraEspecificaTests: XCTestCase {
         XCTAssertTrue(leitura.frases.isEmpty && leitura.pecas.isEmpty && leitura.fatos.isEmpty)
     }
 }
+
+final class DescricaoDaPecaTests: XCTestCase {
+    private func termo(_ id: String, _ dimensao: String) -> Termo {
+        Termo(id: id, rotulo: id, dimensao: dimensao, exclusiva: false,
+              sinonimos: nil, semPernaBusca: nil, palavrasPt: nil, palavrasEn: nil)
+    }
+
+    func testTermosDaPecaViramAAnaliseQueALeituraEntende() {
+        let termos = [termo("saia", "categoria"), termo("midi", "comprimento"), termo("preto", "cor"),
+                      termo("verde", "cor"), termo("jeans", "tecido"), termo("romantico", "estetica")]
+        let d = DescricaoDaPeca.dosTermos(["saia", "midi", "preto", "verde", "jeans", "romantico", "desconhecido"],
+                                          em: termos)
+        XCTAssertEqual(d.categoria, "saia")
+        XCTAssertEqual(d.comprimento, "midi")
+        XCTAssertEqual(d.cores, ["preto", "verde"])
+        XCTAssertEqual(d.tecidos, ["jeans"])
+        XCTAssertEqual(d.comoAnalise["pattern"] as? String, "not_visible")
+        XCTAssertEqual(d.comoAnalise["colors"] as? [String], ["preto", "verde"])
+        XCTAssertFalse(d.vazia)
+        XCTAssertTrue(DescricaoDaPeca.dosTermos([], em: termos).vazia)
+    }
+}

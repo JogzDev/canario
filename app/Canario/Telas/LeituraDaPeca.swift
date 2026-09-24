@@ -8,7 +8,7 @@ import SwiftUI
 /// perguntas de refinamento e o preço da peça da pessoa refazem a leitura.
 struct LeituraDaPeca: View {
     let pedido: String
-    var analise: [String: String]? = nil
+    var descricao: DescricaoDaPeca? = nil
 
     @State private var leitura: LeituraEspecifica?
     @State private var erro: String?
@@ -19,6 +19,15 @@ struct LeituraDaPeca: View {
     @State private var precoDigitado = ""
     @State private var fraseAberta: LeituraEspecifica.Frase?
     @FocusState private var editandoPreco: Bool
+
+    /// `precoInicial`: o preço que a pessoa já informou para a peça do Acervo;
+    /// a posição de preço vem na primeira leitura, sem pedir de novo.
+    init(pedido: String, descricao: DescricaoDaPeca? = nil, precoInicial: Double? = nil) {
+        self.pedido = pedido
+        self.descricao = descricao
+        _preco = State(initialValue: precoInicial)
+        _precoDigitado = State(initialValue: precoInicial.map { Formato.dinheiroExato($0) } ?? "")
+    }
 
     var body: some View {
         ScrollView {
@@ -185,7 +194,7 @@ struct LeituraDaPeca: View {
         defer { carregando = false }
         do {
             leitura = try await Supabase.shared.lerPeca(
-                texto: pedido, refinamento: refinamento, analise: analise, preco: preco)
+                texto: pedido, refinamento: refinamento, descricao: descricao, preco: preco)
         } catch is CancellationError {
             return
         } catch Supabase.Falha.resposta(let codigo, _) where codigo == 429 {

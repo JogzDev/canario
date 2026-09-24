@@ -136,6 +136,46 @@ struct RelatorioDaPeca: View {
         }
     }
 
+    /// 2.0: a leitura específica desta peça, com o preço que a pessoa já deu.
+    @ViewBuilder
+    private var cartaoDaLeitura: some View {
+        if Supabase.analiseRemotaHabilitada {
+            let pedido = apelido.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? Traducao.descricaoAmigavel(termos, consulta: "") : apelido
+            NavigationLink {
+                LeituraDaPeca(pedido: pedido,
+                              descricao: DescricaoDaPeca.dosTermos(termos.map(\.id), em: termos),
+                              precoInicial: precoAlvo)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "text.magnifyingglass")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Edicao.caneta)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Read this piece in the panel")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Text("The reading finds pieces like it, checks each one and shows the proof.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    SetaDaLinha()
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background {
+                    RoundedRectangle(cornerRadius: Edicao.raio, style: .continuous)
+                        .fill(Edicao.cartao)
+                }
+                .overlay { CosturaDaFolha() }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
@@ -163,6 +203,7 @@ struct RelatorioDaPeca: View {
                     // O que mudou de lugar é a foto e a vitrine, não a ordem
                     // da leitura.
                     heroiDaPeca
+                    cartaoDaLeitura
                     vitrineDeSimilares
                     resumo
                     porAtributo

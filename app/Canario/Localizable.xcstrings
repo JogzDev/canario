@@ -4043,6 +4043,23 @@
         }
       }
     },
+    "I couldn't tell which garment you meant. Try describing it with its cut or detail.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "I couldn't tell which garment you meant. Try describing it with its cut or detail."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não consegui entender qual peça você quis dizer. Tente descrevê-la pelo corte ou por um detalhe."
+          }
+        }
+      }
+    },
     "I found no panel item with %@ %@.": {
       "extractionState": "manual",
       "localizations": {
@@ -5890,6 +5907,23 @@
         }
       }
     },
+    "Read this piece in the panel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Read this piece in the panel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler esta peça no painel"
+          }
+        }
+      }
+    },
     "Read “%@” in the panel": {
       "extractionState": "manual",
       "localizations": {
@@ -7665,6 +7699,23 @@
         }
       }
     },
+    "The panel is unavailable right now. Try again in a few minutes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The panel is unavailable right now. Try again in a few minutes."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O painel está indisponível agora. Tente de novo em alguns minutos."
+          }
+        }
+      }
+    },
     "The panel items that share these attributes, week by week. It is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there.": {
       "extractionState": "manual",
       "localizations": {
@@ -7750,6 +7801,23 @@
         }
       }
     },
+    "The reading finds pieces like it, checks each one and shows the proof.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The reading finds pieces like it, checks each one and shows the proof."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A leitura acha peças como ela, confere cada uma e mostra a prova."
+          }
+        }
+      }
+    },
     "The reading finds the pieces, checks each one and shows the proof.": {
       "extractionState": "manual",
       "localizations": {
@@ -7763,6 +7831,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "A leitura acha as peças, confere cada uma e mostra a prova."
+          }
+        }
+      }
+    },
+    "The reading is off in this build.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The reading is off in this build."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A leitura está desligada nesta versão."
+          }
+        }
+      }
+    },
+    "The reading service did not answer this time. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The reading service did not answer this time. Try again in a moment."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O serviço da leitura não respondeu desta vez. Tente de novo em instantes."
           }
         }
       }
