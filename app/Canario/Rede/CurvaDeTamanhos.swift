@@ -73,6 +73,35 @@ enum CurvaDeTamanhos {
     /// respeita a margem estatística em `empatados`.
     static let minimoPorTamanho = 100
 
+    // MARK: A consulta
+
+    /// A leitura de `curva_tamanhos` que a curva e o relatório do termo fazem.
+    ///
+    /// A escada de letra é a que o painel tem em maior volume e a única em que
+    /// dá para NOMEAR o tamanho sem misturar sentido entre marcas.
+    ///
+    /// **Sem o segmento, a curva somava o catálogo candidato.** A tabela guarda
+    /// uma curva por segmento na mesma semana, e desde 24/08 a escada de letra
+    /// tem `feminino_casual_br` e `catalogo_candidato_br` lado a lado. O zero
+    /// do candidato não é medida. A quebra compara a primeira e a última foto
+    /// de cada tamanho dentro da janela, e o candidato é coletado duas vezes
+    /// por semana. Em 23/09, cada peça dele tinha uma foto só na janela, e com
+    /// uma foto nenhum tamanho tem como quebrar. Misturado, esse zero diluía
+    /// toda taxa em cerca de um terço: no painel de 21/09 o M caía de 6,22%
+    /// para 4,35%. O destaque também mudava: sozinho, o feminino não tem líder
+    /// (os cinco empatam na margem), e misturado ele elegia GG, M e PP. O
+    /// cartão do formato lia a primeira linha `maiores` que chegasse. Às vezes
+    /// era a do candidato, com taxa zero, e o cartão sumia. A A40 diz que o
+    /// candidato "amplia produto, não estatística". As séries do mesmo
+    /// relatório já filtravam por `Recorte.segmento`.
+    static func consulta(termoId: String?, porRotulo: Bool) -> String {
+        let filtroTermo = termoId.map { "termo_id=eq.\($0)" } ?? "termo_id=is.null"
+        let rotulo = porRotulo ? "rotulo=not.is.null" : "rotulo=is.null"
+        let limite = porRotulo ? 60 : 20
+        return "select=*&segmento=eq.\(Recorte.segmento)&\(filtroTermo)"
+             + "&sistema=eq.letra&\(rotulo)&order=semana.desc&limit=\(limite)"
+    }
+
     // MARK: Consolidação
 
     /// Junta as linhas do mesmo rótulo numa só.

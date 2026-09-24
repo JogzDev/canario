@@ -1,0 +1,48 @@
+name: Gatilho de reserva do pipeline
+
+# O disparo diario vem do Supabase (A63): o pg_cron pede o pipeline as
+# 03:17 BRT. Este workflow e a reserva para quando esse pedido nao acontece --
+# token vencido, Supabase fora, API do GitHub recusando. Ele roda uma hora
+# depois e so dispara se ainda nao houver nenhuma execucao do pipeline no dia
+# (desde 00:00 BRT), em qualquer estado: execucao que falhou tem alerta e
+# recuperacao proprios, e repetir a coleta inteira sozinho seria cobrar das
+# lojas duas vezes.
+#
+# O proprio cron do GitHub atrasa (3,5 a 5 horas em setembro de 2026), por
+# isso ele e a reserva, nunca o titular.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 7 * * *'
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: gatilho-reserva
+  cancel-in-progress: false
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar o pipeline se o dia ainda nao teve execucao
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # 00:00 em Sao Paulo = 03:00 UTC (sem horario de verao desde 2019).
+          desde="$(TZ=America/Sao_Paulo date +%F)T03:00:00Z"
+          execucoes="$(gh run list --workflow pipeline-diario.yml \
+            --created ">=$desde" --limit 20 --json databaseId --jq 'length')"
+          if [ "$execucoes" -gt 0 ]; then
+            echo "O pipeline ja teve $execucoes execucao(oes) desde $desde; nada a fazer." \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          gh workflow run pipeline-diario.yml --ref main
+          echo "Nenhuma execucao desde $desde: pipeline disparado pela reserva." \
+            | tee -a "$GITHUB_STEP_SUMMARY"

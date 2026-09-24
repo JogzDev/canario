@@ -7,8 +7,8 @@ from datetime import date, datetime, timedelta, timezone
 from gerar_saude import data_operacional
 from coletor_editorial import data_operacional as data_operacional_editorial
 from coletor_varejo import (alertas_criticos, cobertura_da_marca,
-                            frase_de_cobertura, metricas_varejo_ativas,
-                            resumo_de_cobertura)
+                            frase_de_cobertura, marcas_esperadas,
+                            metricas_varejo_ativas, resumo_de_cobertura)
 
 
 HOJE = date(2026, 8, 2)
@@ -314,7 +314,43 @@ def main():
         print("FALHOU: dia integro nao foi reconhecido como completo")
         return 1
 
-    print("Saude: fuso BRT, ausencia, zero, queda >70% e cobertura do catalogo")
+    # A64: o portao cobra toda marca que o coletor coleta. Em 23/09/2026 a
+    # Amaro virou `nuvemshop` e ficou fora das esperadas: o painel publicaria
+    # sem ela, sem alerta, no dia em que a coleta dela falhasse.
+    cadastro = [
+        {"id": 1, "nome": "VTEX", "ativa": True, "segmento": "feminino_casual_br",
+         "status_teste": "vtex"},
+        {"id": 2, "nome": "Shopify", "ativa": True, "segmento": "feminino_casual_br",
+         "status_teste": "shopify"},
+        {"id": 3, "nome": "Amaro", "ativa": True, "segmento": "feminino_casual_br",
+         "status_teste": "nuvemshop"},
+        {"id": 4, "nome": "Falhou no teste", "ativa": True,
+         "segmento": "feminino_casual_br", "status_teste": "falhou"},
+        {"id": 5, "nome": "Inativa", "ativa": False, "segmento": "feminino_casual_br",
+         "status_teste": "vtex"},
+        {"id": 6, "nome": "Outro painel", "ativa": True,
+         "segmento": "catalogo_candidato_br", "status_teste": "vtex"},
+    ]
+    esperadas = [m["id"] for m in marcas_esperadas(cadastro, "feminino_casual_br")]
+    if esperadas != [1, 2, 3]:
+        print("FALHOU: portao de saude cobra {} em vez de [1, 2, 3]".format(esperadas))
+        return 1
+    import materializar_anexos
+    for plataforma in materializar_anexos.PLATAFORMAS:
+        marca = {"ativa": True, "segmento": "s", "status_teste": plataforma}
+        if not marcas_esperadas([marca], "s"):
+            print("FALHOU: marca {} e coletada mas nao e cobrada".format(plataforma))
+            return 1
+    sem_amaro = alertas_criticos([linha("varejo", 100, marca_id=1),
+                                  linha("varejo", 100, marca_id=2)],
+                                 marcas_esperadas(cadastro, "feminino_casual_br"),
+                                 HOJE)[0]
+    if not any("Amaro" in x for x in sem_amaro):
+        print("FALHOU: Amaro ausente no dia nao virou alerta critico")
+        return 1
+
+    print("Saude: fuso BRT, ausencia, zero, queda >70%, cobertura do catalogo "
+          "e toda plataforma coletada cobrada no portao")
     return 0
 
 

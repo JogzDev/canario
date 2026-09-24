@@ -432,8 +432,7 @@ struct RelatorioDoTermo: View {
                 "cobertura_por_celula",
                 "select=*&segmento=eq.\(Recorte.segmento)&termo_id=eq.\(termo.id)&order=semana.desc&limit=60")
             async let t: [CurvaDeTamanhos.Faixa] = Supabase.shared.buscar(
-                "curva_tamanhos",
-                "select=*&termo_id=eq.\(termo.id)&sistema=eq.letra&rotulo=not.is.null&order=semana.desc&limit=60")
+                "curva_tamanhos", CurvaDeTamanhos.consulta(termoId: termo.id, porRotulo: true))
             serie = try await s
             indices = try await i.filter { $0.termoId == termo.id }
             coberturas = try await c

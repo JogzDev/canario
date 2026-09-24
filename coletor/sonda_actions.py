@@ -23,12 +23,13 @@ import supabase_rest  # noqa: E402
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAIDA = os.path.join(RAIZ, "SONDA_ACTIONS.md")
 
-# Amostra: as duas plataformas, com as DUAS Shopify (Amaro e PatBo) para
-# distinguir bloqueio de plataforma de 429 transitorio de uma loja so.
+# Amostra: as duas plataformas, com DUAS Shopify para distinguir bloqueio de
+# plataforma de 429 transitorio de uma loja so. A Amaro, a segunda original,
+# saiu da Shopify em 23/09/2026; a Charry, Shopify ja testada, ocupa o lugar.
 ALVOS = [
     ("Cantao", "www.cantao.com.br", "vtex"),
     ("C&A", "www.cea.com.br", "vtex"),
-    ("Amaro", "amaro.com", "shopify"),
+    ("Charry", "www.charry.com.br", "shopify"),
     ("PatBo", "www.patbo.com.br", "shopify"),
 ]
 
@@ -99,8 +100,8 @@ def main():
     if vtex_bloqueada:
         veredito = "BLOQUEIO EM VTEX — espinha dorsal do painel barrada; parar e avisar o JP"
     elif shopify_bloqueada:
-        veredito = ("SHOPIFY BARRA O DATACENTER — VTEX (12 marcas) livre; as 2 Shopify "
-                    "(Amaro, PatBo) precisam de decisao do JP antes de agendar")
+        veredito = ("SHOPIFY BARRA O DATACENTER — VTEX livre; a Shopify do painel "
+                    "(PatBo) precisa de decisao do JP antes de agendar")
     elif any(d["bloqueado"] for d in dominios):
         veredito = "BLOQUEIO PARCIAL — ver tabela; decidir antes de agendar"
     else:

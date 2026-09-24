@@ -1,0 +1,61 @@
+name: Sonda da leitura especifica
+
+# Chama a Edge Function `ler-peca` publicada, como o app chama, e mostra a
+# leitura no resumo da execucao. Manual e com custo: gasta uma reserva do
+# limite diario de analise e tres chamadas da Luna.
+on:
+  workflow_dispatch:
+    inputs:
+      texto:
+        description: 'Pedido, como a pessoa digitaria'
+        required: true
+        default: 'jaqueta napoleão'
+      preco:
+        description: 'Preço da peça da pessoa (vazio = sem posição de preço)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  ler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pedir a leitura
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          CHAVE_PUBLICA: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          TEXTO: ${{ inputs.texto }}
+          PRECO: ${{ inputs.preco }}
+        run: |
+          set -euo pipefail
+          corpo="$(jq -n --arg t "$TEXTO" --arg p "$PRECO" \
+            '{texto: $t} + (if $p == "" then {} else {preco_da_pessoa: ($p | tonumber)} end)')"
+          codigo="$(curl -sS -o resposta.json -w '%{http_code}' --max-time 90 \
+            -X POST "$SUPABASE_URL/functions/v1/ler-peca" \
+            -H "apikey: $CHAVE_PUBLICA" -H "Content-Type: application/json" -d "$corpo")"
+          echo "HTTP $codigo"
+          {
+            echo "## Leitura: $TEXTO (HTTP $codigo)"
+            jq -r '"**" + (.nome // "?") + "** — " + (.explicacao // "") ,
+                   "",
+                   "Painel de " + (.painel_observado_em // "?") + " · candidatas " + ((.busca.candidatas // 0) | tostring)
+                     + " · lidas " + ((.pecas // []) | length | tostring)
+                     + " · frases recusadas " + ((.frases_recusadas // 0) | tostring) + " · " + (.modelo // ""),
+                   "",
+                   ((.frases // [])[] | "- " + .texto + "  _(" + (.fatos | join(", ")) + ")_"),
+                   "",
+                   "Verificadas " + ((.busca.verificadas // 0) | tostring) + ": " + ((.busca.confirmadas // 0) | tostring)
+                     + " sao a peca, " + ((.busca.parecidas // 0) | tostring) + " parecidas",
+                   ((.pecas // [])[] | "  - " + .marca + " | " + .titulo + " | " + (.preco | tostring)),
+                   "Parecidas, fora dos numeros:",
+                   ((.parecidas // [])[] | "  - " + .marca + " | " + .titulo + " | " + (.preco | tostring)),
+                   "",
+                   "Categorias: " + ((.busca.categorias // []) | join(", ")) + " · atributos: " + ((.busca.atributos // []) | join(", "))
+                     + " · sinais: " + ((.busca.sinais // []) | join(", ")) + " · vetos: " + ((.busca.vetos // []) | join(", ")),
+                   (if .error then "Erro: " + .error else empty end)' resposta.json
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_STEP_SUMMARY" | tail -20
+          [ "$codigo" = "200" ]

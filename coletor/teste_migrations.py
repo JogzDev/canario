@@ -534,6 +534,116 @@ def main():
     if "DIAS_DE_ZERO_PARA_BLOQUEAR = 3\n" not in coletor:
         return falhar("tolerancia de zeros do coletor divergiu da A60 (falhas < 3)")
 
+    # A61: marca que troca de plataforma troca de identificadores. O catalogo
+    # aposentado nao sai de linha e nao conta duas vezes; o laboratorio prova
+    # o efeito, e aqui fica o contrato de texto de cada funcao.
+    exigencias_troca = {
+        "create or replace function public.computar_eventos": [
+            "from public.produtos_de_catalogo_aposentado ca\n"
+            "                     where ca.produto_id = u.produto_id);",
+        ],
+        "create or replace function public.sortimento_observado": [
+            "and ca.aposentado_em <= alvo",
+        ],
+        "create or replace function public.computar_serie_varejo": [
+            "left join public.produtos_de_catalogo_aposentado ca on ca.produto_id = p.id",
+            "and (e.aposentado_em is null or w.semana + 6 < e.aposentado_em)",
+        ],
+        "create or replace view public.produtos_de_catalogo_aposentado": [
+            "with (security_invoker = true)",
+            "where ep.ultimo_avistamento_em < t.em",
+        ],
+    }
+    for cabeca, trechos in exigencias_troca.items():
+        _, definicao = ultima_definicao(arquivos, cabeca)
+        for trecho in trechos:
+            if trecho not in definicao:
+                return falhar("troca de catalogo nao garante: {}".format(
+                    trecho.splitlines()[-1].strip()))
+    # O coletor e as restricoes de `marcas` precisam conhecer as mesmas
+    # plataformas: marca num lado so ou nao materializa ou nao e coletada.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import materializar_anexos
+    _, restricao = ultima_definicao(
+        arquivos, "add constraint marcas_plataforma_check")
+    declaradas = set(re.findall(r"'([a-z]+)'", restricao.split(";")[0]))
+    if declaradas != set(materializar_anexos.PLATAFORMAS):
+        return falhar("plataformas do coletor ({}) e do banco ({}) divergiram".format(
+            ", ".join(materializar_anexos.PLATAFORMAS), ", ".join(sorted(declaradas))))
+    # A64: o portao de publicacao cobra exatamente quem o coletor coleta. Em
+    # 23/09/2026 a Amaro virou `nuvemshop`, passou a ser coletada e ficou fora
+    # da cobertura: uma falha dela publicaria o painel em silencio.
+    coorte = re.search(r"m\.status_teste in \(([^)]*)\)", cobertura)
+    cobradas = set(re.findall(r"'([a-z]+)'", coorte.group(1))) if coorte else set()
+    if cobradas != set(materializar_anexos.PLATAFORMAS):
+        return falhar("portao de publicacao cobra ({}) e o coletor coleta ({})".format(
+            ", ".join(sorted(cobradas)), ", ".join(materializar_anexos.PLATAFORMAS)))
+    if 'm.get("status_teste") in ("vtex", "shopify")' in coletor:
+        return falhar("portao de saude do Python voltou a ter lista propria de plataformas")
+
+    # A63: o Supabase e o titular do disparo diario. O token do GitHub mora
+    # so no Vault, nenhum papel do app alcanca as funcoes, e cada dia tem no
+    # maximo um disparo e uma acao da vigia.
+    caminho_a63 = next((c for c in arquivos if "_a63_" in c), None)
+    if caminho_a63 is None:
+        return falhar("A63 (gatilho e vigia do pipeline) sumiu")
+    a63 = open(caminho_a63, encoding="utf-8").read()
+    for trecho in (
+            "from vault.decrypted_secrets",
+            "where name = 'github_pipeline'",
+            "on conflict (tipo, data_operacional) do nothing;\n  if not found then",
+            "revoke all on function public._token_do_github() from public, anon, authenticated, service_role;",
+            "revoke all on function public._chamar_github(text, text, jsonb) from public, anon, authenticated, service_role;",
+            "revoke all on function public.disparar_pipeline_diario() from public, anon, authenticated, service_role;",
+            "revoke all on function public.vigiar_pipeline_diario() from public, anon, authenticated, service_role;",
+            "m.segmento = 'feminino_casual_br'",
+            "select cron.schedule('canario-disparo-diario', '17 6 * * *'",
+            "select cron.schedule('canario-vigia-do-pipeline', '0 15 * * *'",
+            "select cron.schedule('canario-respostas-do-github', '27 * * * *'"):
+        if trecho not in a63:
+            return falhar("gatilho do pipeline nao garante: {}".format(trecho.splitlines()[0]))
+    if re.search(r"gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}", a63):
+        return falhar("a A63 carrega um token do GitHub no texto")
+
+    # A64: a leitura especifica procura pecas pelo nome. Sinal vindo da Luna
+    # e texto escapado, nunca padrao; so peca ativa do painel publicado conta;
+    # so a Edge Function (chave de servico) chama.
+    caminho_a64 = next((c for c in arquivos if "_a64_candidatas_e_fatos_da_leitura" in c), None)
+    if caminho_a64 is None:
+        return falhar("A64 (candidatas e fatos da leitura) sumiu")
+    a64 = open(caminho_a64, encoding="utf-8").read()
+    for trecho in (
+            "replace(replace(replace(s, '\\', '\\\\'), '%', '\\%'), '_', '\\_')",
+            "where length(s) between 3 and 40",
+            "and not (a.t like any (vetos))",
+            "ep.ultimo_avistamento_em between painel - 7 and painel",
+            "from public.produtos_de_catalogo_aposentado ca",
+            "revoke all on function public.candidatas_da_leitura(text[], text[], text[], integer) from public, anon, authenticated;",
+            "revoke all on function public.fatos_da_leitura(bigint[], numeric) from public, anon, authenticated;"):
+        if trecho not in a64:
+            return falhar("leitura especifica nao garante: {}".format(trecho))
+    if a64.count("ep.ultimo_avistamento_em between painel - 7 and painel") < 2:
+        return falhar("candidatas e fatos precisam da mesma janela de peca ativa")
+    _, candidatas = ultima_definicao(
+        arquivos, "create or replace function public.candidatas_da_leitura(")
+    for trecho in (
+            "p_atributos text[]",
+            "public._texto_da_leitura(p_sinais)",
+            "and not (a.t like any (vetos))",
+            "ep.ultimo_avistamento_em between painel - 7 and painel",
+            "from public.produtos_de_catalogo_aposentado ca",
+            "where not exists (select 1 from public.produto_termos pt",
+            "revoke all on function public.candidatas_da_leitura(text[], text[], text[], text[], integer) from public, anon, authenticated;"):
+        if trecho not in candidatas:
+            return falhar("candidatas finais da leitura nao garantem: {}".format(trecho))
+    caminho_a67 = next((c for c in arquivos if "_a67_" in c), None)
+    a67 = open(caminho_a67, encoding="utf-8").read() if caminho_a67 else ""
+    for trecho in ("check (chave ~ '^[0-9a-f]{64}$')",
+                   "revoke all on public.interpretacoes_da_leitura from public, anon, authenticated;",
+                   "where criado_em < now() - interval '7 days'"):
+        if trecho not in a67:
+            return falhar("interpretacao estavel da leitura nao garante: {}".format(trecho))
+
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")
     exigencias_poda = [
@@ -637,6 +747,33 @@ def main():
         return falhar("curva final ainda pode materializar a expansao por termo")
     if "join produto_termos pt on pt.produto_id = c.produto_id" not in curva:
         return falhar("curva final perdeu o recorte por termo")
+    # A62: a curva olha so a vitrine. Medido em 23/09/2026: 81.620 produtos na
+    # base do feminino, 28.811 na vitrine; share indisponivel de 74,8% para
+    # 43,2%. O laboratorio prova o efeito e reprova dez mutacoes; aqui fica o
+    # texto de cada regra.
+    exigencias_vitrine = [
+        # Ancora por segmento, no dado (A57): pausa nao e ausencia.
+        "join _curva_ancora a on a.segmento = p.segmento",
+        "ep.ultimo_avistamento_em >= a.observado_em - 7",
+        # Segmento parado de vez nao ganha a semana nova com a foto velha.
+        "having max(ep.ultimo_avistamento_em) > (semana_alvo + 6) - janela_dias",
+        # Catalogo trocado de plataforma nao e sortimento (A61).
+        "and not exists (select 1 from public.produtos_de_catalogo_aposentado ca\n"
+        "                       where ca.produto_id = p.id)",
+        # A venda hoje OU em algum dia da janela: quem esgotou na janela e a
+        # quebra; so "ofertavel hoje" tirava 775 quebras da manchete.
+        "(ep.ofertavel is true",
+        "and s.ofertavel is true",
+        # A semana alvo e refeita inteira; as publicadas ficam.
+        "where c.semana = semana_alvo",
+        "'base_observada_em', an.observado_em",
+        "revoke all on function public.computar_curva_tamanhos(integer)",
+    ]
+    for trecho in exigencias_vitrine:
+        if trecho not in curva:
+            return falhar("curva nao se limita a vitrine: {}".format(trecho))
+    if "current_date" in curva:
+        return falhar("curva ancora a base no calendario, nao no dado")
 
     if ("alter table public.motor_termos_stage set unlogged" not in estado_final
             or "alter table public.motor_produtos_stage set unlogged" not in estado_final):

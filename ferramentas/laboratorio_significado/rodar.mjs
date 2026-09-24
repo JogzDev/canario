@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Laboratório de significado: roda P24, A57 e A58 num PostgreSQL 17.10 real,
- * descartável, acessível somente pelo socket deste processo.
+ * Laboratório de significado: roda P24, A57, A58, A60, A61, A62 e as duas
+ * A64 (cobertura e leitura) num PostgreSQL 17.10 real, descartável,
+ * acessível somente pelo socket deste processo. A A62 é provada também por mutação: cada regra dela é retirada
+ * por vez, e as asserções precisam reprovar todas as versões mutantes.
  *
  * POR QUE NÃO BASTA O PORTÃO DE TEXTO
  * ===================================
@@ -50,6 +52,45 @@ const MIGRATIONS = [
   'supabase/migrations/20260917211000_a58_significado_da_capa_e_busca_editorial.sql',
 ];
 const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicacao.sql';
+const A61 = 'supabase/migrations/20260923131757_a61_troca_de_catalogo.sql';
+const A62 = 'supabase/migrations/20260923154011_a62_curva_so_com_produtos_ativos.sql';
+const A64 = 'supabase/migrations/20260924012854_a64_candidatas_e_fatos_da_leitura.sql';
+const A65 = 'supabase/migrations/20260924013846_a65_novidade_nao_e_estreia_de_catalogo.sql';
+const A66 = 'supabase/migrations/20260924014452_a66_atributos_da_taxonomia_na_leitura.sql';
+// O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
+// da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
+const ANTES_DA_A62 = [
+  ['supabase/migrations/20260801045954_f4_ordem_do_tamanho_zeros.sql', 'ordem_do_tamanho'],
+  ['supabase/migrations/20260803223000_p0_motor_sem_spill_de_disco.sql', 'computar_curva_tamanhos'],
+];
+// Cada mutação tira ou afrouxa UMA regra da A62. Se `assercoes_a62.sql`
+// continuar verde com ela, a regra não está provada por ninguém.
+const MUTACOES_A62 = [
+  ['sem a janela de sete dias',
+    'ep.ultimo_avistamento_em >= a.observado_em - 7', 'true'],
+  ['janela de oito dias', 'a.observado_em - 7', 'a.observado_em - 8'],
+  ['âncora no calendário',
+    'ep.ultimo_avistamento_em >= a.observado_em - 7',
+    'ep.ultimo_avistamento_em >= current_date - 7'],
+  ['âncora única para todos os segmentos',
+    'join _curva_ancora a on a.segmento = p.segmento',
+    'cross join (select max(observado_em) as observado_em from _curva_ancora) a'],
+  ['segmento parado ganha a semana nova',
+    '\n  having max(ep.ultimo_avistamento_em) > (semana_alvo + 6) - janela_dias;', ';'],
+  ['catálogo aposentado na base', 'where ca.produto_id = p.id)', 'where false)'],
+  ['só o ofertável de hoje',
+    'or exists (select 1 from snapshots s',
+    'or false and exists (select 1 from snapshots s'],
+  ['toda peça listada, esgotada ou não', '(ep.ofertavel is true', '(true'],
+  ['qualquer snapshot na janela, com ou sem oferta', 'and s.ofertavel is true', 'and true'],
+  ['semana alvo sem apagar o que sumiu',
+    'where c.semana = semana_alvo', 'where false and c.semana = semana_alvo'],
+  ['apaga também as semanas já publicadas', 'where c.semana = semana_alvo', 'where true'],
+];
+// Duas migrations nasceram com o rótulo A64 na noite de 23/09. Esta é a da
+// cobertura de publicação; a `A64` acima é a da leitura específica.
+const COBERTURA_NUVEMSHOP =
+  'supabase/migrations/20260924013645_a64_cobertura_espera_a_nuvemshop.sql';
 const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
 });
@@ -193,11 +234,17 @@ async function main() {
       path.join(AQUI, 'assercoes.sql'),
       path.join(REPOSITORIO, A60),
       path.join(AQUI, 'assercoes_a60.sql'),
+      // A A61 troca tres passos que a fixture base deixa como talos. A
+      // fixture dela acrescenta so o que as versoes reais leem.
+      path.join(AQUI, 'fixture_a61.sql'),
+      path.join(REPOSITORIO, A61),
+      path.join(AQUI, 'assercoes_a61.sql'),
     ];
+    let silencio = false;
     cliente.on('notice', aviso => {
-      if (aviso.message) console.log(aviso.message);
+      if (aviso.message && !silencio) console.log(aviso.message);
     });
-    for (const arquivo of arquivos) {
+    const aplicar = async arquivo => {
       const sql = await readFile(arquivo, 'utf8');
       await cliente.query(sql);
       const nome = path.basename(arquivo);
@@ -208,7 +255,85 @@ async function main() {
           + 'values ($1,$2,array[$3])', [migration[1], migration[2], sql]);
       }
       console.log(`aplicado ${path.relative(REPOSITORIO, arquivo)}`);
+    };
+    for (const arquivo of arquivos) await aplicar(arquivo);
+
+    // Uma prova só vale se reprova o defeito que diz pegar. `preparo` (uma
+    // migration mutante, ou nada) e as asserções rodam numa transação desfeita
+    // no fim, e só uma asserção (P0004) conta como reprovação: erro de
+    // sintaxe ou de execução seria uma morte falsa.
+    const exigirReprovacao = async (rotulo, preparo, assercoes) => {
+      await cliente.query('begin');
+      silencio = true;
+      try {
+        if (preparo) {
+          try {
+            await cliente.query(preparo);
+          } catch (erro) {
+            throw new Error(`${rotulo} não se aplica: ${erro.message}`);
+          }
+        }
+        try {
+          await cliente.query(assercoes);
+        } catch (erro) {
+          if (erro.code !== 'P0004') {
+            throw new Error(`${rotulo} quebrou sem asserção: ${erro.message}`);
+          }
+          return erro.message;
+        }
+        throw new Error(`${rotulo} passou nas asserções`);
+      } finally {
+        silencio = false;
+        await cliente.query('rollback');
+      }
+    };
+
+    // A64 da cobertura. Sem ela, a regra da A60 deixa a marca da Nuvemshop
+    // fora da coorte: a asserção 59 tem de reprovar antes e passar depois.
+    const assercoesCobertura = await readFile(
+      path.join(AQUI, 'assercoes_cobertura_nuvemshop.sql'), 'utf8');
+    const antesDaCobertura = await exigirReprovacao(
+      'antes da cobertura com a Nuvemshop', null, assercoesCobertura);
+    console.log(`ok 59 antes: a cobertura da A60 ignora a Nuvemshop: ${antesDaCobertura}`);
+    await aplicar(path.join(REPOSITORIO, COBERTURA_NUVEMSHOP));
+    await aplicar(path.join(AQUI, 'assercoes_cobertura_nuvemshop.sql'));
+
+    // A62. O antes entra como função solta, não como migration: a P0 e a F4
+    // já estão no histórico de produção e não se reaplicam por inteiro.
+    await aplicar(path.join(AQUI, 'fixture_a62.sql'));
+    for (const [arquivo, nome] of ANTES_DA_A62) {
+      await cliente.query(await definicaoNaMigration(arquivo, nome));
+      console.log(`aplicado ${nome} de ${arquivo}`);
     }
+    await aplicar(path.join(AQUI, 'linha_de_base_a62.sql'));
+
+    // As mutações rodam ANTES da A62 verdadeira, cada uma sobre a semana que
+    // a P0 deixou.
+    const a62 = await readFile(path.join(REPOSITORIO, A62), 'utf8');
+    const assercoesA62 = await readFile(path.join(AQUI, 'assercoes_a62.sql'), 'utf8');
+    for (const [indice, [nome, trecho, troca]] of MUTACOES_A62.entries()) {
+      const ocorrencias = a62.split(trecho).length - 1;
+      if (ocorrencias !== 1) {
+        throw new Error(`mutação "${nome}": o trecho aparece ${ocorrencias} vezes na A62`);
+      }
+      const motivo = await exigirReprovacao(
+        `mutação "${nome}"`, a62.replace(trecho, () => troca), assercoesA62);
+      console.log(`ok ${48 + indice} mutação reprovada (${nome}): ${motivo}`);
+    }
+
+    await aplicar(path.join(REPOSITORIO, A62));
+    await aplicar(path.join(AQUI, 'assercoes_a62.sql'));
+    // A64: candidatas e fatos da leitura especifica, sobre o painel que a
+    // A62 deixou publicado.
+    await aplicar(path.join(AQUI, 'fixture_a64.sql'));
+    await aplicar(path.join(REPOSITORIO, A64));
+    await aplicar(path.join(AQUI, 'assercoes_a64.sql'));
+    await aplicar(path.join(AQUI, 'fixture_a65.sql'));
+    await aplicar(path.join(REPOSITORIO, A65));
+    await aplicar(path.join(AQUI, 'assercoes_a65.sql'));
+    await aplicar(path.join(AQUI, 'fixture_a66.sql'));
+    await aplicar(path.join(REPOSITORIO, A66));
+    await aplicar(path.join(AQUI, 'assercoes_a66.sql'));
     // A consulta de capacidade/cobertura também precisa executar de verdade.
     // READ ONLY torna uma escrita acidental uma falha do laboratório.
     const diagnostico = await readFile(path.join(REPOSITORIO,
@@ -232,6 +357,22 @@ async function main() {
   } finally {
     await encerrar();
   }
+}
+
+/**
+ * A última definição de `public.<nome>` num arquivo de migration, do `create`
+ * ao fecho das aspas: é o que aquela migration deixou instalado.
+ */
+async function definicaoNaMigration(arquivo, nome) {
+  const texto = await readFile(path.join(REPOSITORIO, arquivo), 'utf8');
+  const inicio = texto.toLowerCase().lastIndexOf(`create or replace function public.${nome}(`);
+  if (inicio < 0) throw new Error(`${nome} não está em ${arquivo}`);
+  const aspas = /\nas (\$[a-z_]*\$)/i.exec(texto.slice(inicio));
+  if (!aspas) throw new Error(`${nome} sem corpo em ${arquivo}`);
+  const corpo = inicio + aspas.index + aspas[0].length;
+  const fim = texto.indexOf(aspas[1], corpo);
+  if (fim < 0) throw new Error(`${nome} sem fecho em ${arquivo}`);
+  return `${texto.slice(inicio, fim + aspas[1].length)};`;
 }
 
 /** writeFile com modo restrito, isolado para manter o topo do arquivo enxuto. */

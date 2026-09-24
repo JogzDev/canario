@@ -1,0 +1,1712 @@
+{
+ "s-281902e9": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "manga longa, aplicacao de perolas na cintura",
+  "alvo": "vestido"
+ },
+ "s-e59186b6": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "lilas_roxo"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "conferido pelo JP em 23/09: vestido tipo tracksuit, dois tons de roxo; a camera deixou terroso",
+  "alvo": "vestido",
+  "conferido_por": "JP"
+ },
+ "s-c7e911d6": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "geometrica"
+  ],
+  "cor": [
+   "cinza",
+   "branco_cru"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "microestampa geometrica",
+  "alvo": "vestido"
+ },
+ "s-415566a9": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "geometrica"
+  ],
+  "cor": [
+   "preto",
+   "cinza"
+  ],
+  "comprimento": [
+   "curto",
+   "midi"
+  ],
+  "nota": "estampa geometrica preto e branco",
+  "alvo": "vestido"
+ },
+ "s-aa38d686": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa",
+   "lilas_roxo"
+  ],
+  "comprimento": null,
+  "nota": "vestido camiseta rosa antigo",
+  "alvo": "vestido"
+ },
+ "s-8942b418": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "conversacional",
+   "floral"
+  ],
+  "cor": [
+   "branco_cru",
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "infantil; borboletas e flores",
+  "alvo": "vestido"
+ },
+ "s-0b5f7f85": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "infantil, saia de tule",
+  "alvo": "vestido"
+ },
+ "s-3175a932": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": null,
+  "cor": [
+   "preto",
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: regata; aceita azul marinho",
+  "alvo": "blusa_top",
+  "conferido_por": "JP"
+ },
+ "s-ce27bde3": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "vestido bandage",
+  "alvo": "vestido"
+ },
+ "s-d1369205": {
+  "cat": [
+   "vestido"
+  ],
+  "estampa": [
+   "floral"
+  ],
+  "cor": [
+   "branco_cru",
+   "vermelho_rosa"
+  ],
+  "comprimento": [
+   "longo",
+   "midi"
+  ],
+  "nota": "",
+  "alvo": "vestido"
+ },
+ "s-41e11790": {
+  "cat": [
+   "saia"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "midi",
+   "curto"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "",
+  "alvo": "saia"
+ },
+ "s-31fd2f8b": {
+  "cat": [
+   "saia"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "terrosos",
+   "cinza"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "",
+  "alvo": "saia"
+ },
+ "s-4d5d201a": {
+  "cat": [
+   "saia"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "",
+  "alvo": "saia"
+ },
+ "s-e352b5ea": {
+  "cat": [
+   "saia"
+  ],
+  "estampa": [
+   "geometrica"
+  ],
+  "cor": [
+   "branco_cru"
+  ],
+  "comprimento": [
+   "curto",
+   "midi"
+  ],
+  "nota": "poa miudo",
+  "alvo": "saia"
+ },
+ "s-942987de": {
+  "cat": [
+   "saia"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "verde",
+   "terrosos"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "oliva, recortes",
+  "alvo": "saia"
+ },
+ "s-2459a9ab": {
+  "cat": [
+   "saia"
+  ],
+  "estampa": [
+   "floral"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": [
+   "curto",
+   "midi"
+  ],
+  "nota": "",
+  "alvo": "saia"
+ },
+ "s-038e4976": {
+  "cat": [
+   "saia"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa"
+  ],
+  "comprimento": [
+   "midi",
+   "longo"
+  ],
+  "nota": "bordo",
+  "alvo": "saia"
+ },
+ "s-5fcc9116": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul",
+   "preto"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "nota": "calca de neve, marinho",
+  "alvo": "calca"
+ },
+ "s-0ccc318a": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "",
+  "alvo": "calca"
+ },
+ "s-9583c21e": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul",
+   "preto"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "nota": "marinho",
+  "alvo": "calca"
+ },
+ "s-d46ac56e": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "terrosos",
+   "branco_cru",
+   "cinza"
+  ],
+  "comprimento": [
+   "midi",
+   "longo"
+  ],
+  "nota": "legging bege com babados laterais, cropped",
+  "alvo": "calca"
+ },
+ "s-1490d841": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul",
+   "preto"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "nota": "",
+  "alvo": "calca"
+ },
+ "s-aea051a0": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "branco_cru"
+  ],
+  "comprimento": [
+   "midi",
+   "longo"
+  ],
+  "nota": "capri",
+  "alvo": "calca"
+ },
+ "s-97074b7f": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "skinny, barra desfiada",
+  "alvo": "calca"
+ },
+ "s-dca066cf": {
+  "cat": [
+   "short"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "bermuda esportiva no cabide",
+  "alvo": "short"
+ },
+ "s-1b27b2d0": {
+  "cat": [
+   "short"
+  ],
+  "estampa": [
+   "xadrez"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "",
+  "alvo": "short"
+ },
+ "s-a301c1a1": {
+  "cat": [
+   "short"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "segurado na mao numa loja; fundo com arara",
+  "alvo": "short"
+ },
+ "s-2e11ac6b": {
+  "cat": [
+   "calca"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: muito longo para short",
+  "alvo": "calca",
+  "conferido_por": "JP"
+ },
+ "s-dfd4079d": {
+  "cat": [
+   "short"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "",
+  "alvo": "short"
+ },
+ "s-745b0eb8": {
+  "cat": [
+   "camisa",
+   "blusa_top"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "branco_cru",
+   "vermelho_rosa"
+  ],
+  "comprimento": null,
+  "nota": "camisa sem manga com gola e botoes, nude",
+  "alvo": "camisa"
+ },
+ "s-3ea9b190": {
+  "cat": [
+   "camisa"
+  ],
+  "estampa": [
+   "listra"
+  ],
+  "cor": [
+   "amarelo_laranja",
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "",
+  "alvo": "camisa"
+ },
+ "s-26e4299b": {
+  "cat": [
+   "camisa"
+  ],
+  "estampa": [
+   "xadrez"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "masculina, manga curta",
+  "alvo": "camisa"
+ },
+ "s-a6933111": {
+  "cat": [
+   "camisa"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "verde",
+   "cinza"
+  ],
+  "comprimento": null,
+  "nota": "",
+  "alvo": "camisa"
+ },
+ "s-309ead9a": {
+  "cat": [
+   "camisa"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul",
+   "cinza"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: camisa jeans usada como terceira peca",
+  "alvo": "camisa",
+  "conferido_por": "JP"
+ },
+ "s-4758e641": {
+  "cat": [
+   "camisa"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "verde"
+  ],
+  "comprimento": null,
+  "nota": "oliva, manga curta",
+  "alvo": "camisa"
+ },
+ "s-b6ed0718": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "estampa": [
+   "xadrez"
+  ],
+  "cor": [
+   "azul",
+   "preto",
+   "cinza"
+  ],
+  "comprimento": null,
+  "nota": "blazer xadrez",
+  "alvo": "casaco_jaqueta"
+ },
+ "s-d595cc6d": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa"
+  ],
+  "comprimento": null,
+  "tecido": [
+   "couro"
+  ],
+  "nota": "perfecto vermelho",
+  "alvo": "casaco_jaqueta"
+ },
+ "s-59663489": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "estampa": [
+   "listra",
+   "liso"
+  ],
+  "cor": [
+   "terrosos"
+  ],
+  "comprimento": null,
+  "nota": "blazer risca de giz marrom",
+  "alvo": "casaco_jaqueta"
+ },
+ "s-cbfb5bb7": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto",
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: o ziper e inteiro",
+  "alvo": "casaco_jaqueta",
+  "conferido_por": "JP"
+ },
+ "s-ed28db5a": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: camiseta de manga comprida com estampa que imita roupa de marinheiro",
+  "alvo": "blusa_top",
+  "conferido_por": "JP"
+ },
+ "s-b9671bc8": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul",
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "bomber",
+  "alvo": "casaco_jaqueta"
+ },
+ "s-d7e1beb5": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa",
+   "amarelo_laranja"
+  ],
+  "comprimento": null,
+  "nota": "colete acolchoado com capuz",
+  "alvo": "casaco_jaqueta"
+ },
+ "s-90d2529c": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": null,
+  "tecido": [
+   "couro"
+  ],
+  "nota": "perfecto preto",
+  "alvo": "casaco_jaqueta"
+ },
+ "s-3c703f9d": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "floral"
+  ],
+  "cor": [
+   "vermelho_rosa"
+  ],
+  "comprimento": null,
+  "nota": "",
+  "alvo": "blusa_top"
+ },
+ "s-31300080": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "cinza"
+  ],
+  "comprimento": null,
+  "nota": "moletom com logo (logo nao e cor)",
+  "alvo": "blusa_top"
+ },
+ "s-6e69a725": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "listra"
+  ],
+  "cor": [
+   "azul",
+   "preto",
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "",
+  "alvo": "blusa_top"
+ },
+ "s-9cf456b3": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa",
+   "amarelo_laranja"
+  ],
+  "comprimento": null,
+  "nota": "meio-ziper esportivo: o contrato manda blusa, nao jaqueta",
+  "alvo": "blusa_top"
+ },
+ "s-6ff7b140": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "verde",
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "petroleo",
+  "alvo": "blusa_top"
+ },
+ "s-e56c1cd4": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: blusinha preta de alcinha",
+  "alvo": "blusa_top",
+  "conferido_por": "JP"
+ },
+ "s-c63ffea0": {
+  "cat": [
+   "blusa_top"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "",
+  "alvo": "blusa_top"
+ },
+ "v-9b0d4e96": {
+  "cat": [
+   "saia",
+   "vestido",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "cinza",
+   "verde"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "nota": "conferido pelo JP em 23/09: foco na saia plissada",
+  "conferido_por": "JP"
+ },
+ "v-146a7ffb": {
+  "cat": [
+   "vestido"
+  ],
+  "alvo": "vestido",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa",
+   "branco_cru"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": ""
+ },
+ "v-79370f15": {
+  "cat": [
+   "vestido"
+  ],
+  "alvo": "vestido",
+  "estampa": [
+   "floral"
+  ],
+  "cor": [
+   "verde",
+   "preto"
+  ],
+  "comprimento": [
+   "curto",
+   "midi"
+  ],
+  "nota": "selfie no espelho, qipao"
+ },
+ "v-7bcc16b5": {
+  "cat": [
+   "vestido"
+  ],
+  "alvo": "vestido",
+  "estampa": [
+   "geometrica"
+  ],
+  "cor": [
+   "cinza",
+   "branco_cru",
+   "preto"
+  ],
+  "comprimento": [
+   "midi"
+  ],
+  "nota": "selfie no espelho, estampa abstrata"
+ },
+ "v-cd135c82": {
+  "cat": [
+   "vestido"
+  ],
+  "alvo": "vestido",
+  "estampa": [
+   "floral"
+  ],
+  "cor": [
+   "azul",
+   "verde",
+   "preto"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "sem rosto"
+ },
+ "v-52178582": {
+  "cat": [
+   "vestido",
+   "casaco_jaqueta",
+   "ambiguo"
+  ],
+  "alvo": "vestido",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "vestido chemise jeans com cardiga por cima"
+ },
+ "v-c2485059": {
+  "cat": [
+   "vestido"
+  ],
+  "alvo": "vestido",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "terrosos",
+   "branco_cru"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "tecido": [
+   "trico_croche"
+  ],
+  "nota": "vestido de trico no mercado"
+ },
+ "v-cc247756": {
+  "cat": [
+   "vestido"
+  ],
+  "alvo": "vestido",
+  "estampa": [
+   "liso"
+  ],
+  "cor": null,
+  "comprimento": [
+   "midi",
+   "longo"
+  ],
+  "nota": "foto preto e branco: cor nao se avalia"
+ },
+ "v-05956919": {
+  "cat": [
+   "saia",
+   "casaco_jaqueta",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "midi"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "saia jeans, blazer floral e blusa coral"
+ },
+ "v-51f6b5d0": {
+  "cat": [
+   "saia",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "lilas_roxo"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "blusa estampada roxa e saia de babados roxa"
+ },
+ "v-5acf7e31": {
+  "cat": [
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: a leitura e da blusa azul com mangas de renda",
+  "conferido_por": "JP"
+ },
+ "v-7d9a29db": {
+  "cat": [
+   "saia",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "lilas_roxo"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "conjunto roxo"
+ },
+ "v-a650d253": {
+  "cat": [
+   "saia",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "camiseta de cereja e minissaia jeans"
+ },
+ "v-15cefbf8": {
+  "cat": [
+   "saia",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "xadrez"
+  ],
+  "cor": [
+   "verde",
+   "branco_cru"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "blusa menta e saia xadrez"
+ },
+ "v-a821d91f": {
+  "cat": [
+   "saia",
+   "camisa",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "terrosos",
+   "cinza"
+  ],
+  "comprimento": [
+   "midi"
+  ],
+  "nota": "escritorio, blusa de cetim e saia plissada"
+ },
+ "v-177224c2": {
+  "cat": [
+   "saia",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "cinza",
+   "verde",
+   "preto"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "nota": "blusa de cetim roxa e saia plissada longa"
+ },
+ "v-0ba1576c": {
+  "cat": [
+   "calca",
+   "ambiguo"
+  ],
+  "alvo": "calca",
+  "estampa": [
+   "xadrez"
+  ],
+  "cor": [
+   "cinza",
+   "terrosos"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "nota": "selfie no espelho, top faixa e calca xadrez"
+ },
+ "v-258f86dc": {
+  "cat": [
+   "calca",
+   "casaco_jaqueta",
+   "ambiguo"
+  ],
+  "alvo": "calca",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "jeans rasgado e blazer preto"
+ },
+ "v-6f7eeb9d": {
+  "cat": [
+   "calca",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "calca",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "top corset branco e jeans claro"
+ },
+ "v-88001422": {
+  "cat": [
+   "calca",
+   "casaco_jaqueta",
+   "ambiguo"
+  ],
+  "alvo": "calca",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "andando, blazer preto e jeans"
+ },
+ "v-3dc8df2e": {
+  "cat": [
+   "calca",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "calca",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "nota": "selfie no espelho, cropped de trico e calca preta"
+ },
+ "v-f19a02cf": {
+  "cat": [
+   "calca",
+   "ambiguo"
+  ],
+  "alvo": "calca",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": null,
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "duas pessoas, dois jeans, recortado"
+ },
+ "v-fde61b68": {
+  "cat": [
+   "calca",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "calca",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "longo"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "sentada, camiseta estampada e jeans"
+ },
+ "v-c7d3ff82": {
+  "cat": [
+   "short",
+   "camisa",
+   "ambiguo"
+  ],
+  "alvo": "short",
+  "estampa": [
+   "liso"
+  ],
+  "cor": null,
+  "comprimento": [
+   "curto"
+  ],
+  "nota": "preto e branco; camisa branca e short"
+ },
+ "v-e224252e": {
+  "cat": [
+   "saia",
+   "short",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": [
+   "saia",
+   "short"
+  ],
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "conferido pelo JP em 23/09: minissaia jeans; pode ser short-saia",
+  "conferido_por": "JP"
+ },
+ "v-8dbda3a2": {
+  "cat": [
+   "short",
+   "camisa",
+   "ambiguo"
+  ],
+  "alvo": "short",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "de costas, camisa xadrez e short jeans"
+ },
+ "v-171d9318": {
+  "cat": [
+   "saia",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "saia",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "a busca achou como short, mas e minissaia jeans; blusa rosa com capuz"
+ },
+ "v-c27e9b04": {
+  "cat": [
+   "blusa_top",
+   "short",
+   "ambiguo"
+  ],
+  "alvo": "short",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": [
+   "curto"
+  ],
+  "tecido": [
+   "jeans"
+  ],
+  "nota": "bata branca e short jeans"
+ },
+ "v-427b9d7c": {
+  "cat": [
+   "camisa",
+   "ambiguo"
+  ],
+  "alvo": "camisa",
+  "estampa": [
+   "xadrez"
+  ],
+  "cor": [
+   "vermelho_rosa",
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "de costas, camisa xadrez caindo do ombro"
+ },
+ "v-8e21610b": {
+  "cat": [
+   "camisa"
+  ],
+  "alvo": "camisa",
+  "estampa": [
+   "listra"
+  ],
+  "cor": [
+   "preto",
+   "cinza",
+   "azul",
+   "terrosos"
+  ],
+  "comprimento": null,
+  "nota": "camisa listrada aberta, luz baixa"
+ },
+ "v-deb2464a": {
+  "cat": [
+   "camisa",
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "camisa",
+  "estampa": [
+   "conversacional",
+   "animal_print"
+  ],
+  "cor": [
+   "azul",
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "body preto e camisa aberta com estampa de oncas"
+ },
+ "v-86d882a1": {
+  "cat": [
+   "camisa",
+   "blusa_top",
+   "short",
+   "ambiguo"
+  ],
+  "alvo": "camisa",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "camisa branca aberta sobre top e short pretos"
+ },
+ "v-f124e930": {
+  "cat": [
+   "camisa",
+   "blusa_top"
+  ],
+  "alvo": "camisa",
+  "estampa": [
+   "conversacional",
+   "geometrica"
+  ],
+  "cor": [
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "estampa miuda de bichinhos"
+ },
+ "v-169f7a7d": {
+  "cat": [
+   "camisa"
+  ],
+  "alvo": "camisa",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul",
+   "verde"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: claramente uma camisa polo feminina",
+  "conferido_por": "JP"
+ },
+ "v-1a421f02": {
+  "cat": [
+   "casaco_jaqueta",
+   "ambiguo"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "jaqueta branca texturizada, evento"
+ },
+ "v-7bcd43f5": {
+  "cat": [
+   "casaco_jaqueta",
+   "camisa",
+   "ambiguo"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "cinza",
+   "azul"
+  ],
+  "comprimento": null,
+  "nota": "jaqueta ou camisa jeans aberta sobre blusa preta"
+ },
+ "v-b886af8f": {
+  "cat": [
+   "casaco_jaqueta",
+   "ambiguo"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul",
+   "cinza",
+   "verde"
+  ],
+  "comprimento": null,
+  "nota": "colete de tweed sobre camisa estampada"
+ },
+ "v-2f127249": {
+  "cat": [
+   "casaco_jaqueta",
+   "calca",
+   "ambiguo"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "terrosos",
+   "branco_cru"
+  ],
+  "comprimento": null,
+  "nota": "trench bege e jeans, recortado"
+ },
+ "v-093a1930": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "xadrez"
+  ],
+  "cor": [
+   "terrosos",
+   "cinza",
+   "verde"
+  ],
+  "comprimento": null,
+  "nota": "blazer xadrez sobre camisa branca"
+ },
+ "v-137554cd": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto",
+   "azul",
+   "verde"
+  ],
+  "comprimento": null,
+  "tecido": [
+   "couro"
+  ],
+  "nota": "jaqueta de couro escura"
+ },
+ "v-a349d714": {
+  "cat": [
+   "casaco_jaqueta",
+   "ambiguo"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "floral"
+  ],
+  "cor": [
+   "preto",
+   "vermelho_rosa"
+  ],
+  "comprimento": null,
+  "nota": "blazer floral sobre blusa vermelha"
+ },
+ "v-7410e3be": {
+  "cat": [
+   "casaco_jaqueta"
+  ],
+  "alvo": "casaco_jaqueta",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "terrosos",
+   "verde",
+   "amarelo_laranja"
+  ],
+  "comprimento": null,
+  "nota": "blazer caqui oversized"
+ },
+ "v-261ac7d4": {
+  "cat": [
+   "blusa_top",
+   "calca",
+   "ambiguo"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "conversacional",
+   "geometrica"
+  ],
+  "cor": [
+   "cinza",
+   "verde"
+  ],
+  "comprimento": null,
+  "nota": "camiseta estampada de passarinhos e jeans"
+ },
+ "v-a823f8de": {
+  "cat": [
+   "blusa_top",
+   "calca",
+   "ambiguo"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "listra",
+   "liso"
+  ],
+  "cor": [
+   "terrosos",
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "selfie no espelho, cropped de trico marrom com listras"
+ },
+ "v-afb2386b": {
+  "cat": [
+   "blusa_top"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": ""
+ },
+ "v-9a6bcfee": {
+  "cat": [
+   "blusa_top",
+   "ambiguo"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "azul"
+  ],
+  "comprimento": null,
+  "tecido": [
+   "trico_croche"
+  ],
+  "nota": "sueter de trico azul e jeans"
+ },
+ "v-9ebd0efb": {
+  "cat": [
+   "blusa_top",
+   "camisa"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "vermelho_rosa"
+  ],
+  "comprimento": null,
+  "nota": "blusa vermelha com botoes"
+ },
+ "v-e26264f4": {
+  "cat": [
+   "blusa_top",
+   "casaco_jaqueta",
+   "camisa",
+   "ambiguo"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "amarelo_laranja"
+  ],
+  "comprimento": null,
+  "nota": "colete peludo amarelo sobre camisa xadrez"
+ },
+ "v-f6972f5b": {
+  "cat": [
+   "macacao",
+   "vestido",
+   "ambiguo"
+  ],
+  "alvo": "macacao",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "macacao preto, sentada no colo de outra pessoa"
+ },
+ "v-f5b8800e": {
+  "cat": [
+   "blusa_top"
+  ],
+  "alvo": "blusa_top",
+  "estampa": [
+   "liso"
+  ],
+  "cor": [
+   "preto"
+  ],
+  "comprimento": null,
+  "nota": "conferido pelo JP em 23/09: camiseta preta com amarracao lateral; o all black confunde",
+  "conferido_por": "JP"
+ }
+}

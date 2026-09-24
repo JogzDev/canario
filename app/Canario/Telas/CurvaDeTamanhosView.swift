@@ -126,16 +126,11 @@ struct CurvaDeTamanhosView: View {
     private func carregar() async {
         carregando = true
         erro = nil
-        // A escada de letra é a que o painel tem em maior volume e a única em
-        // que dá para NOMEAR o tamanho sem misturar sentido entre marcas.
-        let filtroTermo = termo.map { "termo_id=eq.\($0.id)" } ?? "termo_id=is.null"
         do {
             async let r: [CurvaDeTamanhos.Faixa] = Supabase.shared.buscar(
-                "curva_tamanhos",
-                "select=*&\(filtroTermo)&sistema=eq.letra&rotulo=not.is.null&order=semana.desc&limit=60")
+                "curva_tamanhos", CurvaDeTamanhos.consulta(termoId: termo?.id, porRotulo: true))
             async let f: [CurvaDeTamanhos.Faixa] = Supabase.shared.buscar(
-                "curva_tamanhos",
-                "select=*&\(filtroTermo)&sistema=eq.letra&rotulo=is.null&order=semana.desc&limit=20")
+                "curva_tamanhos", CurvaDeTamanhos.consulta(termoId: termo?.id, porRotulo: false))
 
             // Só a semana mais recente; a tabela guarda histórico.
             let todasR = try await r

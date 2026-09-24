@@ -18,6 +18,9 @@ import supabase_rest  # noqa: E402
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAINEL = os.path.join(RAIZ, "anexos", "painel_marcas.csv")
+#: Plataformas que o coletor de varejo sabe ler. A Nuvemshop entrou em
+#: 23/09/2026, quando a Amaro saiu da Shopify.
+PLATAFORMAS = ("vtex", "shopify", "nuvemshop")
 TAXONOMIA = os.path.join(RAIZ, "anexos", "taxonomia.csv")
 
 
@@ -57,7 +60,7 @@ def registro_da_marca(linha):
     fonte obrigatoria do recorte atual.
     """
     status = _val(linha, "status_teste") or "pendente"
-    plataforma = status if status in ("vtex", "shopify") else None
+    plataforma = status if status in PLATAFORMAS else None
     return {
         "nome": linha["marca"].strip(),
         "dominio": _val(linha, "dominio"),

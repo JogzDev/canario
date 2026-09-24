@@ -1,6 +1,6 @@
 name: Sondar origem gerenciada
 
-# Prova de egresso antes de criar qualquer executor novo. Só consulta cinco
+# Prova de egresso antes de criar qualquer executor novo. Só consulta seis
 # URLs públicas já usadas pelo produto, respeita robots.txt e registra códigos
 # sem corpo. Não consulta Supabase, não recebe segredo, não tem cron e não
 # escreve no repositório.
