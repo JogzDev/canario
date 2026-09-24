@@ -58,7 +58,7 @@ const A62 = 'supabase/migrations/20260923154011_a62_curva_so_com_produtos_ativos
 const A64 = 'supabase/migrations/20260924012854_a64_candidatas_e_fatos_da_leitura.sql';
 const A65 = 'supabase/migrations/20260924013846_a65_novidade_nao_e_estreia_de_catalogo.sql';
 const A66 = 'supabase/migrations/20260924014452_a66_atributos_da_taxonomia_na_leitura.sql';
-const A68 = 'supabase/migrations/20260924015133_a68_curva_mede_a_janela_observada.sql';
+const A68 = 'supabase/migrations/20260924020449_a68_curva_mede_a_janela_observada.sql';
 // O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
 // da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
 const ANTES_DA_A62 = [
