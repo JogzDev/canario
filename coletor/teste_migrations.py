@@ -595,6 +595,26 @@ def main():
     if re.search(r"gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}", a63):
         return falhar("a A63 carrega um token do GitHub no texto")
 
+    # A64: a leitura especifica procura pecas pelo nome. Sinal vindo da Luna
+    # e texto escapado, nunca padrao; so peca ativa do painel publicado conta;
+    # so a Edge Function (chave de servico) chama.
+    caminho_a64 = next((c for c in arquivos if "_a64_" in c), None)
+    if caminho_a64 is None:
+        return falhar("A64 (candidatas e fatos da leitura) sumiu")
+    a64 = open(caminho_a64, encoding="utf-8").read()
+    for trecho in (
+            "replace(replace(replace(s, '\\', '\\\\'), '%', '\\%'), '_', '\\_')",
+            "where length(s) between 3 and 40",
+            "and not (a.t like any (vetos))",
+            "ep.ultimo_avistamento_em between painel - 7 and painel",
+            "from public.produtos_de_catalogo_aposentado ca",
+            "revoke all on function public.candidatas_da_leitura(text[], text[], text[], integer) from public, anon, authenticated;",
+            "revoke all on function public.fatos_da_leitura(bigint[], numeric) from public, anon, authenticated;"):
+        if trecho not in a64:
+            return falhar("leitura especifica nao garante: {}".format(trecho))
+    if a64.count("ep.ultimo_avistamento_em between painel - 7 and painel") < 2:
+        return falhar("candidatas e fatos precisam da mesma janela de peca ativa")
+
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")
     exigencias_poda = [
