@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Laboratório de significado: roda P24, A57, A58, A60, A61 e A62 num
+ * Laboratório de significado: roda P24, A57, A58, A60, A61, A62 e A64 num
  * PostgreSQL 17.10 real, descartável, acessível somente pelo socket deste
  * processo. A A62 é provada também por mutação: cada regra dela é retirada
  * por vez, e as asserções precisam reprovar todas as versões mutantes.
@@ -54,6 +54,7 @@ const MIGRATIONS = [
 const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicacao.sql';
 const A61 = 'supabase/migrations/20260923131757_a61_troca_de_catalogo.sql';
 const A62 = 'supabase/migrations/20260923154011_a62_curva_so_com_produtos_ativos.sql';
+const A64 = 'supabase/migrations/20260924012609_a64_cobertura_espera_a_nuvemshop.sql';
 // O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
 // da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
 const ANTES_DA_A62 = [
@@ -260,9 +261,38 @@ async function main() {
     }
     await aplicar(path.join(AQUI, 'linha_de_base_a62.sql'));
 
+    // Uma prova só vale se reprova o defeito que diz pegar. `preparo` (uma
+    // migration mutante, ou nada) e as asserções rodam numa transação desfeita
+    // no fim, e só uma asserção (P0004) conta como reprovação: erro de
+    // sintaxe ou de execução seria uma morte falsa.
+    const exigirReprovacao = async (rotulo, preparo, assercoes) => {
+      await cliente.query('begin');
+      silencio = true;
+      try {
+        if (preparo) {
+          try {
+            await cliente.query(preparo);
+          } catch (erro) {
+            throw new Error(`${rotulo} não se aplica: ${erro.message}`);
+          }
+        }
+        try {
+          await cliente.query(assercoes);
+        } catch (erro) {
+          if (erro.code !== 'P0004') {
+            throw new Error(`${rotulo} quebrou sem asserção: ${erro.message}`);
+          }
+          return erro.message;
+        }
+        throw new Error(`${rotulo} passou nas asserções`);
+      } finally {
+        silencio = false;
+        await cliente.query('rollback');
+      }
+    };
+
     // As mutações rodam ANTES da A62 verdadeira, cada uma sobre a semana que
-    // a P0 deixou e desfeita no fim. Só uma asserção (P0004) conta como
-    // reprovação: erro de sintaxe ou de execução seria uma morte falsa.
+    // a P0 deixou.
     const a62 = await readFile(path.join(REPOSITORIO, A62), 'utf8');
     const assercoesA62 = await readFile(path.join(AQUI, 'assercoes_a62.sql'), 'utf8');
     for (const [indice, [nome, trecho, troca]] of MUTACOES_A62.entries()) {
@@ -270,34 +300,21 @@ async function main() {
       if (ocorrencias !== 1) {
         throw new Error(`mutação "${nome}": o trecho aparece ${ocorrencias} vezes na A62`);
       }
-      await cliente.query('begin');
-      silencio = true;
-      try {
-        try {
-          await cliente.query(a62.replace(trecho, () => troca));
-        } catch (erro) {
-          throw new Error(`mutação "${nome}" não se aplica: ${erro.message}`);
-        }
-        let motivo = null;
-        try {
-          await cliente.query(assercoesA62);
-        } catch (erro) {
-          if (erro.code !== 'P0004') {
-            throw new Error(`mutação "${nome}" quebrou sem asserção: ${erro.message}`);
-          }
-          motivo = erro.message;
-        }
-        if (motivo === null) throw new Error(`mutação "${nome}" passou nas asserções da A62`);
-        silencio = false;
-        console.log(`ok ${48 + indice} mutação reprovada (${nome}): ${motivo}`);
-      } finally {
-        silencio = false;
-        await cliente.query('rollback');
-      }
+      const motivo = await exigirReprovacao(
+        `mutação "${nome}"`, a62.replace(trecho, () => troca), assercoesA62);
+      console.log(`ok ${48 + indice} mutação reprovada (${nome}): ${motivo}`);
     }
 
     await aplicar(path.join(REPOSITORIO, A62));
     await aplicar(path.join(AQUI, 'assercoes_a62.sql'));
+
+    // A64. Sem ela, a cobertura da A60 deixa a marca da Nuvemshop fora da
+    // coorte: a asserção 60 tem de reprovar antes e passar depois.
+    const assercoesA64 = await readFile(path.join(AQUI, 'assercoes_a64.sql'), 'utf8');
+    const antesDaA64 = await exigirReprovacao('antes da A64', null, assercoesA64);
+    console.log(`ok 59 antes da A64 a cobertura ignora a Nuvemshop: ${antesDaA64}`);
+    await aplicar(path.join(REPOSITORIO, A64));
+    await aplicar(path.join(AQUI, 'assercoes_a64.sql'));
     // A consulta de capacidade/cobertura também precisa executar de verdade.
     // READ ONLY torna uma escrita acidental uma falha do laboratório.
     const diagnostico = await readFile(path.join(REPOSITORIO,

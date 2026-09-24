@@ -570,6 +570,16 @@ def main():
     if declaradas != set(materializar_anexos.PLATAFORMAS):
         return falhar("plataformas do coletor ({}) e do banco ({}) divergiram".format(
             ", ".join(materializar_anexos.PLATAFORMAS), ", ".join(sorted(declaradas))))
+    # A64: o portao de publicacao cobra exatamente quem o coletor coleta. Em
+    # 23/09/2026 a Amaro virou `nuvemshop`, passou a ser coletada e ficou fora
+    # da cobertura: uma falha dela publicaria o painel em silencio.
+    coorte = re.search(r"m\.status_teste in \(([^)]*)\)", cobertura)
+    cobradas = set(re.findall(r"'([a-z]+)'", coorte.group(1))) if coorte else set()
+    if cobradas != set(materializar_anexos.PLATAFORMAS):
+        return falhar("portao de publicacao cobra ({}) e o coletor coleta ({})".format(
+            ", ".join(sorted(cobradas)), ", ".join(materializar_anexos.PLATAFORMAS)))
+    if 'm.get("status_teste") in ("vtex", "shopify")' in coletor:
+        return falhar("portao de saude do Python voltou a ter lista propria de plataformas")
 
     # A63: o Supabase e o titular do disparo diario. O token do GitHub mora
     # so no Vault, nenhum papel do app alcanca as funcoes, e cada dia tem no
