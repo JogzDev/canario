@@ -55,6 +55,8 @@ const A60 = 'supabase/migrations/20260923031907_a60_cobertura_unica_da_publicaca
 const A61 = 'supabase/migrations/20260923131757_a61_troca_de_catalogo.sql';
 const A62 = 'supabase/migrations/20260923154011_a62_curva_so_com_produtos_ativos.sql';
 const A64 = 'supabase/migrations/20260924012854_a64_candidatas_e_fatos_da_leitura.sql';
+const A65 = 'supabase/migrations/20260924013846_a65_novidade_nao_e_estreia_de_catalogo.sql';
+const A66 = 'supabase/migrations/20260924014452_a66_atributos_da_taxonomia_na_leitura.sql';
 // O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
 // da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
 const ANTES_DA_A62 = [
@@ -326,6 +328,12 @@ async function main() {
     await aplicar(path.join(AQUI, 'fixture_a64.sql'));
     await aplicar(path.join(REPOSITORIO, A64));
     await aplicar(path.join(AQUI, 'assercoes_a64.sql'));
+    await aplicar(path.join(AQUI, 'fixture_a65.sql'));
+    await aplicar(path.join(REPOSITORIO, A65));
+    await aplicar(path.join(AQUI, 'assercoes_a65.sql'));
+    await aplicar(path.join(AQUI, 'fixture_a66.sql'));
+    await aplicar(path.join(REPOSITORIO, A66));
+    await aplicar(path.join(AQUI, 'assercoes_a66.sql'));
     // A consulta de capacidade/cobertura também precisa executar de verdade.
     // READ ONLY torna uma escrita acidental uma falha do laboratório.
     const diagnostico = await readFile(path.join(REPOSITORIO,

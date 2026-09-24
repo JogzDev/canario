@@ -43,12 +43,18 @@ jobs:
                    "",
                    "Painel de " + (.painel_observado_em // "?") + " · candidatas " + ((.busca.candidatas // 0) | tostring)
                      + " · lidas " + ((.pecas // []) | length | tostring)
-                     + (if .ampliada then " (com parecidas)" else "" end)
                      + " · frases recusadas " + ((.frases_recusadas // 0) | tostring) + " · " + (.modelo // ""),
                    "",
                    ((.frases // [])[] | "- " + .texto + "  _(" + (.fatos | join(", ")) + ")_"),
                    "",
-                   "Sinais: " + ((.busca.sinais // []) | join(", ")) + " · vetos: " + ((.busca.vetos // []) | join(", ")),
+                   "Verificadas " + ((.busca.verificadas // 0) | tostring) + ": " + ((.busca.confirmadas // 0) | tostring)
+                     + " sao a peca, " + ((.busca.parecidas // 0) | tostring) + " parecidas",
+                   ((.pecas // [])[] | "  - " + .marca + " | " + .titulo + " | " + (.preco | tostring)),
+                   "Parecidas, fora dos numeros:",
+                   ((.parecidas // [])[] | "  - " + .marca + " | " + .titulo + " | " + (.preco | tostring)),
+                   "",
+                   "Categorias: " + ((.busca.categorias // []) | join(", ")) + " · atributos: " + ((.busca.atributos // []) | join(", "))
+                     + " · sinais: " + ((.busca.sinais // []) | join(", ")) + " · vetos: " + ((.busca.vetos // []) | join(", ")),
                    (if .error then "Erro: " + .error else empty end)' resposta.json
           } >> "$GITHUB_STEP_SUMMARY"
           cat "$GITHUB_STEP_SUMMARY" | tail -20

@@ -1,6 +1,6 @@
 import { withSupabase } from "npm:@supabase/server@1.7.0";
 import {
-  esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase,
+  ATRIBUTOS, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase, fraseSemPeca,
   INTERPRETACAO, MODELOS, pedidoLimpo, REDACAO, termosDeBusca, VERIFICACAO, VERSAO,
   verificarFrases,
 } from "./leitura.ts";
@@ -16,7 +16,7 @@ import {
 
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const CANDIDATAS_PARA_VERIFICAR = 40;
-const MINIMO_PARA_LER = 3;
+const MAXIMO_DE_PARECIDAS = 12;
 
 function response(status: number, body: Record<string, unknown>) {
   return Response.json(body, {
@@ -102,34 +102,54 @@ export default {
     } : null;
     const entrada = [
       `Categories: ${JSON.stringify(["vestido", "macacao", "saia", "short", "calca", "camisa", "casaco_jaqueta", "blusa_top"])}`,
+      `Taxonomy attributes: ${JSON.stringify(ATRIBUTOS)}`,
       texto ? `Typed request: <request>${texto}</request>` : "",
       refinamento ? `Chosen follow-up answer: <answer>${refinamento}</answer>` : "",
       analiseSegura ? `Visual analysis of the person's photo: ${JSON.stringify(analiseSegura)}` : "",
     ].filter(Boolean).join("\n");
-    const interpretacao = await luna(apiKey, "interpretacao_da_peca", INTERPRETACAO, entrada, esquemaDaInterpretacao());
-    if (!interpretacao) return response(502, { error: "reading_provider_error" });
+    // O mesmo pedido lê o mesmo significado por sete dias (A67): a Luna não
+    // escolhe sinais diferentes a cada vez. Só o hash do pedido fica guardado.
+    const chave = await sha256(`${VERSAO}:${entrada}`);
+    const { data: guardada } = await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
+      .select("interpretacao").eq("chave", chave)
+      .gte("criado_em", new Date(Date.now() - 7 * 864e5).toISOString()).maybeSingle();
+    let interpretacao: { dados: any; modelo: string } | null = guardada
+      ? { dados: guardada.interpretacao, modelo: "guardada" } : null;
+    if (!interpretacao) {
+      interpretacao = await luna(apiKey, "interpretacao_da_peca", INTERPRETACAO, entrada, esquemaDaInterpretacao());
+      if (!interpretacao) return response(502, { error: "reading_provider_error" });
+      await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
+        .upsert({ chave, interpretacao: interpretacao.dados, versao: VERSAO, criado_em: new Date().toISOString() });
+    }
     const peca = interpretacao.dados;
     if (peca.fora_de_escopo) {
       return response(200, { versao: VERSAO, fora_de_escopo: true, nome: peca.nome, explicacao: peca.explicacao });
     }
     const sinais = termosDeBusca(peca.sinais, 12);
     const vetos = termosDeBusca(peca.vetos, 12);
-    if (!sinais.length) return response(502, { error: "reading_without_signals" });
+    const atributos: string[] = Array.isArray(peca.atributos) ? peca.atributos.slice(0, 4) : [];
+    const categorias: string[] = Array.isArray(peca.categorias) ? peca.categorias : [];
+    // Sem texto, a busca precisa de categoria e atributo (a A66 recusa o resto).
+    if (!sinais.length && !(categorias.length && atributos.length)) {
+      return response(502, { error: "reading_without_signals" });
+    }
 
     // 2. Candidatas ativas do painel publicado (A64).
     const { data: candidatas, error: erroDasCandidatas } = await ctx.supabaseAdmin.rpc(
       "candidatas_da_leitura",
-      { p_categorias: peca.categorias ?? [], p_sinais: sinais, p_vetos: vetos, p_limite: CANDIDATAS_PARA_VERIFICAR },
+      { p_categorias: categorias, p_atributos: atributos, p_sinais: sinais, p_vetos: vetos,
+        p_limite: CANDIDATAS_PARA_VERIFICAR },
     );
     if (erroDasCandidatas) return response(503, { error: "panel_unavailable" });
     const lista: any[] = candidatas?.pecas ?? [];
     const base = {
       versao: VERSAO, nome: peca.nome, explicacao: peca.explicacao, perguntas: peca.perguntas ?? [],
       painel_observado_em: candidatas?.painel_observado_em ?? null,
-      busca: { categorias: peca.categorias, sinais, vetos, candidatas: candidatas?.total ?? 0 },
+      busca: { categorias, atributos, sinais, vetos, candidatas: candidatas?.total ?? 0 } as Record<string, unknown>,
     };
     if (!lista.length) {
-      return response(200, { ...base, frases: [], fatos: {}, pecas: [], modelo: interpretacao.modelo });
+      return response(200, { ...base, frases: [fraseSemPeca(peca.nome, [])], fatos: {}, pecas: [],
+                             parecidas: [], modelo: interpretacao.modelo });
     }
 
     // 3. Verificação pelo título. Id que a Luna invente não entra: o esquema
@@ -145,13 +165,23 @@ export default {
     for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
     const confirmadas = ids.filter((id) => veredito.get(id) === "e_a_peca");
     const parecidas = ids.filter((id) => veredito.get(id) === "parecida");
-    // Com menos de três iguais, a leitura olha também as parecidas, e diz isso.
-    const ampliada = confirmadas.length < MINIMO_PARA_LER;
-    const lidas = ampliada ? [...confirmadas, ...parecidas] : confirmadas;
+    Object.assign(base.busca, {
+      verificadas: ids.length, confirmadas: confirmadas.length, parecidas: parecidas.length,
+    });
+    // Só a peça de verdade entra nos números. As parecidas vão à parte, para
+    // a pessoa ver o que existe perto -- somá-las aos fatos faria uma leitura
+    // de jaqueta napoleão falar de puffer com gola alta.
+    const lidas = confirmadas;
     const pecas = lista.filter((p) => lidas.includes(Number(p.id)))
-      .map((p) => ({ ...p, veredito: veredito.get(Number(p.id)) }));
+      .map((p) => ({ ...p, veredito: "e_a_peca" }));
+    const vizinhas = lista.filter((p) => parecidas.includes(Number(p.id))).slice(0, MAXIMO_DE_PARECIDAS)
+      .map((p) => ({ ...p, veredito: "parecida" }));
     if (!lidas.length) {
-      return response(200, { ...base, frases: [], fatos: {}, pecas: [], ampliada, modelo: verificacao.modelo });
+      const fatosDasParecidas = vizinhas.length
+        ? { parecidas: { id: "parecidas", pecas: vizinhas.length, provas: vizinhas.map((p) => p.id) } }
+        : {};
+      return response(200, { ...base, frases: [fraseSemPeca(peca.nome, vizinhas)], fatos: fatosDasParecidas,
+                             pecas: [], parecidas: vizinhas, modelo: verificacao.modelo });
     }
 
     // 4. Fatos das verificadas (A64).
@@ -164,19 +194,18 @@ export default {
     // 5. Redação, e o verificador corta toda frase sem prova.
     const redacao = await luna(
       apiKey, "leitura_da_peca", REDACAO,
-      JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao },
-                       ampliada_com_parecidas: ampliada, fatos }),
+      JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao }, fatos }),
       esquemaDaRedacao(Object.keys(fatos)));
     if (!redacao) return response(502, { error: "reading_provider_error" });
     const { aceitas, recusadas } = verificarFrases((redacao.dados.frases ?? []) as Frase[], fatos);
 
     return response(200, {
       ...base,
-      ampliada,
       frases: aceitas,
       frases_recusadas: recusadas.length,
       fatos,
       pecas,
+      parecidas: vizinhas,
       modelo: redacao.modelo,
     });
   }),
