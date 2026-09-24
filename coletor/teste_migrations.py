@@ -614,6 +614,18 @@ def main():
             return falhar("leitura especifica nao garante: {}".format(trecho))
     if a64.count("ep.ultimo_avistamento_em between painel - 7 and painel") < 2:
         return falhar("candidatas e fatos precisam da mesma janela de peca ativa")
+    _, candidatas = ultima_definicao(
+        arquivos, "create or replace function public.candidatas_da_leitura(")
+    for trecho in (
+            "p_atributos text[]",
+            "public._texto_da_leitura(p_sinais)",
+            "and not (a.t like any (vetos))",
+            "ep.ultimo_avistamento_em between painel - 7 and painel",
+            "from public.produtos_de_catalogo_aposentado ca",
+            "where not exists (select 1 from public.produto_termos pt",
+            "revoke all on function public.candidatas_da_leitura(text[], text[], text[], text[], integer) from public, anon, authenticated;"):
+        if trecho not in candidatas:
+            return falhar("candidatas finais da leitura nao garantem: {}".format(trecho))
 
     _, poda = ultima_definicao(
         arquivos, "create or replace function public.podar_snapshots")

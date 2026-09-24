@@ -1,6 +1,6 @@
 import { withSupabase } from "npm:@supabase/server@1.7.0";
 import {
-  esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase,
+  ATRIBUTOS, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase,
   INTERPRETACAO, MODELOS, pedidoLimpo, REDACAO, termosDeBusca, VERIFICACAO, VERSAO,
   verificarFrases,
 } from "./leitura.ts";
@@ -102,6 +102,7 @@ export default {
     } : null;
     const entrada = [
       `Categories: ${JSON.stringify(["vestido", "macacao", "saia", "short", "calca", "camisa", "casaco_jaqueta", "blusa_top"])}`,
+      `Taxonomy attributes: ${JSON.stringify(ATRIBUTOS)}`,
       texto ? `Typed request: <request>${texto}</request>` : "",
       refinamento ? `Chosen follow-up answer: <answer>${refinamento}</answer>` : "",
       analiseSegura ? `Visual analysis of the person's photo: ${JSON.stringify(analiseSegura)}` : "",
@@ -114,19 +115,25 @@ export default {
     }
     const sinais = termosDeBusca(peca.sinais, 12);
     const vetos = termosDeBusca(peca.vetos, 12);
-    if (!sinais.length) return response(502, { error: "reading_without_signals" });
+    const atributos: string[] = Array.isArray(peca.atributos) ? peca.atributos.slice(0, 4) : [];
+    const categorias: string[] = Array.isArray(peca.categorias) ? peca.categorias : [];
+    // Sem texto, a busca precisa de categoria e atributo (a A66 recusa o resto).
+    if (!sinais.length && !(categorias.length && atributos.length)) {
+      return response(502, { error: "reading_without_signals" });
+    }
 
     // 2. Candidatas ativas do painel publicado (A64).
     const { data: candidatas, error: erroDasCandidatas } = await ctx.supabaseAdmin.rpc(
       "candidatas_da_leitura",
-      { p_categorias: peca.categorias ?? [], p_sinais: sinais, p_vetos: vetos, p_limite: CANDIDATAS_PARA_VERIFICAR },
+      { p_categorias: categorias, p_atributos: atributos, p_sinais: sinais, p_vetos: vetos,
+        p_limite: CANDIDATAS_PARA_VERIFICAR },
     );
     if (erroDasCandidatas) return response(503, { error: "panel_unavailable" });
     const lista: any[] = candidatas?.pecas ?? [];
     const base = {
       versao: VERSAO, nome: peca.nome, explicacao: peca.explicacao, perguntas: peca.perguntas ?? [],
       painel_observado_em: candidatas?.painel_observado_em ?? null,
-      busca: { categorias: peca.categorias, sinais, vetos, candidatas: candidatas?.total ?? 0 } as Record<string, unknown>,
+      busca: { categorias, atributos, sinais, vetos, candidatas: candidatas?.total ?? 0 } as Record<string, unknown>,
     };
     if (!lista.length) {
       return response(200, { ...base, frases: [], fatos: {}, pecas: [], modelo: interpretacao.modelo });

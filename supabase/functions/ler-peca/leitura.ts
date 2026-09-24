@@ -15,6 +15,17 @@ export const CATEGORIAS = [
   "vestido", "macacao", "saia", "short", "calca", "camisa", "casaco_jaqueta", "blusa_top",
 ] as const;
 
+// Os atributos aprovados da taxonomia, os mesmos da leitura de foto. O motor
+// já liga cada peça a eles: a busca filtra por aqui em vez de adivinhar texto.
+export const ATRIBUTOS = [
+  "curto", "midi", "longo",
+  "preto", "branco_cru", "cinza", "azul", "verde", "lilas_roxo", "vermelho_rosa", "amarelo_laranja", "terrosos",
+  "liso", "floral", "listra", "animal_print", "xadrez", "geometrica", "conversacional",
+  "algodao", "linho", "jeans", "couro", "malha", "trico_croche", "viscose_fluido",
+  "flare", "reta_wide", "cintura_alta", "cintura_media", "cintura_baixa",
+  "basico", "romantico", "boho_artesanal", "alfaiataria", "festa_brilho",
+] as const;
+
 // ---------------------------------------------------------------------------
 // 1. Interpretação: pedido -> categoria, sinais de título e vetos
 // ---------------------------------------------------------------------------
@@ -32,13 +43,19 @@ Return:
 - explicacao: ONE Portuguese sentence with the construction that defines it
   (buttons, collar, closure, cut). No history, no trend talk, no opinion.
 - categorias: one or two of the given category ids.
-- sinais: 3 to 10 lowercase Portuguese substrings, WITHOUT accents, that
+- atributos: 0 to 4 ids from the given taxonomy for what the request states
+  about length, color, print, fabric, silhouette, waist or aesthetic
+  ("saia midi preta" -> midi, preto). Only what the request or photo states;
+  never infer. The panel already tags every piece with these ids.
+- sinais: 0 to 10 lowercase Portuguese substrings, WITHOUT accents, that
   Brazilian retail titles of THIS garment actually contain. Prefer construction
   words ("abotoamento duplo", "botoes dourados", "gola padre", "militar",
   "napoleao", "plissada"). Each signal ALONE must point to this garment: a
   cue that many unrelated garments of the category share is not a signal
   ("gola alta" for jackets, "manga longa", "feminina", "casual"). Each 3 to 40
-  characters.
+  characters. Never repeat as a signal what an atributo already covers
+  ("midi", "preta", "jeans"). Leave sinais empty when the category and the
+  atributos already describe the whole request.
 - vetos: 0 to 6 substrings that would bring false positives, especially color
   names containing a signal ("verde militar" when "militar" is a signal).
 - fora_de_escopo: true when the request is not about one women's garment
@@ -50,11 +67,12 @@ export function esquemaDaInterpretacao() {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["nome", "explicacao", "categorias", "sinais", "vetos", "fora_de_escopo", "perguntas"],
+    required: ["nome", "explicacao", "categorias", "atributos", "sinais", "vetos", "fora_de_escopo", "perguntas"],
     properties: {
       nome: { type: "string" },
       explicacao: { type: "string" },
       categorias: { type: "array", items: { type: "string", enum: [...CATEGORIAS] }, maxItems: 2 },
+      atributos: { type: "array", items: { type: "string", enum: [...ATRIBUTOS] }, maxItems: 4 },
       sinais: { type: "array", items: { type: "string" }, maxItems: 10 },
       vetos: { type: "array", items: { type: "string" }, maxItems: 6 },
       fora_de_escopo: { type: "boolean" },
@@ -93,8 +111,10 @@ export function esquemaDaVerificacao(ids: number[]) {
     additionalProperties: false,
     required: ["veredictos"],
     properties: {
+      // Um veredito por candidata: sem isto, uma resposta curta deixava a
+      // maioria sem veredito e a leitura concluía "nenhuma é a peça".
       veredictos: {
-        type: "array",
+        type: "array", minItems: ids.length, maxItems: ids.length,
         items: {
           type: "object", additionalProperties: false, required: ["id", "veredito", "motivo"],
           properties: {
