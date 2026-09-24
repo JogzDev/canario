@@ -16,7 +16,7 @@ import {
 
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const CANDIDATAS_PARA_VERIFICAR = 40;
-const MINIMO_PARA_LER = 3;
+const MAXIMO_DE_PARECIDAS = 12;
 
 function response(status: number, body: Record<string, unknown>) {
   return Response.json(body, {
@@ -148,13 +148,16 @@ export default {
     Object.assign(base.busca, {
       verificadas: ids.length, confirmadas: confirmadas.length, parecidas: parecidas.length,
     });
-    // Com menos de três iguais, a leitura olha também as parecidas, e diz isso.
-    const ampliada = confirmadas.length < MINIMO_PARA_LER;
-    const lidas = ampliada ? [...confirmadas, ...parecidas] : confirmadas;
+    // Só a peça de verdade entra nos números. As parecidas vão à parte, para
+    // a pessoa ver o que existe perto -- somá-las aos fatos faria uma leitura
+    // de jaqueta napoleão falar de puffer com gola alta.
+    const lidas = confirmadas;
     const pecas = lista.filter((p) => lidas.includes(Number(p.id)))
-      .map((p) => ({ ...p, veredito: veredito.get(Number(p.id)) }));
+      .map((p) => ({ ...p, veredito: "e_a_peca" }));
+    const vizinhas = lista.filter((p) => parecidas.includes(Number(p.id))).slice(0, MAXIMO_DE_PARECIDAS)
+      .map((p) => ({ ...p, veredito: "parecida" }));
     if (!lidas.length) {
-      return response(200, { ...base, frases: [], fatos: {}, pecas: [], ampliada, modelo: verificacao.modelo });
+      return response(200, { ...base, frases: [], fatos: {}, pecas: [], parecidas: vizinhas, modelo: verificacao.modelo });
     }
 
     // 4. Fatos das verificadas (A64).
@@ -167,19 +170,18 @@ export default {
     // 5. Redação, e o verificador corta toda frase sem prova.
     const redacao = await luna(
       apiKey, "leitura_da_peca", REDACAO,
-      JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao },
-                       ampliada_com_parecidas: ampliada, fatos }),
+      JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao }, fatos }),
       esquemaDaRedacao(Object.keys(fatos)));
     if (!redacao) return response(502, { error: "reading_provider_error" });
     const { aceitas, recusadas } = verificarFrases((redacao.dados.frases ?? []) as Frase[], fatos);
 
     return response(200, {
       ...base,
-      ampliada,
       frases: aceitas,
       frases_recusadas: recusadas.length,
       fatos,
       pecas,
+      parecidas: vizinhas,
       modelo: redacao.modelo,
     });
   }),

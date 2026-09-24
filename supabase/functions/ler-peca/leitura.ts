@@ -35,8 +35,10 @@ Return:
 - sinais: 3 to 10 lowercase Portuguese substrings, WITHOUT accents, that
   Brazilian retail titles of THIS garment actually contain. Prefer construction
   words ("abotoamento duplo", "botoes dourados", "gola padre", "militar",
-  "napoleao", "plissada"). Never a word so generic that it matches most of the
-  category ("jaqueta", "feminina", "casual"). Each 3 to 40 characters.
+  "napoleao", "plissada"). Each signal ALONE must point to this garment: a
+  cue that many unrelated garments of the category share is not a signal
+  ("gola alta" for jackets, "manga longa", "feminina", "casual"). Each 3 to 40
+  characters.
 - vetos: 0 to 6 substrings that would bring false positives, especially color
   names containing a signal ("verde militar" when "militar" is a signal).
 - fora_de_escopo: true when the request is not about one women's garment
@@ -76,7 +78,10 @@ export function esquemaDaInterpretacao() {
 
 export const VERIFICACAO = `You verify candidate products for one garment. For each candidate title decide:
 - "e_a_peca": the title names the construction that defines the garment.
-- "parecida": it shares some cues but not the defining construction.
+- "parecida": a close relative that shares PART of the defining construction
+  (for a napoleon jacket: a double-breasted blazer with metal buttons). Sharing
+  only a generic cue is not enough: a puffer or sports jacket with a high
+  collar is "nao_e" for a napoleon jacket.
 - "nao_e": anything else, including color names that merely contain a
   signal word.
 Judge only from the title. Do not guess from brand or price. motivo is at most
@@ -123,7 +128,22 @@ Brazilian Portuguese, using ONLY the facts JSON.
 - If the "total" fact has fewer than 5 pieces, write at most two sentences
   saying there are few pieces and what they are; do not generalize.
 - If "posicao_do_preco" exists, one sentence says where the person's price
-  sits among the pieces, with the counts given.`;
+  sits among the pieces, with the counts given.
+
+What each fact means:
+- total: "pecas" pieces of this garment on sale in the panel, from "marcas" brands.
+- marcas: "por_marca" lists pieces per brand.
+- preco: current prices of those pieces (minimo, p25, mediana, p75, maximo).
+- remarcadas: "pecas" are on sale below their original price right now;
+  "de_cada_100" is that share; "desconto_mediano_pct" their median discount.
+- reposicoes_30d / remarcacoes_30d: pieces that had a size restocked / a price
+  cut in the last 30 days; "ultima" is the latest date (do not write it).
+- novidades_30d: pieces first seen in the panel in the last 30 days.
+- grade: of "pecas_com_grade" pieces with size information,
+  "com_tamanho_esgotado" have at least one size sold out.
+- posicao_do_preco: "preco" is the PERSON's own piece; "mais_baratas" panel
+  pieces cost less than it, "mais_caras" cost more. Example: mais_baratas 8,
+  mais_caras 3 means "8 pecas custam menos e 3 custam mais que a sua".`;
 
 export function esquemaDaRedacao(idsDeFatos: string[]) {
   return {
