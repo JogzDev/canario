@@ -375,7 +375,9 @@ struct LinhaDeAtributo: View {
         .frame(minHeight: 56)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityValue(leitura.map { Leitura.faixa($0).rotulo } ?? frase("No reading yet"))
+        .accessibilityValue(mostraNumero || mostraFaixa
+                            ? (leitura.map { Leitura.faixa($0).rotulo } ?? frase("No reading yet"))
+                            : "")
     }
 
     /// A faixa por escrito, com a seta. Um `Text` só, para quebrar como frase.

@@ -97,6 +97,10 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Start with a word"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Dress"].exists)
         XCTAssertTrue(app.buttons["Black"].exists)
+        let vazia = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        vazia.name = "busca-v4-vazia"
+        vazia.lifetime = .keepAlways
+        add(vazia)
 
         let campo = app.searchFields.firstMatch
         XCTAssertTrue(campo.waitForExistence(timeout: 5))
@@ -108,6 +112,72 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Attributes"].exists)
         XCTAssertFalse(app.staticTexts["Combined reading"].exists,
                        "a busca nao pode fabricar a media dos indices dos atributos")
+        let resultado = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        resultado.name = "busca-v4-com-termos"
+        resultado.lifetime = .keepAlways
+        add(resultado)
+    }
+
+    func testBuscaSemTermoAindaOfereceLeituraDoTextoInteiro() {
+        let app = aplicativo(argumentos: ["-CanarioAbrirBusca",
+                                          "-CanarioUITestBuscaVocabulario",
+                                          "-CanarioUITestImprensa", "vazio"])
+        app.launch()
+        let campo = app.searchFields.firstMatch
+        XCTAssertTrue(campo.waitForExistence(timeout: 5))
+        campo.tap()
+        campo.typeText("Napoleon Jacket")
+        XCTAssertTrue(app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Read “Napoleon Jacket” in the panel")
+        ).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Attributes"].exists)
+        let semTermo = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        semTermo.name = "busca-v4-sem-vocabulario"
+        semTermo.lifetime = .keepAlways
+        add(semTermo)
+    }
+
+    func testBuscaV4EmPortuguesMostraVocabularioELeitura() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues",
+                               "-CanarioAbrirBusca", "-CanarioUITestBuscaVocabulario",
+                               "-CanarioUITestImprensa", "vazio"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Comece por uma palavra"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Vestido"].exists)
+        let vazia = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        vazia.name = "busca-v4-pt-vazia"
+        vazia.lifetime = .keepAlways
+        add(vazia)
+
+        let campo = app.searchFields.firstMatch
+        campo.tap()
+        campo.typeText("vestido preto")
+        XCTAssertTrue(app.staticTexts["Atributos"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Ler “vestido preto” no painel")
+        ).firstMatch.exists)
+        app.swipeUp()
+        let resultado = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        resultado.name = "busca-v4-pt-resultado"
+        resultado.lifetime = .keepAlways
+        add(resultado)
+    }
+
+    func testEnviarBuscaAbreLeituraDoTextoSemUsarCota() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues",
+                               "-CanarioUITestLeituraBusca", "-CanarioUITestBuscaVocabulario",
+                               "-CanarioUITestImprensa", "vazio"]
+        app.launch()
+
+        let campo = app.searchFields.firstMatch
+        XCTAssertTrue(campo.waitForExistence(timeout: 5))
+        campo.tap()
+        campo.typeText("Napoleon Jacket\n")
+        XCTAssertTrue(app.staticTexts["Uma peça do painel corresponde ao pedido."]
+            .waitForExistence(timeout: 5))
     }
 
     func testImprensaMostraAMateriaQueContemAExpressao() {

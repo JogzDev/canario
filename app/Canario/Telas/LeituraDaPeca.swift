@@ -9,7 +9,9 @@ import SwiftUI
 struct LeituraDaPeca: View {
     static var testeDeInterfaceAtivo: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-CanarioUITestLeituraDaFoto")
+        let argumentos = ProcessInfo.processInfo.arguments
+        return argumentos.contains("-CanarioUITestLeituraDaFoto")
+            || argumentos.contains("-CanarioUITestLeituraBusca")
         #else
         false
         #endif

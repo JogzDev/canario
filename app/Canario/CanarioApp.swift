@@ -94,6 +94,9 @@ struct Raiz: View {
         if argumentos.contains("-CanarioLeituraPedida") {
             return .buscar
         }
+        if argumentos.contains("-CanarioUITestLeituraBusca") {
+            return .buscar
+        }
         if argumentos.contains("-CanarioAbrirEstudio")
             || argumentos.contains("-CanarioUITestImportacao")
             || argumentos.contains("-CanarioUITestDetalhes")
@@ -131,21 +134,8 @@ struct Raiz: View {
             }
         }
         .overlay { sobreposicoes }
-        // O esquema do sistema acompanha o território da aba visível.
-        //
-        // Ele mora AQUI, e não no modificador `.territorio`, porque
-        // `preferredColorScheme` se propaga até a cena: o da raiz ganha do de
-        // dentro, e um `.dark` aplicado lá embaixo não conseguia clarear a
-        // hora no topo sobre o fundo #0A0B1A.
-        //
-        // É isto que veste o que token nenhum alcança -- barra de status,
-        // indicador de rolagem, `Picker` segmentado -- e é o que faz o app
-        // continuar claro no resto, que é a decisão de produto de sempre.
-        // Esta semana segue o sistema, claro ou escuro. As telas que ainda não
-        // passaram para a v4 continuam claras até serem refeitas.
-        // Busca ainda é a tela da 1.x com a primeira fatia da v4; fica clara
-        // até ser refeita. As outras três já seguem o sistema.
-        .preferredColorScheme(aba == .buscar ? .light : nil)
+        // A Busca passou para a v4 e segue o tema do aparelho como as outras
+        // telas da edição. Cada tela ainda em revisão cuida do próprio tema.
         // O menu não pode ultrapassar a borda e voltar. `.snappy` tem mola:
         // na gravação a 60 fps, a aresta chegou a 849 px e recuou para 845 px,
         // revelando por alguns quadros uma faixa do céu atrás do painel. O
