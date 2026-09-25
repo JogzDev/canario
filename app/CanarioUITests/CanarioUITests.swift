@@ -395,6 +395,27 @@ final class CanarioUITests: XCTestCase {
         add(prova)
     }
 
+    func testAtributoConfirmadoAbreRelatorio() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues", "-CanarioUITestLeituraDaFoto"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Preencha os dados"].waitForExistence(timeout: 5))
+        app.buttons["Me mostre o mercado"].tap()
+        let atributo = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+                        "Vestido", "Categoria")
+        ).firstMatch
+        XCTAssertTrue(atributo.waitForExistence(timeout: 5))
+        atributo.tap()
+        XCTAssertTrue(app.staticTexts["Vestido"].waitForExistence(timeout: 10))
+
+        let captura = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        captura.name = "relatorio-do-atributo"
+        captura.lifetime = .keepAlways
+        add(captura)
+    }
+
     func testEstudioMostraLeituraFeitaSemChamarARede() {
         let app = XCUIApplication()
         app.launchArguments = ["-idioma_da_interface", "portugues",
