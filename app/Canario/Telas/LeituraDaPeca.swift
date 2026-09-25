@@ -222,7 +222,23 @@ struct LeituraDaPeca: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Edicao.bordoCheio)
+                .foregroundStyle(.white)
                 .disabled(Self.valor(de: precoDigitado) == nil)
+            }
+            switch PrecoDigitado.interpretar(precoDigitado) {
+            case .ambiguo:
+                Text("Use cents or omit the separator to clarify the price.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            case .invalido:
+                Text("Enter a valid price.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            case .valor(let valor) where valor >= 100_000:
+                Text("The maximum price for a reading is R$ 99,999.99.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            default: EmptyView()
             }
         }
     }
@@ -252,15 +268,36 @@ struct LeituraDaPeca: View {
         defer { carregando = false }
         #if DEBUG
         if Self.testeDeInterfaceAtivo {
-            leitura = try? LeituraEspecifica.decodificar(Data("""
-            {"versao":"teste-de-interface","nome":"vestido preto",
-             "painel_observado_em":"2026-09-24",
-             "frases":[{"texto":"Uma peça do painel corresponde ao pedido.","fatos":["total"]}],
-             "fatos":{"total":{"pecas":1,"provas":[1]}},
-             "pecas":[{"id":1,"titulo":"Vestido preto","marca":"Marca de teste",
-                       "preco":450,"url":"https://example.invalid/peca"}],
-             "parecidas":[],"perguntas":[]}
-            """.utf8))
+            let refinou = refinamento == "cetim"
+            var frases: [[String: Any]] = [[
+                "texto": refinou ? "O recorte foi refinado para cetim."
+                                  : "Uma peça do painel corresponde ao pedido.",
+                "fatos": ["total"],
+            ]]
+            var fatos: [String: [String: Any]] = [
+                "total": ["pecas": 1, "provas": [1]],
+            ]
+            if preco == 450 {
+                frases.append(["texto": "1 peça custa menos que a sua de R$ 450.",
+                               "fatos": ["posicao_do_preco"]])
+                fatos["posicao_do_preco"] = [
+                    "preco": 450, "pecas": 1, "mais_baratas": 1,
+                    "mais_caras": 0, "provas": [1],
+                ]
+            }
+            let bruto: [String: Any] = [
+                "versao": "teste-de-interface", "nome": "vestido preto",
+                "painel_observado_em": "2026-09-24", "frases": frases,
+                "fatos": fatos,
+                "pecas": [["id": 1, "titulo": "Vestido preto",
+                           "marca": "Marca de teste", "preco": 350,
+                           "url": "https://example.invalid/peca"]],
+                "parecidas": [],
+                "perguntas": [["pergunta": "Qual tecido?", "opcoes": ["cetim", "algodão"]]],
+            ]
+            if let dados = try? JSONSerialization.data(withJSONObject: bruto) {
+                leitura = try? LeituraEspecifica.decodificar(dados)
+            }
             return
         }
         #endif
@@ -283,15 +320,11 @@ struct LeituraDaPeca: View {
         }
     }
 
-    /// "R$ 1.299,90", "1299.9", "450" -> número.
+    /// Mesma leitura pt-BR/en do formulário do Acervo, no limite da API.
     static func valor(de texto: String) -> Double? {
-        var limpo = texto.replacingOccurrences(of: "R$", with: "")
-            .trimmingCharacters(in: .whitespaces)
-        if limpo.contains(",") {
-            limpo = limpo.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
-        }
-        guard let v = Double(limpo), v > 0, v < 100_000 else { return nil }
-        return v
+        guard let valor = PrecoDigitado.interpretar(texto).valor,
+              valor < 100_000 else { return nil }
+        return valor
     }
 }
 

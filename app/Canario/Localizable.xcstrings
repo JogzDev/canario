@@ -10756,6 +10756,27 @@
           }
         }
       }
+    },
+    "Use cents or omit the separator to clarify the price.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "new", "value": "Use cents or omit the separator to clarify the price." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Use centavos ou tire o separador para deixar o preço claro." } }
+      }
+    },
+    "Enter a valid price.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "new", "value": "Enter a valid price." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Digite um preço válido." } }
+      }
+    },
+    "The maximum price for a reading is R$ 99,999.99.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "new", "value": "The maximum price for a reading is R$ 99,999.99." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "O preço máximo para uma Leitura é R$ 99.999,99." } }
+      }
     }
   },
   "version": "1.1"

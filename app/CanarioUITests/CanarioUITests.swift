@@ -348,6 +348,40 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Há uma peça do painel neste recorte."].exists)
     }
 
+    func testRefinamentoEPrecoRefazemLeituraComProva() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues", "-CanarioUITestLeituraDaFoto"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Preencha os dados"].waitForExistence(timeout: 5))
+        app.buttons["Me mostre o mercado"].tap()
+        let ler = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Ler esta peça no painel")
+        ).firstMatch
+        XCTAssertTrue(ler.waitForExistence(timeout: 5))
+        ler.tap()
+
+        XCTAssertTrue(app.buttons["cetim"].waitForExistence(timeout: 5))
+        app.buttons["cetim"].tap()
+        XCTAssertTrue(app.staticTexts["O recorte foi refinado para cetim."].waitForExistence(timeout: 5))
+
+        let campo = app.textFields.firstMatch
+        XCTAssertTrue(campo.waitForExistence(timeout: 5))
+        campo.tap()
+        campo.typeText("450")
+        app.buttons["Comparar"].tap()
+        let posicao = app.buttons["1 peça custa menos que a sua de R$ 450."]
+        XCTAssertTrue(posicao.waitForExistence(timeout: 5))
+        let captura = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        captura.name = "leitura-refinada-com-posicao-de-preco"
+        captura.lifetime = .keepAlways
+        add(captura)
+
+        posicao.tap()
+        XCTAssertTrue(app.navigationBars["Prova"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Marca de teste"].exists)
+    }
+
     func testCompareNaoFicaReduzidoAUmAtributo() throws {
         try XCTSkipUnless(
             ProcessInfo.processInfo.environment["CANARIO_REAL_DATA_UI_TESTS"] == "1",
