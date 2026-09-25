@@ -325,6 +325,29 @@ final class CanarioUITests: XCTestCase {
         add(prova)
     }
 
+    func testEstudioMostraLeituraFeitaSemChamarARede() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues",
+                               "-CanarioAbrirEstudio", "-CanarioUITestLeiturasFeitas"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Leituras feitas"].waitForExistence(timeout: 5))
+        let registro = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "saia midi plissada")
+        ).firstMatch
+        XCTAssertTrue(registro.exists)
+        XCTAssertTrue(app.staticTexts["Peças: 1 · marcas: 1"].exists)
+        let lista = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        lista.name = "estudio-leituras-feitas"
+        lista.lifetime = .keepAlways
+        add(lista)
+
+        registro.tap()
+        XCTAssertTrue(app.buttons["Ler de novo com o painel de hoje"]
+            .waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Há uma peça do painel neste recorte."].exists)
+    }
+
     func testCompareNaoFicaReduzidoAUmAtributo() throws {
         try XCTSkipUnless(
             ProcessInfo.processInfo.environment["CANARIO_REAL_DATA_UI_TESTS"] == "1",

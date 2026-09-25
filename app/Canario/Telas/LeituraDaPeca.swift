@@ -17,8 +17,11 @@ struct LeituraDaPeca: View {
 
     let pedido: String
     var descricao: DescricaoDaPeca? = nil
+    var registroInicial: LeituraGuardada? = nil
 
     @State private var leitura: LeituraEspecifica?
+    @State private var comparacao: ComparacaoDeLeituras?
+    @State private var ignorarPrimeiraCarga = false
     @State private var erro: String?
     @State private var limiteDoDia = false
     @State private var carregando = true
@@ -30,9 +33,15 @@ struct LeituraDaPeca: View {
 
     /// `precoInicial`: o preço que a pessoa já informou para a peça do Acervo;
     /// a posição de preço vem na primeira leitura, sem pedir de novo.
-    init(pedido: String, descricao: DescricaoDaPeca? = nil, precoInicial: Double? = nil) {
+    init(pedido: String, descricao: DescricaoDaPeca? = nil, precoInicial: Double? = nil,
+         registroInicial: LeituraGuardada? = nil) {
         self.pedido = pedido
         self.descricao = descricao
+        self.registroInicial = registroInicial
+        _leitura = State(initialValue: registroInicial?.leitura)
+        _carregando = State(initialValue: registroInicial == nil)
+        _ignorarPrimeiraCarga = State(initialValue: registroInicial != nil)
+        _refinamento = State(initialValue: registroInicial?.refinamento)
         _preco = State(initialValue: precoInicial)
         _precoDigitado = State(initialValue: precoInicial.map { Formato.dinheiroExato($0) } ?? "")
     }
@@ -61,7 +70,13 @@ struct LeituraDaPeca: View {
         .papelDaEdicao()
         .navigationTitle(Text(verbatim: leitura?.nome ?? pedido))
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: chaveDaLeitura) { await ler() }
+        .task(id: chaveDaLeitura) {
+            if ignorarPrimeiraCarga {
+                ignorarPrimeiraCarga = false
+            } else {
+                await ler()
+            }
+        }
         .sheet(item: $fraseAberta) { frase in
             if let leitura {
                 ProvaDaFrase(frase: frase, pecas: leitura.provas(de: frase))
@@ -79,6 +94,13 @@ struct LeituraDaPeca: View {
     @ViewBuilder
     private func conteudo(_ leitura: LeituraEspecifica) -> some View {
         cabecalho(leitura)
+        if registroInicial != nil {
+            Button("Read again with today's panel") { Task { await ler() } }
+                .buttonStyle(.borderedProminent)
+                .tint(Edicao.bordoCheio)
+                .frame(minHeight: 44)
+        }
+        if let comparacao { blocoDaComparacao(comparacao) }
         if leitura.foraDeEscopo == true {
             Folha {
                 Text("This isn't a garment the panel tracks. The reading covers women's clothing from the monitored brands.")
@@ -101,6 +123,31 @@ struct LeituraDaPeca: View {
             }
             if !leitura.parecidas.isEmpty {
                 parecidas(leitura.parecidas)
+            }
+        }
+    }
+
+    private func blocoDaComparacao(_ comparacao: ComparacaoDeLeituras) -> some View {
+        Folha {
+            CabecalhoDaFolha(titulo: Text("Between two panel readings"),
+                             nota: frase("These figures come from two readings of the panel."),
+                             simbolo: "arrow.left.arrow.right")
+            if let antes = comparacao.painelAntes, let depois = comparacao.painelDepois {
+                Text(frase("Panels of \(Formato.data(antes)) and \(Formato.data(depois))"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            if let antes = comparacao.antes.pecas, let depois = comparacao.depois.pecas {
+                Text(frase("Pieces: \(String(antes)) → \(String(depois))"))
+            }
+            if let antes = comparacao.antes.precoMediano,
+               let depois = comparacao.depois.precoMediano {
+                Text(frase("Median price: \(Formato.dinheiro(antes)) → \(Formato.dinheiro(depois))"))
+            }
+            Text(frase("Entered this selection: \(String(comparacao.entraramNoRecorte)) · left: \(String(comparacao.sairamDoRecorte))"))
+            if let antes = comparacao.antes.comTamanhoEsgotado,
+               let depois = comparacao.depois.comTamanhoEsgotado {
+                Text(frase("Pieces with a sold-out size: \(String(antes)) → \(String(depois))"))
             }
         }
     }
@@ -218,8 +265,15 @@ struct LeituraDaPeca: View {
         }
         #endif
         do {
-            leitura = try await Supabase.shared.lerPeca(
+            let nova = try await Supabase.shared.lerPeca(
                 texto: pedido, refinamento: refinamento, descricao: descricao, preco: preco)
+            if let anterior = registroInicial?.leitura {
+                comparacao = ComparacaoDeLeituras(antes: anterior, depois: nova)
+            }
+            leitura = nova
+            await LeiturasSalvas.shared.guardar(LeituraGuardada(
+                pedido: pedido, refinamento: refinamento, descricao: descricao,
+                precoDaPessoa: preco, leitura: nova))
         } catch is CancellationError {
             return
         } catch Supabase.Falha.resposta(let codigo, _) where codigo == 429 {

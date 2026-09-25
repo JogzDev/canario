@@ -32,6 +32,7 @@
 		D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */; };
 		ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */; };
 		0A52080A6CF90DF66C695DF9 /* LeituraEspecifica.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A2B2F86300A3C6AE88A60F /* LeituraEspecifica.swift */; };
+		0B666B5B713D1A9707AA98AF /* LeiturasSalvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D7952A75B290D910E7670B /* LeiturasSalvas.swift */; };
 		BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */; };
 		EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */; };
 		4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F27BA6A40F86F6D498DA29B /* Modelos.swift */; };
@@ -100,6 +101,7 @@
 		14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IntencaoDoToque.swift"; sourceTree = "<group>"; };
 		D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeitorDeArquivo.swift"; sourceTree = "<group>"; };
 		F3A2B2F86300A3C6AE88A60F /* LeituraEspecifica.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeituraEspecifica.swift"; sourceTree = "<group>"; };
+		03D7952A75B290D910E7670B /* LeiturasSalvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeiturasSalvas.swift"; sourceTree = "<group>"; };
 		A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MascaraDeInstancia.swift"; sourceTree = "<group>"; };
 		8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MiniaturaLocal.swift"; sourceTree = "<group>"; };
 		6F27BA6A40F86F6D498DA29B /* Modelos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Modelos.swift"; sourceTree = "<group>"; };
@@ -245,6 +247,7 @@
 				14FF70B05E37B55F1186665F /* IntencaoDoToque.swift */,
 				D8FE7B3571343855C56B6DE5 /* LeitorDeArquivo.swift */,
 				F3A2B2F86300A3C6AE88A60F /* LeituraEspecifica.swift */,
+				03D7952A75B290D910E7670B /* LeiturasSalvas.swift */,
 				A6CD5B1B33F2FA1ABC25EF89 /* MascaraDeInstancia.swift */,
 				8754B9594CB0BB661598AE8C /* MiniaturaLocal.swift */,
 				6F27BA6A40F86F6D498DA29B /* Modelos.swift */,
@@ -401,6 +404,7 @@
 				D7814AF75E57012F54B0B71E /* IntencaoDoToque.swift in Sources */,
 				ADE032ADFF8C40BA9666E954 /* LeitorDeArquivo.swift in Sources */,
 				0A52080A6CF90DF66C695DF9 /* LeituraEspecifica.swift in Sources */,
+				0B666B5B713D1A9707AA98AF /* LeiturasSalvas.swift in Sources */,
 				BA293165642C61563C7D91AD /* MascaraDeInstancia.swift in Sources */,
 				EE7D4A414A581B7EE0C2932E /* MiniaturaLocal.swift in Sources */,
 				4806AAAFE40AA2D18C88A621 /* Modelos.swift in Sources */,

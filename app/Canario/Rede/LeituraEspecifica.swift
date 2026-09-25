@@ -7,7 +7,7 @@ import Foundation
 /// candidatas no painel publicado, verificou cada uma, calculou os fatos e
 /// cortou toda frase com número sem prova. A tela só mostra -- e mostra a
 /// prova: cada frase cita fatos, cada fato lista as peças que o sustentam.
-struct LeituraEspecifica: Decodable {
+struct LeituraEspecifica: Codable, Sendable {
     let versao: String?
     let foraDeEscopo: Bool?
     let nome: String?
@@ -20,18 +20,23 @@ struct LeituraEspecifica: Decodable {
     let perguntas: [Pergunta]
     let busca: Busca?
 
-    struct Frase: Decodable, Hashable {
+    struct Frase: Codable, Hashable, Sendable {
         let texto: String
         let fatos: [String]
     }
 
     /// Só o que a tela usa de um fato: quantas peças e quais.
-    struct Fato: Decodable {
+    struct Fato: Codable, Sendable {
         let pecas: Int?
         let provas: [Int]?
+        let marcas: Int?
+        let minimo: Double?
+        let mediana: Double?
+        let maximo: Double?
+        let comTamanhoEsgotado: Int?
     }
 
-    struct Peca: Decodable, Identifiable, Hashable {
+    struct Peca: Codable, Identifiable, Hashable, Sendable {
         let id: Int
         let titulo: String
         let marca: String
@@ -48,12 +53,12 @@ struct LeituraEspecifica: Decodable {
         }
     }
 
-    struct Pergunta: Decodable, Hashable {
+    struct Pergunta: Codable, Hashable, Sendable {
         let pergunta: String
         let opcoes: [String]
     }
 
-    struct Busca: Decodable {
+    struct Busca: Codable, Sendable {
         let candidatas: Int?
         let confirmadas: Int?
         let parecidas: Int?
@@ -107,7 +112,7 @@ struct LeituraEspecifica: Decodable {
 /// análise de foto (`category`, `pattern`, `colors`...). Os ids são os mesmos,
 /// então a tradução é só de formato -- e a Leitura da peça salva não precisa
 /// de foto nem de nova análise.
-struct DescricaoDaPeca: Sendable, Hashable {
+struct DescricaoDaPeca: Codable, Sendable, Hashable {
     var categoria: String?
     var estampa: String?
     var comprimento: String?

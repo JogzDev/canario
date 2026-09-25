@@ -10552,6 +10552,210 @@
           }
         }
       }
+    },
+    "Readings made": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Readings made"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leituras feitas"
+          }
+        }
+      }
+    },
+    "Read again with today's panel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Read again with today's panel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler de novo com o painel de hoje"
+          }
+        }
+      }
+    },
+    "Between two panel readings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Between two panel readings"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre duas leituras do painel"
+          }
+        }
+      }
+    },
+    "These figures come from two readings of the panel.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "These figures come from two readings of the panel."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estes números vêm de duas leituras do painel."
+          }
+        }
+      }
+    },
+    "Panels of %@ and %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Panels of %@ and %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Painéis de %1$@ e %2$@"
+          }
+        }
+      }
+    },
+    "Pieces: %@ → %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pieces: %@ → %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peças: %1$@ → %2$@"
+          }
+        }
+      }
+    },
+    "Median price: %@ → %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Median price: %@ → %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preço mediano: %1$@ → %2$@"
+          }
+        }
+      }
+    },
+    "Entered this selection: %@ · left: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Entered this selection: %@ · left: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entraram neste recorte: %1$@ · saíram: %2$@"
+          }
+        }
+      }
+    },
+    "Pieces with a sold-out size: %@ → %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pieces with a sold-out size: %@ → %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peças com tamanho esgotado: %1$@ → %2$@"
+          }
+        }
+      }
+    },
+    "Panel of %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Panel of %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Painel de %@"
+          }
+        }
+      }
+    },
+    "Pieces: %@ · brands: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Pieces: %@ · brands: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peças: %1$@ · marcas: %2$@"
+          }
+        }
+      }
+    },
+    "Median price: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Median price: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preço mediano: %@"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

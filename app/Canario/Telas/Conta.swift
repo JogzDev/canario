@@ -120,6 +120,7 @@ final class GestorDaConta: NSObject, ObservableObject {
             sessao = nil
             ultimaSincronizacao = nil
             await PecasSalvas.shared.usarEspacoDoUsuario(nil)
+            await LeiturasSalvas.shared.usarEspacoDoUsuario(nil)
             trabalhando = false
         }
     }
@@ -131,7 +132,9 @@ final class GestorDaConta: NSObject, ObservableObject {
             do {
                 let resultado = try await Autenticacao.shared.solicitarExclusao()
                 await PecasSalvas.shared.apagarTudo()
+                await LeiturasSalvas.shared.apagarTudo()
                 await PecasSalvas.shared.usarEspacoDoUsuario(nil)
+                await LeiturasSalvas.shared.usarEspacoDoUsuario(nil)
                 sessao = nil
                 ultimaSincronizacao = nil
                 mostrarRevogacaoManualApple = resultado.exigeRevogacaoManualApple
@@ -185,6 +188,7 @@ final class GestorDaConta: NSObject, ObservableObject {
     private func adotar(_ nova: SessaoDaConta) async {
         sessao = nova
         await PecasSalvas.shared.usarEspacoDoUsuario(nova.usuario.id)
+        await LeiturasSalvas.shared.usarEspacoDoUsuario(nova.usuario.id)
         do {
             ultimaSincronizacao = try await SincronizacaoDoCloset.shared.sincronizar().data
         } catch {

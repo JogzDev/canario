@@ -17,14 +17,28 @@ struct Estudio: View {
     @State private var erro: String?
     @State private var importando = false
     @State private var pecas: [UIImage] = []
+    @State private var leituras: [LeituraGuardada] = []
 
     var body: some View {
         NavigationStack {
             ZStack {
                 ParedeDoAcervo(pecas: pecas)
                     .ignoresSafeArea()
-                cartao
-                    .padding(.horizontal, 28)
+                if leituras.isEmpty {
+                    cartao.padding(.horizontal, 28)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 28) {
+                            cartao
+                                .padding(.top, 64)
+                            leiturasFeitas
+                        }
+                        .frame(maxWidth: 500)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                    }
+                }
             }
             .navigationTitle(Text("Studio"))
             .toolbar {
@@ -37,7 +51,10 @@ struct Estudio: View {
             }
         }
         .tint(Edicao.bordo)
-        .sheet(isPresented: $importando, onDismiss: carregarPecas) {
+        .sheet(isPresented: $importando, onDismiss: {
+            carregarPecas()
+            carregarLeituras()
+        }) {
             // O fluxo de importação ainda é o da 1.x e foi desenhado para o
             // claro; ele entra na v4 no percurso da Leitura.
             ImportarPeca(termos: termos) { carregarPecas() }
@@ -46,8 +63,21 @@ struct Estudio: View {
         .onReceive(NotificationCenter.default.publisher(for: .closetFoiSincronizado)) { _ in
             carregarPecas()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .closetMudouDeUsuario)) { _ in
+            carregarLeituras()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .leituraFoiGuardada)) { _ in
+            carregarLeituras()
+        }
+        .onAppear { carregarLeituras() }
         .task {
             carregarPecas()
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestLeiturasFeitas") {
+                leituraDeTeste()
+                return
+            }
+            #endif
             if ProcessInfo.processInfo.arguments.contains("-CanarioUITestImportacao")
                 || ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes")
                 || LeituraDaPeca.testeDeInterfaceAtivo {
@@ -67,6 +97,46 @@ struct Estudio: View {
     }
 
     // MARK: O cartão
+
+    private var leiturasFeitas: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ChamadaDaEdicao(texto: frase("Readings made"))
+                .accessibilityAddTraits(.isHeader)
+            ForEach(leituras) { registro in
+                NavigationLink {
+                    LeituraDaPeca(pedido: registro.pedido, descricao: registro.descricao,
+                                  precoInicial: registro.precoDaPessoa,
+                                  registroInicial: registro)
+                } label: {
+                    Folha {
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text(verbatim: registro.nome)
+                                .font(Edicao.Tipo.nome)
+                                .foregroundStyle(.primary)
+                            if let data = registro.leitura.painelObservadoEm {
+                                Text(frase("Panel of \(Formato.data(data))"))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if let pecas = registro.resumo.pecas,
+                               let marcas = registro.resumo.marcas {
+                                Text(frase("Pieces: \(String(pecas)) · brands: \(String(marcas))"))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if let mediana = registro.resumo.precoMediano {
+                                Text(frase("Median price: \(Formato.dinheiro(mediana))"))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
 
     private var cartao: some View {
         VStack(spacing: 14) {
@@ -136,6 +206,29 @@ struct Estudio: View {
             pecas = imagens
         }
     }
+
+    private func carregarLeituras() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CanarioUITestLeiturasFeitas") { return }
+        #endif
+        Task { @MainActor in leituras = await LeiturasSalvas.shared.todas() }
+    }
+
+    #if DEBUG
+    private func leituraDeTeste() {
+        guard let resposta = try? LeituraEspecifica.decodificar(Data("""
+        {"nome":"saia midi plissada","painel_observado_em":"2026-09-24",
+         "frases":[{"texto":"Há uma peça do painel neste recorte.","fatos":["total"]}],
+         "fatos":{"total":{"pecas":1,"marcas":1,"provas":[17]},
+                   "preco":{"minimo":299,"mediana":299,"maximo":299,"provas":[17]}},
+         "pecas":[{"id":17,"titulo":"Saia midi plissada","marca":"Marca de teste",
+                   "preco":299,"url":"https://example.invalid/peca"}],
+         "parecidas":[],"perguntas":[]}
+        """.utf8)) else { return }
+        leituras = [LeituraGuardada(pedido: "saia midi plissada", descricao: nil,
+                                   precoDaPessoa: 350, leitura: resposta)]
+    }
+    #endif
 }
 
 // MARK: - A parede

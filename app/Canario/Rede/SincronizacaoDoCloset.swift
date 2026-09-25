@@ -102,6 +102,7 @@ actor SincronizacaoDoCloset {
             throw Falha.semConta
         }
         await loja.usarEspacoDoUsuario(contexto.sessao.usuario.id)
+        await LeiturasSalvas.shared.usarEspacoDoUsuario(contexto.sessao.usuario.id)
 
         let primeiraLeitura = try await buscar(contexto)
         await aplicar(primeiraLeitura)
