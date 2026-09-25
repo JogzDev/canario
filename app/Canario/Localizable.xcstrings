@@ -11271,6 +11271,23 @@
           }
         }
       }
+    },
+    "Show more headlines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Show more headlines"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver mais manchetes"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

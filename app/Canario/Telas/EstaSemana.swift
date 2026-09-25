@@ -97,7 +97,7 @@ struct EstaSemana: View {
                 CartaoDeImprensaDaEdicao(manchetes: mostrarTodasManchetes
                     ? dados.manchetes : Array(dados.manchetes.prefix(4)))
                 if dados.manchetes.count > 4 {
-                    Button(mostrarTodasManchetes ? "Show fewer headlines" : "Show all headlines") {
+                    Button(mostrarTodasManchetes ? "Show fewer headlines" : "Show more headlines") {
                         mostrarTodasManchetes.toggle()
                     }
                     .font(.subheadline.weight(.semibold))
