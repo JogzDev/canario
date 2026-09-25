@@ -30,7 +30,8 @@ def main():
         'for (const model of MODELOS)',
         'normalize(JSON.parse(text), model)',
         'return response(falha.status, { error: falha.error })',
-        'const PROMPT_VERSION = "alvo-estrutura-cintura-v11"',
+        'const PROMPT_VERSION = "alvo-estrutura-cintura-v12"',
+        'A polo with a visible knit collar AND a short',
         # A48 tirou `print_motifs` do contrato. O guarda-chuva `conversacional`
         # ficou, e e ele que a Luna precisa continuar sabendo reconhecer.
         'conversacional',
