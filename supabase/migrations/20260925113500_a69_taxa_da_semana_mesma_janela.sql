@@ -200,4 +200,5 @@ comment on function public.resumo_de_eventos(text, integer, integer, date) is
   'A69: preserva A58; acrescenta proporcao por produtos distintos observados na mesma janela, com eventos incluidos no denominador e ausencia de snapshots declarada. Antes, Dress To tinha 2.123 eventos distintos / 1.880 pecas ofertadas no ultimo dia = 113%; na janela, 2.123 / 6.226 = 34,1%. A58: agregacao da janela inteira em produtos distintos, em janela comum ancorada na observacao do painel, com denominador observado no fim da janela; exemplos sem peca repetida e nunca alimentando contagem.';
 
 revoke all on function public.resumo_de_eventos(text, integer, integer, date) from public;
+-- acesso-publico: a tela semanal consulta esta agregacao sem revelar dados privados nem escrita.
 grant execute on function public.resumo_de_eventos(text, integer, integer, date) to anon, authenticated;
