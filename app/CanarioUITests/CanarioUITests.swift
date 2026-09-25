@@ -332,6 +332,35 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Privacy"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Privacy in this build"].exists)
         XCTAssertTrue(app.buttons["Back"].exists)
+        let tela = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        tela.name = "privacidade-edicao"
+        tela.lifetime = .keepAlways
+        add(tela)
+    }
+
+    func testContaEAjustesDaEdicao() {
+        let app = aplicativo(argumentos: ["-CanarioAbrirAccount"])
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Take your Closet with you"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Continue with email"].exists)
+        let conta = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        conta.name = "conta-edicao"
+        conta.lifetime = .keepAlways
+        add(conta)
+
+        app.buttons["Back"].tap()
+        app.buttons["Account"].tap()
+        app.buttons["Settings"].tap()
+        XCTAssertTrue(app.staticTexts["Language"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Match iPhone language"))
+            .firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["Local storage"].exists)
+        let ajustes = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        ajustes.name = "ajustes-edicao"
+        ajustes.lifetime = .keepAlways
+        add(ajustes)
     }
 
     func testImportacaoAbreSemRedeComAsEntradasPrincipais() {

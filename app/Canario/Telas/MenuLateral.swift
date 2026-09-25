@@ -118,11 +118,7 @@ struct MenuLateral: View {
     }
 }
 
-/// Destinos reais do menu com controle de navegação e retorno ao Menu Lateral.
-/// Destinos reais do menu. Eles ficam neste arquivo para não introduzir uma
-/// dependência nova no projeto Xcode de lista explícita; cada tela descreve o
-/// comportamento que o binário tem hoje, sem prometer conta ou IA ainda não
-/// conectadas.
+/// Destinos da folha de conta, com retorno à tela de origem.
 struct TelaDoMenu: View {
     /// A ENTRADA, e não o texto dela.
     ///
@@ -155,42 +151,31 @@ struct TelaDoMenu: View {
             .navigationBarBackButtonHidden(true)
             .toolbar(.hidden, for: .navigationBar)
         }
-        // O TEXTO SUMIA QUANDO O MENU ERA ABERTO PELA TRENDS.
-        //
-        // Estas telas pintam o próprio fundo em #BBE5ED, mas a tinta vinha de
-        // `.primary`/`.secondary`, que resolvem pelo ESQUEMA da cena -- e a
-        // cena é escura enquanto a aba de mercado está atrás. Resultado:
-        // branco sobre azul claro, ilegível. O JP mandou o print do Profile e
-        // do Q&A com os títulos e o corpo praticamente invisíveis.
-        //
-        // Elas são território do usuário, sempre: `.territorio(.armario)`
-        // declara o esquema claro para a subárvore inteira, e é a mesma
-        // correção que o Comparar recebeu do outro lado da divisa.
-        .territorio(.armario)
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
     }
 }
 
-/// Componente visual reutilizável de cabeçalho padronizado para todas as telas do Menu Lateral.
+/// Cabeçalho comum aos destinos da folha de conta.
 struct CabecalhoDoMenu: View {
     let titulo: LocalizedStringKey
     let aoVoltar: () -> Void
 
     var body: some View {
-        ZStack {
-            HStack {
-                Button(action: aoVoltar) {
-                    Image(systemName: "chevron.backward")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.55), in: Circle())
-                }
-                Spacer()
+        HStack(spacing: 12) {
+            Button(action: aoVoltar) {
+                Image(systemName: "chevron.backward")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Edicao.bordo)
+                    .frame(width: 44, height: 44)
+                    .background(Edicao.cartao, in: Circle())
             }
-
+            .accessibilityLabel("Back")
             Text(titulo)
-                .font(.system(size: 24, weight: .bold))
+                .font(Edicao.Tipo.manchete)
                 .foregroundStyle(.primary)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
         }
     }
 }
@@ -350,26 +335,10 @@ private struct AjustesDoMenu: View {
     var aoVoltar: () -> Void
     @State private var quantidade = 0
     @State private var confirmarExclusao = false
-    /// Três estados, não dois. O interruptor anterior só sabia dizer
-    /// nuvem/aparelho e mapeava `perguntar` para "nuvem ligada" -- então,
-    /// enquanto a escolha ainda não tinha sido feita, os Ajustes afirmavam uma
-    /// coisa e o fluxo de Add fazia outra: perguntava. Quem visse a tela não
-    /// tinha como saber por quê. O estado agora aparece como ele é.
     @State private var preferenciaVisual = PreferenciaDaAnaliseVisual.perguntar
     @State private var carregouPreferenciaVisual = false
     @Environment(\.accessibilityReduceMotion) private var reduzirMovimento
-    /// O idioma é o primeiro ajuste da tela de propósito: quem precisa dele é
-    /// justamente quem não está lendo o resto com facilidade, e obrigar essa
-    /// pessoa a percorrer análise visual e armazenamento em inglês para achar
-    /// o botão que troca o idioma seria desenhar o problema dentro da solução.
-    /// `ObservedObject` sobre o singleton, e não `EnvironmentObject`: esta
-    /// tela é apresentada por `fullScreenCover` a partir da `Raiz`, e depender
-    /// da propagação do ambiente por uma apresentação modal é a classe de bug
-    /// que aparece como crash em produção e nunca no simulador.
     @ObservedObject private var idioma = GestorDeIdioma.shared
-
-    private let corFundo = Tokens.Cor.ceuFixo
-    private let corLinha = Color.white.opacity(0.65)
 
     private var explicacaoDaPreferencia: String {
         switch preferenciaVisual {
@@ -383,51 +352,27 @@ private struct AjustesDoMenu: View {
     }
 
     var body: some View {
-        ZStack {
-            corFundo.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CabecalhoDoMenu(titulo: "Settings", aoVoltar: aoVoltar)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
 
-            GeometryReader { proxy in
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Image(systemName: "gearshape")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: proxy.size.width * 0.75, height: proxy.size.width * 0.75)
-                            .foregroundStyle(Color.white.opacity(0.32))
-                            .offset(x: proxy.size.width * 0.14, y: proxy.size.width * 0.18)
-                    }
+            ScrollView {
+                VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                    secaoIdioma
+                    if Supabase.analiseRemotaHabilitada { secaoAnaliseVisual }
+                    secaoAcessibilidade
+                    secaoArmazenamentoLocal
+                    botaoExcluirArmario
+                        .padding(.horizontal, 20)
                 }
-            }
-            .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                CabecalhoDoMenu(titulo: "Settings", aoVoltar: aoVoltar)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        secaoIdioma
-
-                        if Supabase.analiseRemotaHabilitada {
-                            secaoAnaliseVisual
-                        }
-
-                        secaoAcessibilidade
-
-                        secaoArmazenamentoLocal
-
-                        botaoExcluirArmario
-                            .padding(.top, 4)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 36)
-                }
+                .padding(.horizontal, Edicao.margem)
+                .padding(.bottom, 40)
             }
         }
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
         .task {
             quantidade = await PecasSalvas.shared.todas().count
             preferenciaVisual = await PreferenciasDaAnaliseVisual.shared.preferencia()
@@ -450,188 +395,120 @@ private struct AjustesDoMenu: View {
         }
     }
 
-    private var secaoAnaliseVisual: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Visual analysis")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
-
-            VStack(alignment: .leading, spacing: 0) {
-                opcaoAnaliseVisual(titulo: "Ask me the first time", opcao: .perguntar)
-                divisorCard
-                opcaoAnaliseVisual(titulo: "Always use the cloud", opcao: .nuvem)
-                divisorCard
-                opcaoAnaliseVisual(titulo: "Always on this iPhone", opcao: .aparelho)
-                divisorCard
-
-                Text(explicacaoDaPreferencia)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.primary.opacity(0.85))
-                    .lineSpacing(2)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-            }
-            .background(cardBackground)
-            .disabled(!carregouPreferenciaVisual)
-        }
-    }
-
-    /// `LocalizedStringKey` porque `Text(umaString)` não localiza — foi assim
-    /// que estas três opções apareceram em inglês numa tela já em português,
-    /// visto no simulador em 05/09. Mesmo motivo de `BotaoDeEntrada`.
-    private func opcaoAnaliseVisual(titulo: LocalizedStringKey,
-                                    opcao: PreferenciaDaAnaliseVisual) -> some View {
-        Button {
-            preferenciaVisual = opcao
-        } label: {
-            HStack {
-                Text(titulo)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                if preferenciaVisual == opcao {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.primary)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
     private var secaoIdioma: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Language")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
-
-            VStack(alignment: .leading, spacing: 0) {
-                opcaoDeIdioma(titulo: Text("Match iPhone language"),
-                              opcao: .sistema)
-                divisorCard
-                // O nome de cada idioma vai NELE MESMO, nunca traduzido: é
-                // como o iOS lista os seus, e é o que permite alguém sair de
-                // um idioma que não lê. `Text(verbatim:)` porque "Português"
-                // não é chave de catálogo — é o nome próprio da língua.
-                opcaoDeIdioma(titulo: Text(verbatim: Idioma.ingles.nomeNativo),
-                              opcao: .ingles)
-                divisorCard
-                opcaoDeIdioma(titulo: Text(verbatim: Idioma.portugues.nomeNativo),
-                              opcao: .portugues)
-                divisorCard
-
-                Text("This changes the whole app: screens, messages, attribute names, dates and prices. Headlines keep the language their source published in.")
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.primary.opacity(0.85))
-                    .lineSpacing(2)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-            }
-            .background(cardBackground)
+        Folha(espaco: 0) {
+            CabecalhoDaFolha(titulo: Text("Language"), simbolo: "globe")
+                .padding(.bottom, 8)
+            opcaoDeIdioma(titulo: Text("Match iPhone language"), opcao: .sistema)
+            CosturaDaEdicao()
+            // Os nomes nativos permitem achar a saída mesmo após trocar de idioma.
+            opcaoDeIdioma(titulo: Text(verbatim: Idioma.ingles.nomeNativo), opcao: .ingles)
+            CosturaDaEdicao()
+            opcaoDeIdioma(titulo: Text(verbatim: Idioma.portugues.nomeNativo), opcao: .portugues)
+            CosturaDaEdicao()
+            Text("This changes the whole app: screens, messages, attribute names, dates and prices. Headlines keep the language their source published in.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 12)
         }
     }
 
-    private func opcaoDeIdioma(titulo: Text,
-                               opcao: PreferenciaDeIdioma) -> some View {
+    private func opcaoDeIdioma(titulo: Text, opcao: PreferenciaDeIdioma) -> some View {
         Button {
             idioma.preferencia = opcao
         } label: {
-            HStack {
-                titulo
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.primary)
-
-                // O "seguir o iPhone" precisa dizer no que ISSO dá agora,
-                // senão a pessoa escolhe às cegas entre três linhas e duas
-                // delas parecem iguais.
+            HStack(spacing: 4) {
+                titulo.foregroundStyle(.primary)
                 if opcao == .sistema {
                     Text(verbatim: " · \(idioma.preferencia == .sistema ? idioma.atual.nomeNativo : PreferenciaDeIdioma.sistema.resolvido(preferidosDoSistema: Locale.preferredLanguages).nomeNativo)")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(.primary.opacity(0.6))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-
-                Spacer()
-
+                Spacer(minLength: 8)
                 if idioma.preferencia == opcao {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.primary)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Edicao.bordo)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .font(.body)
+            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(idioma.preferencia == opcao ? .isSelected : [])
     }
 
-    private var secaoAcessibilidade: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Accessibility")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
+    private var secaoAnaliseVisual: some View {
+        Folha(espaco: 0) {
+            CabecalhoDaFolha(titulo: Text("Visual analysis"), simbolo: "camera.aperture")
+                .padding(.bottom, 8)
+            opcaoAnaliseVisual(titulo: "Ask me the first time", opcao: .perguntar)
+            CosturaDaEdicao()
+            opcaoAnaliseVisual(titulo: "Always use the cloud", opcao: .nuvem)
+            CosturaDaEdicao()
+            opcaoAnaliseVisual(titulo: "Always on this iPhone", opcao: .aparelho)
+            CosturaDaEdicao()
+            Text(explicacaoDaPreferencia)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 12)
+        }
+        .disabled(!carregouPreferenciaVisual)
+    }
 
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("Reduce motion")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Text(reduzirMovimento ? "On" : "Off")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.primary)
+    private func opcaoAnaliseVisual(titulo: LocalizedStringKey,
+                                    opcao: PreferenciaDaAnaliseVisual) -> some View {
+        Button {
+            preferenciaVisual = opcao
+        } label: {
+            HStack {
+                Text(titulo).foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                if preferenciaVisual == opcao {
+                    Image(systemName: "checkmark")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Edicao.bordo)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-
-                divisorCard
-
-                Text("The app follows the iPhone accessibility setting for motion and text size.")
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.primary.opacity(0.85))
-                    .lineSpacing(2)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
             }
-            .background(cardBackground)
+            .font(.body)
+            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(preferenciaVisual == opcao ? .isSelected : [])
+    }
+
+    private var secaoAcessibilidade: some View {
+        Folha {
+            CabecalhoDaFolha(titulo: Text("Accessibility"), simbolo: "accessibility")
+            HStack {
+                Text("Reduce motion")
+                Spacer(minLength: 8)
+                Text(reduzirMovimento ? "On" : "Off")
+                    .font(.body.weight(.semibold))
+            }
+            .frame(minHeight: 44)
+            CosturaDaEdicao()
+            Text("The app follows the iPhone accessibility setting for motion and text size.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 
     private var secaoArmazenamentoLocal: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Local storage")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
-
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("Closet items")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Text(String(quantidade))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.primary)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-
-                divisorCard
-
-                Text("Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from backup.")
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.primary.opacity(0.85))
-                    .lineSpacing(2)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+        Folha {
+            CabecalhoDaFolha(titulo: Text("Local storage"), simbolo: "internaldrive")
+            HStack {
+                Text("Closet items")
+                Spacer(minLength: 8)
+                Text(String(quantidade)).font(Edicao.Tipo.numero)
             }
-            .background(cardBackground)
+            .frame(minHeight: 44)
+            CosturaDaEdicao()
+            Text("Saved attributes and thumbnails stay in Application Support on this iPhone and are excluded from backup.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -639,58 +516,31 @@ private struct AjustesDoMenu: View {
         Button {
             confirmarExclusao = true
         } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "trash")
-                    .font(.system(size: 15, weight: .semibold))
-                Text("Delete local closet")
-                    .font(.system(size: 15, weight: .bold))
-            }
-            .foregroundStyle(Color.red.opacity(0.85))
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.7), in: Capsule())
+            Label("Delete local closet", systemImage: "trash")
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         }
         .buttonStyle(.plain)
+        .foregroundStyle(.red)
         .disabled(quantidade == 0)
-        .opacity(quantidade == 0 ? 0.5 : 1.0)
-    }
-
-    private var divisorCard: some View {
-        Rectangle()
-            .fill(corLinha)
-            .frame(height: 1)
-    }
-
-    private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [Color.white.opacity(0.85), Color.white.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
     }
 }
 
 private struct PrivacidadeDoMenu: View {
     var aoVoltar: () -> Void
-    private let corFundo = Tokens.Cor.ceuFixo
 
     var body: some View {
-        ZStack {
-            corFundo.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CabecalhoDoMenu(titulo: "Privacy", aoVoltar: aoVoltar)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
 
-            VStack(spacing: 0) {
-                CabecalhoDoMenu(titulo: "Privacy", aoVoltar: aoVoltar)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-
-                ScrollView {
-                    PaginaInformativa {
-                        Text("Privacy in this build")
-                            .font(.title2.bold())
+            ScrollView {
+                VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                    Text("Privacy in this build")
+                        .font(Edicao.Tipo.secao)
+                        .accessibilityAddTraits(.isHeader)
                         if Supabase.analiseRemotaHabilitada {
                             BlocoInformativo(
                                 icone: "camera",
@@ -718,10 +568,13 @@ private struct PrivacidadeDoMenu: View {
                             icone: "arrow.triangle.2.circlepath.icloud",
                             titulo: "What syncs",
                             texto: "Item names, confirmed attribute ids, optional target price and channel, favorites, explicit similar-item choices and reduced metadata-free thumbnails can sync. Original photos and calculated market readings do not. A separately authorized cloud photo analysis is not attached to the account.")
-                    }
                 }
+                .padding(.horizontal, Edicao.margem)
+                .padding(.bottom, 40)
             }
         }
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
     }
 }
 
@@ -840,12 +693,12 @@ struct BlocoInformativo: View {
     let texto: LocalizedStringKey
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icone)
-                .font(.title2)
-                .foregroundStyle(Tokens.Cor.azulMarca)
-                .frame(width: 34)
-            TextoComTitulo(titulo: titulo, texto: texto)
+        Folha {
+            CabecalhoDaFolha(titulo: Text(titulo), simbolo: icone)
+            Text(texto)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

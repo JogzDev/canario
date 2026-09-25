@@ -232,53 +232,31 @@ struct ContaDoMenu: View {
     var aoVoltar: () -> Void = {}
     @EnvironmentObject private var conta: GestorDaConta
     @Environment(\.openURL) private var abrirURL
+    @Environment(\.colorScheme) private var esquema
     @State private var mostrarEmail = false
     @State private var confirmarExclusao = false
 
-    private let corFundo = Tokens.Cor.ceuFixo
-    private let corLinha = Color.white.opacity(0.65)
-
     var body: some View {
-        ZStack {
-            corFundo
-                .ignoresSafeArea()
+        VStack(spacing: 0) {
+            CabecalhoDoMenu(titulo: "Profile", aoVoltar: aoVoltar)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
 
-            // Marca d'água decorativa no fundo
-            GeometryReader { proxy in
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Image(systemName: "person.crop.circle")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: proxy.size.width * 0.75, height: proxy.size.width * 0.75)
-                            .foregroundStyle(Color.white.opacity(0.32))
-                            .offset(x: proxy.size.width * 0.12, y: proxy.size.width * 0.18)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                    if let sessao = conta.sessao {
+                        contaConectada(sessao)
+                    } else {
+                        entrada
                     }
                 }
-            }
-            .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                cabecalho
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        if let sessao = conta.sessao {
-                            contaConectada(sessao)
-                        } else {
-                            entrada
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
-                }
+                .padding(.horizontal, Edicao.margem)
+                .padding(.bottom, 40)
             }
         }
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
         .disabled(conta.trabalhando)
         .overlay {
             if conta.trabalhando {
@@ -325,34 +303,15 @@ struct ContaDoMenu: View {
         }
     }
 
-    private var cabecalho: some View {
-        ZStack {
-            HStack {
-                Button(action: aoVoltar) {
-                    Image(systemName: "chevron.backward")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.55), in: Circle())
-                }
-                Spacer()
-            }
-
-            Text("Profile")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(.primary)
-        }
-    }
-
     private var entrada: some View {
-        VStack(spacing: 16) {
+        Folha(espaco: 16) {
             Image(systemName: "person.crop.circle.badge.plus")
-                .font(.system(size: 54, weight: .light))
-                .foregroundStyle(Tokens.Cor.azulMarca)
+                .font(.largeTitle)
+                .foregroundStyle(Edicao.caneta)
             Text("Take your Closet with you")
-                .font(.title2.bold())
+                .font(Edicao.Tipo.secao)
             Text("Sign in to restore item details and their private, metadata-free thumbnails. Original photos stay on this iPhone.")
-                .multilineTextAlignment(.center)
+                .font(.body)
                 .foregroundStyle(.secondary)
 
             SignInWithAppleButton(.continue) { pedido in
@@ -360,131 +319,67 @@ struct ContaDoMenu: View {
             } onCompletion: { resultado in
                 conta.concluirApple(resultado)
             }
-            .signInWithAppleButtonStyle(.black)
+            .signInWithAppleButtonStyle(esquema == .dark ? .white : .black)
             .frame(height: 52)
-            .clipShape(RoundedRectangle(cornerRadius: 13))
+            .clipShape(RoundedRectangle(cornerRadius: Edicao.raio))
 
             Button { conta.entrarComGoogle() } label: {
                 Label("Continue with Google", systemImage: "g.circle.fill")
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(minHeight: 50)
             }
             .buttonStyle(.bordered)
-            .buttonBorderShape(.roundedRectangle(radius: 13))
+            .buttonBorderShape(.roundedRectangle(radius: Edicao.raio))
 
             Button { mostrarEmail = true } label: {
                 Label("Continue with email", systemImage: "envelope.fill")
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(minHeight: 50)
             }
             .buttonStyle(.bordered)
-            .buttonBorderShape(.roundedRectangle(radius: 13))
+            .buttonBorderShape(.roundedRectangle(radius: Edicao.raio))
 
             Text("You can close this screen and keep using DataDrobe without an account. Nothing is uploaded until you sign in.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.top, 6)
+                .padding(.top, 4)
         }
-        .padding(22)
-        .background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 26))
     }
 
     private func contaConectada(_ sessao: SessaoDaConta) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Seção Account Connected
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Account connected")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.primary)
-
-                HStack(spacing: 14) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 38))
-                        .foregroundStyle(Color(white: 0.15))
-
-                    Text(sessao.usuario.email ?? frase("Private Apple relay"))
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.85), Color.white.opacity(0.5)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                )
-
-                Button {
-                    conta.sair()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.system(size: 17, weight: .semibold))
-                        Text("Sign out")
-                            .font(.system(size: 16, weight: .bold))
-                    }
-                    .foregroundStyle(.primary)
+        VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+            Folha {
+                CabecalhoDaFolha(titulo: Text("Account connected"), simbolo: "person.crop.circle")
+                Text(sessao.usuario.email ?? frase("Private Apple relay"))
+                    .font(.body)
+                    .textSelection(.enabled)
+                CosturaDaEdicao()
+                Button { conta.sair() } label: {
+                    Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 4)
+                .foregroundStyle(Edicao.bordo)
             }
 
-            // Seção Offline-first sync com divisores
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Offline-first sync")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.primary)
-
-                Rectangle()
-                    .fill(corLinha)
-                    .frame(height: 1)
-
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: "arrow.triangle.2.circlepath.icloud")
-                        .font(.system(size: 32, weight: .regular))
-                        .foregroundStyle(.primary)
-                        .frame(width: 40)
-
-                    Text("Item details are kept on this iPhone first and synchronized when a connection is available. Photos remain local in this version.")
-                        .font(.system(size: 13, weight: .regular))
-                        .lineSpacing(3)
-                        .foregroundStyle(.primary.opacity(0.85))
-                }
-                .padding(.vertical, 4)
-
-                Rectangle()
-                    .fill(corLinha)
-                    .frame(height: 1)
+            Folha {
+                CabecalhoDaFolha(titulo: Text("Offline-first sync"),
+                                 simbolo: "arrow.triangle.2.circlepath.icloud")
+                Text("Item details are kept on this iPhone first and synchronized when a connection is available. Photos remain local in this version.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
             }
-            .padding(.top, 8)
 
-            // Botão Delete Account em formato de pílula
             Button {
                 confirmarExclusao = true
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 15, weight: .semibold))
-                    Text("Delete account")
-                        .font(.system(size: 15, weight: .bold))
-                }
-                .foregroundStyle(Color.red.opacity(0.85))
-                .padding(.horizontal, 18)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(0.7), in: Capsule())
+                Label("Delete account", systemImage: "trash")
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             }
             .buttonStyle(.plain)
-            .padding(.top, 4)
+            .foregroundStyle(.red)
+            .padding(.horizontal, 20)
         }
     }
 }
