@@ -3,6 +3,8 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 
 
@@ -245,10 +247,13 @@ def testar_portao_pago_e_explicito():
 
 
 def testar_benchmark_exige_remocao_de_fundo():
-    workflow = (RAIZ / ".github" / "workflows" / "avaliar-luna.yml").read_text()
     segmentador = (RAIZ / "ferramentas" / "segmentar_fundo.swift").read_text()
-    assert "xcrun swiftc ferramentas/segmentar_fundo.swift" in workflow
-    assert '--segmentador "$RUNNER_TEMP/segmentar-fundo"' in workflow
+    for quantidade in (24, 300):
+        resultado = subprocess.run(
+            [sys.executable, str(CAMINHO), "--quantidade", str(quantidade)],
+            capture_output=True, text=True, check=False)
+        assert resultado.returncode != 0
+        assert "--segmentador obrigatorio; imagem bruta e proibida" in resultado.stderr
     # O benchmark tem de medir a MESMA imagem que o iPhone enviaria, então usa
     # o mesmo pedido do app. A saliência de atenção acha onde o olho pousa —
     # numa foto de moda, o rosto — e produziu 24/24 saídas degeneradas.
