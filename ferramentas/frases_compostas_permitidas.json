@@ -32,5 +32,16 @@
   "Resposta tardia da pergunta B": "titulo sintetico de fixture de UI; a fonte editorial nao e traduzida",
   "Resposta lenta da pergunta A": "titulo sintetico de fixture de UI; a fonte editorial nao e traduzida",
   "Resposta rapida da pergunta B": "titulo sintetico de fixture de UI; a fonte editorial nao e traduzida",
-  "The Napoleon Jacket Is Making A Comeback This Fall": "manchete de fonte na fixture; a politica do produto proibe traduzir citacao"
+  "The Napoleon Jacket Is Making A Comeback This Fall": "manchete de fonte na fixture; a politica do produto proibe traduzir citacao",
+  "saia midi plissada": "pedido sintetico da fixture de UI, preservado como dado da leitura",
+  "O recorte foi refinado para cetim.": "resposta sintetica do servidor na fixture de UI, validada pelo teste em portugues",
+  "Uma peça do painel corresponde ao pedido.": "resposta sintetica do servidor na fixture de UI, validada pelo teste em portugues",
+  "Understanding what you asked…": "chave estatica da lista de progresso; Text recebe LocalizedStringKey e o catalogo tem pt-BR",
+  "Finding pieces like it in the panel…": "chave estatica da lista de progresso; Text recebe LocalizedStringKey e o catalogo tem pt-BR",
+  "Checking each piece…": "chave estatica da lista de progresso; Text recebe LocalizedStringKey e o catalogo tem pt-BR",
+  "Counting prices, markdowns and restocks…": "chave estatica da lista de progresso; Text recebe LocalizedStringKey e o catalogo tem pt-BR",
+  "Writing the reading…": "chave estatica da lista de progresso; Text recebe LocalizedStringKey e o catalogo tem pt-BR",
+  "AcervoDeDemonstracao: Acervo já tem peças; nada a semear": "mensagem de NSLog no modo de desenvolvimento, nao aparece na interface",
+  "AcervoDeDemonstracao: manifesto ilegível em %@": "mensagem de NSLog no modo de desenvolvimento, nao aparece na interface",
+  "AcervoDeDemonstracao: %@ salva = %@": "mensagem de NSLog no modo de desenvolvimento, nao aparece na interface"
 }

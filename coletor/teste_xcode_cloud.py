@@ -170,9 +170,10 @@ class XcodeCloudContractTests(unittest.TestCase):
     def test_dados_reais_da_ui_exigem_opt_in_em_qualquer_ambiente(self):
         texto = UI_TESTS.read_text(encoding="utf-8")
         self.assertNotIn('environment["CI"]', texto)
-        self.assertEqual(texto.count('environment["CANARIO_REAL_DATA_UI_TESTS"]'), 2)
+        self.assertEqual(texto.count('environment["CANARIO_REAL_DATA_UI_TESTS"]'), 3)
         for nome in (
                 "testCompareNaoFicaReduzidoAUmAtributo",
+                "testCompararEmPortuguesMostraDoisEixos",
                 "testStripesMostraCurvaDeTamanhosReal"):
             encontrado = re.search(
                 r"func {}\(\) throws \{{(?P<corpo>.*?)\n    \}}".format(nome),
