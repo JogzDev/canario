@@ -310,7 +310,59 @@ final class CurvaDeTamanhosTests: XCTestCase {
         let texto = CurvaDeTamanhos.insumo(painel)
         XCTAssertTrue(texto.contains("49756 sizes at risk"))
         XCTAssertTrue(texto.contains("27/07/2026"), "data em dd/mm/aaaa, como todo o resto")
-        XCTAssertTrue(texto.contains("14-day"))
+        // Semana publicada antes da A68 não declara a janela. O texto dá o
+        // teto nominal em vez de prometer os 14 dias.
+        XCTAssertTrue(texto.contains("a window of up to 14 days"), texto)
+        XCTAssertFalse(texto.contains("14-day"), texto)
+    }
+
+    // MARK: A janela observada (A68)
+
+    /// A semana de 14/09 foi medida com três dias de fotos e a tela dizia
+    /// "janela de 14 dias". O texto agora é o que a coleta observou.
+    func testInsumoDeclaraAJanelaObservada() {
+        let janela = CurvaDeTamanhos.JanelaObservada(
+            inicio: "2026-09-18", fim: "2026-09-23", dias: 5, marcas: 15)
+        let linhas = painel.map { l -> CurvaDeTamanhos.Faixa in
+            var copia = l
+            copia.janela = janela
+            return copia
+        }
+        let texto = CurvaDeTamanhos.insumo(CurvaDeTamanhos.consolidar(linhas))
+        XCTAssertTrue(texto.contains("a 5-day window observed from 18/09/2026 to 23/09/2026"), texto)
+        XCTAssertFalse(texto.contains("14"), texto)
+    }
+
+    /// A linha como o PostgREST devolve: `meta` é jsonb, com texto e a janela.
+    func testJanelaVemDeDentroDoMeta() throws {
+        let json = """
+        [{"termo_id": null, "semana": "2026-09-21", "sistema": "letra",
+          "faixa": "meio", "rotulo": "M", "n_grades": 34999, "n_em_risco": 8782,
+          "n_quebrou": 582, "taxa_quebra": 6.63, "share_indisponivel": 21.4,
+          "meta": {"janela_dias": 14, "base": "A62: vitrine",
+                   "janela_observada": {"inicio": "2026-09-18", "fim": "2026-09-23",
+                                        "dias": 5, "marcas": 15}}},
+         {"termo_id": null, "semana": "2026-09-14", "sistema": "letra",
+          "faixa": "meio", "rotulo": "M", "n_grades": 1, "n_em_risco": 1,
+          "n_quebrou": 0, "taxa_quebra": 0, "share_indisponivel": null,
+          "meta": {"janela_dias": 14}},
+         {"termo_id": "vestido", "semana": "2026-09-21", "sistema": "letra",
+          "faixa": "meio", "rotulo": "M", "n_grades": 1, "n_em_risco": 0,
+          "n_quebrou": 0, "taxa_quebra": null, "share_indisponivel": null,
+          "meta": {"janela_observada": null}},
+         {"termo_id": null, "semana": "2026-08-03", "sistema": "letra",
+          "faixa": "meio", "rotulo": "M", "n_grades": 1, "n_em_risco": 0,
+          "n_quebrou": 0, "taxa_quebra": null, "share_indisponivel": null,
+          "meta": null}]
+        """
+        let linhas = try JSONDecoder().decode([CurvaDeTamanhos.Faixa].self, from: Data(json.utf8))
+        XCTAssertEqual(linhas[0].janela,
+                       CurvaDeTamanhos.JanelaObservada(inicio: "2026-09-18", fim: "2026-09-23",
+                                                       dias: 5, marcas: 15))
+        XCTAssertEqual(linhas[0].taxaQuebra, 6.63)
+        XCTAssertNil(linhas[1].janela, "semana anterior à A68")
+        XCTAssertNil(linhas[2].janela, "segmento sem coleta suficiente")
+        XCTAssertNil(linhas[3].janela, "meta nulo")
     }
 
     func testMinimoDeCoberturaExiste() {
