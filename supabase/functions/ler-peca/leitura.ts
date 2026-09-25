@@ -273,6 +273,37 @@ export function termosDeBusca(itens: unknown, maximo: number): string[] {
   return [...vistos];
 }
 
+/** A foto pode dizer "sem mangas" quando o título usa "sem manga". */
+export function variantesVisuaisDosSinais(sinais: string[]): string[] {
+  return termosDeBusca([...sinais, ...sinais.filter((s) => s.includes("sem mangas"))
+    .map((s) => s.replace(/\bsem mangas\b/g, "sem manga"))], 12);
+}
+
+/** Duas buscas estreitas para recuperar a foto quando a interseção é vazia. */
+export function buscasComplementaresDaFoto(atributos: string[], sinais: string[]) {
+  if (!sinais.length) return [];
+  const variantes = variantesVisuaisDosSinais(sinais);
+  const planos = atributos.length
+    ? [{ criterio: "atributos_sem_sinais", atributos, sinais: [] as string[] }]
+    : [];
+  if (atributos.length || variantes.length > sinais.length) {
+    planos.push({ criterio: "construcao_sem_atributos", atributos: [], sinais: variantes });
+  }
+  return planos;
+}
+
+/** A construção tem precedência; cada busca devolve no máximo 20 títulos. */
+export function unirCandidatasDaFoto<T extends { id: number | string }>(
+  porConstrucao: T[], porAtributos: T[], maximo = 40,
+): T[] {
+  const unicas = new Map<string, T>();
+  for (const peca of [...porConstrucao, ...porAtributos]) {
+    if (!unicas.has(String(peca.id))) unicas.set(String(peca.id), peca);
+    if (unicas.size >= maximo) break;
+  }
+  return [...unicas.values()];
+}
+
 /** Texto do pedido: até 200 caracteres, sem quebras que imitem instrução. */
 export function pedidoLimpo(texto: unknown): string {
   if (typeof texto !== "string") return "";

@@ -1,5 +1,8 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { fraseSemPeca, numerosDoFato, numerosDoTexto, pedidoLimpo, semCitacao, termosDeBusca, verificarFrases } from "./leitura.ts";
+import {
+  buscasComplementaresDaFoto, fraseSemPeca, numerosDoFato, numerosDoTexto, pedidoLimpo,
+  semCitacao, termosDeBusca, unirCandidatasDaFoto, variantesVisuaisDosSinais, verificarFrases,
+} from "./leitura.ts";
 
 const fatos = {
   total: { id: "total", pecas: 18, marcas: 5, provas: [101, 102, 103] },
@@ -43,6 +46,22 @@ Deno.test("número inventado, fato não citado ou fato inexistente é recusado",
 Deno.test("sinais limpos: sem acento, minúsculos, 3 a 40 caracteres, sem repetir", () => {
   assertEquals(termosDeBusca(["Napoleão", "napoleao", "ab", "Botões  Dourados", 7, "x".repeat(41)], 12),
     ["napoleao", "botoes dourados"]);
+});
+
+Deno.test("foto vazia recupera por atributos ou construção sem aceitar busca só por categoria", () => {
+  const planos = buscasComplementaresDaFoto(["branco_cru", "liso"], ["sem mangas"]);
+  assertEquals(planos, [
+    { criterio: "atributos_sem_sinais", atributos: ["branco_cru", "liso"], sinais: [] },
+    { criterio: "construcao_sem_atributos", atributos: [], sinais: ["sem mangas", "sem manga"] },
+  ]);
+  assertEquals(variantesVisuaisDosSinais(["abotoamento duplo"]), ["abotoamento duplo"]);
+  assertEquals(buscasComplementaresDaFoto(["azul"], []), []);
+  assertEquals(buscasComplementaresDaFoto([], ["abotoamento duplo"]), []);
+});
+
+Deno.test("candidatas recuperadas priorizam construção e não duplicam ids", () => {
+  assertEquals(unirCandidatasDaFoto([{ id: 2 }, { id: 3 }], [{ id: 1 }, { id: 2 }]),
+    [{ id: 2 }, { id: 3 }, { id: 1 }]);
 });
 
 Deno.test("pedido limpo: sem controle e no máximo 200 caracteres", () => {
