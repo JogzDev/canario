@@ -59,6 +59,7 @@ const A64 = 'supabase/migrations/20260924012854_a64_candidatas_e_fatos_da_leitur
 const A65 = 'supabase/migrations/20260924013846_a65_novidade_nao_e_estreia_de_catalogo.sql';
 const A66 = 'supabase/migrations/20260924014452_a66_atributos_da_taxonomia_na_leitura.sql';
 const A68 = 'supabase/migrations/20260924020449_a68_curva_mede_a_janela_observada.sql';
+const A69 = 'supabase/migrations/20260925113500_a69_taxa_da_semana_mesma_janela.sql';
 // O "antes" da A62 é o que está em produção: a curva da P0 e a ordem da grade
 // da F4. `linha_de_base_a62.sql` confere o md5 de cada corpo.
 const ANTES_DA_A62 = [
@@ -112,6 +113,17 @@ const MUTACOES_A68 = [
     'or l.visitados::numeric >= historico.media_positiva_7d * 0.30)', 'or true)'],
   ['janela declarada nos 14 dias nominais',
     "'dias', js.fim - js.inicio,", "'dias', janela_dias,"],
+];
+const MUTACOES_A69 = [
+  ['denominador volta ao ultimo dia',
+    'select p.marca_id, s.produto_id\n      from janela j\n      join public.snapshots s on s.data between j.de and j.ate',
+    'select p.marca_id, s.produto_id\n      from janela j\n      join public.snapshots s on s.data = j.ate'],
+  ['eventos saem da populacao observada',
+    'join public.eventos e on e.data between j.de and j.ate',
+    'join public.eventos e on false and e.data between j.de and j.ate'],
+  ['evento isolado cria cobertura ficticia',
+    'where exists (\n      select 1 from janela j',
+    'where true or exists (\n      select 1 from janela j'],
 ];
 const AMBIENTE = Object.freeze({
   PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', TZ: 'UTC',
@@ -375,6 +387,18 @@ async function main() {
     await aplicar(path.join(REPOSITORIO, A68));
     await aplicar(path.join(AQUI, 'assercoes_a68.sql'));
     await aplicar(path.join(AQUI, 'assercoes_a62.sql'));
+    await aplicar(path.join(AQUI, 'fixture_a69.sql'));
+    const a69 = await readFile(path.join(REPOSITORIO, A69), 'utf8');
+    const assercoesA69 = await readFile(path.join(AQUI, 'assercoes_a69.sql'), 'utf8');
+    for (const [nome, trecho, troca] of MUTACOES_A69) {
+      const ocorrencias = a69.split(trecho).length - 1;
+      if (ocorrencias !== 1) throw new Error(`mutação A69 "${nome}": ${ocorrencias} ocorrências`);
+      const motivo = await exigirReprovacao(
+        `mutação A69 "${nome}"`, a69.replace(trecho, () => troca), assercoesA69);
+      console.log(`ok mutação A69 reprovada (${nome}): ${motivo}`);
+    }
+    await aplicar(path.join(REPOSITORIO, A69));
+    await aplicar(path.join(AQUI, 'assercoes_a69.sql'));
     // A consulta de capacidade/cobertura também precisa executar de verdade.
     // READ ONLY torna uma escrita acidental uma falha do laboratório.
     const diagnostico = await readFile(path.join(REPOSITORIO,
