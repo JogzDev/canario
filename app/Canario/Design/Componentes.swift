@@ -245,30 +245,6 @@ struct Cartao<Conteudo: View>: View {
     }
 }
 
-// MARK: - Controle do menu
-
-/// Conteúdo único do `ToolbarItem` que abre o menu nas três telas principais.
-/// Tamanho, fundo e posição pertencem ao toolbar nativo; desenhar um círculo
-/// próprio aqui foi justamente o que fez Add divergir de Closet.
-struct BotaoDoMenu: View {
-    let menuAberto: Bool
-    let acao: () -> Void
-
-    var body: some View {
-        if !menuAberto {
-            // 2.0: o menu lateral virou a sheet de conta; o botão das telas
-            // antigas é o mesmo das novas enquanto elas não são refeitas.
-            Button(action: acao) {
-                Image(systemName: "person.crop.circle")
-            }
-            .accessibilityLabel("Account")
-        }
-        // Aberto, o painel opaco traz o próprio X. O botão da barra de trás
-        // precisa sair da árvore, não só ficar visualmente coberto: o SwiftUI
-        // continuava expondo dois "Close menu" para o VoiceOver.
-    }
-}
-
 // MARK: - Estados de carga
 
 /// Espera com nome.
@@ -451,5 +427,51 @@ struct PecaSemFoto: View {
         }
         .foregroundStyle(Tokens.Cor.tintaSobreSubstrato)
         .multilineTextAlignment(.center)
+    }
+}
+
+/// Liquid Glass verdadeiro no iOS 26 e fallback compatível no iOS 17–25.
+/// `ultraThinMaterial` não refrata nem reage como a API nova; por isso ele fica
+/// restrito aos aparelhos em que Liquid Glass não existe.
+struct Vidro<S: InsettableShape>: View {
+    let forma: S
+
+    init(forma: S) { self.forma = forma }
+
+    var body: some View {
+        Group {
+            if #available(iOS 26.0, *) {
+                forma
+                    .fill(.clear)
+                    .glassEffect(.regular.interactive(), in: forma)
+            } else {
+                fallback
+            }
+        }
+    }
+
+    private var fallback: some View {
+        ZStack {
+            forma.fill(.ultraThinMaterial)
+            forma.fill(LinearGradient(
+                colors: [.white.opacity(0.46), .white.opacity(0.10),
+                         Tokens.Cor.ceu.opacity(0.18)],
+                startPoint: .topLeading, endPoint: .bottomTrailing))
+            forma.stroke(LinearGradient(
+                colors: [.white, .white.opacity(0.42),
+                         Tokens.Cor.azulMarca.opacity(0.16)],
+                startPoint: .topLeading, endPoint: .bottomTrailing),
+                lineWidth: 1.25)
+            forma.inset(by: 2).stroke(.white.opacity(0.28), lineWidth: 0.75)
+        }
+        .compositingGroup()
+        .shadow(color: .white.opacity(0.35), radius: 2, x: -1, y: -1)
+        .shadow(color: Tokens.Cor.azulMarca.opacity(0.26), radius: 18, y: 9)
+    }
+}
+
+extension Vidro where S == RoundedRectangle {
+    init(raio: CGFloat) {
+        self.init(forma: RoundedRectangle(cornerRadius: raio, style: .continuous))
     }
 }

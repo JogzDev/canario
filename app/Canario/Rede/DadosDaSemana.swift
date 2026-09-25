@@ -2,13 +2,9 @@ import Foundation
 
 /// O que a aba Esta semana carrega, num lugar só.
 ///
-/// Os carregadores vieram do `Explorar`, a aba de mercado da 1.x, sem mudar o
-/// que pedem ao banco: `resumo_de_eventos` (A58) para os movimentos das lojas,
-/// `series_do_app` para a busca e para a imprensa, o catálogo de índices e de
-/// termos. O cache também é o mesmo arquivo, então as duas telas não baixam o
-/// mesmo dado duas vezes enquanto convivem.
-///
-/// O que é novo aqui é a escolha da manchete.
+/// Consulta `resumo_de_eventos` para movimentos das lojas, `series_do_app`
+/// para busca e imprensa, além dos catálogos de índices e termos. O arquivo
+/// de cache conserva o nome anterior para preservar leituras já baixadas.
 @MainActor
 final class DadosDaSemana: ObservableObject {
     @Published private(set) var indices: [IndiceSemanal] = []
@@ -23,8 +19,7 @@ final class DadosDaSemana: ObservableObject {
     @Published private(set) var avisos: [String] = []
 
     private var termosPorId: [String: Termo] = [:]
-    /// A série do Explorar só serve às telas antigas; guardada para o cache
-    /// continuar legível pelas duas.
+    /// Campo legado preservado para ler o cache anterior.
     private var seriesDoCache: [String: [PontoSerie]] = [:]
 
     // MARK: A manchete
@@ -129,7 +124,7 @@ final class DadosDaSemana: ObservableObject {
         avisoDeCache = nil
         avisos = []
         var mostrouCache = false
-        if let salvo = await CacheDoExplorar.shared.carregar() {
+        if let salvo = await CacheDaSemana.shared.carregar() {
             aplicar(salvo)
             carregando = false
             mostrouCache = true
@@ -169,7 +164,7 @@ final class DadosDaSemana: ObservableObject {
 
         // Só guarda o que veio: sem os movimentos, o cache seria uma semana vazia.
         guard !resumos.isEmpty else { return }
-        await CacheDoExplorar.shared.salvar(SnapshotDoExplorar(
+        await CacheDaSemana.shared.salvar(SnapshotDaSemana(
             todos: indices, termos: termos, series: seriesDoCache,
             pulsoBusca: pulsoBusca, pulsoEditorial: pulsoEditorial,
             resumos: resumos, salvoEm: Date()))
@@ -221,7 +216,7 @@ final class DadosDaSemana: ObservableObject {
         if !avisos.contains(texto) { avisos.append(texto) }
     }
 
-    private func aplicar(_ salvo: SnapshotDoExplorar) {
+    private func aplicar(_ salvo: SnapshotDaSemana) {
         indices = salvo.todos
         termos = salvo.termos
         termosPorId = Dictionary(termos.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -240,5 +235,11 @@ final class DadosDaSemana: ObservableObject {
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd"
         return f.string(from: data)
+    }
+}
+
+enum NomeDeMarca {
+    static func exibido(_ nome: String) -> String {
+        nome == "Maria Filo" ? "Maria Filó" : nome
     }
 }

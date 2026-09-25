@@ -9,8 +9,7 @@ import ImageIO
 /// gráfico são recomputados do painel quando a peça abre; a miniatura é a única
 /// cópia visual persistente e fica no aparelho, sem metadados.
 struct MinhasPecas: View {
-    var menuAberto = false
-    var alternarMenu: (() -> Void)?
+    var abrirConta: () -> Void = {}
     @State private var pecas: [PecaSalva] = []
     @State private var termos: [Termo] = []
     @State private var carregando = true
@@ -61,9 +60,10 @@ struct MinhasPecas: View {
             .navigationTitle(Text("Archive"))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    if let alternarMenu {
-                        BotaoDoMenu(menuAberto: menuAberto, acao: alternarMenu)
+                    Button(action: abrirConta) {
+                        Image(systemName: "person.crop.circle")
                     }
+                    .accessibilityLabel("Account")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack {

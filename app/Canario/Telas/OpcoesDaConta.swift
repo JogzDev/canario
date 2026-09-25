@@ -1,123 +1,6 @@
 import SwiftUI
 import UIKit
 
-struct MenuLateral: View {
-    let fechar: () -> Void
-    /// Carrega a ENTRADA, não o rótulo. O rótulo traduz; a entrada não.
-    let escolher: (EntradaDoMenu) -> Void
-    /// O menu é chrome, não conteúdo: ele não tem território próprio, herda o
-    /// da aba de trás e inverte as duas cores da marca em cima disso. Vem por
-    /// ambiente porque `Raiz` é quem sabe a aba visível -- ver `fundoDoMenu`.
-    @Environment(\.territorio) private var territorio
-
-    /// A aresta esquerda do botão de busca, contada a partir da borda direita.
-    ///
-    /// Ele mora no rodapé à direita: 62 pt de diâmetro a 20 pt da borda. O
-    /// painel e a sombra dele têm de parar antes disso -- com o painel a 79%
-    /// da largura sobravam 2 pt de folga, e a sombra atravessava esse vão e
-    /// escurecia o canto do botão. Relatado assim: *"fica cortando um
-    /// pouquinho do ícone da lupa"*.
-    ///
-    /// 82 é o botão; os 26 restantes são o respiro que mantém a sombra inteira
-    /// deste lado da divisa.
-    private static let folgaAteABusca: CGFloat = 82 + 26
-
-    var body: some View {
-        GeometryReader { geo in
-            let largura = min(geo.size.width * 0.79,
-                              geo.size.width - Self.folgaAteABusca)
-            ZStack(alignment: .leading) {
-                // Sem véu: o JP quis ver a faixa limpa, mostrando a tela de
-                // trás como ela é. O toque nela continua fechando o menu, e
-                // para isso a área precisa existir mesmo transparente --
-                // `Color.clear` sozinho não recebe toque.
-                Color.clear
-                    .ignoresSafeArea()
-                    .contentShape(Rectangle())
-                    .onTapGesture(perform: fechar)
-                    .accessibilityHidden(true)
-
-                // A sombra pertence à BORDA do painel, e estava no VStack de
-                // conteúdo -- que não tem fundo. O resultado era um borrão de
-                // 22 pt atrás de cada letra, deslocado 10 pt, e nenhuma sombra
-                // na divisa entre painel e faixa. Sem o véu ela é a única coisa
-                // que separa o painel do que está atrás, então fica -- só mais
-                // curta, para caber na folga acima.
-                //
-                // CONFLITO DE 30/08, resolvido para cá: a `BranchFadul` ainda
-                // trazia `Tokens.Cor.azulMarca`, que é o valor de antes da
-                // inversão por território. O Davi não desfez nada -- ele
-                // ramificou antes dela existir.
-                Tokens.Cor.fundoDoMenu(territorio)
-                    .frame(width: largura)
-                    .ignoresSafeArea()
-                    .shadow(color: .black.opacity(0.20), radius: 10, x: 3)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    // O FECHAR MORA AQUI, e não mais na barra de trás.
-                    //
-                    // O desenho antigo contava com o botão da tela de trás
-                    // aparecendo por cima: ele virava "xmark" quando o menu
-                    // abria, na mesma posição do ellipsis. Só que o painel é
-                    // opaco e tem `zIndex(10)` -- cobre a barra inteira, e o X
-                    // ficou invisível. O JP mandou o print: *"o botao de
-                    // fechar o menu lateral que agora simplesmente sumiu (ou
-                    // nao existe mais)"*.
-                    //
-                    // Tocar fora continua fechando, mas isso é atalho para
-                    // quem já sabe. Sem controle visível, quem não sabe fica
-                    // preso -- e preso num menu é o pior lugar do app.
-                    Button(action: fechar) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Tokens.Cor.tintaDoMenu(territorio))
-                            .frame(width: 44, height: 44, alignment: .leading)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close menu")
-
-                    // As entradas que levam a uma AÇÃO ficam grandes. Antes as
-                    // seis tinham o mesmo peso, e o texto jurídico disputava a
-                    // tela com a peça salva.
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(EntradaDoMenu.acoes, id: \.self) { entrada in
-                            Button(entrada.titulo) { escolher(entrada) }
-                                .font(.system(size: 29, weight: .semibold))
-                                .foregroundStyle(Tokens.Cor.tintaDoMenu(territorio))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .frame(height: 92)
-                        }
-                    }
-                    .padding(.top, Tokens.Espaco.g)
-
-                    Spacer()
-
-                    HStack(spacing: Tokens.Espaco.m) {
-                        ForEach(EntradaDoMenu.leituras, id: \.self) { entrada in
-                            Button(entrada.titulo) { escolher(entrada) }
-                                .font(.system(size: 15, weight: .medium))
-                                // 0,72 era medida para branco sobre azul
-                                // escuro. Com o par invertido ela cai a 3,5:1
-                                // no painel claro, abaixo do mínimo da Apple
-                                // para 15 pt; 0,85 devolve os dois lados
-                                // acima de 4,5:1 sem igualar o rodapé ao topo.
-                                .foregroundStyle(
-                                    Tokens.Cor.tintaDoMenu(territorio).opacity(0.85))
-                                .frame(minHeight: 44)
-                        }
-                    }
-                    .padding(.bottom, Tokens.Espaco.g)
-                }
-                .padding(.leading, 20)
-                .padding(.trailing, 26)
-                .frame(width: largura)
-                .frame(maxHeight: .infinity)
-            }
-        }
-    }
-}
-
 /// Destinos da folha de conta, com retorno à tela de origem.
 struct TelaDoMenu: View {
     /// A ENTRADA, e não o texto dela.
@@ -189,56 +72,54 @@ private struct FavoritosDoMenu: View {
     /// Mesmo defeito que travava o Closet; ver `ArmarioVisivel.swift`.
     @State private var rotulos: [String: String] = [:]
 
-    private let corFundo = Tokens.Cor.ceuFixo
-
     var body: some View {
-        ZStack {
-            corFundo.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CabecalhoDoMenu(titulo: "Favorites", aoVoltar: aoVoltar)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
 
-            VStack(spacing: 0) {
-                CabecalhoDoMenu(titulo: "Favorites", aoVoltar: aoVoltar)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-
-                Group {
-                    if pecas.isEmpty {
-                        ContentUnavailableView(
-                            "No favorites yet",
-                            systemImage: "heart",
-                            description: Text("Tap the heart on a Closet item to keep it here."))
-                    } else {
-                        List(pecas) { peca in
-                            NavigationLink {
-                                RelatorioDaPeca(
-                                    termos: termos.filter { peca.termoIds.contains($0.id) },
-                                    precoAlvo: peca.precoAlvo,
-                                    pecaSalva: peca)
-                            } label: {
-                                HStack(spacing: 14) {
-                                    MiniaturaFavorita(peca: peca)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(peca.nome(comRotulos: rotulos))
-                                            .font(.headline)
-                                        Text(peca.termoIds.compactMap { rotulos[$0] }.joined(separator: " · "))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(2)
-                                    }
+            Group {
+                if pecas.isEmpty {
+                    ContentUnavailableView(
+                        "No favorites yet",
+                        systemImage: "heart",
+                        description: Text("Tap the heart on a Closet item to keep it here."))
+                } else {
+                    List(pecas) { peca in
+                        NavigationLink {
+                            RelatorioDaPeca(
+                                termos: termos.filter { peca.termoIds.contains($0.id) },
+                                precoAlvo: peca.precoAlvo,
+                                pecaSalva: peca)
+                        } label: {
+                            HStack(spacing: 14) {
+                                MiniaturaFavorita(peca: peca)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(peca.nome(comRotulos: rotulos))
+                                        .font(Edicao.Tipo.nome)
+                                    Text(peca.termoIds.compactMap { rotulos[$0] }.joined(separator: " · "))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
                                 }
-                                .padding(.vertical, 5)
                             }
-                            .swipeActions {
-                                Button("Unfavorite", systemImage: "heart.slash", role: .destructive) {
-                                    desfavoritar(peca)
-                                }
+                            .frame(minHeight: 66)
+                        }
+                        .listRowBackground(Edicao.cartao)
+                        .swipeActions {
+                            Button("Unfavorite", systemImage: "heart.slash", role: .destructive) {
+                                desfavoritar(peca)
                             }
                         }
-                        .scrollContentBackground(.hidden)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
         }
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
         .task { await carregar() }
     }
 
@@ -290,45 +171,45 @@ private struct MiniaturaFavorita: View {
 
 private struct TermosDoMenu: View {
     var aoVoltar: () -> Void
-    private let corFundo = Tokens.Cor.ceuFixo
-
     var body: some View {
-        ZStack {
-            corFundo.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CabecalhoDoMenu(titulo: "Terms", aoVoltar: aoVoltar)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
 
-            VStack(spacing: 0) {
-                CabecalhoDoMenu(titulo: "Terms", aoVoltar: aoVoltar)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-
-                ScrollView {
-                    PaginaInformativa {
-                        Text("Product terms")
-                            .font(.title2.bold())
-                        Text("Effective August 13, 2026")
-                            .font(.footnote)
-                            .foregroundStyle(Tokens.Cor.noite.opacity(0.70))
-                        TextoComTitulo(
-                            titulo: "What the app provides",
-                            texto: "The app organizes public fashion-market signals and the clothing attributes you confirm. Trend labels are evidence summaries, not forecasts, financial advice or guarantees of sales.")
-                        TextoComTitulo(
-                            titulo: "Store information",
-                            texto: "Prices, stock, product images and links come from the named stores and can change after collection. Purchases happen on the store website under that store's terms; this app is not the seller.")
-                        TextoComTitulo(
-                            titulo: "Your Closet",
-                            texto: "You control the items you save. Without an account they stay on this iPhone. After you sign in, item details and private reduced thumbnails can sync across your devices; original photos remain local. Removing an item also removes its synchronized record.")
-                        TextoComTitulo(
-                            titulo: "Fair use of the service",
-                            texto: "Do not use the app to overload source websites, bypass access controls, copy third-party catalogs or misrepresent its readings as facts about future demand.")
-                        TextoComTitulo(
-                            titulo: "Corrections",
-                            texto: "Source coverage and classifications can be wrong. The app exposes dates and evidence so a reading can be checked and corrected rather than treated as unquestionable.")
-                    }
+            ScrollView {
+                VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                    Text("Product terms")
+                        .font(Edicao.Tipo.secao)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Effective August 13, 2026")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    TextoComTitulo(
+                        titulo: "What the app provides",
+                        texto: "The app organizes public fashion-market signals and the clothing attributes you confirm. Trend labels are evidence summaries, not forecasts, financial advice or guarantees of sales.")
+                    TextoComTitulo(
+                        titulo: "Store information",
+                        texto: "Prices, stock, product images and links come from the named stores and can change after collection. Purchases happen on the store website under that store's terms; this app is not the seller.")
+                    TextoComTitulo(
+                        titulo: "Your Closet",
+                        texto: "You control the items you save. Without an account they stay on this iPhone. After you sign in, item details and private reduced thumbnails can sync across your devices; original photos remain local. Removing an item also removes its synchronized record.")
+                    TextoComTitulo(
+                        titulo: "Fair use of the service",
+                        texto: "Do not use the app to overload source websites, bypass access controls, copy third-party catalogs or misrepresent its readings as facts about future demand.")
+                    TextoComTitulo(
+                        titulo: "Corrections",
+                        texto: "Source coverage and classifications can be wrong. The app exposes dates and evidence so a reading can be checked and corrected rather than treated as unquestionable.")
                 }
+                .padding(.horizontal, Edicao.margem)
+                .padding(.bottom, 40)
             }
         }
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
     }
+
 }
 
 private struct AjustesDoMenu: View {
@@ -580,8 +461,6 @@ private struct PrivacidadeDoMenu: View {
 
 private struct PerguntasDoMenu: View {
     var aoVoltar: () -> Void
-    private let corFundo = Tokens.Cor.ceuFixo
-
     /// A pergunta tem CHAVE estável e TEXTO traduzível, e as duas são coisas
     /// diferentes.
     ///
@@ -622,63 +501,32 @@ private struct PerguntasDoMenu: View {
     ]
 
     var body: some View {
-        ZStack {
-            corFundo.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CabecalhoDoMenu(titulo: "Q&A", aoVoltar: aoVoltar)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
 
-            VStack(spacing: 0) {
-                CabecalhoDoMenu(titulo: "Q&A", aoVoltar: aoVoltar)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        ForEach(perguntas) { pergunta in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(pergunta.pergunta)
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(.primary)
-
-                                Text(pergunta.resposta)
-                                    .font(.system(size: 14, weight: .regular))
-                                    .foregroundStyle(.primary.opacity(0.85))
-                                    .lineSpacing(3)
-                            }
-                            .padding(18)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color.white.opacity(0.85), Color.white.opacity(0.50)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                            )
+            ScrollView {
+                VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                    ForEach(perguntas) { pergunta in
+                        Folha {
+                            CabecalhoDaFolha(titulo: Text(pergunta.pergunta))
+                            Text(pergunta.resposta)
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 32)
                 }
+                .padding(.horizontal, Edicao.margem)
+                .padding(.bottom, 40)
             }
         }
-    }
-}
-
-private struct PaginaInformativa<Conteudo: View>: View {
-    let conteudo: Conteudo
-
-    init(@ViewBuilder conteudo: () -> Conteudo) {
-        self.conteudo = conteudo()
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            conteudo
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 }
 
 struct BlocoInformativo: View {
@@ -708,14 +556,11 @@ private struct TextoComTitulo: View {
     let texto: LocalizedStringKey
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(titulo).font(.headline)
+        Folha {
+            CabecalhoDaFolha(titulo: Text(titulo))
             Text(texto)
                 .font(.body)
-                // `.secondary` resolvia claro demais sobre #BBE5ED. A tela
-                // já não herda mais o esquema escuro da Trends, mas texto
-                // longo ainda precisa de contraste confortável por si só.
-                .foregroundStyle(Tokens.Cor.noite.opacity(0.70))
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

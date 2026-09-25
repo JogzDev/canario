@@ -11,10 +11,6 @@ struct CanarioApp: App {
     @StateObject private var idioma = GestorDeIdioma.shared
 
     var body: some Scene {
-        // A paleta escura experimental de 19/08 nunca passou por revisão de
-        // design e, no teste em aparelho, fez o mesmo build parecer outro app.
-        // A 1.1 preserva a aparência clara aprovada em todos os iPhones. Quando
-        // houver telas escuras desenhadas e validadas, este bloqueio sai daqui.
         WindowGroup {
             Group {
                 if ProcessInfo.processInfo.arguments.contains("-CanarioAmostraDeIcones") {
@@ -70,10 +66,7 @@ struct Raiz: View {
     /// cima. `Raiz()` também não tem propriedade nenhuma para o SwiftUI
     /// comparar, então ele conclui que a view é a mesma e pula o `body`.
     ///
-    /// Resultado medido no simulador em 05/09: a tela inteira virou para o
-    /// inglês e a barra continuou "Estúdio · Closet · Tendências". Observar o
-    /// gestor aqui é o que amarra o `body` da raiz à troca — e, com ele, a
-    /// barra de compatibilidade e o menu lateral, que são filhos deste `body`.
+    /// Observar o gestor amarra o `body` da raiz à troca e atualiza a barra.
     @ObservedObject private var idioma = GestorDeIdioma.shared
 
     struct ItemDoMenu: Identifiable {
@@ -110,11 +103,7 @@ struct Raiz: View {
     /// bloco editorial gastaria metade do tempo chegando até a tela.
     @State private var buscaAberta = ProcessInfo.processInfo.arguments.contains(
         "-CanarioAbrirBusca")
-    @State private var menuAberto = false
-    /// A conta abre como sheet do sistema, como nos Ajustes (v4). O antigo
-    /// argumento do menu lateral abre a mesma sheet.
-    @State private var contaAberta = ProcessInfo.processInfo.arguments.contains(
-        "-CanarioMenuAberto")
+    @State private var contaAberta = false
     @State private var itemDoMenu: ItemDoMenu? = {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirPrivacy") {
             return ItemDoMenu(entrada: .privacidade)
@@ -133,14 +122,6 @@ struct Raiz: View {
                 navegacaoCompativel
             }
         }
-        .overlay { sobreposicoes }
-        // A Busca passou para a v4 e segue o tema do aparelho como as outras
-        // telas da edição. Cada tela ainda em revisão cuida do próprio tema.
-        // O menu não pode ultrapassar a borda e voltar. `.snappy` tem mola:
-        // na gravação a 60 fps, a aresta chegou a 849 px e recuou para 845 px,
-        // revelando por alguns quadros uma faixa do céu atrás do painel. O
-        // `easeOut` preserva o deslizamento e termina exatamente em zero.
-        .animation(.easeOut(duration: 0.24), value: menuAberto)
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })
         }
@@ -178,8 +159,7 @@ struct Raiz: View {
             }
             Tab(Aba.armario.titulo, systemImage: Aba.armario.simbolo,
                 value: .armario) {
-                MinhasPecas(menuAberto: false,
-                            alternarMenu: { contaAberta = true })
+                MinhasPecas(abrirConta: { contaAberta = true })
             }
             Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
                 value: .adicionar) {
@@ -217,32 +197,11 @@ struct Raiz: View {
         case .dados:
             EstaSemana(abrirConta: { contaAberta = true })
         case .armario:
-            MinhasPecas(menuAberto: false,
-                        alternarMenu: { contaAberta = true })
+            MinhasPecas(abrirConta: { contaAberta = true })
         case .adicionar:
             Estudio(abrirConta: { contaAberta = true })
         case .buscar: Analisar()
         }
     }
 
-    @ViewBuilder
-    private var sobreposicoes: some View {
-        ZStack {
-            if menuAberto {
-                MenuLateral(
-                    fechar: { menuAberto = false },
-                    escolher: { entrada in
-                        menuAberto = false
-                        itemDoMenu = ItemDoMenu(entrada: entrada)
-                    })
-                // Só o VALOR do ambiente, não o modificador `.territorio`:
-                // ele também pinta um fundo de tela cheia, e aqui isso
-                // cobriria a aba que o menu deixa à mostra de propósito.
-                .environment(\.territorio, aba == .dados ? .mercado : .armario)
-                .transition(.move(edge: .leading))
-                .zIndex(10)
-            }
-
-        }
-    }
 }
