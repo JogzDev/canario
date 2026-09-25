@@ -9,10 +9,9 @@ import { withSupabase } from "npm:@supabase/server@1.7.0";
 // vestidas e só entra quando o principal recusar parâmetro, não responder ou
 // quebrar o contrato. Cada resposta diz qual modelo respondeu.
 const MODELOS = ["gpt-5.6-luna", "gpt-6-sol"] as const;
-// v11: `print_motifs` saiu. A A48 reprovou os seis motivos de fruta, e
-// pedir a ela um campo que a taxonomia não aceita mais é gastar token
-// para produzir um valor que o app descarta ao intersectar.
-const PROMPT_VERSION = "alvo-estrutura-cintura-v11";
+// v12: polo com colarinho e pé de botões curto é camisa, como no painel.
+// Os campos da v11 continuam restritos à taxonomia aprovada.
+const PROMPT_VERSION = "alvo-estrutura-cintura-v12";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const MAX_IMAGE_BYTES = 3_000_000;
 
@@ -93,7 +92,10 @@ sale item, or hidden construction. Accuracy is more important than coverage.
 - upper_shirt_construction: upper garment with recognizable shirt construction.
   Strong evidence is a shirt collar together with a substantial front opening
   or placket and/or shirt cuffs. A tie-front shirt remains a shirt. Decorative
-  buttons alone are insufficient. A tank, camisole, bustier, strap top, tee, or
+  buttons alone are insufficient. A polo with a visible knit collar AND a short
+  button placket is also shirt construction; its placket need not run down the
+  whole front. A collar alone or a short placket without the polo collar is
+  insufficient. A tank, camisole, bustier, strap top, tee, or
   round-neck sleeveless top without a shirt placket is upper_other, even if a
   person informally calls every upper garment a shirt. A collar or buttons do
   not make a continuous one-piece dress a shirt.
