@@ -492,6 +492,43 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Dress"].waitForExistence(timeout: 15))
         XCTAssertGreaterThan(app.buttons.count, 1,
                              "a semana parcial não pode esconder os demais atributos")
+        let captura = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        captura.name = "comparar-atributos-disponiveis"
+        captura.lifetime = .keepAlways
+        add(captura)
+
+        app.buttons["Coats & jackets"].tap()
+        app.buttons["Dress"].tap()
+        XCTAssertTrue(app.staticTexts["Side by side"].waitForExistence(timeout: 5))
+        app.swipeDown()
+        let comparacao = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        comparacao.name = "comparar-dois-atributos"
+        comparacao.lifetime = .keepAlways
+        add(comparacao)
+    }
+
+    func testCompararEmPortuguesMostraDoisEixos() throws {
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["CANARIO_REAL_DATA_UI_TESTS"] == "1",
+            "este teste exige opt-in e configuração real; a automação usa placeholders")
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues", "-CanarioUITestCompare"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Comparar"].waitForExistence(timeout: 15))
+        let vestido = app.buttons["comparar-termo-vestido"]
+        let casacos = app.buttons["comparar-termo-casaco_jaqueta"]
+        XCTAssertTrue(vestido.waitForExistence(timeout: 15))
+        XCTAssertTrue(casacos.exists)
+        vestido.tap()
+        casacos.tap()
+        XCTAssertTrue(app.staticTexts["Lado a lado"].waitForExistence(timeout: 5))
+        app.swipeDown()
+
+        let captura = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        captura.name = "comparar-dois-eixos-pt"
+        captura.lifetime = .keepAlways
+        add(captura)
     }
 
     func testStripesMostraCurvaDeTamanhosReal() throws {
