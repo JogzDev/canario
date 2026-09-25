@@ -694,19 +694,36 @@
         }
       }
     },
-    "%@ sizes at risk across %@ panel size ranges, a %@-day window, week of %@.": {
+    "%@ sizes at risk across %@ panel size ranges, a %@-day window observed from %@ to %@, week of %@.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "%@ sizes at risk across %@ panel size ranges, a %@-day window, week of %@."
+            "value": "%@ sizes at risk across %@ panel size ranges, a %@-day window observed from %@ to %@, week of %@."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ tamanhos em risco em %2$@ grades do painel, janela de %3$@ dias, semana de %4$@."
+            "value": "%1$@ tamanhos em risco em %2$@ grades do painel, janela de %3$@ dias observada de %4$@ a %5$@, semana de %6$@."
+          }
+        }
+      }
+    },
+    "%@ sizes at risk across %@ panel size ranges, a window of up to 14 days, week of %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%@ sizes at risk across %@ panel size ranges, a window of up to 14 days, week of %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ tamanhos em risco em %2$@ grades do painel, janela de até 14 dias, semana de %3$@."
           }
         }
       }
