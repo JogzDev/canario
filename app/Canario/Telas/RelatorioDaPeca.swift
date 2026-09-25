@@ -1,4 +1,3 @@
-import Charts
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -65,13 +64,10 @@ struct RelatorioDaPeca: View {
     @State private var coberturas: [String: Cobertura] = [:]
     @State private var similares: Similares.Resposta?
     @State private var cluster: Cluster.Resposta?
-    @State private var serie: SerieDoCluster.Resposta?
     @State private var erroDosSimilares: String?
     @State private var erroDoCluster: String?
-    @State private var erroDaSerie: String?
     @State private var carregandoSimilares = true
     @State private var carregandoCluster = true
-    @State private var carregandoSerie = true
     @State private var carregando = true
     @State private var erro: String?
     /// nil = ainda não tentou; true = guardada; false = a lista está no teto.
@@ -222,7 +218,6 @@ struct RelatorioDaPeca: View {
                     porAtributo
                     if pecaSalva != nil { editorialDosAtributos }
                     blocoDoCluster
-                    blocoDoHistorico
                     if let selecao, !todosOsTermos.isEmpty {
                         chipsDeCorrecao(selecao)
                     }
@@ -756,101 +751,6 @@ struct RelatorioDaPeca: View {
         }
     }
 
-    /// O histórico dos ATRIBUTOS da peça (A14).
-    ///
-    /// Não é a peça do usuário ao longo do tempo — ela não está no painel, e a
-    /// §34 exclui acompanhá-la. É o recorte de mercado que ela ocupa.
-    @ViewBuilder
-    private var blocoDoHistorico: some View {
-        Cartao {
-            Text("This mix, week by week").font(Tokens.Fonte.secao)
-            // O título anterior, "How these attributes moved", não era falso --
-            // era uma frase onde devia haver um nome, e não dizia o que se
-            // move nem em relação a quê. O JP perguntou por que eu o achava
-            // feio; é isto. "Mix" faz o trabalho que faltava: diz que a linha
-            // é da COMBINAÇÃO, e não da peça.
-            //
-            // E a explicação embaixo passa a carregar o que o título não
-            // consegue. Ela precisa dizer três coisas, porque a §34 depende
-            // disso: que o app não segue a peça de ninguém, que a linha é do
-            // recorte de mercado que os atributos ocupam, e que o ponto
-            // marcado é semana rala. Sem a primeira, um gráfico de dois anos
-            // sobre uma peça criada hoje afirma um histórico que não existe.
-            //
-            // A PRIMEIRA FRASE ERA FALSA, e era minha. "The panel items that
-            // share these attributes, week by week" descreve uma CONTAGEM DE
-            // PEÇAS, e é o que qualquer pessoa entende ao ler. A linha não é
-            // isso: `serie_do_cluster` devolve
-            // `sum(indice * peso) / sum(peso)` -- a média dos índices dos
-            // atributos, ponderada pela raridade de cada um (K5), e o índice
-            // de cada atributo é distância em desvios-padrão das 12 semanas
-            // anteriores DELE. O eixo Y já dizia isso ("distance from the
-            // usual behavior of the previous 12 weeks") e contradizia a
-            // legenda; quem lia os dois lia duas afirmações incompatíveis.
-            // Quantas peças existem com estes atributos é o bloco "Result",
-            // onde o número vem do painel e vem com a data em que foi visto.
-            // Uma frase só: concatenar literais produz `String` e pula a
-            // localização. O texto preserva a semântica corrigida da A57.
-            Text("How unusual these attributes were each week, compared with their own previous 12 weeks — one line, weighted by how rare each attribute is. It is not a count of items, and it is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there.")
-                .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-            if carregandoSerie {
-                ProgressView().frame(maxWidth: .infinity, alignment: .center)
-            } else if let erroDaSerie {
-                Text("The chart could not be loaded: \(erroDaSerie)")
-                    .font(Tokens.Fonte.corpo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
-                Button("Try the chart again") { Task { await carregar() } }
-                    .buttonStyle(.bordered)
-            } else if let motivo = SerieDoCluster.porQueNaoDesenha(serie) {
-                // Nunca um espaço em branco: a tela diz o que falta.
-                Text(motivo)
-                    .font(Tokens.Fonte.corpo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
-            } else if let s = serie {
-                Chart(s.pontos.filter { $0.data != nil }) { p in
-                    AreaMark(x: .value("Week", p.data!),
-                             yStart: .value("Baseline", 0),
-                             yEnd: .value("Index", p.indice))
-                        .foregroundStyle(Tokens.Cor.azulMarca.opacity(0.12))
-                    LineMark(x: .value("Week", p.data!),
-                             y: .value("Index", p.indice))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(Tokens.Cor.azulMarca)
-                    // Semana com menos atributos que o pedido ganha ponto
-                    // visível: a linha sozinha mente por omissão, porque parece
-                    // uniforme mesmo quando metade dela veio de um atributo só.
-                    if SerieDoCluster.ralo(p, de: s.atributosPedidos) {
-                        PointMark(x: .value("Week", p.data!),
-                                  y: .value("Index", p.indice))
-                            .symbolSize(28)
-                            .foregroundStyle(Tokens.Cor.semDado)
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 4)) {
-                        AxisGridLine().foregroundStyle(.clear)
-                        AxisValueLabel(format: .dateTime.month(.abbreviated))
-                    }
-                }
-                .chartYScale(domain: .automatic(includesZero: true))
-                .chartYAxisLabel(Explicacao.unidadeDoIndice)
-                .frame(height: 160)
-                .accessibilityLabel(
-                    "Combined history across \(s.pontos.count) weeks")
-                // Onde a linha termina. A borda direita de um gráfico é lida
-                // como "agora"; aqui ela é a última semana publicada, e com a
-                // coleta parada as duas coisas estão a semanas de distância.
-                if let fim = SerieDoCluster.ateQuando(s) { LinhaInsumo(texto: fim) }
-                if let r = SerieDoCluster.ressalva(s) { LinhaInsumo(texto: r) }
-                if let c = s.categoriaUsada, c != "(todas)" {
-                    let categoria = Traducao.rotuloExibido(id: c).lowercased()
-                    LinhaInsumo(texto: frase("Compared with other \(categoria) items in the current panel."))
-                }
-            }
-        }
-    }
-
     /// §22 / K5 — o número da peça inteira, com os pesos abertos.
     ///
     /// Esta tela declarava, até 02/08, que o cálculo não existia. Agora existe,
@@ -939,15 +839,12 @@ struct RelatorioDaPeca: View {
         erro = nil
         erroDosSimilares = nil
         erroDoCluster = nil
-        erroDaSerie = nil
         carregandoSimilares = true
         carregandoCluster = true
-        carregandoSerie = true
         if LeituraDaPeca.testeDeInterfaceAtivo {
             carregando = false
             carregandoSimilares = false
             carregandoCluster = false
-            carregandoSerie = false
             return
         }
         guard !termos.isEmpty else { carregando = false; return }
@@ -955,9 +852,8 @@ struct RelatorioDaPeca: View {
         let ids = termoIds.joined(separator: ",")
         let conjuntoIds = Set(termoIds)
         do {
-            // Todas as cinco operações começam no mesmo instante. A versão
-            // anterior esperava índice+cobertura e SÓ DEPOIS iniciava os três
-            // RPCs; a duração percebida era a soma de duas ondas de rede.
+            // Índice, cobertura e os dois RPCs começam juntos: a tela não
+            // soma duas ondas de rede antes de mostrar o painel.
             async let i = CatalogoDeIndices.shared.carregar()
             async let c: [Cobertura] = Supabase.shared.buscar(
                 "cobertura_por_celula",
@@ -976,8 +872,6 @@ struct RelatorioDaPeca: View {
                 "similares_da_peca_amplo_v2", args)
             async let respostaCluster: Cluster.Resposta = Supabase.shared.chamar(
                 "indice_do_cluster", ["termos": termoIds])
-            async let respostaSerie: SerieDoCluster.Resposta = Supabase.shared.chamar(
-                "serie_do_cluster", ["termos": termoIds, "semanas": 52])
 
             let recebidosI = try await i.filter { conjuntoIds.contains($0.termoId) }
             let mapaI = SelecaoDeEstado.porTermo(recebidosI)
@@ -990,8 +884,8 @@ struct RelatorioDaPeca: View {
                 mapaC[x.termoId] = x
             }
             coberturas = mapaC
-            // Índices e cobertura bastam para liberar a tela. Os três RPCs
-            // continuam em voo e ocupam somente suas próprias seções.
+            // Índices e cobertura liberam a tela; os dois RPCs preenchem
+            // suas seções quando responderem.
             carregando = false
 
             // Cancelamento nao e falha de rede: e a tela sendo fechada ou a
@@ -1010,10 +904,6 @@ struct RelatorioDaPeca: View {
             catch is CancellationError { return }
             catch { erroDoCluster = mensagem(error) }
             carregandoCluster = false
-            do { serie = try await respostaSerie }
-            catch is CancellationError { return }
-            catch { erroDaSerie = mensagem(error) }
-            carregandoSerie = false
         } catch is CancellationError {
             return
         } catch {

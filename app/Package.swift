@@ -25,7 +25,7 @@ let package = Package(
                       "Rede/CorDaPeca.swift", "Rede/LeitorDeArquivo.swift",
                       "Rede/Importacao.swift", "Rede/Explicacao.swift",
                       "Rede/CurvaDeTamanhos.swift", "Rede/Similares.swift",
-                      "Rede/Cluster.swift", "Rede/SerieDoCluster.swift",
+                      "Rede/Cluster.swift",
                       "Rede/ReferenciaEditorial.swift", "Rede/LeituraEspecifica.swift",
                       "Rede/LeiturasSalvas.swift",
                       "Rede/ResumoDeEventos.swift", "Rede/ImprensaDeTeste.swift", "Rede/SemelhancaVisual.swift",

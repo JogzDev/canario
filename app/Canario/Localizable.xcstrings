@@ -427,23 +427,6 @@
         }
       }
     },
-    "%@ of %@ points have partial coverage": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%@ of %@ points have partial coverage"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ de %2$@ pontos têm cobertura parcial"
-          }
-        }
-      }
-    },
     "%@ of %@ sizes, missing %@": {
       "extractionState": "manual",
       "localizations": {
@@ -796,23 +779,6 @@
         }
       }
     },
-    "%@ use only one source": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%@ use only one source"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ usam uma fonte só"
-          }
-        }
-      }
-    },
     "%@ weeks": {
       "extractionState": "manual",
       "localizations": {
@@ -893,23 +859,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · terminou há %@"
-          }
-        }
-      }
-    },
-    "%@ — %@ ago. No newer week has been published.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%@ — %@ ago. No newer week has been published."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ — há %@. Nenhuma semana mais recente foi publicada."
           }
         }
       }
@@ -2825,16 +2774,6 @@
         }
       }
     },
-    "Combined history across %lld weeks": {
-      "localizations": {
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "História combinada ao longo de %lld semanas"
-          }
-        }
-      }
-    },
     "Combined reading": {
       "localizations": {
         "pt-BR": {
@@ -2873,23 +2812,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Comparar atributos"
-          }
-        }
-      }
-    },
-    "Compared with other %@ items in the current panel.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Compared with other %@ items in the current panel."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Comparado com as outras peças de %@ no painel atual."
           }
         }
       }
@@ -3415,23 +3337,6 @@
         }
       }
     },
-    "Every point has partial attribute or source coverage; the line shows the available index, not a directional state.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Every point has partial attribute or source coverage; the line shows the available index, not a directional state."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todo ponto tem cobertura parcial de atributo ou de fonte; a linha mostra o índice disponível, não um estado de direção."
-          }
-        }
-      }
-    },
     "Ex: Black Tank Top": {
       "localizations": {
         "pt-BR": {
@@ -3903,23 +3808,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Como isto foi medido"
-          }
-        }
-      }
-    },
-    "How unusual these attributes were each week, compared with their own previous 12 weeks — one line, weighted by how rare each attribute is. It is not a count of items, and it is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "How unusual these attributes were each week, compared with their own previous 12 weeks — one line, weighted by how rare each attribute is. It is not a count of items, and it is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quão incomuns esses atributos foram em cada semana, comparados às 12 semanas anteriores de cada um — uma única linha, ponderada pela raridade de cada atributo. Não é uma contagem de peças nem representa a sua peça: o DataDrobe nunca acompanha uma roupa sua. Um ponto marcado é uma semana calculada com menos atributos do que você selecionou; por isso, a linha aparece mais fina ali."
           }
         }
       }
@@ -7519,16 +7407,6 @@
         }
       }
     },
-    "The chart could not be loaded: %@": {
-      "localizations": {
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível carregar o gráfico: %@"
-          }
-        }
-      }
-    },
     "The color was left unselected on purpose: this photo's lighting was not reliable enough to measure it. Pick the color below, or retake the photo with color-accurate capture.": {
       "extractionState": "manual",
       "localizations": {
@@ -7631,23 +7509,6 @@
         }
       }
     },
-    "The history for these attributes could not be loaded.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "The history for these attributes could not be loaded."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Não foi possível carregar a história destes atributos."
-          }
-        }
-      }
-    },
     "The item taxonomy is not available yet. Go back and try again; no visual-analysis credit was used.": {
       "extractionState": "manual",
       "localizations": {
@@ -7661,23 +7522,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "A taxonomia de peças ainda não está disponível. Volte e tente de novo; nenhum crédito de análise visual foi usado."
-          }
-        }
-      }
-    },
-    "The line ends on the week of %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "The line ends on the week of %@"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A linha termina na semana de %@"
           }
         }
       }
@@ -8124,23 +7968,6 @@
         }
       }
     },
-    "There are %@ weeks with readings; at least %@ are required to draw the chart. History grows with each collection.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "There are %@ weeks with readings; at least %@ are required to draw the chart. History grows with each collection."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Há %1$@ semanas com leitura; são necessárias pelo menos %2$@ para desenhar o gráfico. A história cresce a cada coleta."
-          }
-        }
-      }
-    },
     "There are too few for percentages to be meaningful. Below %@ matches, the items are shown without a summary statistic.": {
       "extractionState": "manual",
       "localizations": {
@@ -8154,23 +7981,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "São poucas demais para a porcentagem significar algo. Abaixo de %@ correspondências, as peças aparecem sem estatística de resumo."
-          }
-        }
-      }
-    },
-    "There is 1 week with readings; at least %@ are required to draw the chart. History grows with each collection.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "There is 1 week with readings; at least %@ are required to draw the chart. History grows with each collection."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Há 1 semana com leitura; são necessárias pelo menos %@ para desenhar o gráfico. A história cresce a cada coleta."
           }
         }
       }
@@ -8205,40 +8015,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ainda não há índice de %@ neste recorte do painel."
-          }
-        }
-      }
-    },
-    "These attributes do not have panel weights yet, so a combined line cannot be drawn.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "These attributes do not have panel weights yet, so a combined line cannot be drawn."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estes atributos ainda não têm peso no painel, então não dá para desenhar uma linha combinada."
-          }
-        }
-      }
-    },
-    "They are marked on the chart.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "They are marked on the chart."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eles estão marcados no gráfico."
           }
         }
       }
@@ -8460,16 +8236,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Os atributos desta peça não apontam na mesma direção."
-          }
-        }
-      }
-    },
-    "This mix, week by week": {
-      "localizations": {
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esta composição, semana a semana"
           }
         }
       }
@@ -8728,16 +8494,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tente tirar um atributo ou limpar a busca."
-          }
-        }
-      }
-    },
-    "Try the chart again": {
-      "localizations": {
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tentar o gráfico de novo"
           }
         }
       }
@@ -10760,22 +10516,52 @@
     "Use cents or omit the separator to clarify the price.": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "new", "value": "Use cents or omit the separator to clarify the price." } },
-        "pt-BR": { "stringUnit": { "state": "translated", "value": "Use centavos ou tire o separador para deixar o preço claro." } }
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Use cents or omit the separator to clarify the price."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use centavos ou tire o separador para deixar o preço claro."
+          }
+        }
       }
     },
     "Enter a valid price.": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "new", "value": "Enter a valid price." } },
-        "pt-BR": { "stringUnit": { "state": "translated", "value": "Digite um preço válido." } }
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Enter a valid price."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Digite um preço válido."
+          }
+        }
       }
     },
     "The maximum price for a reading is R$ 99,999.99.": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "new", "value": "The maximum price for a reading is R$ 99,999.99." } },
-        "pt-BR": { "stringUnit": { "state": "translated", "value": "O preço máximo para uma Leitura é R$ 99.999,99." } }
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The maximum price for a reading is R$ 99,999.99."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O preço máximo para uma Leitura é R$ 99.999,99."
+          }
+        }
       }
     }
   },
