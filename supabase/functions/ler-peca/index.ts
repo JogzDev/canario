@@ -1,8 +1,9 @@
 import { withSupabase } from "npm:@supabase/server@1.7.0";
 import {
-  ATRIBUTOS, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase, fraseSemPeca,
-  INTERPRETACAO, MODELOS, pedidoLimpo, REDACAO, termosDeBusca, VERIFICACAO, VERSAO,
-  verificarFrases,
+  ATRIBUTOS, buscasComplementaresDaFoto, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao,
+  type Fato, type Frase, fraseSemPeca, INTERPRETACAO, limitarConfirmacaoAosAtributos,
+  MODELOS, pedidoLimpo, REDACAO,
+  termosDeBusca, unirCandidatasDaFoto, VERIFICACAO, VERSAO, verificarFrases,
 } from "./leitura.ts";
 
 // Leitura específica de uma peça (2.0). O pedido chega como texto ("jaqueta
@@ -141,11 +142,38 @@ export default {
         p_limite: CANDIDATAS_PARA_VERIFICAR },
     );
     if (erroDasCandidatas) return response(503, { error: "panel_unavailable" });
-    const lista: any[] = candidatas?.pecas ?? [];
+    let lista: any[] = candidatas?.pecas ?? [];
+    const ampliacoes: { criterio: string; candidatas: number }[] = [];
+    // Uma foto pode informar detalhes ausentes dos títulos. Se a interseção
+    // for vazia, buscamos separadamente peças com todos os atributos e peças
+    // com a construção no título. A verificação abaixo ainda decide quais
+    // são a peça, quais são parecidas e quais não são.
+    if (!lista.length && analise && categorias.length) {
+      const planos = buscasComplementaresDaFoto(atributos, sinais);
+      const resultados = await Promise.all(planos.map(async (plano) => {
+        const resultado = await ctx.supabaseAdmin.rpc("candidatas_da_leitura", {
+          p_categorias: categorias, p_atributos: plano.atributos,
+          p_sinais: plano.sinais, p_vetos: vetos, p_limite: 20,
+        });
+        return { criterio: plano.criterio, ...resultado };
+      }));
+      if (resultados.some((resultado) => resultado.error)) {
+        return response(503, { error: "panel_unavailable" });
+      }
+      for (const resultado of resultados) {
+        ampliacoes.push({ criterio: resultado.criterio, candidatas: resultado.data?.total ?? 0 });
+      }
+      const porConstrucao = resultados.find((r) => r.criterio === "construcao_sem_atributos")?.data?.pecas ?? [];
+      const porAtributos = resultados.find((r) => r.criterio === "atributos_sem_sinais")?.data?.pecas ?? [];
+      lista = unirCandidatasDaFoto(porConstrucao, porAtributos, CANDIDATAS_PARA_VERIFICAR);
+    }
     const base = {
       versao: VERSAO, nome: peca.nome, explicacao: peca.explicacao, perguntas: peca.perguntas ?? [],
       painel_observado_em: candidatas?.painel_observado_em ?? null,
-      busca: { categorias, atributos, sinais, vetos, candidatas: candidatas?.total ?? 0 } as Record<string, unknown>,
+      busca: { categorias, atributos, sinais, vetos,
+        candidatas: lista.length ? (ampliacoes.length ? lista.length : candidatas?.total ?? 0) : 0,
+        ...(ampliacoes.length ? { candidatas_estritas: candidatas?.total ?? 0, ampliacoes } : {}),
+      } as Record<string, unknown>,
     };
     if (!lista.length) {
       return response(200, { ...base, frases: [fraseSemPeca(peca.nome, [])], fatos: {}, pecas: [],
@@ -157,7 +185,7 @@ export default {
     // com a interpretação (A68): só peça nova passa de novo pelo verificador,
     // e a mesma peça não muda de lado entre duas leituras.
     const ids = lista.map((p) => Number(p.id));
-    const veredito = new Map<number, string>();
+    let veredito = new Map<number, string>();
     for (const [id, v] of Object.entries(guardada?.veredictos ?? {})) veredito.set(Number(id), String(v));
     const novas = lista.filter((p) => !veredito.has(Number(p.id)));
     let modeloDaVerificacao = "guardada";
@@ -172,6 +200,20 @@ export default {
       for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
       await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
         .update({ veredictos: Object.fromEntries(veredito) }).eq("chave", chave);
+    }
+    if (ampliacoes.length && atributos.length) {
+      // O verificador enxerga só títulos e pode chamar de "a peça" um blazer
+      // preto para a foto de um casaco azul. A taxonomia do próprio produto é
+      // o limite determinístico: atributo não comprovado vira "parecida".
+      const { data: termos, error: erroDosTermos } = await ctx.supabaseAdmin
+        .from("produto_termos").select("produto_id, termo_id")
+        .in("produto_id", ids).in("termo_id", atributos);
+      if (erroDosTermos) return response(503, { error: "panel_unavailable" });
+      const antes = [...veredito.values()].filter((v) => v === "e_a_peca").length;
+      veredito = limitarConfirmacaoAosAtributos(veredito, atributos, termos ?? []);
+      Object.assign(base.busca, {
+        ajustadas_por_atributos: antes - [...veredito.values()].filter((v) => v === "e_a_peca").length,
+      });
     }
     const confirmadas = ids.filter((id) => veredito.get(id) === "e_a_peca");
     const parecidas = ids.filter((id) => veredito.get(id) === "parecida");
