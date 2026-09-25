@@ -182,6 +182,13 @@ jobs:
     # O OSV cobre o Package.resolved e os lockfiles npm sem depender desse
     # produto pago; SARIF fica desligado, mas qualquer vulnerabilidade falha.
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    # O workflow reutilizável declara estas permissões no job interno. O
+    # chamador precisa concedê-las aqui; sem isso o Actions rejeita a execução
+    # antes de iniciar qualquer job (startup_failure).
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     with:
       scan-args: |-
         --recursive
