@@ -1,7 +1,8 @@
 import { withSupabase } from "npm:@supabase/server@1.7.0";
 import {
   ATRIBUTOS, buscasComplementaresDaFoto, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao,
-  type Fato, type Frase, fraseSemPeca, INTERPRETACAO, MODELOS, pedidoLimpo, REDACAO,
+  type Fato, type Frase, fraseSemPeca, INTERPRETACAO, limitarConfirmacaoAosAtributos,
+  MODELOS, pedidoLimpo, REDACAO,
   termosDeBusca, unirCandidatasDaFoto, VERIFICACAO, VERSAO, verificarFrases,
 } from "./leitura.ts";
 
@@ -184,7 +185,7 @@ export default {
     // com a interpretação (A68): só peça nova passa de novo pelo verificador,
     // e a mesma peça não muda de lado entre duas leituras.
     const ids = lista.map((p) => Number(p.id));
-    const veredito = new Map<number, string>();
+    let veredito = new Map<number, string>();
     for (const [id, v] of Object.entries(guardada?.veredictos ?? {})) veredito.set(Number(id), String(v));
     const novas = lista.filter((p) => !veredito.has(Number(p.id)));
     let modeloDaVerificacao = "guardada";
@@ -199,6 +200,20 @@ export default {
       for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
       await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
         .update({ veredictos: Object.fromEntries(veredito) }).eq("chave", chave);
+    }
+    if (ampliacoes.length && atributos.length) {
+      // O verificador enxerga só títulos e pode chamar de "a peça" um blazer
+      // preto para a foto de um casaco azul. A taxonomia do próprio produto é
+      // o limite determinístico: atributo não comprovado vira "parecida".
+      const { data: termos, error: erroDosTermos } = await ctx.supabaseAdmin
+        .from("produto_termos").select("produto_id, termo_id")
+        .in("produto_id", ids).in("termo_id", atributos);
+      if (erroDosTermos) return response(503, { error: "panel_unavailable" });
+      const antes = [...veredito.values()].filter((v) => v === "e_a_peca").length;
+      veredito = limitarConfirmacaoAosAtributos(veredito, atributos, termos ?? []);
+      Object.assign(base.busca, {
+        ajustadas_por_atributos: antes - [...veredito.values()].filter((v) => v === "e_a_peca").length,
+      });
     }
     const confirmadas = ids.filter((id) => veredito.get(id) === "e_a_peca");
     const parecidas = ids.filter((id) => veredito.get(id) === "parecida");

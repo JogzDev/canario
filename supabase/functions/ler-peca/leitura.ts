@@ -304,6 +304,27 @@ export function unirCandidatasDaFoto<T extends { id: number | string }>(
   return [...unicas.values()];
 }
 
+/** Sem todos os atributos confirmados, o título pode ser próximo, mas não prova a peça. */
+export function limitarConfirmacaoAosAtributos(
+  vereditos: Map<number, string>, atributos: string[],
+  termos: { produto_id: number; termo_id: string }[],
+): Map<number, string> {
+  if (!atributos.length) return vereditos;
+  const porPeca = new Map<number, Set<string>>();
+  for (const termo of termos) {
+    const ids = porPeca.get(termo.produto_id) ?? new Set<string>();
+    ids.add(termo.termo_id);
+    porPeca.set(termo.produto_id, ids);
+  }
+  const ajustados = new Map(vereditos);
+  for (const [id, veredito] of vereditos) {
+    if (veredito === "e_a_peca" && !atributos.every((a) => porPeca.get(id)?.has(a))) {
+      ajustados.set(id, "parecida");
+    }
+  }
+  return ajustados;
+}
+
 /** Texto do pedido: até 200 caracteres, sem quebras que imitem instrução. */
 export function pedidoLimpo(texto: unknown): string {
   if (typeof texto !== "string") return "";

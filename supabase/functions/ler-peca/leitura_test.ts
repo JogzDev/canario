@@ -1,7 +1,8 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import {
-  buscasComplementaresDaFoto, fraseSemPeca, numerosDoFato, numerosDoTexto, pedidoLimpo,
-  semCitacao, termosDeBusca, unirCandidatasDaFoto, variantesVisuaisDosSinais, verificarFrases,
+  buscasComplementaresDaFoto, fraseSemPeca, limitarConfirmacaoAosAtributos, numerosDoFato,
+  numerosDoTexto, pedidoLimpo, semCitacao, termosDeBusca, unirCandidatasDaFoto,
+  variantesVisuaisDosSinais, verificarFrases,
 } from "./leitura.ts";
 
 const fatos = {
@@ -62,6 +63,18 @@ Deno.test("foto vazia recupera por atributos ou construção sem aceitar busca s
 Deno.test("candidatas recuperadas priorizam construção e não duplicam ids", () => {
   assertEquals(unirCandidatasDaFoto([{ id: 2 }, { id: 3 }], [{ id: 1 }, { id: 2 }]),
     [{ id: 2 }, { id: 3 }, { id: 1 }]);
+});
+
+Deno.test("foto azul não confirma produto preto mesmo quando a construção coincide", () => {
+  const vereditos = new Map([[1, "e_a_peca"], [2, "e_a_peca"], [3, "parecida"]]);
+  const termos = [
+    { produto_id: 1, termo_id: "curto" }, { produto_id: 1, termo_id: "azul" },
+    { produto_id: 2, termo_id: "curto" }, { produto_id: 2, termo_id: "preto" },
+  ];
+  const ajustados = limitarConfirmacaoAosAtributos(vereditos, ["curto", "azul"], termos);
+  assertEquals([...ajustados], [[1, "e_a_peca"], [2, "parecida"], [3, "parecida"]]);
+  assertEquals([...vereditos][1], [2, "e_a_peca"]); // cache original não muda
+  assertEquals([...limitarConfirmacaoAosAtributos(vereditos, [], [])], [...vereditos]);
 });
 
 Deno.test("pedido limpo: sem controle e no máximo 200 caracteres", () => {
