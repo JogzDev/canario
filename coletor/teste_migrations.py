@@ -310,6 +310,20 @@ def main():
     for trecho in exigencias_resumo:
         if trecho not in resumo_eventos:
             return falhar("resumo de eventos nao garante: {}".format(trecho))
+    # A69: o app novo usa a proporcao da mesma semana dos eventos. O contrato
+    # antigo continua na RPC apenas para consumidores anteriores.
+    caminho_a69 = next((c for c in arquivos if "_a69_taxa_da_semana_mesma_janela" in c), None)
+    if not caminho_a69:
+        return falhar("A69 da taxa semanal ausente")
+    for trecho in (
+        "'pecas_observadas'", "'por_mil_observadas'",
+        "join public.snapshots s on s.data between j.de and j.ate",
+        "join public.eventos e on e.data between j.de and j.ate",
+        "and p.segmento = 'feminino_casual_br'",
+        "when o.pecas_observadas > 0",
+    ):
+        if trecho not in resumo_eventos:
+            return falhar("A69 perdeu o contrato semanal: {}".format(trecho))
     # Ancorar no ultimo evento DE CADA TIPO fazia "nenhuma remarcacao nesta
     # semana" recuar ate a ultima remarcacao e apresenta-la como atual.
     if "max(e.data)" in resumo_eventos:
