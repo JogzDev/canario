@@ -42,17 +42,42 @@ enum CurvaDeTamanhos {
         let nQuebrou: Int
         let taxaQuebra: Double?
         let shareIndisponivel: Double?
+        /// A janela que a coleta de fato observou. Nula nas semanas publicadas
+        /// antes da A68, que não a declaravam.
+        var janela: JanelaObservada? = nil
 
         var id: String { "\(termoId ?? "painel")-\(sistema)-\(faixa)-\(rotulo ?? "")" }
 
         enum CodingKeys: String, CodingKey {
-            case semana, sistema, faixa, rotulo
+            case semana, sistema, faixa, rotulo, meta
             case termoId = "termo_id"
             case nGrades = "n_grades"
             case nEmRisco = "n_em_risco"
             case nQuebrou = "n_quebrou"
             case taxaQuebra = "taxa_quebra"
             case shareIndisponivel = "share_indisponivel"
+        }
+    }
+
+    /// Os dias entre a primeira e a última coleta saudável das marcas do
+    /// segmento na janela (A68).
+    ///
+    /// **O app dizia "janela de 14 dias" sem saber.** De 03 a 17/09 o banco a
+    /// 96,9% travou as coletas, e a semana de 14/09 foi medida com três dias
+    /// de fotos: deu 2,49% contra 6% a 9% das outras, e a tela prometia 14. A
+    /// taxa cresce com os dias, então o número só se lê junto com a janela.
+    struct JanelaObservada: Decodable, Hashable {
+        let inicio: String
+        let fim: String
+        let dias: Int
+        let marcas: Int
+    }
+
+    /// `meta` é um jsonb com várias chaves de texto; o app lê só a janela.
+    fileprivate struct Meta: Decodable {
+        let janelaObservada: JanelaObservada?
+        enum CodingKeys: String, CodingKey {
+            case janelaObservada = "janela_observada"
         }
     }
 
@@ -83,17 +108,18 @@ enum CurvaDeTamanhos {
     /// **Sem o segmento, a curva somava o catálogo candidato.** A tabela guarda
     /// uma curva por segmento na mesma semana, e desde 24/08 a escada de letra
     /// tem `feminino_casual_br` e `catalogo_candidato_br` lado a lado. O zero
-    /// do candidato não é medida. A quebra compara a primeira e a última foto
-    /// de cada tamanho dentro da janela, e o candidato é coletado duas vezes
-    /// por semana. Em 23/09, cada peça dele tinha uma foto só na janela, e com
-    /// uma foto nenhum tamanho tem como quebrar. Misturado, esse zero diluía
-    /// toda taxa em cerca de um terço: no painel de 21/09 o M caía de 6,22%
-    /// para 4,35%. O destaque também mudava: sozinho, o feminino não tem líder
-    /// (os cinco empatam na margem), e misturado ele elegia GG, M e PP. O
-    /// cartão do formato lia a primeira linha `maiores` que chegasse. Às vezes
-    /// era a do candidato, com taxa zero, e o cartão sumia. A A40 diz que o
-    /// candidato "amplia produto, não estatística". As séries do mesmo
-    /// relatório já filtravam por `Recorte.segmento`.
+    /// do candidato não era medida: das coletas dele de 03 a 21/09, só a de
+    /// 21/09 passou (o banco a 96,9% travou as outras), e com uma coleta só
+    /// nenhum tamanho tem como quebrar. Desde a A68 o banco não põe em risco
+    /// marca com uma coleta só; o filtro fica porque o candidato não é o painel
+    /// medido, com ou sem janela. Misturado, esse zero diluía toda taxa em
+    /// cerca de um terço: no painel de 21/09 o M caía de 6,22% para 4,35%. O
+    /// destaque também mudava: sozinho, o feminino não tem líder (os cinco
+    /// empatam na margem), e misturado ele elegia GG, M e PP. O cartão do
+    /// formato lia a primeira linha `maiores` que chegasse. Às vezes era a do
+    /// candidato, com taxa zero, e o cartão sumia. A A40 diz que o candidato
+    /// "amplia produto, não estatística". As séries do mesmo relatório já
+    /// filtravam por `Recorte.segmento`.
     static func consulta(termoId: String?, porRotulo: Bool) -> String {
         let filtroTermo = termoId.map { "termo_id=eq.\($0)" } ?? "termo_id=is.null"
         let rotulo = porRotulo ? "rotulo=not.is.null" : "rotulo=is.null"
@@ -136,7 +162,7 @@ enum CurvaDeTamanhos {
                       rotulo: rotulo, nGrades: v.grades,
                       nEmRisco: v.risco, nQuebrou: v.quebrou,
                       taxaQuebra: v.risco > 0 ? 100.0 * Double(v.quebrou) / Double(v.risco) : nil,
-                      shareIndisponivel: nil)
+                      shareIndisponivel: nil, janela: v.modelo.janela)
             }
     }
 
@@ -219,11 +245,17 @@ enum CurvaDeTamanhos {
     ]
 
     /// O que sustenta o número, em uma linha (regra 3).
-    static func insumo(_ linhas: [Faixa], janelaDias: Int = 14) -> String {
+    ///
+    /// A janela é a observada, quando o banco a declara. Sem ela, o texto diz
+    /// o teto nominal e não promete os 14 dias.
+    static func insumo(_ linhas: [Faixa]) -> String {
         let risco = linhas.reduce(0) { $0 + $1.nEmRisco }
         let grades = linhas.map(\.nGrades).max() ?? 0
         let semana = linhas.first?.semana ?? ""
-        return "\(risco) sizes at risk across \(grades) panel size ranges, a \(janelaDias)-day window, week of \(Formato.data(semana))."
+        let janela = linhas.lazy.compactMap(\.janela).first.map {
+            "a \($0.dias)-day window observed from \(Formato.data($0.inicio)) to \(Formato.data($0.fim))"
+        } ?? "a window of up to 14 days"
+        return "\(risco) sizes at risk across \(grades) panel size ranges, \(janela), week of \(Formato.data(semana))."
     }
 
     /// Quais tamanhos a curva pode destacar sem contrariar a própria manchete.
@@ -259,5 +291,24 @@ enum CurvaDeTamanhos {
                 let y = ordem[b.rotulo ?? ""] ?? Int(b.rotulo ?? "") ?? 99
                 return x < y
             }
+    }
+}
+
+extension CurvaDeTamanhos.Faixa {
+    /// Escrito à mão só para achar a janela dentro de `meta`. Numa extensão,
+    /// para o inicializador por membros continuar existindo.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        termoId = try c.decodeIfPresent(String.self, forKey: .termoId)
+        semana = try c.decode(String.self, forKey: .semana)
+        sistema = try c.decode(String.self, forKey: .sistema)
+        faixa = try c.decode(String.self, forKey: .faixa)
+        rotulo = try c.decodeIfPresent(String.self, forKey: .rotulo)
+        nGrades = try c.decode(Int.self, forKey: .nGrades)
+        nEmRisco = try c.decode(Int.self, forKey: .nEmRisco)
+        nQuebrou = try c.decode(Int.self, forKey: .nQuebrou)
+        taxaQuebra = try c.decodeIfPresent(Double.self, forKey: .taxaQuebra)
+        shareIndisponivel = try c.decodeIfPresent(Double.self, forKey: .shareIndisponivel)
+        janela = try c.decodeIfPresent(CurvaDeTamanhos.Meta.self, forKey: .meta)?.janelaObservada
     }
 }

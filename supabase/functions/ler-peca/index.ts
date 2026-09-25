@@ -1,8 +1,9 @@
 import { withSupabase } from "npm:@supabase/server@1.7.0";
 import {
-  ATRIBUTOS, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao, type Fato, type Frase, fraseSemPeca,
-  INTERPRETACAO, MODELOS, pedidoLimpo, REDACAO, termosDeBusca, VERIFICACAO, VERSAO,
-  verificarFrases,
+  ATRIBUTOS, buscasComplementaresDaFoto, esquemaDaInterpretacao, esquemaDaRedacao, esquemaDaVerificacao,
+  type Fato, type Frase, fraseSemPeca, INTERPRETACAO, limitarConfirmacaoAosAtributos,
+  MODELOS, pedidoLimpo, REDACAO,
+  termosDeBusca, unirCandidatasDaFoto, VERIFICACAO, VERSAO, verificarFrases,
 } from "./leitura.ts";
 
 // Leitura específica de uma peça (2.0). O pedido chega como texto ("jaqueta
@@ -111,7 +112,7 @@ export default {
     // escolhe sinais diferentes a cada vez. Só o hash do pedido fica guardado.
     const chave = await sha256(`${VERSAO}:${entrada}`);
     const { data: guardada } = await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
-      .select("interpretacao").eq("chave", chave)
+      .select("interpretacao, veredictos").eq("chave", chave)
       .gte("criado_em", new Date(Date.now() - 7 * 864e5).toISOString()).maybeSingle();
     let interpretacao: { dados: any; modelo: string } | null = guardada
       ? { dados: guardada.interpretacao, modelo: "guardada" } : null;
@@ -141,11 +142,38 @@ export default {
         p_limite: CANDIDATAS_PARA_VERIFICAR },
     );
     if (erroDasCandidatas) return response(503, { error: "panel_unavailable" });
-    const lista: any[] = candidatas?.pecas ?? [];
+    let lista: any[] = candidatas?.pecas ?? [];
+    const ampliacoes: { criterio: string; candidatas: number }[] = [];
+    // Uma foto pode informar detalhes ausentes dos títulos. Se a interseção
+    // for vazia, buscamos separadamente peças com todos os atributos e peças
+    // com a construção no título. A verificação abaixo ainda decide quais
+    // são a peça, quais são parecidas e quais não são.
+    if (!lista.length && analise && categorias.length) {
+      const planos = buscasComplementaresDaFoto(atributos, sinais);
+      const resultados = await Promise.all(planos.map(async (plano) => {
+        const resultado = await ctx.supabaseAdmin.rpc("candidatas_da_leitura", {
+          p_categorias: categorias, p_atributos: plano.atributos,
+          p_sinais: plano.sinais, p_vetos: vetos, p_limite: 20,
+        });
+        return { criterio: plano.criterio, ...resultado };
+      }));
+      if (resultados.some((resultado) => resultado.error)) {
+        return response(503, { error: "panel_unavailable" });
+      }
+      for (const resultado of resultados) {
+        ampliacoes.push({ criterio: resultado.criterio, candidatas: resultado.data?.total ?? 0 });
+      }
+      const porConstrucao = resultados.find((r) => r.criterio === "construcao_sem_atributos")?.data?.pecas ?? [];
+      const porAtributos = resultados.find((r) => r.criterio === "atributos_sem_sinais")?.data?.pecas ?? [];
+      lista = unirCandidatasDaFoto(porConstrucao, porAtributos, CANDIDATAS_PARA_VERIFICAR);
+    }
     const base = {
       versao: VERSAO, nome: peca.nome, explicacao: peca.explicacao, perguntas: peca.perguntas ?? [],
       painel_observado_em: candidatas?.painel_observado_em ?? null,
-      busca: { categorias, atributos, sinais, vetos, candidatas: candidatas?.total ?? 0 } as Record<string, unknown>,
+      busca: { categorias, atributos, sinais, vetos,
+        candidatas: lista.length ? (ampliacoes.length ? lista.length : candidatas?.total ?? 0) : 0,
+        ...(ampliacoes.length ? { candidatas_estritas: candidatas?.total ?? 0, ampliacoes } : {}),
+      } as Record<string, unknown>,
     };
     if (!lista.length) {
       return response(200, { ...base, frases: [fraseSemPeca(peca.nome, [])], fatos: {}, pecas: [],
@@ -153,16 +181,40 @@ export default {
     }
 
     // 3. Verificação pelo título. Id que a Luna invente não entra: o esquema
-    // só aceita os ids das candidatas.
+    // só aceita os ids das candidatas. O veredito de cada peça fica guardado
+    // com a interpretação (A68): só peça nova passa de novo pelo verificador,
+    // e a mesma peça não muda de lado entre duas leituras.
     const ids = lista.map((p) => Number(p.id));
-    const verificacao = await luna(
-      apiKey, "verificacao_das_candidatas", VERIFICACAO,
-      JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao },
-                       candidatas: lista.map((p) => ({ id: p.id, titulo: p.titulo })) }),
-      esquemaDaVerificacao(ids));
-    if (!verificacao) return response(502, { error: "reading_provider_error" });
-    const veredito = new Map<number, string>();
-    for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
+    let veredito = new Map<number, string>();
+    for (const [id, v] of Object.entries(guardada?.veredictos ?? {})) veredito.set(Number(id), String(v));
+    const novas = lista.filter((p) => !veredito.has(Number(p.id)));
+    let modeloDaVerificacao = "guardada";
+    if (novas.length) {
+      const verificacao = await luna(
+        apiKey, "verificacao_das_candidatas", VERIFICACAO,
+        JSON.stringify({ peca: { nome: peca.nome, explicacao: peca.explicacao },
+                         candidatas: novas.map((p) => ({ id: p.id, titulo: p.titulo })) }),
+        esquemaDaVerificacao(novas.map((p) => Number(p.id))));
+      if (!verificacao) return response(502, { error: "reading_provider_error" });
+      modeloDaVerificacao = verificacao.modelo;
+      for (const v of verificacao.dados.veredictos ?? []) veredito.set(Number(v.id), v.veredito);
+      await ctx.supabaseAdmin.from("interpretacoes_da_leitura")
+        .update({ veredictos: Object.fromEntries(veredito) }).eq("chave", chave);
+    }
+    if (ampliacoes.length && atributos.length) {
+      // O verificador enxerga só títulos e pode chamar de "a peça" um blazer
+      // preto para a foto de um casaco azul. A taxonomia do próprio produto é
+      // o limite determinístico: atributo não comprovado vira "parecida".
+      const { data: termos, error: erroDosTermos } = await ctx.supabaseAdmin
+        .from("produto_termos").select("produto_id, termo_id")
+        .in("produto_id", ids).in("termo_id", atributos);
+      if (erroDosTermos) return response(503, { error: "panel_unavailable" });
+      const antes = [...veredito.values()].filter((v) => v === "e_a_peca").length;
+      veredito = limitarConfirmacaoAosAtributos(veredito, atributos, termos ?? []);
+      Object.assign(base.busca, {
+        ajustadas_por_atributos: antes - [...veredito.values()].filter((v) => v === "e_a_peca").length,
+      });
+    }
     const confirmadas = ids.filter((id) => veredito.get(id) === "e_a_peca");
     const parecidas = ids.filter((id) => veredito.get(id) === "parecida");
     Object.assign(base.busca, {
@@ -181,7 +233,7 @@ export default {
         ? { parecidas: { id: "parecidas", pecas: vizinhas.length, provas: vizinhas.map((p) => p.id) } }
         : {};
       return response(200, { ...base, frases: [fraseSemPeca(peca.nome, vizinhas)], fatos: fatosDasParecidas,
-                             pecas: [], parecidas: vizinhas, modelo: verificacao.modelo });
+                             pecas: [], parecidas: vizinhas, modelo: modeloDaVerificacao });
     }
 
     // 4. Fatos das verificadas (A64).
