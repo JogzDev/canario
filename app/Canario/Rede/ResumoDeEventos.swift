@@ -72,6 +72,9 @@ enum ResumoDeEventos {
         let maiorQuedaPct: Double?
         let pecasOfertadas: Int?
         let porMilOfertadas: Double?
+        /// Produtos distintos observados na mesma janela dos eventos (A69).
+        let pecasObservadas: Int?
+        let porMilObservadas: Double?
         let tamanhos: [String]?
         let exemplos: [Exemplo]
 
@@ -83,6 +86,8 @@ enum ResumoDeEventos {
             case maiorQuedaPct = "maior_queda_pct"
             case pecasOfertadas = "pecas_ofertadas"
             case porMilOfertadas = "por_mil_ofertadas"
+            case pecasObservadas = "pecas_observadas"
+            case porMilObservadas = "por_mil_observadas"
         }
     }
 
@@ -134,35 +139,39 @@ enum ResumoDeEventos {
         guard let de = r.de, let ate = r.ate else { return nil }
         let periodo = "\(Formato.data(de)) – \(Formato.data(ate))"
         guard let dias = r.diasDesdeOFim, dias >= 2 else { return periodo }
-        return "\(periodo) · ended \(Formato.periodo(dias: dias)) ago"
+        return frase("\(periodo) · ended \(Formato.periodo(dias: dias)) ago")
     }
 
     /// Quantas peças a janela inteira tem, e quantos eventos as moveram.
     static func total(_ r: Resposta) -> String {
-        let pecas = "\(Formato.contagem(r.totalPecas)) "
-            + "item\(r.totalPecas == 1 ? "" : "s")"
+        let pecas = r.totalPecas == 1
+            ? frase("1 item")
+            : frase("\(Formato.contagem(r.totalPecas)) items")
         guard r.totalEventos > r.totalPecas else { return pecas }
-        return "\(pecas) · \(Formato.contagem(r.totalEventos)) events"
+        return frase("\(pecas) · \(Formato.contagem(r.totalEventos)) events")
     }
 
-    /// A taxa por mil, quando o denominador existe.
+    /// A taxa por mil peças observadas na mesma janela, quando disponível.
     ///
     /// É o que separa "quem mexeu mais" de "quem mexeu mais no próprio
-    /// catálogo": a C&A lidera as duas contagens absolutas e é a quinta em
-    /// taxa de reposição. Sem denominador, a frase não existe — nunca é
-    /// substituída pelo sortimento de hoje.
+    /// catálogo": a C&A lidera contagens absolutas sem necessariamente
+    /// liderar a taxa. Sem denominador, a frase não existe.
     static func taxa(_ m: Marca) -> String? {
-        guard let porMil = m.porMilOfertadas, let ofertadas = m.pecasOfertadas,
-              ofertadas > 0 else { return nil }
-        return "\(Leitura.numero(porMil, casas: 1)) per 1,000 offered"
+        guard let porMil = m.porMilObservadas, let observadas = m.pecasObservadas,
+              observadas > 0 else { return nil }
+        return frase("\(Leitura.numero(porMil, casas: 1)) per 1,000 observed this week")
     }
 
     /// A linha de apoio de uma marca: repetição e alcance, sem enfeite.
     static func apoio(_ m: Marca) -> String {
         var partes: [String] = []
-        if m.eventos > m.pecas { partes.append("\(m.eventos) events") }
+        if m.eventos > m.pecas {
+            partes.append(frase("\(String(m.eventos)) events"))
+        }
         if let repetidas = m.pecasRepetidas, repetidas > 0 {
-            partes.append("\(repetidas) had happened before")
+            partes.append(repetidas == 1
+                ? frase("1 had happened before")
+                : frase("\(String(repetidas)) had happened before"))
         }
         if let taxa = taxa(m) { partes.append(taxa) }
         return partes.joined(separator: " · ")
@@ -175,7 +184,6 @@ enum ResumoDeEventos {
     /// pela tela.
     static func recorte(_ m: Marca) -> String? {
         guard m.pecas > m.exemplos.count, !m.exemplos.isEmpty else { return nil }
-        return "Showing \(m.exemplos.count) of \(Formato.contagem(m.pecas)) "
-             + "items, most recent first."
+        return frase("Showing \(String(m.exemplos.count)) of \(Formato.contagem(m.pecas)) items, most recent first.")
     }
 }

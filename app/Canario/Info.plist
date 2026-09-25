@@ -11,7 +11,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>DataDrobe</string>
+	<string>Seam</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -58,9 +58,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Take a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
+	<string>Take a garment photo to suggest its attributes. Before cloud analysis, Seam shows exactly what will be sent and asks for your permission.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose a garment photo to suggest its attributes. Before cloud analysis, DataDrobe shows exactly what will be sent and asks for your permission.</string>
+	<string>Choose a garment photo to suggest its attributes. Before cloud analysis, Seam shows exactly what will be sent and asks for your permission.</string>
 	<key>REMOTE_ANALYSIS_ENABLED</key>
 	<string>$(REMOTE_ANALYSIS_ENABLED)</string>
 	<key>SUPABASE_PUBLISHABLE_KEY</key>

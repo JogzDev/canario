@@ -38,109 +38,105 @@ struct Comparar: View {
 
     private let maximo = 6   // §27: de 2 a 6 peças
 
-    /// Constante, e não `@Environment`: esta tela declara o próprio
-    /// território logo abaixo, e ambiente que a view escreve não volta para
-    /// ela -- leria o `.armario` do pai. Mesmo caso do `Explorar`.
-    private let territorio: Territorio = .mercado
-
     var body: some View {
-        NavigationStack {
-            Group {
-                if carregando {
-                    Carregando()
-                } else if let erro {
-                    FalhaDeRede(mensagem: erro) { Task { await carregar() } }
-                } else {
-                    conteudo
-                }
+        Group {
+            if carregando {
+                Carregando()
+            } else if let erro {
+                FalhaDeRede(mensagem: erro) { Task { await carregar() } }
+            } else {
+                conteudo
             }
-            .navigationTitle("Compare")
-            .toolbarBackground(Tokens.Cor.noturno, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
         }
-        // Comparar é a porta de entrada da Trends desde 29/08, e continuava
-        // preta: `List` traz o fundo agrupado do sistema, que no escuro é
-        // preto puro, e ele cobria qualquer fundo declarado atrás. O JP:
-        // *"a tela de compare ainda não atualizou pro azul escuro e continua
-        // preta também"*.
-        //
-        // São duas coisas, e as duas precisam ser ditas: esconder o fundo da
-        // lista (`scrollContentBackground`) e pintar o do território. Só uma
-        // delas não muda nada -- foi por isso que a primeira tentativa, com
-        // `.territorio` sozinho, ficou igual e eu preferi tirar.
-        .territorio(.mercado)
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
+        .navigationTitle("Compare")
         .task { await carregar() }
     }
 
     private var conteudo: some View {
-        List {
-            Section {
-                Text("What this compares").font(Tokens.Fonte.secao)
-                Text("Choose 2 to \(maximo) attributes that compete for the same space in a collection. The screen aligns panel presence with external interest signals in the same week.")
-                    .font(Tokens.Fonte.apoio)
-                Text("This compares already collected market data. It is not a sales forecast and does not include your costs, timing or history.")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
-            }
-            .listRowBackground(Tokens.Cor.superficieDo(territorio))
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                Folha {
+                    CabecalhoDaFolha(titulo: Text("What this compares"))
+                    Text("Choose 2 to \(maximo) attributes that compete for the same space in a collection. The screen aligns panel presence with external interest signals in the same week.")
+                        .font(.body)
+                    Text("This compares already collected market data. It is not a sales forecast and does not include your costs, timing or history.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
 
-            if escolhidos.count >= 2 {
-                Section("Side by side") {
+                if escolhidos.count >= 2 {
+                    Text("Side by side")
+                        .font(Edicao.Tipo.secao)
+                        .accessibilityAddTraits(.isHeader)
                     ForEach(comparados) { termo in
-                        LinhaComparada(termo: termo,
-                                       indice: indices[termo.id],
-                                       varejo: varejo[termo.id],
-                                       cobertura: coberturas[termo.id])
-                    }
-                }
-                .listRowBackground(Tokens.Cor.superficieDo(territorio))
-                if let leitura = leituraDaDistancia {
-                    Section("Where they diverge") {
-                        Text(leitura).font(Tokens.Fonte.apoio)
-                    }
-                    .listRowBackground(Tokens.Cor.superficieDo(territorio))
-                }
-            } else {
-                Section {
-                    Text("Choose at least 2 attributes below.")
-                        .font(Tokens.Fonte.apoio)
-                        .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
-                }
-                .listRowBackground(Tokens.Cor.superficieDo(territorio))
-            }
-
-            ForEach(dimensoesComparaveis, id: \.self) { dimensao in
-                Section(Traducao.rotuloDaDimensao(dimensao)) {
-                    ForEach(termosComparaveis.filter {
-                        $0.dimensao == dimensao
-                    }) { termo in
-                        Button {
-                            alternar(termo.id)
-                        } label: {
-                            HStack {
-                                Image(systemName: escolhidos.contains(termo.id)
-                                      ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(escolhidos.contains(termo.id)
-                                                     ? Tokens.Cor.tinta : Tokens.Cor.semDado)
-                                Text(Traducao.rotuloExibido(termo))
-                                    .foregroundStyle(Tokens.Cor.tinta)
-                                Spacer()
-                                if indices[termo.id]?.indice == nil {
-                                    Text("Panel data")
-                                        .font(Tokens.Fonte.miudo)
-                                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
-                                }
+                        Folha {
+                            NavigationLink {
+                                RelatorioDoTermo(termo: termo)
+                            } label: {
+                                LinhaComparada(termo: termo,
+                                               indice: indices[termo.id],
+                                               varejo: varejo[termo.id],
+                                               cobertura: coberturas[termo.id])
                             }
+                            .buttonStyle(.plain)
                         }
-                        .disabled(!escolhidos.contains(termo.id)
-                                  && escolhidos.count >= maximo)
+                    }
+                    if let leitura = leituraDaDistancia {
+                        Folha {
+                            CabecalhoDaFolha(titulo: Text("Where they diverge"))
+                            Text(leitura).font(.body)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                } else {
+                    Folha {
+                        Text("Choose at least 2 attributes below.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .listRowBackground(Tokens.Cor.superficieDo(territorio))
+
+                ForEach(dimensoesComparaveis, id: \.self) { dimensao in
+                    Folha(espaco: 0) {
+                        CabecalhoDaFolha(titulo: Text(Traducao.rotuloDaDimensao(dimensao)))
+                            .padding(.bottom, 8)
+                        ForEach(Array(termosComparaveis.filter {
+                            $0.dimensao == dimensao
+                        }.enumerated()), id: \.element.id) { posicao, termo in
+                            if posicao > 0 { CosturaDaEdicao() }
+                            Button {
+                                alternar(termo.id)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: escolhidos.contains(termo.id)
+                                          ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(Edicao.bordo)
+                                    Text(Traducao.rotuloExibido(termo))
+                                        .foregroundStyle(.primary)
+                                    Spacer(minLength: 8)
+                                    if indices[termo.id]?.indice == nil {
+                                        Text("Panel data")
+                                            .font(.footnote)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .frame(minHeight: 56)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("comparar-termo-\(termo.id)")
+                            .disabled(!escolhidos.contains(termo.id)
+                                      && escolhidos.count >= maximo)
+                        }
+                    }
+                }
             }
+            .padding(.horizontal, Edicao.margem)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
     }
 
     /// Toda medição real de varejo entra no catálogo. O índice composto mantém
@@ -186,9 +182,9 @@ struct Comparar: View {
         let pctV = Leitura.numero(maisVarejo.1, casas: 1)
 
         if maisEditorial.0.id == maisVarejo.0.id {
-            return "\(Traducao.rotuloExibido(maisEditorial.0)) leads both axes: it moved most across external signals and is the most present in the panel (\(pctE)% of the assortment). When both move together, it reads as an established attribute rather than a new movement."
+            return frase("\(Traducao.rotuloExibido(maisEditorial.0)) leads both axes: it moved most across external signals and is the most present in the panel (\(pctE)% of the assortment). When both move together, it reads as an established attribute rather than a new movement.")
         }
-        return "\(Traducao.rotuloExibido(maisEditorial.0)) moved most across external signals this week and occupies \(pctE)% of the panel assortment. \(Traducao.rotuloExibido(maisVarejo.0)) is most present in stores at \(pctV)%. The screen shows this gap between external attention and what brands already carry; what to do with it depends on your costs and timing."
+        return frase("\(Traducao.rotuloExibido(maisEditorial.0)) moved most across external signals this week and occupies \(pctE)% of the panel assortment. \(Traducao.rotuloExibido(maisVarejo.0)) is most present in stores at \(pctV)%. The screen shows this gap between external attention and what brands already carry; what to do with it depends on your costs and timing.")
     }
 
     private func alternar(_ id: String) {
@@ -254,59 +250,74 @@ struct LinhaComparada: View {
     let indice: IndiceSemanal?
     let varejo: PontoSerie?
     let cobertura: Cobertura?
-    /// Aqui o ambiente VALE: esta linha é filha do `Comparar`, que já
-    /// declarou o território acima dela.
-    @Environment(\.territorio) private var territorio
+    @Environment(\.dynamicTypeSize) private var tipoDinamico
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(Traducao.rotuloExibido(termo)).font(Tokens.Fonte.corpo)
+                Text(Traducao.rotuloExibido(termo)).font(Edicao.Tipo.titulo)
                 Spacer()
-                if indice?.indice != nil {
-                    SeloEstado(estado: indice?.estado, leitura: indice?.indice)
-                } else {
-                    Label("Panel data", systemImage: "building.2")
-                        .font(Tokens.Fonte.miudo.weight(.semibold))
-                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
-                }
+                SetaDaLinha()
+            }
+            if let valor = indice?.indice {
+                let faixa = Leitura.faixa(valor)
+                Label(faixa.rotulo, systemImage: faixa.icone)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            } else {
+                Label("Panel data", systemImage: "building.2")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
             }
 
-            HStack(alignment: .top, spacing: Tokens.Espaco.g) {
-                eixo(titulo: "In the panel",
-                     valor: varejo?.valorBruto.map {
-                         Leitura.numero($0, casas: 1) + "%"
-                     } ?? "—",
-                     detalhe: varejo?.nAmostra.map { "\($0) items" } ?? "—")
-                eixo(titulo: "External signal",
-                     valor: Explicacao.numeroComUnidade(indice?.indice),
-                     detalhe: indice?.indice == nil ? "—" : "statistical scale")
+            CosturaDaEdicao()
+            if tipoDinamico >= .xxLarge {
+                eixoDoPainel
+                eixoExterno
+            } else {
+                HStack(alignment: .top, spacing: 20) {
+                    eixoDoPainel
+                    eixoExterno
+                }
             }
-            LinhaInsumo(texto: "Panel: \(Explicacao.unidade(daFonte: "varejo")).")
             if let pernas = indice?.pernasAtivas, !pernas.isEmpty {
-                LinhaInsumo(texto: "External signal \(Perna.frase(pernas)).")
+                LinhaInsumo(texto: frase("External signal \(Perna.baseadoEm(pernas))."))
             }
             if indice?.indice == nil {
                 LinhaInsumo(texto: cobertura.map {
-                    "The panel measurement exists. The combined external signal is withheld: \($0.oQueFalta)."
-                } ?? "The panel measurement exists. No qualified combined external signal is available for this week.")
+                    frase("The panel measurement exists. The combined external signal is withheld: \($0.oQueFalta).")
+                } ?? frase("The panel measurement exists. No qualified combined external signal is available for this week."))
             }
             if let semana = varejo?.semana ?? indice?.semana {
-                LinhaInsumo(texto: "Week of \(Formato.data(semana)).")
+                LinhaInsumo(texto: frase("Week of \(Formato.data(semana))."))
             }
         }
-        .padding(.vertical, Tokens.Espaco.xs)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+    }
+
+    private var eixoDoPainel: some View {
+        eixo(titulo: frase("In the panel"),
+             valor: varejo?.valorBruto.map { Leitura.numero($0, casas: 1) + "%" } ?? "—",
+             detalhe: varejo?.nAmostra.map { frase("\(String($0)) items") } ?? "—")
+    }
+
+    private var eixoExterno: some View {
+        eixo(titulo: frase("External signal"),
+             valor: Explicacao.numeroComUnidade(indice?.indice),
+             detalhe: indice?.indice == nil ? "—" : frase("Index"))
     }
 
     private func eixo(titulo: String, valor: String, detalhe: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(titulo)
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
-            Text(valor).font(Tokens.Fonte.numero)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text(valor).font(Edicao.Tipo.estatistica)
+                .fixedSize(horizontal: false, vertical: true)
             Text(detalhe)
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

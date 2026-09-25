@@ -42,8 +42,17 @@ dia; a verificação `35513837999` mediu **367.270.709 bytes (73,5%)**, ou
   restauram build e os fluxos UI completos no Xcode Cloud.
 - HTTPS é obrigatório no cliente; imports Deno e Actions estão fixados;
   Dependabot, alertas de vulnerabilidade e correções automáticas foram ligados.
-- O gabarito de segurança tem 13 itens atendidos, 6 parciais e 1 não aplicável.
+- O gabarito de segurança tem 15 itens atendidos, 4 parciais e 1 não aplicável.
   Os parciais permanecem visíveis em `AUDITORIA_SEGURANCA_2026-09-21.md`.
+- A integração acrescenta Gitleaks gratuito sobre os 498 commits e a árvore
+  atual, OSV para Swift/npm e lock + auditoria do Deno. Tudo passou localmente;
+  os jobs novos ainda precisam rodar no GitHub quando a branch for enviada.
+- O build e 12 fluxos offline de interface passaram no simulador iPhone 17;
+  dois casos dependentes de dados reais foram pulados. Falta o percurso no
+  iPhone físico com configuração real antes de distribuir.
+- A59 (cifra do refresh token Apple) está fora da branch da 2.0 e preservada
+  em `codex/integracao-app-2`; entra em PR próprio, com chave de produção,
+  implantação coordenada e backfill das linhas A50.
 
 ## Pacote visual herdado — base atual, não fechamento da 2.0
 

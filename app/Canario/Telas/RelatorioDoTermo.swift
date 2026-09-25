@@ -11,9 +11,7 @@ import Charts
 struct RelatorioDoTermo: View {
     let termo: Termo
 
-    /// Constante: esta tela só existe dentro do mercado, e ler o ambiente aqui
-    /// devolveria o valor do pai. Mesmo caso do `Explorar` e do `Comparar`.
-    private let territorio: Territorio = .mercado
+    @Environment(\.dynamicTypeSize) private var tipoDinamico
 
     @State private var serie: [PontoSerie] = []
     @State private var indices: [IndiceSemanal] = []
@@ -45,21 +43,23 @@ struct RelatorioDoTermo: View {
         return c.suficiente
     }
 
+    private var buscaRecente: PontoSerie? {
+        serie.filter { $0.fonte == "busca" && $0.z != nil }
+            .max { $0.semana < $1.semana }
+    }
+
+    private var coberturaDaSemana: Cobertura? {
+        guard let semana = atual?.semana else { return nil }
+        return coberturas.first { $0.semana == semana }
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+            VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
                 if carregando {
                     Carregando()
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
-                } else if !temCobertura {
-                    // O portão continua fechado no modelo; a interface apenas
-                    // omite a afirmação que não pode sustentar, sem abrir o
-                    // relatório com um cartão de fracasso.
-                    cabecalho
-                    grafico
-                    curva
-                    insumos
                 } else {
                     cabecalho
                     grafico
@@ -67,24 +67,14 @@ struct RelatorioDoTermo: View {
                     insumos
                 }
             }
-            .padding(Tokens.Espaco.m)
+            .padding(.horizontal, Edicao.margem)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
         }
-        // O nome do termo é a manchete DA TELA no desenho da Bianca, em corpo
-        // grande logo abaixo do voltar. Repeti-lo na barra seria dizer duas
-        // vezes a mesma palavra a dois dedos de distância.
-        // Declarado AQUI, e não só em quem empurra.
-        //
-        // O padrão era o local de push declarar o território, e ele vazava a
-        // cada tela nova: o `Explorar` declarava ao abrir esta, esta não
-        // declarava ao abrir o detalhe da fonte, e o detalhe abria preto. O
-        // JP achou por baixo: *"quando eu clico em qualquer uma das paginas de
-        // sources, eu vou pra uma pagina que nao segue o azul escuro nativo da
-        // paleta do app, ela é preta"*. Tela que só existe no mercado diz isso
-        // de si mesma; assim ninguém precisa lembrar de dizer por ela.
-        .territorio(.mercado)
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .navegacaoDoMercado()
         .task { await carregar() }
     }
 
@@ -98,28 +88,15 @@ struct RelatorioDoTermo: View {
     @ViewBuilder
     private var curva: some View {
         if curvaDisponivel {
-            // Divisor e linha, não cartão: no desenho da Bianca esta é uma
-            // PORTA entre dois blocos de conteúdo, e cartão a fazia parecer
-            // mais um bloco. O que ela leva continua sendo dito -- só que na
-            // tela de destino, que é onde a pessoa vai lê-lo.
-            VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                Divider().overlay(Tokens.Cor.bordaDo(territorio))
+            Folha {
                 NavigationLink {
                     CurvaDeTamanhosView(termo: termo)
                 } label: {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Size availability")
-                            .font(.system(size: 22, weight: .bold))
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(Tokens.Fonte.secao)
-                            .foregroundStyle(Tokens.Cor.acentoDo(territorio))
-                    }
-                    .contentShape(Rectangle())
+                    CabecalhoDaFolha(titulo: Text("Size availability"), abre: true)
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
-                LinhaInsumo(texto: "Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()). Retail context only; it does not affect the index or state.")
-                Divider().overlay(Tokens.Cor.bordaDo(territorio))
+                LinhaInsumo(texto: frase("Where size availability breaks among panel items with \(Traducao.rotuloExibido(termo).lowercased()). Retail context only; it does not affect the index or state."))
             }
         }
     }
@@ -131,48 +108,69 @@ struct RelatorioDoTermo: View {
     /// parágrafo dizia *"Skirt was within the usual range and slightly under
     /// the usual range"* -- as duas leituras coladas por um "and", que é a
     /// mesma contradição que o JP mandou tirar dos cartões da Trends. O selo é
-    /// a faixa desta semana; o `estado` é movimento confirmado; e a frase que
+    /// a faixa desta semana; o `estado` é movimento confirmado; e a manchete que
     /// concilia os dois já existe, em `Explicacao.porQue`.
     ///
     /// O número fica no tom da tinta, não no vermelho do desenho: em uma
     /// leitura "far above" ele sairia verde, e o JP já vetou número verde no
     /// painel da peça. Quem carrega a direção é o selo, que é medido.
     private var cabecalho: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(Traducao.rotuloExibido(termo))
-                    .font(.system(size: 40, weight: .bold))
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(2)
-                Spacer(minLength: Tokens.Espaco.s)
+                    .font(Edicao.Tipo.destaque)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
                 if temCobertura, let z = atual?.indice {
                     Button {
                         explicandoAEscala.toggle()
                     } label: {
                         Image(systemName: "info.circle")
-                            .font(Tokens.Fonte.apoio)
-                            .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                            .font(.body)
+                            .foregroundStyle(Edicao.bordo)
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Explicacao.tituloDaEscala)
                     Text(fmt(z))
-                        .font(.system(size: 34, weight: .bold).monospacedDigit())
-                        .foregroundStyle(Tokens.Cor.tintaDo(territorio))
+                        .font(Edicao.Tipo.numeroGrande)
                 }
             }
 
-            if temCobertura {
-                SeloEstado(estado: atual?.estado, leitura: atual?.indice)
+            if temCobertura, let z = atual?.indice {
+                let faixa = Leitura.faixa(z)
+                Label(faixa.rotulo, systemImage: faixa.icone)
+                    .font(.footnote.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color(.tertiarySystemFill), in: Capsule())
+            }
+
+            if !temCobertura, let buscaRecente, let z = buscaRecente.z {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                    Text("Google search interest")
+                    Spacer()
+                    Text(fmt(z)).font(Edicao.Tipo.estatistica)
+                }
+                .foregroundStyle(Edicao.caneta)
             }
 
             if explicandoAEscala {
                 cartaoDaEscala
             }
 
-            Text(frase).font(Tokens.Fonte.apoio)
-            LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
+            Text(manchete).font(.body)
+                .fixedSize(horizontal: false, vertical: true)
+            if temCobertura {
+                Text(Perna.baseadoEm(atual?.pernasAtivas))
+                    .font(.footnote).foregroundStyle(.secondary)
+            } else if let coberturaDaSemana {
+                Text(frase("Panel index not shown: \(coberturaDaSemana.oQueFalta)."))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -183,16 +181,16 @@ struct RelatorioDoTermo: View {
     /// responde ao "1,15 o quê? Paçoquitas?" no painel da peça. Um texto só
     /// para a mesma pergunta em duas telas.
     private var cartaoDaEscala: some View {
-        Cartao {
+        Folha {
             HStack(alignment: .firstTextBaseline) {
-                Text(Explicacao.tituloDaEscala).font(Tokens.Fonte.secao)
+                Text(Explicacao.tituloDaEscala).font(Edicao.Tipo.titulo)
                 Spacer()
                 Button {
                     explicandoAEscala = false
                 } label: {
                     Image(systemName: "xmark")
-                        .font(Tokens.Fonte.miudo.weight(.semibold))
-                        .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Edicao.bordo)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
@@ -200,59 +198,46 @@ struct RelatorioDoTermo: View {
                 .accessibilityLabel("Close explanation")
             }
             Text(Explicacao.textoDaEscala)
-                .font(Tokens.Fonte.apoio)
+                .font(.body)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    /// A frase da semana, sem repetir o que o selo já disse.
+    /// A manchete da semana, sem repetir o que o selo já disse.
     ///
     /// Ela dizia *"was within the usual range **and** slightly under the usual
     /// range"* -- estado e faixa colados por um "and", como se fossem uma
     /// afirmação só. São duas perguntas, e `Explicacao.porQue` é quem responde
-    /// a segunda sem contradizer a primeira; é a mesma frase dos cartões da
+    /// a segunda sem contradizer a primeira; é a mesma manchete dos cartões da
     /// Trends, então as duas telas passam a falar igual.
-    private var frase: String {
+    /// Renomeada de `frase` em 05/09: o nome sombreava a função global
+    /// `frase(_:)` dentro de toda esta View, e nenhuma chamada de tradução
+    /// aqui dentro alcançava a função certa.
+    private var manchete: String {
         // O PORTÃO DA §8 VALE PARA A PROSA TAMBÉM.
         //
         // A tela escondia o número grande e o selo quando a cobertura não
-        // sustenta, e logo abaixo a frase dizia "The index is +2,14" -- eu
-        // mesmo abri esse buraco ao trazer a frase para o cabeçalho, que antes
+        // sustenta, e logo abaixo a manchete dizia "The index is +2,14" -- eu
+        // mesmo abri esse buraco ao trazer a manchete para o cabeçalho, que antes
         // só era montado do lado liberado. Recusar o número em corpo 34 e
         // sussurrá-lo em corpo 15 não é recusar.
         guard temCobertura else {
-            return "The panel does not have enough coverage this week to state "
-                 + "an index for \(Traducao.rotuloExibido(termo)). What each "
-                 + "source measured on its own is below."
+            if let buscaRecente, let z = buscaRecente.z {
+                return frase("In the week of \(Formato.data(buscaRecente.semana)), Google searches for \(Traducao.rotuloExibido(termo)) were \(Leitura.emPalavras(z)). The source history and panel coverage are below.")
+            }
+            return frase("The sources measured for \(Traducao.rotuloExibido(termo)) are below. There is no qualified panel index for this week.")
         }
         guard let atual, let valor = atual.indice else {
-            return "There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet."
+            return frase("There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet.")
         }
         let quando = atual.semana == maisRecente?.semana
-            ? "Latest reading, \(Formato.data(atual.semana))."
-            : "Latest week when two sources overlapped, \(Formato.data(atual.semana))."
+            ? frase("Latest reading, \(Formato.data(atual.semana)).")
+            : frase("Latest week when two sources overlapped, \(Formato.data(atual.semana)).")
         guard atual.estado != nil else {
-            return "\(quando) The index is \(fmt(valor)), but a state requires two agreeing sources."
+            return frase("\(quando) The index is \(fmt(valor)), but a state requires two agreeing sources.")
         }
         return "\(quando) " + Explicacao.porQue(estado: atual.estado,
                                                 indice: atual, series: serie)
-    }
-
-    /// §29.3 — índice, estado e as pernas ativas declaradas.
-    private var indiceEEstado: some View {
-        Cartao {
-            // O selo é o título da leitura. Repeti-lo em preto ao lado fazia a
-            // mesma frase competir consigo mesma e ainda a espremia em duas linhas.
-            SeloEstado(estado: atual?.estado,
-                       leitura: temCobertura ? atual?.indice : nil)
-            Text(atual?.indice.map(fmt) ?? "—")
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-            if let z = atual?.indice {
-                LinhaInsumo(texto: Leitura.explicacao(z))
-            }
-            LinhaInsumo(texto: Perna.frase(atual?.pernasAtivas))
-        }
     }
 
     /// Minigráfico do §29.3, uma linha por perna.
@@ -260,17 +245,16 @@ struct RelatorioDoTermo: View {
     private var grafico: some View {
         let comZ = serieComparavel
         if !comZ.isEmpty {
-            Cartao {
-                HStack {
-                    Text("Comparable history").font(Tokens.Fonte.secao)
-                    Spacer()
-                    Picker("Period", selection: $janelaEmMeses) {
-                        Text("3M").tag(3)
-                        Text("6M").tag(6)
-                        Text("1Y").tag(12)
+            Folha {
+                if tipoDinamico >= .xxLarge {
+                    Text("Comparable history").font(Edicao.Tipo.titulo)
+                    seletorDePeriodo
+                } else {
+                    HStack {
+                        Text("Comparable history").font(Edicao.Tipo.titulo)
+                        Spacer()
+                        seletorDePeriodo
                     }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 170)
                 }
                 Chart(comZ) { ponto in
                     LineMark(
@@ -298,9 +282,19 @@ struct RelatorioDoTermo: View {
                 }
                 .frame(height: 160)
                 .accessibilityLabel("Weekly history by source")
-                LinhaInsumo(texto: "To keep lines comparable, the chart shows only weeks measured by every displayed source. Each source's latest date remains listed below.")
+                LinhaInsumo(texto: frase("To keep lines comparable, the chart shows only weeks measured by every displayed source. Each source's latest date remains listed below."))
             }
         }
+    }
+
+    private var seletorDePeriodo: some View {
+        Picker("Period", selection: $janelaEmMeses) {
+            Text("3M").tag(3)
+            Text("6M").tag(6)
+            Text("1Y").tag(12)
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 230)
     }
 
     /// Rótulo -> cor, na ordem em que as pernas aparecem nos cartões, para a
@@ -308,7 +302,7 @@ struct RelatorioDoTermo: View {
     private var escalaDeCor: [(String, Color)] {
         porFonte.map { fonte, _ in
             (Perna.rotulo(fonte),
-             Tokens.Cor.corDaPerna(fonte)?.tinta ?? Tokens.Cor.acentoDo(territorio))
+             Edicao.tintaDaFonte(fonte))
         }
     }
 
@@ -332,18 +326,16 @@ struct RelatorioDoTermo: View {
         return naJanela.filter { compartilhadas.contains($0.semana) }
     }
 
-    /// §29.4 — um bloco por fator, com fonte e data. Agora em grade de dois.
+    /// §29.4 — um bloco por fator, com fonte e data.
     private var insumos: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Sources").font(.system(size: 22, weight: .bold))
-                BotaoDeAjuda(titulo: "What these percentages are",
+                Text("Sources").font(Edicao.Tipo.secao)
+                BotaoDeAjuda(titulo: frase("What these percentages are"),
                              texto: Self.textoDasFontes,
-                             rotulo: "What these percentages are")
+                             rotulo: frase("What these percentages are"))
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: Tokens.Espaco.s),
-                                GridItem(.flexible(), spacing: Tokens.Espaco.s)],
-                      spacing: Tokens.Espaco.s) {
+            VStack(spacing: 12) {
                 ForEach(porFonte, id: \.0) { fonte, pontos in
                     NavigationLink {
                         DetalheDaFonteEditorial(termo: termo, fonte: fonte, pontos: pontos)
@@ -351,15 +343,9 @@ struct RelatorioDoTermo: View {
                         CartaoDaPerna(fonte: fonte,
                                       variacao: variacaoDaFonte(fonte, pontos: pontos),
                                       leitura: resumoDaFonte(fonte, pontos: pontos),
+                                      amostra: pontos.first?.nAmostra,
                                       semanas: pontos.count,
                                       ultima: pontos.first?.semana)
-                        // Numa `LazyVGrid` a linha toma a altura do item mais
-                        // alto, e o mais baixo fica boiando com uma sobra
-                        // embaixo. "Search" cabe numa linha e "Brazilian
-                        // Editorial" em duas; "6 weeks" cabe e "235 weeks"
-                        // quebra. O resultado eram quatro caixas de alturas
-                        // diferentes -- o desalinhamento que o JP viu.
-                        .frame(maxHeight: .infinity)
                     }
                     .buttonStyle(.plain)
                 }
@@ -373,14 +359,9 @@ struct RelatorioDoTermo: View {
     /// número sem a régua não é auditável. Repetir a régua quatro vezes também
     /// não serve -- viraria a textura que o JP mandou tirar dos cartões da
     /// Trends. Então ela mora no "?" ao lado do título, uma vez.
-    static let textoDasFontes = """
-        Each card compares this source's latest measured week with its own \
-        average over the previous 12 weeks — the same window the index uses. \
-        It is the movement of that one source, not the combined index.
-
-        A source with no comparable window yet says so instead of showing a \
-        number. Tap a card for the weekly history behind it.
-        """
+    static var textoDasFontes: String {
+        frase("Each card compares this source's latest measured week with its own average over the previous 12 weeks — the same window the index uses. It is the movement of that one source, not the combined index.\n\nA source with no comparable window yet says so instead of showing a number. Tap a card for the weekly history behind it.")
+    }
 
     /// A variação em pontos percentuais, para a seta e o sinal.
     private func variacaoDaFonte(_ fonte: String, pontos: [PontoSerie]) -> Double? {
@@ -410,14 +391,14 @@ struct RelatorioDoTermo: View {
             let anteriores = pontos.dropFirst().prefix(12).compactMap(\.nAmostra)
             let media = anteriores.isEmpty ? nil
                 : Double(anteriores.reduce(0, +)) / Double(anteriores.count)
-            if let media {
-                return "0 articles in the latest 4-week window · previous-window average \(Leitura.numero(media, casas: 1))"
+            if let media, media > 0 {
+                return frase("0 articles in the latest 4-week window · previous-window average \(Leitura.numero(media, casas: 1))")
             }
-            return "0 articles in the latest 4-week window"
+            return frase("No qualifying fashion articles in the latest 4-week window.")
         }
         return Leitura.variacao(recente: pontos.first?.valorBruto,
                                 media: mediaDaJanela(pontos))
-            ?? "No comparable window yet"
+            ?? frase("No comparable window yet")
     }
 
     private func fmt(_ v: Double) -> String {
@@ -457,8 +438,6 @@ private struct DetalheDaFonteEditorial: View {
     let fonte: String
     let pontos: [PontoSerie]
 
-    private let territorio: Territorio = .mercado
-
     /// Só a janela recente entra no gráfico.
     ///
     /// `pontos` traz a série inteira -- 235 semanas na busca, 236 no editorial
@@ -474,21 +453,22 @@ private struct DetalheDaFonteEditorial: View {
     }
     private var recente: PontoSerie? { pontos.max { $0.semana < $1.semana } }
     private var corDaFonte: Color {
-        Tokens.Cor.corDaPerna(fonte)?.tinta ?? Tokens.Cor.acentoDo(territorio)
+        Edicao.tintaDaFonte(fonte)
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
-                Cartao {
-                    Text(Perna.rotulo(fonte).capitalized).font(Tokens.Fonte.secao)
+            VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                Folha {
+                    CabecalhoDaFolha(titulo: Text(Perna.rotulo(fonte).capitalized),
+                                     simbolo: "doc.text.magnifyingglass")
                     if fonte.hasPrefix("editorial") {
                         Text("\(recente?.nAmostra ?? 0) articles in the latest 4-week window")
-                            .font(Tokens.Fonte.corpo)
+                            .font(.body)
                     } else if let bruto = recente?.valorBruto {
-                        Text(Leitura.numero(bruto, casas: 2)).font(Tokens.Fonte.corpo)
+                        Text(Leitura.numero(bruto, casas: 2)).font(.body)
                     }
-                    LinhaInsumo(texto: "Latest measurement: \(Formato.data(recente?.semana ?? "—"))")
+                    LinhaInsumo(texto: frase("Latest measurement: \(Formato.data(recente?.semana ?? "—"))"))
                     // A unidade sai da TABELA do app, não do `meta` do banco.
                     //
                     // `meta.unidade` vem gravado em português -- "materias que
@@ -501,13 +481,13 @@ private struct DetalheDaFonteEditorial: View {
                 }
 
                 if !ordenados.compactMap(\.valorBruto).isEmpty {
-                    Cartao {
+                    Folha {
                         HStack(alignment: .firstTextBaseline) {
-                            Text("Measured history").font(Tokens.Fonte.secao)
+                            Text("Measured history").font(Edicao.Tipo.titulo)
                             Spacer()
                             Text(janelaDoGrafico)
-                                .font(Tokens.Fonte.miudo)
-                                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
                         Chart(ordenados) { ponto in
                             if let valor = ponto.valorBruto,
@@ -516,7 +496,7 @@ private struct DetalheDaFonteEditorial: View {
                                 // o gráfico virava uma faixa cheia. A linha
                                 // sozinha mostra o movimento, que é o assunto.
                                 LineMark(x: .value("Week", data),
-                                         y: .value("Measured value", valor))
+                                         y: .value(frase("Measured value"), valor))
                                 .interpolationMethod(.monotone)
                             }
                         }
@@ -534,53 +514,55 @@ private struct DetalheDaFonteEditorial: View {
                             }
                         }
                         .frame(height: 180)
-                        LinhaInsumo(texto: "Vertical axis: \(Explicacao.unidade(daFonte: fonte)).")
+                        LinhaInsumo(texto: frase("Vertical axis: \(Explicacao.unidade(daFonte: fonte))."))
                         LinhaInsumo(texto: fonte.hasPrefix("editorial")
-                            ? "This is the source's measured value, not a forecast. Article evidence appears below."
-                            : "This is the source's measured value, not a forecast. Its inputs and sample appear below.")
+                            ? frase("This is the source's measured value, not a forecast. Article evidence appears below.")
+                            : frase("This is the source's measured value, not a forecast. Its inputs and sample appear below."))
                     }
                 }
 
                 evidenciaDaFonte
             }
-            .padding(Tokens.Espaco.m)
+            .padding(.horizontal, Edicao.margem)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
         }
-        .territorio(.mercado)
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
         .navigationTitle(Traducao.rotuloExibido(termo))
         .navigationBarTitleDisplayMode(.inline)
-        .navegacaoDoMercado()
     }
 
     /// "52 weeks" ou o que houver, para o eixo não mentir sobre o alcance.
     private var janelaDoGrafico: String {
         let n = ordenados.count
         return n < Self.semanasNoGrafico
-            ? "\(n) weeks measured" : "last \(n) weeks"
+            ? frase("\(String(n)) weeks measured") : frase("last \(String(n)) weeks")
     }
 
     @ViewBuilder
     private var evidenciaDaFonte: some View {
-        Cartao {
-            Text("How this was measured").font(Tokens.Fonte.secao)
+        Folha {
+            CabecalhoDaFolha(titulo: Text("How this was measured"))
             switch fonte {
             case "busca":
                 Text("Google search interest")
-                    .font(Tokens.Fonte.apoio)
+                    .font(.body)
                 if let valor = recente?.valorBruto {
-                    LinhaInsumo(texto: "Latest closed week: \(Leitura.numero(valor, casas: 0)) out of 100 for this monitored search set.")
+                    LinhaInsumo(texto: frase("Latest closed week: \(Leitura.numero(valor, casas: 0)) out of 100 for this monitored search set."))
                 }
                 let consultas = Array(termo.termosDeBusca.prefix(5))
-                LinhaInsumo(texto: "Monitored expressions: \(consultas.joined(separator: " · ")).")
+                LinhaInsumo(texto: frase("Monitored expressions: \(consultas.joined(separator: " · "))."))
             case "varejo":
                 Text("Observed panel assortment")
-                    .font(Tokens.Fonte.apoio)
+                    .font(.body)
                 let itens = recente?.nAmostra.map(String.init) ?? "—"
                 let total = recente?.meta?.nTotalSortimento.map {
                     Leitura.numero($0, casas: 0)
                 } ?? "—"
-                LinhaInsumo(texto: "\(itens) matching items among \(total) currently observed panel offers.")
+                LinhaInsumo(texto: frase("\(itens) matching items among \(total) currently observed panel offers."))
                 if let valor = recente?.valorBruto {
-                    LinhaInsumo(texto: "Measured share: \(Leitura.numero(valor, casas: 2))%.")
+                    LinhaInsumo(texto: frase("Measured share: \(Leitura.numero(valor, casas: 2))%."))
                 }
             default:
                 let meta = recente?.meta
@@ -600,32 +582,34 @@ private struct DetalheDaFonteEditorial: View {
                     if let texto = exemplo.url, let url = URL(string: texto) {
                         Link(destination: url) {
                             HStack(alignment: .firstTextBaseline,
-                                   spacing: Tokens.Espaco.xs) {
+                                   spacing: 8) {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(exemplo.titulo)
-                                        .font(Tokens.Fonte.apoio.weight(.medium))
-                                        .foregroundStyle(Tokens.Cor.acentoDo(territorio))
+                                        .font(.body.weight(.medium))
+                                        .foregroundStyle(Edicao.bordo)
                                         .multilineTextAlignment(.leading)
                                     Text(exemplo.veiculo)
-                                        .font(Tokens.Fonte.miudo)
-                                        .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
                                 }
                                 Spacer(minLength: 0)
                                 Image(systemName: "arrow.up.right")
-                                    .font(Tokens.Fonte.miudo.weight(.semibold))
-                                    .foregroundStyle(Tokens.Cor.acentoDo(territorio))
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Edicao.bordo)
                             }
                             .contentShape(Rectangle())
                         }
-                        .accessibilityLabel("\(exemplo.titulo), \(exemplo.veiculo), opens the article")
-                        .padding(.vertical, Tokens.Espaco.xs)
+                        .accessibilityLabel(frase("\(exemplo.titulo), \(exemplo.veiculo), opens the article"))
+                        .padding(.vertical, 8)
                     }
                 }
                 if (meta?.exemplos ?? []).isEmpty {
                     let n = recente?.nAmostra ?? 0
                     LinhaInsumo(texto: n == 0
-                        ? "No qualifying fashion article matched this attribute in the latest 4-week window."
-                        : "\(n) qualifying article\(n == 1 ? "" : "s") formed this 4-week reading; the evidence list is being refreshed.")
+                        ? frase("No qualifying fashion article matched this attribute in the latest 4-week window.")
+                        : (n == 1
+                            ? frase("1 qualifying article formed this 4-week reading; the evidence list is being refreshed.")
+                            : frase("\(String(n)) qualifying articles formed this 4-week reading; the evidence list is being refreshed.")))
                 }
             }
         }
@@ -634,25 +618,15 @@ private struct DetalheDaFonteEditorial: View {
 
 /// Um cartão de perna: quem mediu, quanto mudou, e desde quando.
 ///
-/// **A cor diz QUEM, a seta diz PARA ONDE.** É a regra que faz os quatro tons
-/// da Bianca não brigarem com os sete selos de faixa que o app já usa -- se um
-/// cartão de fonte fosse verde, ele leria como "acima da faixa" antes de ler
-/// como "editorial". Ver `Tokens.Cor.corDaPerna`.
-///
-/// Perna sem tom -- uma que apareça depois e ninguém tenha desenhado -- cai na
-/// superfície de sempre em vez de receber uma cor inventada na hora.
+/// A cor identifica a fonte; seta e sinal comunicam a direção do movimento.
 struct CartaoDaPerna: View {
     let fonte: String
     let variacao: Double?
     let leitura: String
+    let amostra: Int?
     let semanas: Int
     let ultima: String?
-    @Environment(\.territorio) private var territorio
-
-    private var cores: (fundo: Color, tinta: Color) {
-        Tokens.Cor.corDaPerna(fonte)
-            ?? (Tokens.Cor.superficieDo(territorio), Tokens.Cor.tintaDo(territorio))
-    }
+    private var tinta: Color { Edicao.tintaDaFonte(fonte) }
 
     private var icone: String {
         switch fonte {
@@ -665,73 +639,71 @@ struct CartaoDaPerna: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            HStack(alignment: .top, spacing: Tokens.Espaco.xs) {
+        Folha {
+            HStack(alignment: .top, spacing: 8) {
                 Image(systemName: icone)
-                    .font(Tokens.Fonte.secao)
-                    .foregroundStyle(cores.tinta)
-                // `reservesSpace` em vez de `lineLimit` puro: "Search" ocupa
-                // uma linha e "Brazilian Editorial" duas, e sem reservar a
-                // segunda os dois cartões nascem com alturas diferentes antes
-                // mesmo de a grade tentar alinhá-los.
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(tinta)
                 Text(Perna.rotulo(fonte).capitalized)
-                    .font(Tokens.Fonte.apoio.weight(.semibold))
-                    .foregroundStyle(Tokens.Cor.tintaDo(territorio))
-                    .lineLimit(2, reservesSpace: true)
+                    .font(Edicao.Tipo.linha)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
 
             if let variacao {
-                // §32: a direção não é comunicada só por cor. A seta e o sinal
-                // do número dizem a mesma coisa, e sobrevivem em preto e branco.
-                HStack(spacing: Tokens.Espaco.xs) {
+                HStack(spacing: 8) {
                     Image(systemName: variacao >= 0 ? "arrow.up" : "arrow.down")
-                        .font(Tokens.Fonte.numero)
+                        .font(Edicao.Tipo.estatistica)
                     Text("\(Leitura.numero(variacao, casas: 0, sinal: true))%")
-                        .font(Tokens.Fonte.numero)
+                        .font(Edicao.Tipo.estatistica)
                 }
-                .foregroundStyle(cores.tinta)
+                .foregroundStyle(tinta)
+                if let amostra {
+                    Text(quantidade(amostra))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             } else {
-                // Perna sem janela comparável mostra a frase no lugar do
-                // número, e a frase é mais alta. Duas linhas reservadas nas
-                // duas pontas mantêm o passo do cartão.
                 Text(leitura)
-                    .font(Tokens.Fonte.apoio)
-                    .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
-                    .lineLimit(2, reservesSpace: true)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if let amostra, amostra > 0,
+                   fonte == "editorial_br" || fonte == "editorial_intl" {
+                    Text(quantidade(amostra))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
 
-            Spacer(minLength: 0)
-
             if let ultima {
-                // Duas linhas declaradas, não uma que às vezes quebra: com
-                // "235 weeks · to 17/08/2026" quebrando e "6 weeks · to
-                // 24/08/2026" cabendo, os cartões vizinhos saíam com um passo
-                // de diferença.
                 VStack(alignment: .leading, spacing: 0) {
                     Text("\(semanas) weeks")
-                    Text("to \(Formato.data(ultima))")
+                    Text(frase("to \(Formato.data(ultima))"))
                 }
-                .font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFracaDo(territorio))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Tokens.Espaco.m)
-        .background(cores.fundo)
-        .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartao, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rotuloFalado)
     }
 
     private var rotuloFalado: String {
         let numero = variacao.map {
-            "\(Leitura.numero($0, casas: 0, sinal: true)) percent versus its own 12-week average"
+            frase("\(Leitura.numero($0, casas: 0, sinal: true)) percent versus its own 12-week average")
         } ?? leitura
-        return "\(Perna.rotulo(fonte)), \(numero)"
+        return frase("\(Perna.rotulo(fonte)), \(numero)")
+    }
+
+    private func quantidade(_ n: Int) -> String {
+        if fonte.hasPrefix("editorial") {
+            if n == 1 { return frase("1 qualifying article in the latest 4-week window") }
+            return frase("\(String(n)) qualifying articles in the latest 4-week window")
+        }
+        if fonte == "varejo" {
+            return frase("\(String(n)) observed items with this attribute")
+        }
+        return frase("\(String(n)) measurements")
     }
 }

@@ -31,8 +31,8 @@ final class PecasSalvasTests: XCTestCase {
         let json = try XCTUnwrap(
             JSONSerialization.jsonObject(with: dados) as? [String: Any])
 
-        // A peça guarda só o que o usuário digitou. Todo número é recalculado
-        // do dado de hoje quando a tela abre.
+        // A peça guarda atributos confirmados e detalhes locais da foto, mas
+        // todo número de mercado é recalculado quando a tela abre.
         let proibidos = ["indice", "estado", "z", "ultimaLeitura", "semana",
                          "variacao", "pernas", "nPernas", "indiceAnterior"]
         for campo in proibidos {
@@ -323,7 +323,8 @@ final class PecasSalvasTests: XCTestCase {
             try? FileManager.default.removeItem(at: pasta)
         }
         let loja = PecasSalvas(arquivo: arquivo, pastaDeMiniaturas: pasta)
-        let original = PecaSalva(apelido: "local", termoIds: ["camisa"])
+        let original = PecaSalva(apelido: "local", termoIds: ["camisa"],
+                                detalhesVisuais: ["abotoamento duplo"])
         await loja.salvar(original, miniaturaDados: Data([1, 2, 3]))
         let antes = await loja.todas()
         let salva = try XCTUnwrap(antes.first)
@@ -338,6 +339,8 @@ final class PecasSalvasTests: XCTestCase {
         let mesclada = try XCTUnwrap(depois.first)
         XCTAssertEqual(mesclada.apelido, "remota")
         XCTAssertEqual(mesclada.miniaturaArquivo, nome)
+        XCTAssertEqual(mesclada.detalhesVisuais, ["abotoamento duplo"],
+                       "a sincronização não tem esta coluna e não pode apagar o detalhe local")
         let miniatura = await loja.miniatura(de: mesclada)
         XCTAssertEqual(miniatura, Data([1, 2, 3]))
     }

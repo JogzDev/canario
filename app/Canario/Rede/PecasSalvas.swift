@@ -21,8 +21,8 @@ import Foundation
 /// * **Armário** promete o app olhando a sua peça ao longo do tempo. Não
 ///   sustentamos: a peça é sua, não está no painel, e não temos como segui-la.
 ///   Prometer isso seria afirmar o que não foi medido (regra 2).
-/// * **Minhas peças** é lista de trabalho. Guarda **só o que você digitou** —
-///   os atributos e o contexto — e nada do que o motor calculou. Todo número é
+/// * **Minhas peças** é lista de trabalho. Guarda os atributos confirmados,
+///   o contexto e detalhes visuais locais, mas nada do que o motor calculou. Todo número é
 ///   recalculado do dado de hoje quando você abre. Sem alerta, sem "sua peça
 ///   subiu 3%", sem histórico por peça.
 ///
@@ -84,6 +84,9 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
     /// também em `check` na tabela: a do cliente protege quem usa a interface,
     /// a do banco protege a tabela de qualquer outro caminho.
     var coresPorPrioridade: [String]?
+    /// Detalhes livres observados na foto, usados só numa Leitura que a pessoa
+    /// pedir. Ficam neste arquivo local e nunca entram na sincronização.
+    var detalhesVisuais: [String]?
 
     init(id: UUID = UUID(), apelido: String = "", termoIds: [String],
          precoAlvo: Double? = nil, canal: String? = nil,
@@ -91,7 +94,8 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
          miniaturaHashRemoto: String? = nil,
          miniaturaExtensaoRemota: String? = nil,
          favorita: Bool? = nil, similaresRejeitados: Bool? = nil,
-         atualizadaEm: Date? = nil, coresPorPrioridade: [String]? = nil) {
+         atualizadaEm: Date? = nil, coresPorPrioridade: [String]? = nil,
+         detalhesVisuais: [String]? = nil) {
         self.id = id
         self.apelido = apelido
         self.termoIds = Traducao.idsCanonicos(termoIds)
@@ -116,6 +120,12 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
         } else {
             self.coresPorPrioridade = nil
         }
+        if let detalhesVisuais {
+            let limpos = DescricaoDaPeca.limparDetalhes(detalhesVisuais)
+            self.detalhesVisuais = limpos.isEmpty ? nil : limpos
+        } else {
+            self.detalhesVisuais = nil
+        }
     }
 
     /// Nome para a lista quando o usuário não deu um. Usa os rótulos vindos do
@@ -123,7 +133,7 @@ struct PecaSalva: Codable, Equatable, Identifiable, Sendable {
     func nome(comRotulos rotulos: [String: String]) -> String {
         if let apelido = NomeCompartilhavel.apelidoValido(apelido) { return apelido }
         let partes = termoIds.compactMap { rotulos[$0] ?? $0 }
-        return partes.isEmpty ? "Item without attributes" : partes.joined(separator: " · ")
+        return partes.isEmpty ? frase("Item without attributes") : partes.joined(separator: " · ")
     }
 
     /// Os atributos que sobram depois de tirar os que o título já mostra.
@@ -216,7 +226,7 @@ enum NomeCompartilhavel {
     static func resolver(_ peca: PecaSalva, catalogo: CatalogoDoArmario) -> String {
         if let escrito = apelidoValido(peca.apelido) { return escrito }
         if let categoria = catalogo.categoria(de: peca) { return categoria }
-        return "Clothing item"
+        return frase("Clothing item")
     }
 
     /// Conveniência para quem tem só a lista de termos em mãos. **Monta o
@@ -448,6 +458,7 @@ actor PecasSalvas {
                 // A miniatura chega por uma rota privada separada. Uma edição
                 // estrutural não apaga o arquivo que este aparelho já tem.
                 mesclado.miniaturaArquivo = local?.miniaturaArquivo
+                mesclado.detalhesVisuais = local?.detalhesVisuais
                 porId[remoto.id] = mesclado
                 if exclusaoLocal != nil { exclusoes.removeValue(forKey: remoto.id) }
             }
@@ -551,6 +562,7 @@ actor PecasSalvas {
 }
 
 extension Notification.Name {
+    // Nomes internos estáveis para eventos entre componentes; não são texto de tela.
     static let closetMudouDeUsuario = Notification.Name("DataDrobe.closetMudouDeUsuario")
     static let closetFoiSincronizado = Notification.Name("DataDrobe.closetFoiSincronizado")
 }

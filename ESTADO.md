@@ -40,8 +40,16 @@ Actions e os dois laboratórios npm, alertas de vulnerabilidade e correções
 automáticas habilitados. O gabarito de vinte itens está em
 `AUDITORIA_SEGURANCA_2026-09-21.md`. A
 [PR #41](https://github.com/JogzDev/canario/pull/41) acrescentou o inventário
-e o portão de novas concessões públicas: agora são 13 atendidos, 6 parciais e
+e o portão de novas concessões públicas. Na branch local de integração, o
+Gitleaks passou sobre os 498 commits e a árvore atual, Swift/npm passaram pelo
+OSV e o Deno ganhou lock e auditoria: agora são 15 atendidos, 4 parciais e
 1 não aplicável.
+A cifra do refresh token Apple (A59) saiu desta branch e segue preservada em
+`codex/integracao-app-2`, para entrar em PR próprio com secret, deploy e
+backfill auditado. A branch da 2.0 não depende dela.
+A integração local passou em 356 testes Swift e, no simulador iPhone 17/iOS
+26.2, em 12 fluxos UI offline sem falhas; dois casos de dados reais foram
+pulados. Ainda falta regressão no iPhone físico antes de distribuição.
 
 As mudanças passaram na `main` em executor hospedado: 313 testes Swift, todos
 os portões Python e os dois laboratórios PostgreSQL. Nenhuma coleta ou migration
@@ -62,7 +70,8 @@ Por decisão do JP, a próxima versão pública deixa de ser tratada como 1.2 e
 será **2.0**. Ela só sai com o redesenho, logo nova e nome novo; os candidatos
 de nome ainda são **Garbo** e **Filo**. Identidade, versão e metadata do projeto
 não mudam antes dessa decisão. Para testar todo o código integrado agora, a
-branch correta no Xcode é `main`.
+branch correta no Xcode é `codex/integracao-app-2`; a `main` ainda não contém o
+pacote visual A53–A56.
 
 ## Atualização operacional de 20/09
 
@@ -659,7 +668,7 @@ entram na fila quando forem decididos.
    independente entrou na `main` em 21/09 e o CI já passou fora do Mac. Falta
    observar o pipeline agendado publicar o dia e medir a cota; depois o
    supervisor local é desativado.
-2. **Fechar os sete itens parciais de segurança por risco e evidência**, sem
+2. **Fechar os cinco itens parciais de segurança por risco e evidência**, sem
    adicionar controle cosmético. O inventário vivo está em
    `AUDITORIA_SEGURANCA_2026-09-21.md`.
 3. Nenhum outro defeito técnico reproduzível permanece aberto antes do novo

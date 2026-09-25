@@ -1,0 +1,15 @@
+[extend]
+useDefault = true
+
+# O hash abaixo e o SHA-256 publico do instalador do PostgreSQL usado pelo
+# procedimento de backup. A excecao exige, ao mesmo tempo, a regra, o caminho e
+# o valor exatos; ela nao libera outros hashes nem outras linhas do documento.
+[[rules]]
+id = "generic-api-key"
+
+    [[rules.allowlists]]
+    description = "Checksum publico documentado do Postgres.app"
+    condition = "AND"
+    regexTarget = "secret"
+    regexes = [ '''^b38bb00b8c8702a568270aab85995c550f7f93d1503b818efdc5ff9a519b7168$''' ]
+    paths = [ '''^ferramentas/backup/README\.md$''' ]

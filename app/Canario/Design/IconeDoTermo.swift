@@ -80,24 +80,25 @@ struct BotaoDeAtributo: View {
     /// toda dimensão que não é cor.
     var prioridade: Int?
     let acao: () -> Void
+    @ScaledMetric(relativeTo: .caption) private var escala: CGFloat = 1
 
     private var ehCor: Bool { termo.dimensao == "cor" }
-    private var lado: CGFloat { compacto ? 52 : 60 }
-    private var larguraDoRotulo: CGFloat { compacto ? 62 : 76 }
+    private var lado: CGFloat { (compacto ? 52 : 60) * escala }
+    private var larguraDoRotulo: CGFloat { (compacto ? 62 : 76) * escala }
 
     var body: some View {
         Button(action: acao) {
             VStack(spacing: 6) {
                 ZStack {
                     Circle()
-                        .fill(ehCor ? Color.clear : Tokens.Cor.ceu)
+                        .fill(ehCor ? Color.clear : Edicao.papel)
                         .frame(width: lado, height: lado)
                     IconeDoTermo(termoId: termo.id,
                                  lado: ehCor ? lado * 0.87 : lado * 0.43)
-                        .foregroundStyle(Tokens.Cor.noite)
+                        .foregroundStyle(.primary)
                     if ativo {
                         Circle()
-                            .strokeBorder(Tokens.Cor.acao, lineWidth: 3)
+                            .strokeBorder(Edicao.bordo, lineWidth: 3)
                             .frame(width: lado, height: lado)
                     }
                     if let prioridade {
@@ -107,8 +108,8 @@ struct BotaoDeAtributo: View {
                 .frame(width: lado, height: lado)
 
                 Text(Traducao.rotuloExibido(termo))
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(Tokens.Cor.tinta)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.primary)
                     .lineLimit(2)
                     // Sem isto, "Conversational prints" quebra NO MEIO da
                     // palavra -- "Conversation" / "al prints" -- porque a
@@ -124,8 +125,8 @@ struct BotaoDeAtributo: View {
                 // mais subjetiva da tela sem conhecer a taxonomia.
                 if let pista = Traducao.pistaDoTermo(termo) {
                     Text(pista)
-                        .font(.system(size: 9, design: .rounded))
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
                         .multilineTextAlignment(.center)
@@ -177,9 +178,9 @@ private struct MarcaDePrioridade: View {
         // repetido e o contraste passa a funcionar sobre qualquer amostra,
         // inclusive preto e branco e cru, que eram os dois casos difíceis.
         Text("\(posicao)")
-            .font(.system(size: 19, weight: .bold, design: .rounded))
+            .font(.headline.weight(.bold))
             .foregroundStyle(.white)
             .frame(width: 30, height: 30)
-            .background(Circle().fill(Tokens.Cor.acao))
+            .background(Circle().fill(Edicao.bordoCheio))
     }
 }

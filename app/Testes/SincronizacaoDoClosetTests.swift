@@ -49,7 +49,8 @@ final class SincronizacaoDoClosetTests: XCTestCase {
             ProtocoloSyncFalso.responder = nil
         }
         let loja = PecasSalvas(arquivo: arquivo)
-        let peca = PecaSalva(apelido: "rugby", termoIds: ["camisa", "listra"])
+        let peca = PecaSalva(apelido: "rugby", termoIds: ["camisa", "listra"],
+                             detalhesVisuais: ["abotoamento duplo"])
         await loja.salvar(peca)
         let todas = await loja.todas()
         let salva = try XCTUnwrap(todas.first)
@@ -73,6 +74,8 @@ final class SincronizacaoDoClosetTests: XCTestCase {
                 as? [String: [[String: Any]]]
             XCTAssertEqual(corpo?["p_mudancas"]?.first?["apelido"] as? String, "rugby")
             XCTAssertNil(corpo?["p_mudancas"]?.first?["miniatura_arquivo"])
+            XCTAssertNil(corpo?["p_mudancas"]?.first?["detalhesVisuais"])
+            XCTAssertNil(corpo?["p_mudancas"]?.first?["detalhes_visuais"])
             return (204, Data())
         }
 

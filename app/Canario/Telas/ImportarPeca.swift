@@ -21,18 +21,31 @@ struct ImportarPeca: View {
     let termos: [Termo]
     var aoSalvar: (() -> Void)? = nil
 
-    // MARK: - Tokens Locais
-
-    /// #BBE5ED é o céu da marca, e ele já existe em `Tokens.Cor.ceu` desde a
-    /// A18 -- foi redigitado aqui como literal fixo ao aplicar o Figma. Duas
-    /// cópias do mesmo valor significa que trocar a paleta conserta uma tela e
-    /// esquece a outra, que é exatamente o que o `Tokens.swift` foi escrito
-    /// para impedir. O valor desenhado continua idêntico no modo claro, que é
-    /// o único que o app suporta.
-    private let corDestaque = Tokens.Cor.ceu
-
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
+    @State private var mostrandoCorConstante = false
+    /// Confiança que o SISTEMA reportou para a cor desta captura, 0…1.
+    ///
+    /// `nil` em todo caminho que não seja a rota de cor constante do iOS 18 —
+    /// fototeca, arquivo, PDF e a câmera comum. Escrito num lugar só, dentro
+    /// de `prepararConfirmacao`, justamente para não sobreviver de uma foto
+    /// para a seguinte: uma confiança velha grudada numa foto nova seria pior
+    /// que não medir nada.
+    @State private var confiancaDaCaptura: Double?
+    /// A foto de cor constante da captura atual, quando o enquadramento ainda é
+    /// o dela. Ver `medicaoAindaVale`.
+    @State private var imagemDeMedicao: CGImage?
+    /// A mesma foto, guardada para o "desfazer recorte" poder devolvê-la.
+    @State private var medicaoOriginal: CGImage?
+    /// A confiança original, pelo mesmo motivo de `medicaoOriginal`.
+    @State private var confiancaOriginal: Double?
+    /// O par resolvido para o alvo que a pessoa confirmou.
+    @State private var medicaoDoAlvo: CGImage?
+    @State private var confiancaDoAlvoEscolhido: Double?
+    /// A pessoa escolheu a rota de cor precisa e depois isolou a peça, o que
+    /// desfaz a medição. A tela precisa dizer isso; ficar em silêncio seria
+    /// deixá-la achar que a cor continua medida.
+    @State private var perdeuAMedicaoAoIsolar = false
     @State private var daFototeca: PhotosPickerItem?
     @State private var lendo = false
     /// O que a espera atual está fazendo. Sem isto a tela era um spinner num
@@ -48,10 +61,10 @@ struct ImportarPeca: View {
 
         var mensagem: String {
             switch self {
-            case .lendoArquivo:     return "Reading the file…"
-            case .separandoPeca:    return "Separating the garment…"
-            case .analisandoLocal:  return "Reading the garment…"
-            case .analisandoNaNuvem: return "Reading the garment…"
+            case .lendoArquivo:     return frase("Reading the file…")
+            case .separandoPeca:    return frase("Separating the garment…")
+            case .analisandoLocal:  return frase("Reading the garment…")
+            case .analisandoNaNuvem: return frase("Reading the garment…")
             }
         }
 
@@ -61,9 +74,9 @@ struct ImportarPeca: View {
             switch self {
             case .lendoArquivo, .analisandoLocal: return nil
             case .separandoPeca:
-                return "This happens on this iPhone."
+                return frase("This happens on this iPhone.")
             case .analisandoNaNuvem:
-                return "The visual analysis runs on the server and usually takes a few seconds."
+                return frase("The visual analysis runs on the server and usually takes a few seconds.")
             }
         }
 
@@ -74,9 +87,9 @@ struct ImportarPeca: View {
             switch self {
             case .lendoArquivo, .analisandoLocal: return nil
             case .separandoPeca:
-                return "Still separating the garment on this iPhone. You can close and try a tighter photo."
+                return frase("Still separating the garment on this iPhone. You can close and try a tighter photo.")
             case .analisandoNaNuvem:
-                return "This is taking longer than usual. It stops on its own after 30 seconds — you can close and read the garment on this iPhone instead."
+                return frase("This is taking longer than usual. It stops on its own after 30 seconds — you can close and read the garment on this iPhone instead.")
             }
         }
     }
@@ -147,6 +160,9 @@ struct ImportarPeca: View {
     /// aqui a ordem só é preservada e fica editável.
     @State private var coresPorPrioridade: [String] = []
     @State private var analiseConcluidaParaOAlvo = false
+    /// A taxonomia confirmada fica em `detectados`; isto guarda somente os
+    /// detalhes livres da análise para a Leitura pedida pela pessoa.
+    @State private var analiseDaFoto: AnaliseVisualRemota?
     @State private var mostrandoEditorDeRecorte = false
     @State private var pedindoConsentimentoDaNuvem = false
     @State private var imagemConfirmadaPendente: CGImage?
@@ -158,14 +174,12 @@ struct ImportarPeca: View {
     @FocusState private var nomeDaPecaEmFoco: Bool
 
     /// §29.5 — contexto condicional.
+    private var leituraDoPreco: PrecoDigitado.Leitura {
+        PrecoDigitado.interpretar(precoDigitado)
+    }
+
     private var precoAlvo: Double? {
-        let limpo = precoDigitado
-            .replacingOccurrences(of: "R$", with: "")
-            .replacingOccurrences(of: ".", with: "")
-            .replacingOccurrences(of: ",", with: ".")
-            .trimmingCharacters(in: .whitespaces)
-        guard let v = Double(limpo), v > 0 else { return nil }
-        return v
+        leituraDoPreco.valor
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -190,6 +204,7 @@ struct ImportarPeca: View {
                             precoAlvo: precoAlvo,
                             miniaturaJPEG: miniaturaJPEG,
                             pecaSalva: nil,
+                            analiseDaFoto: analiseDaFoto,
                             coresPorPrioridade: coresPorPrioridade,
                             apelido: nomeDaPeca,
                             todosOsTermos: termosDoFormulario,
@@ -204,6 +219,7 @@ struct ImportarPeca: View {
                     }
                 }
             }
+            .papelDaEdicao()
             .navigationTitle(tituloDaEtapa)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -216,10 +232,10 @@ struct ImportarPeca: View {
                         }
                     } label: {
                         Image(systemName: etapa == .entrada || lendo ? "xmark" : "chevron.left")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.black)
-                            .frame(width: 32, height: 32)
-                            .background(Color.black.opacity(0.06))
+                            .font(.footnote.weight(.bold))
+                            .foregroundStyle(Edicao.bordo)
+                            .frame(width: 44, height: 44)
+                            .background(Edicao.cartao)
                             .clipShape(Circle())
                     }
                     .accessibilityLabel(etapa == .entrada || lendo ? "Close" : "Back")
@@ -236,7 +252,14 @@ struct ImportarPeca: View {
                                 Button {
                                     guard let original = imagemOriginal else { return }
                                     let nome = nomePendente ?? "photo"
-                                    Task { await prepararConfirmacao(original, nome: nome) }
+                                    Task {
+                                        // Volta ao enquadramento da captura, e
+                                        // com ele volta a medição.
+                                        await prepararConfirmacao(
+                                            original, nome: nome,
+                                            medicao: medicaoOriginal,
+                                            confianca: confiancaOriginal)
+                                    }
                                 } label: {
                                     Label("Undo crop", systemImage: "arrow.uturn.backward")
                                 }
@@ -249,9 +272,11 @@ struct ImportarPeca: View {
                 }
             }
         }
+        .tint(Edicao.bordo)
         .task {
             avisoDeUso = await RegistroDeAnalises.shared.aviso()
-            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
+            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes")
+                || LeituraDaPeca.testeDeInterfaceAtivo {
                 detectados = Set(["vestido", "preto"])
                 // A rota determinística preenche o conjunto na mão, então
                 // precisa preencher a ordem também -- senão a tela mostraria
@@ -273,7 +298,22 @@ struct ImportarPeca: View {
             CapturaDeCamera { imagem in
                 mostrandoCamera = false
                 guard let imagem else { return }
-                Task { await prepararConfirmacao(imagem, nome: "camera photo") }
+                Task { await prepararConfirmacao(imagem, nome: frase("camera photo")) }
+            }
+            .ignoresSafeArea()
+        }
+        .fullScreenCover(isPresented: $mostrandoCorConstante) {
+            CapturaDeCorConstante { resultado in
+                mostrandoCorConstante = false
+                guard let resultado else { return }
+                medicaoOriginal = resultado.imagemDeMedicao
+                confiancaOriginal = resultado.confianca
+                Task {
+                    await prepararConfirmacao(resultado.imagem,
+                                              nome: frase("color-accurate photo"),
+                                              medicao: resultado.imagemDeMedicao,
+                                              confianca: resultado.confianca)
+                }
             }
             .ignoresSafeArea()
         }
@@ -281,9 +321,11 @@ struct ImportarPeca: View {
             if let imagem = imagemPendente {
                 EditorDeRecorte(imagem: imagem) { recortada in
                     mostrandoEditorDeRecorte = false
-                    let nome = nomePendente ?? "cropped image"
+                    let nome = nomePendente ?? frase("cropped image")
                     let original = imagemOriginal ?? imagem
                     Task {
+                        // Sem `medicao` e sem `confianca`: o recorte mudou a
+                        // geometria, e o par deixou de se corresponder.
                         await prepararConfirmacao(recortada, nome: nome,
                                                   recorteDe: original)
                     }
@@ -309,7 +351,7 @@ struct ImportarPeca: View {
                 }
             }
         } message: {
-            Text("Recommended for more complete suggestions. DataDrobe analyzes only the reduced, metadata-free image you confirmed. The original is not uploaded, and you will review every attribute before saving. You can change this later in Settings; on-device analysis does not use the cloud-analysis limit.")
+            Text("Recommended for more complete suggestions. Seam analyzes only the reduced, metadata-free image you confirmed. The original is not uploaded, and you will review every attribute before saving. You can change this later in Settings; on-device analysis does not use the cloud-analysis limit.")
         }
     }
 
@@ -329,17 +371,13 @@ struct ImportarPeca: View {
                                  id: escolhida.id,
                                  altura: 240,
                                  selecionada: false,
-                                 corDeFundo: corDestaque,
-                                 raio: Tokens.Raio.cartaoGrande)
-                        .sombraDeCartao()
+                                 raio: Edicao.raioDaPeca)
                         .accessibilityLabel("Selected photo of your item")
                 }
 
                 // 2. Seletor de Foto (No Background vs Full Photo)
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Choose a photo")
-                        .font(.system(.headline, design: .rounded))
-                        .foregroundStyle(Tokens.Cor.tinta)
+                Folha {
+                    CabecalhoDaFolha(titulo: Text("Choose a photo"))
 
                     HStack(spacing: 14) {
                         ForEach(opcoesDeAlvo) { opcao in
@@ -354,13 +392,11 @@ struct ImportarPeca: View {
                                                  id: opcao.id,
                                                  altura: 96,
                                                  selecionada: alvoEscolhido == opcao.id,
-                                                 corDeFundo: corDestaque,
-                                                 raio: Tokens.Raio.cartao)
-                                        .sombraDeCartao()
+                                                 raio: Edicao.raioDaPeca)
 
                                     Text(opcao.tipo == .primeiroPlano ? "No Background" : "Full photo")
-                                        .font(.system(.footnote, design: .rounded).weight(.semibold))
-                                        .foregroundStyle(Tokens.Cor.tinta)
+                                        .font(.footnote.weight(.semibold))
+                                        .foregroundStyle(.primary)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -369,16 +405,12 @@ struct ImportarPeca: View {
                     }
                 }
 
-                // 3. Campo de Dica Opcional com Card Arredondado Neutro
-                VStack(alignment: .leading, spacing: 8) {
+                Folha {
                     Text("If there is more than 1 item in the photo, specify the target")
-                        .font(.system(.subheadline, design: .rounded).weight(.bold))
-                        .foregroundStyle(Tokens.Cor.tinta)
-
-                    Divider()
+                        .font(Edicao.Tipo.linha)
 
                     TextField("Ex: Black Tank Top", text: $descricaoDoAlvo)
-                        .font(.system(size: 15, design: .rounded))
+                        .font(.body)
                         .focused($dicaDoAlvoEmFoco)
                         .submitLabel(.done)
                         .onSubmit { dicaDoAlvoEmFoco = false }
@@ -386,13 +418,6 @@ struct ImportarPeca: View {
                             analiseConcluidaParaOAlvo = false
                         }
                 }
-                .padding(.horizontal, Tokens.Espaco.m)
-                .padding(.vertical, 14)
-                // Cinza do sistema, e não um preto a 5%: o cinza do sistema
-                // acompanha o aparelho e o contraste, e o preto translúcido
-                // fica sujo sobre qualquer fundo que não seja branco puro.
-                .background(Tokens.Cor.superficie)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 // O aviso do teto diário mora aqui, e não na tela de
                 // resultado: este é o botão que gasta a próxima análise, e
@@ -409,11 +434,11 @@ struct ImportarPeca: View {
                         Task { await confirmarAlvo() }
                     } label: {
                         Text("Analyze this item")
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 52)
-                            .background(Tokens.Cor.acao)
+                            .background(Edicao.bordoCheio)
                             .clipShape(Capsule())
                             .sombraDeCartao()
                     }
@@ -424,8 +449,8 @@ struct ImportarPeca: View {
                         cancelarConfirmacao()
                     } label: {
                         Text("Choose another photo")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(Tokens.Cor.acao)
+                            .font(.headline)
+                            .foregroundStyle(Edicao.bordo)
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 44)
                     }
@@ -476,7 +501,7 @@ struct ImportarPeca: View {
     private var telaDeEntrada: some View {
         GeometryReader { area in
             ScrollView {
-                VStack(spacing: Tokens.Espaco.g) {
+                VStack(spacing: Edicao.entreFolhas) {
                     Spacer(minLength: 0)
                     importador
                     Spacer(minLength: 0)
@@ -485,8 +510,8 @@ struct ImportarPeca: View {
                     }
                     avisoDePrivacidade
                 }
-                .padding(.horizontal, Tokens.Espaco.g)
-                .padding(.vertical, Tokens.Espaco.m)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.vertical, 20)
                 .frame(maxWidth: .infinity, minHeight: area.size.height)
             }
         }
@@ -517,21 +542,20 @@ struct ImportarPeca: View {
 
     private var telaDeAtributosSemTeclado: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+            VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
                 if let miniaturaJPEG {
                     PreviaDoAlvo(dados: miniaturaJPEG,
                                  id: miniaturaJPEG.count,
                                  altura: 220,
-                                 selecionada: true,
-                                 corDeFundo: corDestaque,
-                                 raio: 24)
+                                 selecionada: false,
+                                 raio: Edicao.raioDaPeca)
                         .accessibilityLabel("Item being described")
                 }
                 if let erro {
                     CoberturaInsuficiente(
                         titulo: "No attributes were read",
                         explicacao: erro,
-                        oQueTem: "You can select the attributes below and continue.")
+                        oQueTem: frase("You can select the attributes below and continue."))
                 }
                 atributos
                 precoOpcional
@@ -559,41 +583,37 @@ struct ImportarPeca: View {
                         etapa = .painel
                     } label: {
                         Text("Show me the market")
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Tokens.Cor.acao)
+                            .frame(minHeight: 52)
+                            .background(Edicao.bordoCheio)
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .disabled(!leituraDoPreco.permiteAvancar)
+                    .opacity(leituraDoPreco.permiteAvancar ? 1 : 0.45)
                 }
             }
-            .padding(Tokens.Espaco.m)
+            .padding(.horizontal, Edicao.margem)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
         }
     }
 
     private var importador: some View {
-        VStack(spacing: Tokens.Espaco.m) {
+        VStack(spacing: 12) {
             PhotosPicker(selection: $daFototeca, matching: .images,
                          photoLibrary: .shared()) {
-                VStack(spacing: Tokens.Espaco.g) {
-                    // Variante preenchida, como no Figma: o cartão é a ação
-                    // principal da tela e o desenho vazado do contorno some
-                    // dentro de 300 pt de superfície colorida.
+                Folha {
                     Image(systemName: "photo.fill.on.rectangle.fill")
-                        .font(.system(size: 76))
-                        .foregroundStyle(Tokens.Cor.noite)
+                        .font(.system(size: 60))
+                        .foregroundStyle(Edicao.bordo)
                     Text("Choose from Photos")
-                        .font(.system(.headline, design: .rounded))
-                        .foregroundStyle(Tokens.Cor.noite)
+                        .font(Edicao.Tipo.titulo)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 300)
-                .background(Tokens.Cor.ceu)
-                .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartaoGrande,
-                                            style: .continuous))
-                .sombraDeCartao()
+                .frame(minHeight: 220)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Choose from Photos")
@@ -603,6 +623,18 @@ struct ImportarPeca: View {
                 BotaoDeEntrada(titulo: "Take a photo", simbolo: "camera") {
                     erro = nil
                     mostrandoCamera = true
+                }
+            }
+            // A rota de cor constante é uma ESCOLHA, não o caminho padrão:
+            // ela dispara o flash sempre, e forçar isso em quem só quer
+            // registrar a peça seria trocar um incômodo garantido por um ganho
+            // que nem toda pessoa precisa. Some por completo onde não existe —
+            // iOS 17, simulador, aparelho sem câmera traseira.
+            if CapturaDeCorConstante.disponivel {
+                BotaoDeEntrada(titulo: "Color-accurate photo",
+                               simbolo: "camera.aperture") {
+                    erro = nil
+                    mostrandoCorConstante = true
                 }
             }
             BotaoDeEntrada(titulo: "Choose a file or PDF", simbolo: "doc.badge.plus") {
@@ -620,68 +652,55 @@ struct ImportarPeca: View {
     private var avisoDePrivacidade: some View {
         Text(Supabase.analiseRemotaHabilitada
              ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
-             : "The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet.")
-            .font(Tokens.Fonte.miudo)
-            .foregroundStyle(Tokens.Cor.tintaFraca)
+             : frase("The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet."))
+            .font(.footnote)
+            .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
     }
 
     private var oQueLi: some View {
-        Cartao {
+        Folha {
             DisclosureGroup {
-                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                VStack(alignment: .leading, spacing: 12) {
                     ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
-                    LinhaInsumo(texto: "Review every suggestion. Your confirmed selection is what counts.")
+                    LinhaInsumo(texto: frase("Review every suggestion. Your confirmed selection is what counts."))
                 }
-                .padding(.top, Tokens.Espaco.s)
+                .padding(.top, 12)
             } label: {
-                Text("What I read from this file").font(Tokens.Fonte.secao)
+                CabecalhoDaFolha(titulo: Text("What I read from this file"))
             }
+            .tint(Edicao.bordo)
         }
     }
 
     private var atributos: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            HStack {
-                Text("Describe your item attributes")
-                    .font(.system(.headline, design: .rounded))
-                Spacer()
-                if !detectados.isEmpty {
-                    Button("Clear") { limparAtributos() }
-                        .font(Tokens.Fonte.miudo)
+        VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+            Folha {
+                HStack {
+                    CabecalhoDaFolha(titulo: Text("Describe your item attributes"))
+                    if !detectados.isEmpty {
+                        Button("Clear") { limparAtributos() }
+                            .font(.footnote)
+                            .frame(minHeight: 44)
+                    }
                 }
-            }
-
-            // Uma linha no lugar de um relatório. Ela diz as duas coisas que
-            // a pessoa precisa saber para agir: já veio preenchido, e mexer é
-            // esperado. O texto é do Davi, quase palavra por palavra.
-            Text("We've selected what we identified — adjust anything that looks off.")
-                .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-
-            // O nome fica aqui, entre o convite e a grade, como no Figma: é o
-            // único campo digitado da tela e some se ficar espremido entre
-            // dois cartões.
-            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                HStack(spacing: Tokens.Espaco.s) {
-                    TextField("Clothing name (optional)", text: $nomeDaPeca)
-                        .textInputAutocapitalization(.sentences)
-                        .submitLabel(.done)
-                        .focused($nomeDaPecaEmFoco)
-                        .onSubmit { nomeDaPecaEmFoco = false }
-                    Image(systemName: "pencil")
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                        .accessibilityHidden(true)
-                }
-                Divider()
+                Text("We've selected what we identified — adjust anything that looks off.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                CosturaDaEdicao()
+                TextField("Clothing name (optional)", text: $nomeDaPeca)
+                    .textInputAutocapitalization(.sentences)
+                    .submitLabel(.done)
+                    .focused($nomeDaPecaEmFoco)
+                    .onSubmit { nomeDaPecaEmFoco = false }
+                    .textFieldStyle(.roundedBorder)
                 Text("If left blank, Closet, links and spreadsheets use the confirmed category.")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
             ForEach(dimensoes, id: \.self) { dimensao in
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(Traducao.rotuloDaDimensao(dimensao))
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                Folha {
+                    CabecalhoDaFolha(titulo: Text(Traducao.rotuloDaDimensao(dimensao)))
                     if dimensao == "cor" { legendaDaOrdemDeCor }
                     FlowLayout(espaco: dimensao == "cor" ? 8 : 12) {
                         ForEach(termosVisiveis(na: dimensao)) { termo in
@@ -692,7 +711,6 @@ struct ImportarPeca: View {
                                             acao: { alternar(termo) })
                         }
                     }
-                    Divider()
                 }
             }
         }
@@ -706,8 +724,8 @@ struct ImportarPeca: View {
         Text(coresPorPrioridade.isEmpty
              ? "Pick up to \(Self.tetoDeCores), in order — the first one is the main color."
              : "1 is the main color, 2 and 3 are secondary. Tap a color again to remove it.")
-            .font(Tokens.Fonte.miudo)
-            .foregroundStyle(Tokens.Cor.tintaFraca)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 
     private func prioridade(de termo: Termo) -> Int? {
@@ -772,16 +790,35 @@ struct ImportarPeca: View {
     }
 
     private var precoOpcional: some View {
-        Cartao {
-            Text("Your intended price").font(Tokens.Fonte.secao)
+        Folha {
+            CabecalhoDaFolha(titulo: Text("Your intended price"))
             Text("Optional. If you add it, I show its position among similar pieces in the panel — a price position, not a judgment.")
-                .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             TextField("R$ 0,00", text: $precoDigitado)
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.roundedBorder)
                 .focused($precoEmFoco)
                 .submitLabel(.done)
+            switch leituraDoPreco {
+            case .vazio:
+                EmptyView()
+            case let .valor(valor):
+                Text(frase("Understood as \(Formato.dinheiroExato(valor))."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("preco-entendido")
+            case .ambiguo:
+                Text("This price is ambiguous. Use 1299 or 1.299,00 for R$ 1.299.")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("erro-preco")
+            case .invalido:
+                Text("Enter a price such as 79,90 or 79.90.")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("erro-preco")
+            }
         }
     }
 
@@ -846,25 +883,41 @@ struct ImportarPeca: View {
         erro = nil
         guard let dados = try? await item.loadTransferable(type: Data.self),
               let imagem = MiniaturaLocal.imagem(de: dados) else {
-            erro = "I couldn't open this photo."
+            erro = frase("I couldn't open this photo.")
             etapa = .entrada
             lendo = false
             return
         }
-        await prepararConfirmacao(imagem, nome: "photo library image")
+        await prepararConfirmacao(imagem, nome: frase("photo library image"))
     }
 
+    /// O PAR SÓ VALE ENQUANTO O ENQUADRAMENTO NÃO MUDA.
+    ///
+    /// `medicao` é a foto de cor constante da mesma cena que `imagem`. As duas
+    /// só se correspondem pixel a pixel enquanto ninguém mexe na geometria:
+    /// recortar a exibida deixa a de medição no enquadramento antigo, e medir
+    /// cor num pedaço diferente do que a pessoa escolheu seria pior do que não
+    /// medir. Por isso o recorte entra aqui com `medicao: nil`, e o desfazer
+    /// devolve a original.
+    ///
+    /// O padrão `nil` de todos os três é o portão: quem entra por fototeca,
+    /// arquivo ou câmera comum apaga a medida anterior sem precisar lembrar.
     private func prepararConfirmacao(_ imagem: CGImage, nome: String,
-                                     recorteDe original: CGImage? = nil) async {
+                                     recorteDe original: CGImage? = nil,
+                                     medicao: CGImage? = nil,
+                                     confianca: Double? = nil) async {
+        imagemDeMedicao = medicao
+        confiancaDaCaptura = confianca
         esperaAtual = .separandoPeca
         lendo = true
         erro = nil
         procedencia = []
         detectados = []
         analiseConcluidaParaOAlvo = false
+        analiseDaFoto = nil
         let opcoes = await MiniaturaLocal.opcoesDeAlvo(de: imagem)
         guard !opcoes.isEmpty else {
-            erro = "I could not prepare this image. Choose another photo or file."
+            erro = frase("I could not prepare this image. Choose another photo or file.")
             etapa = .entrada
             lendo = false
             return
@@ -884,23 +937,45 @@ struct ImportarPeca: View {
             return
         }
         guard !termos.isEmpty else {
-            erro = "The item taxonomy is not available yet. Go back and try again; no visual-analysis credit was used."
+            erro = frase("The item taxonomy is not available yet. Go back and try again; no visual-analysis credit was used.")
             return
         }
         guard let original = imagemPendente, let escolha = opcaoEscolhida else { return }
         let imagem: CGImage?
+        // A MEDIÇÃO SÓ ACOMPANHA A FOTO INTEIRA, E ISSO É DELIBERADO.
+        //
+        // "Peça isolada" não é um recorte retangular: o Vision devolve uma
+        // máscara, e a máscara nasceu da foto natural. Aplicá-la aos pixels da
+        // foto de cor constante exigiria que o Vision achasse as MESMAS
+        // instâncias, na mesma ordem, nas duas versões da cena — e isso não é
+        // garantido por nada. Medir cor num recorte que talvez não seja o que a
+        // pessoa escolheu é pior do que não medir.
+        //
+        // Então: foto inteira mantém a cor medida; peça isolada volta ao
+        // comportamento de sempre (sugestão que a pessoa confirma). A tela diz
+        // isso em vez de deixar a diferença invisível.
+        let medicao: CGImage?
+        let confiancaDoAlvo: Double?
         switch escolha.tipo {
         case .primeiroPlano:
             imagem = MiniaturaLocal.imagem(de: escolha.dados)
+            medicao = nil
+            confiancaDoAlvo = nil
         case .fotoCompleta:
             imagem = original
+            medicao = imagemDeMedicao
+            confiancaDoAlvo = imagemDeMedicao == nil ? nil : confiancaDaCaptura
         }
         guard let imagem else {
-            erro = "I could not open the selected item. Choose another option."
+            erro = frase("I could not open the selected item. Choose another option.")
             return
         }
+        medicaoDoAlvo = medicao
+        confiancaDoAlvoEscolhido = confiancaDoAlvo
+        perdeuAMedicaoAoIsolar = escolha.tipo == .primeiroPlano
+            && imagemDeMedicao != nil
 
-        let nome = nomePendente ?? "selected image"
+        let nome = nomePendente ?? frase("selected image")
         miniaturaJPEG = escolha.dados
         if Supabase.analiseRemotaHabilitada {
             imagemConfirmadaPendente = imagem
@@ -924,7 +999,7 @@ struct ImportarPeca: View {
 
     private func analisarPendente(usandoNuvem: Bool) async {
         guard let imagem = imagemConfirmadaPendente else { return }
-        let nome = nomeConfirmadoPendente ?? "selected image"
+        let nome = nomeConfirmadoPendente ?? frase("selected image")
         let dados = usandoNuvem ? dadosConfirmadosPendentes : nil
         let descricao = usandoNuvem ? descricaoConfirmadaPendente : nil
         imagemConfirmadaPendente = nil
@@ -938,10 +1013,10 @@ struct ImportarPeca: View {
 
     private var tituloDaEtapa: String {
         switch etapa {
-        case .entrada:       return "Analyze an item"
-        case .confirmarAlvo: return "Confirm your item"
-        case .atributos:     return "Fill the info"
-        case .painel:        return "Market panel"
+        case .entrada:       return frase("Analyze an item")
+        case .confirmarAlvo: return frase("Confirm your item")
+        case .atributos:     return frase("Fill the info")
+        case .painel:        return frase("Market panel")
         }
     }
 
@@ -967,6 +1042,7 @@ struct ImportarPeca: View {
         nomeDaPeca = ""
         precoDigitado = ""
         procedencia = []
+        analiseDaFoto = nil
         nomeDoArquivo = nil
         miniaturaJPEG = nil
         erro = nil
@@ -976,8 +1052,20 @@ struct ImportarPeca: View {
 
     private func cancelarConfirmacao() {
         etapa = .entrada
+        analiseDaFoto = nil
         imagemPendente = nil
         imagemOriginal = nil
+        // A medição morre com a confirmação. Sem isto, cancelar e importar
+        // outra foto pela fototeca deixaria `medicaoOriginal` viva: um
+        // "desfazer recorte" na foto NOVA restauraria a medição da ANTIGA, e
+        // a cor da peça sairia de uma imagem de outra peça.
+        imagemDeMedicao = nil
+        medicaoOriginal = nil
+        confiancaDaCaptura = nil
+        confiancaOriginal = nil
+        medicaoDoAlvo = nil
+        confiancaDoAlvoEscolhido = nil
+        perdeuAMedicaoAoIsolar = false
         nomePendente = nil
         opcoesDeAlvo = []
         alvoEscolhido = nil
@@ -1000,8 +1088,11 @@ struct ImportarPeca: View {
         lendo = true
         erro = nil
         procedencia = []
+        analiseDaFoto = nil
         nomeDoArquivo = nome
-        let leitura = await LeitorDeArquivo.ler(imagem)
+        let leitura = await LeitorDeArquivo.ler(
+            imagem, imagemParaCor: medicaoDoAlvo,
+            confiancaDaCaptura: confiancaDoAlvoEscolhido)
         let marcas = Importacao.marcasNoTexto(leitura.texto)
 
         if let dadosParaNuvem {
@@ -1014,14 +1105,36 @@ struct ImportarPeca: View {
                     detectados = []
                     coresPorPrioridade = []
                     procedencia = analise.decisionEvidence.map {
-                        "Why the target was ambiguous: \($0)"
+                        frase("Why the target was ambiguous: \($0)")
                     }
-                    erro = "The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo."
+                    erro = frase("The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo.")
                 } else {
+                    analiseDaFoto = analise
                     let existentes = Set(termos.map(\.id))
-                    detectados = FormularioDaPeca.podar(
+                    var sugeridos = FormularioDaPeca.podar(
                         analise.idsSugeridos(existentes: existentes),
                         termos: termos)
+                    // O PORTÃO DA A56 VALE AQUI TAMBÉM, E NÃO VALIA.
+                    //
+                    // A confiança medida bloqueava a sugestão de cor só na
+                    // leitura local. No caminho da Luna — que é o PRINCIPAL
+                    // quando a análise remota está ligada — as cores dela
+                    // entravam pré-marcadas sem ninguém consultar a confiança.
+                    // Uma foto que o próprio sistema declarou pouco confiável
+                    // terminava com cor marcada, que é exatamente o que a
+                    // emenda diz que não acontece.
+                    //
+                    // A Luna lê a MESMA imagem: se a luz enganou o pixel, ela
+                    // errou pelo mesmo motivo que o `CorDaPeca` erraria. O
+                    // portão é da captura, não do leitor.
+                    let coresDaDimensao = Set(termos.filter { $0.dimensao == "cor" }
+                                                    .map(\.id))
+                    if let confianca = confiancaDoAlvoEscolhido,
+                       confianca < CorDaPeca.confiancaMinimaDaCaptura {
+                        sugeridos.subtract(coresDaDimensao)
+                        procedencia.append(frase("The color was left unselected on purpose: this photo's lighting was not reliable enough to measure it. Pick the color below, or retake the photo with color-accurate capture."))
+                    }
+                    detectados = sugeridos
                     // A ordem vem da Luna, que ranqueia por área visível. É a
                     // única fonte de ranqueamento que existe no sistema.
                     coresPorPrioridade = analise
@@ -1034,36 +1147,44 @@ struct ImportarPeca: View {
                         .sorted { ($0.dimensao, $0.id) < ($1.dimensao, $1.id) }
                         .map(Traducao.rotuloExibido)
                     procedencia = [
-                        "Visual analysis suggested: \(lidos.joined(separator: ", ")).",
+                        frase("Visual analysis suggested: \(lidos.joined(separator: ", "))."),
                     ]
                     if !analise.decisionEvidence.isEmpty {
                         procedencia.append(
-                            "Visible evidence:\n"
+                            frase("Visible evidence:\n")
                             + analise.decisionEvidence
                                 .map { "•  \($0)" }
                                 .joined(separator: "\n"))
                     }
                     if !analise.additionalVisualAttributes.isEmpty {
                         procedencia.append(
-                            "Also observed, outside the market taxonomy: "
+                            frase("Also observed, outside the market taxonomy: ")
                             + analise.additionalVisualAttributes.joined(separator: ", ") + ".")
                     }
                     if !FormularioDaPeca.temCategoria(detectados, termos: termos) {
                         detectados = []
                         coresPorPrioridade = []
-                        erro = "The analysis returned an invalid category. Choose the attributes manually."
+                        analiseDaFoto = nil
+                        erro = frase("The analysis returned an invalid category. Choose the attributes manually.")
                     }
                 }
             } catch {
                 aplicarLeituraLocal(leitura,
-                    mensagem: "Cloud visual analysis is unavailable right now. I kept the on-device reading; choose the missing attributes manually.")
+                    mensagem: frase("Cloud visual analysis is unavailable right now. I kept the on-device reading; choose the missing attributes manually."))
             }
         } else {
             aplicarLeituraLocal(leitura)
         }
 
         if !marcas.isEmpty {
-            procedencia.append("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material.")
+            procedencia.append(frase("Brand text recognized on device: \(marcas.joined(separator: ", ")). This is context, not proof of model or material."))
+        }
+        // A pessoa pediu cor precisa e depois isolou a peça. A medição não
+        // acompanha o recorte (ver `confirmarAlvo`), e ela precisa saber disso
+        // agora, na tela onde ainda dá para voltar e escolher a foto inteira --
+        // não depois, olhando um Closet que ela acha medido e não é.
+        if perdeuAMedicaoAoIsolar {
+            procedencia.append(frase("The measured color applies to the whole photo. You isolated the item, so the color here was read the usual way — go back and pick the full photo if you want the measured one."))
         }
         etapa = .atributos
         analiseConcluidaParaOAlvo = true
@@ -1087,8 +1208,8 @@ struct ImportarPeca: View {
             // parecia defeito de análise. Aqui a tela passa a dizer qual dos
             // dois aconteceu.
             erro = Supabase.analiseRemotaHabilitada
-                ? "I read what I could from the image, but not the category. Pick it below and the rest stays as read."
-                : "Cloud visual analysis is off in this build, so I only read text printed on the image — a garment photo usually has none. Pick the attributes below; nothing failed."
+                ? frase("I read what I could from the image, but not the category. Pick it below and the rest stays as read.")
+                : frase("Cloud visual analysis is off in this build, so I only read text printed on the image — a garment photo usually has none. Pick the attributes below; nothing failed.")
         }
     }
 
@@ -1098,7 +1219,7 @@ struct ImportarPeca: View {
         lendo = true
         erro = nil
         guard let imagem = MiniaturaLocal.imagem(doArquivo: url) else {
-            erro = "I couldn't open this file. Choose a JPG, PNG, HEIC or PDF."
+            erro = frase("I couldn't open this file. Choose a JPG, PNG, HEIC or PDF.")
             etapa = .entrada
             lendo = false
             return
@@ -1125,21 +1246,18 @@ private struct BotaoDeEntrada: View {
 
     var body: some View {
         Button(action: acao) {
-            HStack(spacing: Tokens.Espaco.s) {
-                Image(systemName: simbolo)
-                    .font(.system(size: 18, weight: .semibold))
-                Text(titulo)
-                    .font(.system(.callout, design: .rounded).weight(.bold))
+            Folha {
+                HStack(spacing: 12) {
+                    Image(systemName: simbolo)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Edicao.bordo)
+                    Text(titulo)
+                        .font(Edicao.Tipo.linha)
+                    Spacer(minLength: 8)
+                    SetaDaLinha()
+                }
+                .frame(minHeight: 44)
             }
-            .foregroundStyle(Tokens.Cor.noite)
-            .frame(maxWidth: .infinity)
-            // 54 é confortável e passa dos 44 pt mínimos da HIG; `minHeight`
-            // em vez de `height` para o botão crescer com Dynamic Type em vez
-            // de cortar o rótulo.
-            .frame(minHeight: 54)
-            .background(Tokens.Cor.ceu)
-            .clipShape(Capsule())
-            .sombraDeCartao()
         }
         .buttonStyle(.plain)
     }
@@ -1189,8 +1307,8 @@ private struct EditorDeRecorte: View {
                         .simultaneously(with: gestoDeAmpliacao(area: area)))
 
                     Text("Pinch to zoom and drag until the target garment fills the frame.")
-                        .font(Tokens.Fonte.apoio)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
                     Button {
@@ -1203,6 +1321,7 @@ private struct EditorDeRecorte: View {
                             .frame(minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(Edicao.bordoCheio)
                 }
                 .padding(Tokens.Espaco.m)
             }
@@ -1220,6 +1339,8 @@ private struct EditorDeRecorte: View {
                 }
             }
         }
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
     }
 
     private func tamanhoDoRecorte(em disponivel: CGSize) -> CGSize {
@@ -1295,33 +1416,21 @@ private struct PreviaDoAlvo: View {
     let id: Int
     let altura: CGFloat
     let selecionada: Bool
-    var corDeFundo: Color = Tokens.Cor.superficie
-    var raio: CGFloat = Tokens.Raio.cartao
+    var raio: CGFloat = Edicao.raioDaPeca
 
     @State private var imagem: UIImage?
 
     private var compacta: Bool { altura < 160 }
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: raio, style: .continuous)
-                .fill(corDeFundo)
-            if let imagem {
-                Image(uiImage: imagem)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(Tokens.Espaco.s)
-            } else {
-                ProgressView()
-            }
-        }
+        ImagemDaPeca(imagem: imagem, raio: raio)
         .frame(width: compacta ? 96 : nil)
         .frame(maxWidth: compacta ? nil : .infinity)
         .frame(height: altura)
         .overlay {
             if selecionada && compacta {
                 RoundedRectangle(cornerRadius: raio, style: .continuous)
-                    .stroke(Color.blue, lineWidth: 2)
+                    .stroke(Edicao.bordo, lineWidth: 2)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: raio, style: .continuous))
@@ -1339,7 +1448,7 @@ struct FluxoDeChips: View {
     @Binding var marcados: Set<String>
 
     var body: some View {
-        FlowLayout(espaco: Tokens.Espaco.s) {
+        FlowLayout(espaco: 12) {
             ForEach(termos) { termo in
                 let ativo = marcados.contains(termo.id)
                 ChipDeAtributo(termo: termo, ativo: ativo) {
@@ -1358,11 +1467,11 @@ private struct ChipDeAtributo: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: Tokens.Espaco.xs) {
+            HStack(spacing: 8) {
                 if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
                     Circle()
                         .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
-                        .overlay(Circle().strokeBorder(Tokens.Cor.borda, lineWidth: 0.5))
+                        .overlay(Circle().strokeBorder(Color(.separator), lineWidth: 0.5))
                         .frame(width: 12, height: 12)
                 }
                 Text(Traducao.rotuloExibido(termo))
@@ -1371,12 +1480,12 @@ private struct ChipDeAtributo: View {
                 Text(pista).font(.caption2).opacity(0.72)
             }
         }
-        .font(Tokens.Fonte.miudo)
-        .padding(.horizontal, Tokens.Espaco.m)
-        .padding(.vertical, Tokens.Espaco.s)
-        .background(ativo ? Tokens.Cor.tinta : Tokens.Cor.superficie)
-        .foregroundStyle(ativo ? Tokens.Cor.fundo : Tokens.Cor.tinta)
-        .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
+        .font(.footnote)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(ativo ? Edicao.bordoCheio : Edicao.cartao)
+        .foregroundStyle(ativo ? Color.white : Color.primary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .frame(minHeight: 44)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

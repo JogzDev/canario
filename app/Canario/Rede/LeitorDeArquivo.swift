@@ -34,6 +34,23 @@ import Vision
 /// reamostrada e sem metadados. Câmera e fototeca continuam em memória.
 enum LeitorDeArquivo {
 
+    /// `VNImageRequestHandler.perform` pode chamar o callback com erro e ainda
+    /// lançar esse mesmo erro. Uma checked continuation não aceita duas
+    /// conclusões; o portão torna os dois caminhos idempotentes e é protegido
+    /// porque callbacks do Vision não têm garantia de executor.
+    final class PortaoDaContinuacao: @unchecked Sendable {
+        private let trava = NSLock()
+        private var concluida = false
+
+        func assumir() -> Bool {
+            trava.lock()
+            defer { trava.unlock() }
+            guard !concluida else { return false }
+            concluida = true
+            return true
+        }
+    }
+
     /// Tudo que o arquivo entregou, com a procedência de cada parte.
     struct Leitura {
         var texto: String = ""
@@ -64,11 +81,11 @@ enum LeitorDeArquivo {
         var errorDescription: String? {
             switch self {
             case .semAcesso:
-                return "The file could not be opened."
+                return frase("The file could not be opened.")
             case .formatoNaoSuportado:
-                return "Unsupported format. Choose a screenshot, photo (JPG, PNG, HEIC) or PDF."
+                return frase("Unsupported format. Choose a screenshot, photo (JPG, PNG, HEIC) or PDF.")
             case .nadaReconhecido:
-                return "The file opened, but no clothing text or color was recognized."
+                return frase("The file opened, but no clothing text or color was recognized.")
             }
         }
     }
@@ -153,17 +170,36 @@ enum LeitorDeArquivo {
     /// direto, sem passar por arquivo em disco. Isso é o que mantém a retenção
     /// zero da §28 — não há caminho de arquivo para gravar, e não existe cópia
     /// intermediária a esquecer.
-    static func ler(_ imagem: CGImage) async -> Leitura {
-        await deCGImage(imagem)
+    /// `confiancaDaCaptura` só chega preenchida pela rota de cor constante do
+    /// iOS 18 (`CapturaDeCorConstante`). Todo o resto — fototeca, arquivo, PDF
+    /// e a câmera do sistema — passa `nil`, que continua significando "não
+    /// medida" e preserva o comportamento de sempre.
+    ///
+    /// `imagemParaCor` separa **onde se mede** de **o que se vê**. Depois do
+    /// teste em aparelho de 05/09, a rota de cor constante devolve duas fotos
+    /// da mesma cena: a natural, que a pessoa olha e guarda, e a de cor
+    /// constante, que só serve para medir. O OCR e a semelhança visual
+    /// continuam na imagem exibida — nenhum dos dois depende de fidelidade de
+    /// cor, e ler texto sob o brilho do flash seria pior, não melhor.
+    ///
+    /// `nil` faz as duas coisas acontecerem na mesma imagem, como sempre.
+    static func ler(_ imagem: CGImage,
+                    imagemParaCor: CGImage? = nil,
+                    confiancaDaCaptura: Double? = nil) async -> Leitura {
+        await deCGImage(imagem, imagemParaCor: imagemParaCor,
+                        confiancaDaCaptura: confiancaDaCaptura)
     }
 
-    private static func deCGImage(_ img: CGImage) async -> Leitura {
+    private static func deCGImage(_ img: CGImage,
+                                  imagemParaCor: CGImage? = nil,
+                                  confiancaDaCaptura: Double? = nil) async -> Leitura {
         let texto = (try? await ocr(img)) ?? ""
         let temTexto = !texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         // A cor é lida sempre, inclusive quando há texto: o título costuma
         // trazer a cor comercial ("areia", "off white"), mas nem todo título
         // traz, e medir custa milissegundos.
-        let cor = CorDaPeca.ler(img)
+        let cor = CorDaPeca.ler(imagemParaCor ?? img,
+                                 confiancaDaCaptura: confiancaDaCaptura)
         // Terceira leitura da mesma imagem: com que peças do painel esta se
         // parece (§28). Sai vazia enquanto o portão da §28 estiver fechado,
         // então adicioná-la aqui não muda nada até alguém medir.
@@ -179,8 +215,14 @@ enum LeitorDeArquivo {
 
     private static func ocr(_ imagem: CGImage) async throws -> String {
         try await withCheckedThrowingContinuation { cont in
+            let portao = PortaoDaContinuacao()
             let pedido = VNRecognizeTextRequest { req, erro in
-                if let erro { cont.resume(throwing: erro); return }
+                if let erro {
+                    guard portao.assumir() else { return }
+                    cont.resume(throwing: erro)
+                    return
+                }
+                guard portao.assumir() else { return }
                 let linhas = (req.results as? [VNRecognizedTextObservation] ?? [])
                     .compactMap { $0.topCandidates(1).first?.string }
                 cont.resume(returning: linhas.joined(separator: "\n"))
@@ -194,6 +236,7 @@ enum LeitorDeArquivo {
             do {
                 try VNImageRequestHandler(cgImage: imagem, options: [:]).perform([pedido])
             } catch {
+                guard portao.assumir() else { return }
                 cont.resume(throwing: error)
             }
         }

@@ -13,13 +13,14 @@ import XCTest
 /// aba é dado.
 final class AbasDoAppTests: XCTestCase {
 
-    /// O caso concreto que quebrou. Se alguém reescrever este rótulo achando
-    /// que "Analytics" descreve melhor, tem que reescrever também a ficha da
-    /// loja — e este teste é onde essa conversa acontece.
-    func testTelaDeTendenciasSeChamaTrendsEmQualquerIPhone() {
-        XCTAssertEqual(AbaDoApp.dados.titulo, "Trends",
-                       "A ficha da App Store publicada diz 'Trends'. Mudar "
-                       + "aqui sem mudar lá recria a divergência de 18/08.")
+    /// O caso concreto que quebrou em 18/08 ("Analytics" num iPhone, "Trends"
+    /// no outro). Na 2.0 (Seam) a aba passou a se chamar "This week" / "Esta
+    /// semana", e a ficha da 2.0 na App Store tem de usar o mesmo nome — este
+    /// teste é onde essa conversa acontece.
+    func testTelaDaSemanaSeChamaThisWeekEmQualquerIPhone() {
+        XCTAssertEqual(AbaDoApp.dados.titulo, "This week",
+                       "A ficha da 2.0 diz 'This week'. Mudar aqui sem mudar "
+                       + "lá recria a divergência de 18/08.")
     }
 
     /// Fonte única quer dizer: toda aba tem exatamente um título e um símbolo,
@@ -57,9 +58,10 @@ final class AbasDoAppTests: XCTestCase {
     /// A ordem é a mesma nas duas navegações porque as duas leem esta lista.
     /// Fixar aqui é o que impede a fileira de trocar de ordem só num iPhone.
     func testOrdemDaFileiraEstavel() {
-        XCTAssertEqual(AbaDoApp.principais, [.adicionar, .armario, .dados])
+        // 2.0: Esta semana · Acervo · Estúdio, com a Busca à parte.
+        XCTAssertEqual(AbaDoApp.principais, [.dados, .armario, .adicionar])
         XCTAssertEqual(AbaDoApp.principais.map(\.titulo),
-                       ["Add", "Closet", "Trends"])
+                       ["This week", "Archive", "Studio"])
     }
 
     /// O `rawValue` é o que a aba usa como identidade; trocá-lo silenciosamente

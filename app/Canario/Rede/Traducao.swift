@@ -8,10 +8,17 @@ import Foundation
 /// é layout e leitura de rede.
 enum Traducao {
 
-    /// Copy de apresentação até a migração para String Catalog. Os ids e os
-    /// rótulos gravados no servidor continuam imutáveis: acento é assunto da
-    /// interface, não uma migração de série histórica.
-    private static let rotulosCorrigidos: [String: String] = [
+    /// Copy de apresentação. Os ids e os rótulos gravados no servidor
+    /// continuam imutáveis: acento é assunto da interface, não uma migração de
+    /// série histórica.
+    ///
+    /// **Este mapa não passa pelo `Localizable.xcstrings` de propósito.** As
+    /// chaves aqui são ids de taxonomia (`blusa_top`, `branco_cru`), não frases
+    /// — jogá-las no catálogo transformaria contrato de banco em texto de
+    /// interface, e um dia alguém "corrigiria" um id achando que é rótulo. O
+    /// par de mapas mantém as duas coisas separadas: o id manda no cálculo, o
+    /// idioma manda na tela.
+    private static let rotulosEmIngles: [String: String] = [
         // Category
         "vestido": "Dress", "saia": "Skirt",
         "blusa_top": "Tops & T-shirts", "camisa": "Shirt",
@@ -47,14 +54,61 @@ enum Traducao {
         "terrosos": "Earth tones", "outras_cores": "Other colors",
     ]
 
+    /// Os mesmos ids em português. Não é tradução do inglês: é o rótulo que a
+    /// pessoa do mercado brasileiro usa. "Coats & jackets" vira "Casacos e
+    /// jaquetas", mas "Animal print" continua "Animal print", porque é assim
+    /// que se chama aqui — traduzir para "estampa de bicho" seria trocar o
+    /// vocabulário do setor por uma tradução literal que ninguém usa.
+    private static let rotulosEmPortugues: [String: String] = [
+        // Categoria
+        "vestido": "Vestido", "saia": "Saia",
+        "blusa_top": "Blusas e camisetas", "camisa": "Camisa",
+        "calca": "Calça", "short": "Shorts e bermudas",
+        "casaco_jaqueta": "Casacos e jaquetas", "macacao": "Macacão",
+        // Estampa
+        "liso": "Liso", "floral": "Floral", "listra": "Listras",
+        "animal_print": "Animal print", "xadrez": "Xadrez",
+        "geometrica": "Gráfica e geométrica",
+        "conversacional": "Estampas ilustradas",
+        // Tecido
+        "algodao": "Algodão", "linho": "Linho", "jeans": "Jeans",
+        "couro": "Couro",
+        "malha": "Malha e crochê", "trico_croche": "Malha e crochê",
+        "viscose_fluido": "Viscose e tecidos fluidos",
+        // Comprimento, silhueta e cintura
+        "curto": "Curto", "midi": "Midi", "longo": "Longo",
+        "flare": "Evasê e linha A", "reta_wide": "Reta e pantalona",
+        "cintura_alta": "Cintura alta", "cintura_media": "Cintura média",
+        "cintura_baixa": "Cintura baixa",
+        // Estética
+        "basico": "Básico", "romantico": "Romântico",
+        "boho_artesanal": "Boho e artesanal", "alfaiataria": "Alfaiataria",
+        "festa_brilho": "Festa e brilho",
+        // Famílias de cor
+        "preto": "Preto", "branco_cru": "Branco e cru", "cinza": "Cinza",
+        "azul": "Azul", "verde": "Verde", "lilas_roxo": "Roxo e lilás",
+        "vermelho_rosa": "Vermelho e rosa",
+        "amarelo_laranja": "Amarelo e laranja",
+        "terrosos": "Tons terrosos", "outras_cores": "Outras cores",
+    ]
+
+    /// O mapa do idioma que está na tela agora.
+    ///
+    /// Cai no inglês para qualquer idioma que ainda não tenha mapa próprio, e
+    /// não no id cru: `blusa_top` na tela é pior que `Tops & T-shirts` na tela.
+    private static var rotulos: [String: String] {
+        GestorDeIdioma.idiomaResolvido == .portugues
+            ? rotulosEmPortugues : rotulosEmIngles
+    }
+
     static func rotuloExibido(_ termo: Termo) -> String {
-        rotulosCorrigidos[termo.id] ?? termo.rotulo
+        rotulos[termo.id] ?? termo.rotulo
     }
 
     /// Rótulo de um id quando a resposta do servidor não traz o `Termo`
     /// completo (por exemplo, `categoria_usada` no cálculo do cluster).
     static func rotuloExibido(id: String, fallback: String? = nil) -> String {
-        rotulosCorrigidos[id] ?? fallback ?? id
+        rotulos[id] ?? fallback ?? id
     }
 
     /// `trico_croche` era uma segunda opção visual para a mesma família que o
@@ -140,16 +194,20 @@ enum Traducao {
     }
 
     static func rotuloDaDimensao(_ dimensao: String) -> String {
-        [
-            "categoria": "Category",
-            "cor": "Color",
-            "estampa": "Pattern",
-            "tecido": "Material",
-            "estetica": "Style",
-            "comprimento": "Length",
-            "silhueta": "Silhouette",
-            "cintura": "Waist",
-        ][dimensao] ?? dimensao.capitalized
+        switch dimensao {
+        case "categoria":    return frase("Category")
+        case "cor":          return frase("Color")
+        case "estampa":      return frase("Pattern")
+        case "tecido":       return frase("Material")
+        case "estetica":     return frase("Style")
+        case "comprimento":  return frase("Length")
+        case "silhueta":     return frase("Silhouette")
+        case "cintura":      return frase("Waist")
+        // Dimensão nova do servidor aparece capitalizada, em qualquer idioma.
+        // É o id cru na tela, e é feio de propósito: fica evidente que falta
+        // rótulo, em vez de a dimensão sumir ou virar outra por engano.
+        default:             return dimensao.capitalized
+        }
     }
 
     /// Nome que a pessoa usou, quando ele é mais claro que o rótulo interno.
@@ -164,7 +222,7 @@ enum Traducao {
             .map(String.init))
         if termo.id == "geometrica" {
             if !palavras.isDisjoint(with: ["bolinha", "bolinhas", "poa"]) {
-                return "Polka dot"
+                return frase("Polka dot")
             }
         }
         return rotuloExibido(termo)

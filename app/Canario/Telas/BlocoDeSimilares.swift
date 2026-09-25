@@ -23,6 +23,7 @@ import UIKit
 /// texto — "3 of 4 · no stripe" —; ícone e tom são reforço. Quem não distingue
 /// cor lê exatamente a mesma coisa.
 struct EtiquetaDeCasamento: View {
+    /// Texto calculado por `Similares.casamento`, já traduzido.
     let texto: String
     let completo: Bool
 
@@ -67,7 +68,7 @@ struct CartaoDeSimilar: View {
                     }
                     LinhaInsumo(texto: Similares.desfecho(peca))
                     if let u = peca.url, let link = URL(string: u) {
-                        Link("View on the brand's website", destination: link)
+                        Link(frase("View on the brand's website"), destination: link)
                             .font(Tokens.Fonte.miudo)
                     }
                 }

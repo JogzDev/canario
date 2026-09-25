@@ -13,6 +13,36 @@ permissions:
   contents: read
 
 jobs:
+  segredos:
+    name: Segredos no historico e na arvore (Gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # O historico inteiro e parte do contrato: um segredo removido do HEAD
+      # continua recuperavel em commits antigos.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Baixar Gitleaks fixado e conferir integridade
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          arquivo="$RUNNER_TEMP/gitleaks.tar.gz"
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location "$url" --output "$arquivo"
+          printf '%s  %s\n' "$GITLEAKS_SHA256" "$arquivo" | sha256sum --check --strict
+          tar --extract --gzip --file "$arquivo" --directory "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" version | grep --fixed-strings "$GITLEAKS_VERSION"
+      - name: Nenhum segredo no historico ou na arvore atual
+        run: |
+          set -euo pipefail
+          scanner="$RUNNER_TEMP/gitleaks"
+          "$scanner" git --redact=100 --no-banner --no-color --timeout=300 \
+            --log-opts="--full-history --all --diff-filter=tuxdb" .
+          "$scanner" dir --redact=100 --no-banner --no-color --timeout=300 .
+
   coletores:
     name: Coletores (Python)
     # Lógica Python não depende de macOS nem de computador pessoal.
@@ -123,6 +153,20 @@ jobs:
         run: "$PY coletor/teste_consolidar_revisao_luna.py"
       - name: Adjudicacao cega do Luna (sem rede)
         run: "$PY coletor/teste_preparar_adjudicacao_luna.py"
+      # A troca de idioma da A53 falha CALADA: uma frase fora do catalogo nao
+      # quebra o build, nao aparece no log e nao derruba teste nenhum -- ela so
+      # chega ao usuario em ingles no meio do portugues. Aconteceu com
+      # "Language" e "Ask me the first time", vistas no simulador em 05/09.
+      # Este portao le o codigo e o catalogo e exige que os dois concordem.
+      - name: Toda frase da interface esta traduzida (A53)
+        run: "$PY ferramentas/extrair_frases.py --conferir"
+      # O portao acima confere que a CHAVE existe e tem pt-BR. Ele nao ve a
+      # frase que a tela monta -- e foi por ai que passaram "2nd restock for
+      # size G in 2 dias", o "above" no meio de uma explicacao em portugues e a
+      # tela de Perguntas inteira em ingles, com o outro portao verde. Este aqui
+      # procura prosa que nao chega a traducao nenhuma.
+      - name: Nenhuma prosa de tela fora da traducao (A53)
+        run: "$PY ferramentas/frases_compostas.py --conferir"
       - name: Modulos compilam
         run: "$PY -m py_compile coletor/*.py"
       # `py_compile` acima confere SINTAXE. Nome usado e nunca definido passa
@@ -131,6 +175,42 @@ jobs:
       # trabalho ja feito.
       - name: Nome usado e nunca definido
         run: "$PY coletor/teste_nomes.py"
+
+  dependencias-swift:
+    name: Dependencias Swift e lockfiles (OSV)
+    # O repositorio privado pessoal nao tem GitHub Code Security habilitado.
+    # O OSV cobre o Package.resolved e os lockfiles npm sem depender desse
+    # produto pago; SARIF fica desligado, mas qualquer vulnerabilidade falha.
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+    # O workflow reutilizável declara estas permissões no job interno. O
+    # chamador precisa concedê-las aqui; sem isso o Actions rejeita a execução
+    # antes de iniciar qualquer job (startup_failure).
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    with:
+      scan-args: |-
+        --recursive
+        ./
+      upload-sarif: false
+      fail-on-vuln: true
+
+  dependencias-deno:
+    name: Edge Functions (Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.7
+      - name: Lockfile reproduzivel, tipos e vulnerabilidades
+        working-directory: supabase/functions
+        run: |
+          deno install --entrypoint analisar-peca/index.ts excluir-conta/index.ts registrar-credencial-apple/index.ts --lock deno.lock --lockfile-only --frozen-lockfile --no-config
+          deno check --lock deno.lock --frozen-lockfile --no-config analisar-peca/index.ts excluir-conta/index.ts registrar-credencial-apple/index.ts
+          deno audit --lock deno.lock --frozen-lockfile
 
   capacidade:
     name: Laboratorio de capacidade (PostgreSQL 17 descartavel)

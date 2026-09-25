@@ -4,12 +4,13 @@ import SwiftUI
 struct CanarioApp: App {
     @StateObject private var conta = GestorDaConta.shared
     @StateObject private var links = CentralDeLinksCompartilhados.shared
+    /// O idioma vive na raiz porque troca a CENA inteira, e não uma tela.
+    /// Ver `Idioma.swift`: mudar `preferencia` reconstrói o bundle das frases
+    /// calculadas e, aqui, troca o `locale` do ambiente — que é o que faz o
+    /// SwiftUI reler o catálogo sem o app fechar.
+    @StateObject private var idioma = GestorDeIdioma.shared
 
     var body: some Scene {
-        // A paleta escura experimental de 19/08 nunca passou por revisão de
-        // design e, no teste em aparelho, fez o mesmo build parecer outro app.
-        // A 1.1 preserva a aparência clara aprovada em todos os iPhones. Quando
-        // houver telas escuras desenhadas e validadas, este bloqueio sai daqui.
         WindowGroup {
             Group {
                 if ProcessInfo.processInfo.arguments.contains("-CanarioAmostraDeIcones") {
@@ -30,6 +31,14 @@ struct CanarioApp: App {
             }
             .environmentObject(conta)
             .environmentObject(links)
+            .environmentObject(idioma)
+            // Trocar `\.locale` invalida toda a subárvore que o lê, e todo
+            // `Text(LocalizedStringKey)` lê. É por isso que NÃO há um `.id()`
+            // aqui forçando a cena a renascer: `.id()` funcionaria, e de
+            // quebra fecharia os Ajustes no instante em que a pessoa toca em
+            // "Português" -- porque o estado da apresentação modal mora na
+            // `Raiz`, dentro do que o `.id()` destruiria.
+            .environment(\.locale, idioma.locale)
             .onOpenURL {
                 conta.receberLink($0)
                 links.receber($0)
@@ -47,9 +56,22 @@ struct Raiz: View {
     typealias Aba = AbaDoApp
     @EnvironmentObject private var links: CentralDeLinksCompartilhados
 
+    /// A `Raiz` PRECISA observar o idioma, e o motivo não é óbvio.
+    ///
+    /// Trocar `\.locale` no ambiente invalida quem LÊ o ambiente, e todo
+    /// `Text(LocalizedStringKey)` lê — por isso o conteúdo das telas troca
+    /// sozinho. O rótulo de uma aba não é isso: `Aba.armario.titulo` é uma
+    /// `String` já calculada por `frase(_:)` quando o `body` rodou, e o `body`
+    /// da `Raiz` não roda de novo só porque um valor de ambiente mudou lá em
+    /// cima. `Raiz()` também não tem propriedade nenhuma para o SwiftUI
+    /// comparar, então ele conclui que a view é a mesma e pula o `body`.
+    ///
+    /// Observar o gestor amarra o `body` da raiz à troca e atualiza a barra.
+    @ObservedObject private var idioma = GestorDeIdioma.shared
+
     struct ItemDoMenu: Identifiable {
-        let nome: String
-        var id: String { nome }
+        let entrada: EntradaDoMenu
+        var id: String { entrada.rawValue }
     }
 
     /// Argumento de inspeção visual: permite abrir o Closet no simulador sem
@@ -61,21 +83,33 @@ struct Raiz: View {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirTrends") {
             return .dados
         }
-        return .adicionar
+        let argumentos = ProcessInfo.processInfo.arguments
+        if argumentos.contains("-CanarioLeituraPedida") {
+            return .buscar
+        }
+        if argumentos.contains("-CanarioUITestLeituraBusca") {
+            return .buscar
+        }
+        if argumentos.contains("-CanarioAbrirEstudio")
+            || argumentos.contains("-CanarioUITestImportacao")
+            || argumentos.contains("-CanarioUITestDetalhes")
+            || LeituraDaPeca.testeDeInterfaceAtivo {
+            return .adicionar
+        }
+        return .dados
     }()
     /// A busca abre direto em teste de interface. Ela é `fullScreenCover` da
     /// raiz e depende de um toque na barra; sem este atalho, um teste do
     /// bloco editorial gastaria metade do tempo chegando até a tela.
     @State private var buscaAberta = ProcessInfo.processInfo.arguments.contains(
         "-CanarioAbrirBusca")
-    @State private var menuAberto = ProcessInfo.processInfo.arguments.contains(
-        "-CanarioMenuAberto")
+    @State private var contaAberta = false
     @State private var itemDoMenu: ItemDoMenu? = {
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirPrivacy") {
-            return ItemDoMenu(nome: "Privacy")
+            return ItemDoMenu(entrada: .privacidade)
         }
         if ProcessInfo.processInfo.arguments.contains("-CanarioAbrirAccount") {
-            return ItemDoMenu(nome: "Account")
+            return ItemDoMenu(entrada: .conta)
         }
         return nil
     }()
@@ -88,29 +122,27 @@ struct Raiz: View {
                 navegacaoCompativel
             }
         }
-        .overlay { sobreposicoes }
-        // O esquema do sistema acompanha o território da aba visível.
-        //
-        // Ele mora AQUI, e não no modificador `.territorio`, porque
-        // `preferredColorScheme` se propaga até a cena: o da raiz ganha do de
-        // dentro, e um `.dark` aplicado lá embaixo não conseguia clarear a
-        // hora no topo sobre o fundo #0A0B1A.
-        //
-        // É isto que veste o que token nenhum alcança -- barra de status,
-        // indicador de rolagem, `Picker` segmentado -- e é o que faz o app
-        // continuar claro no resto, que é a decisão de produto de sempre.
-        .preferredColorScheme(aba == .dados ? .dark : .light)
-        // O menu não pode ultrapassar a borda e voltar. `.snappy` tem mola:
-        // na gravação a 60 fps, a aresta chegou a 849 px e recuou para 845 px,
-        // revelando por alguns quadros uma faixa do céu atrás do painel. O
-        // `easeOut` preserva o deslizamento e termina exatamente em zero.
-        .animation(.easeOut(duration: 0.24), value: menuAberto)
         .fullScreenCover(isPresented: $buscaAberta) {
             Analisar(aoFechar: { buscaAberta = false })
         }
-        .fullScreenCover(item: $itemDoMenu) { item in
-            TelaDoMenu(nome: item.nome)
+        .sheet(isPresented: $contaAberta) {
+            ContaDaEdicao { entrada in
+                contaAberta = false
+                itemDoMenu = ItemDoMenu(entrada: entrada)
+            }
+            .presentationDetents([.height(430)])
+            .presentationDragIndicator(.visible)
         }
+        .fullScreenCover(item: $itemDoMenu) { item in
+            TelaDoMenu(entrada: item.entrada)
+        }
+        #if DEBUG
+        .task {
+            if await AcervoDeDemonstracao.semearSePedido() {
+                NotificationCenter.default.post(name: .closetFoiSincronizado, object: nil)
+            }
+        }
+        #endif
         .sheet(item: $links.recebida) { peca in
             ReceberPecaCompartilhada(peca: peca)
                 .presentationDetents([.medium])
@@ -123,20 +155,17 @@ struct Raiz: View {
     @available(iOS 26.0, *)
     private var navegacaoNativa: some View {
         TabView(selection: $aba) {
-            Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
-                value: .adicionar) {
-                TelaInicialAdicionar(menuAberto: menuAberto,
-                                     alternarMenu: { menuAberto.toggle() })
+            Tab(Aba.dados.titulo, systemImage: Aba.dados.simbolo,
+                value: .dados) {
+                EstaSemana(abrirConta: { contaAberta = true })
             }
             Tab(Aba.armario.titulo, systemImage: Aba.armario.simbolo,
                 value: .armario) {
-                MinhasPecas(menuAberto: menuAberto,
-                            alternarMenu: { menuAberto.toggle() })
+                MinhasPecas(abrirConta: { contaAberta = true })
             }
-            Tab(Aba.dados.titulo, systemImage: Aba.dados.simbolo,
-                value: .dados) {
-                Explorar(menuAberto: menuAberto,
-                         alternarMenu: { menuAberto.toggle() })
+            Tab(Aba.adicionar.titulo, systemImage: Aba.adicionar.simbolo,
+                value: .adicionar) {
+                Estudio(abrirConta: { contaAberta = true })
             }
             Tab(Aba.buscar.titulo, systemImage: Aba.buscar.simbolo,
                 value: .buscar, role: .search) {
@@ -144,7 +173,7 @@ struct Raiz: View {
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tint(Tokens.Cor.acao)
+        .tint(Edicao.bordo)
     }
 
     /// iOS 17–25 preserva a navegação compatível. O espaço inferior pertence
@@ -167,37 +196,14 @@ struct Raiz: View {
     @ViewBuilder
     private var conteudoDaAba: some View {
         switch aba {
-        case .adicionar:
-            TelaInicialAdicionar(menuAberto: menuAberto,
-                                 alternarMenu: { menuAberto.toggle() })
-        case .armario:
-            MinhasPecas(menuAberto: menuAberto,
-                        alternarMenu: { menuAberto.toggle() })
         case .dados:
-            Explorar(menuAberto: menuAberto,
-                     alternarMenu: { menuAberto.toggle() })
+            EstaSemana(abrirConta: { contaAberta = true })
+        case .armario:
+            MinhasPecas(abrirConta: { contaAberta = true })
+        case .adicionar:
+            Estudio(abrirConta: { contaAberta = true })
         case .buscar: Analisar()
         }
     }
 
-    @ViewBuilder
-    private var sobreposicoes: some View {
-        ZStack {
-            if menuAberto {
-                MenuLateral(
-                    fechar: { menuAberto = false },
-                    escolher: { item in
-                        menuAberto = false
-                        itemDoMenu = ItemDoMenu(nome: item)
-                    })
-                // Só o VALOR do ambiente, não o modificador `.territorio`:
-                // ele também pinta um fundo de tela cheia, e aqui isso
-                // cobriria a aba que o menu deixa à mostra de propósito.
-                .environment(\.territorio, aba == .dados ? .mercado : .armario)
-                .transition(.move(edge: .leading))
-                .zIndex(10)
-            }
-
-        }
-    }
 }

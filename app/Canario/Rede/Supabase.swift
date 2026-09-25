@@ -101,13 +101,13 @@ actor Supabase {
         var errorDescription: String? {
             switch self {
             case .semConfiguracao:
-                return "Config.xcconfig is missing or incomplete. Copy Config.xcconfig.example."
+                return frase("Config.xcconfig is missing or incomplete. Copy Config.xcconfig.example.")
             case .rede:
-                return "The server could not be reached."
+                return frase("The server could not be reached.")
             case .resposta(let codigo, let corpo):
                 return Falha.mensagem(codigo: codigo, corpo: corpo)
             case .urlInvalida(let caminho, _):
-                return "Malformed request for \(caminho)."
+                return frase("Malformed request for \(caminho).")
             }
         }
 
@@ -127,36 +127,40 @@ actor Supabase {
         /// Toda mensagem de recusa termina lembrando que o caminho manual
         /// continua aberto. Nenhuma dessas falhas impede adicionar a peça.
         static func mensagem(codigo: Int, corpo: String) -> String {
-            let reset = "It resets at midnight, São Paulo time."
-            let manual = "You can still add the item and choose its attributes yourself."
+            let reset = frase("It resets at midnight, São Paulo time.")
+            let manual = frase("You can still add the item and choose its attributes yourself.")
             switch Falha.codigoDoCorpo(corpo) {
             case "daily_origin_limit":
-                return "This network reached today's limit of 12 visual analyses. "
-                     + "\(reset) \(manual)"
+                return frase("This network reached today's limit of 12 visual analyses. \(reset) \(manual)")
             case "daily_project_limit":
-                return "DataDrobe reached its overall daily limit for visual "
-                     + "analysis. \(reset) \(manual)"
+                return frase("Seam reached its overall daily limit for visual analysis. \(reset) \(manual)")
             case "rate_limited":
-                return "The visual analysis was refused for exceeding a daily "
-                     + "limit. \(reset) \(manual)"
+                return frase("The visual analysis was refused for exceeding a daily limit. \(reset) \(manual)")
             case "rate_limit_unavailable":
-                return "The usage check is unavailable, so nothing was sent for "
-                     + "analysis. Try again in a few minutes. \(manual)"
+                return frase("The usage check is unavailable, so nothing was sent for analysis. Try again in a few minutes. \(manual)")
             case "analysis_not_configured":
-                return "Cloud visual analysis is off in this build. \(manual)"
+                return frase("Cloud visual analysis is off in this build. \(manual)")
             case "invalid_image":
-                return "I could not read this image. Try another photo or file."
+                return frase("I could not read this image. Try another photo or file.")
             case "invalid_target_hint":
-                return "The target hint is too long. Keep it under 160 characters."
+                return frase("The target hint is too long. Keep it under 160 characters.")
             case "analysis_contract_failed":
-                return "The analysis came back in a shape I do not accept, so I "
-                     + "discarded it rather than guess. \(manual)"
+                return frase("The analysis came back in a shape I do not accept, so I discarded it rather than guess. \(manual)")
             case "BOOT_ERROR":
-                return "The visual analysis service is not responding. \(manual)"
+                return frase("The visual analysis service is not responding. \(manual)")
+            // Leitura específica (2.0): nada a ver com adicionar peça.
+            case "reading_provider_error", "reading_contract_failed":
+                return frase("The reading service did not answer this time. Try again in a moment.")
+            case "reading_without_signals":
+                return frase("I couldn't tell which garment you meant. Try describing it with its cut or detail.")
+            case "panel_unavailable":
+                return frase("The panel is unavailable right now. Try again in a few minutes.")
+            case "reading_not_configured":
+                return frase("The reading is off in this build.")
             default:
                 // Codigo desconhecido continua aparecendo -- some-lo esconderia
                 // um caso novo de quem pode consertar.
-                return "The analysis could not be completed (HTTP \(codigo)). \(manual)"
+                return frase("The analysis could not be completed (HTTP \(String(codigo))). \(manual)")
             }
         }
 
@@ -417,6 +421,56 @@ actor Supabase {
             return try JSONDecoder().decode(AnaliseVisualRemota.self, from: resposta)
         } catch {
             throw Falha.resposta(502, "analysis_contract_failed")
+        }
+    }
+}
+
+extension Supabase {
+    /// A leitura específica (Edge Function `ler-peca`).
+    ///
+    /// Uma chamada só, sem segunda chance: cada leitura custa três chamadas da
+    /// Luna e conta no limite diário de análise. O servidor leva de 15 a 40 s
+    /// (interpretar, buscar, verificar, calcular, escrever), por isso o prazo
+    /// é bem maior que o das outras chamadas.
+    func lerPeca(texto: String?, refinamento: String? = nil,
+                 descricao: DescricaoDaPeca? = nil, preco: Double? = nil) async throws -> LeituraEspecifica {
+        guard configurado, Self.analiseRemotaHabilitada else { throw Falha.semConfiguracao }
+        var corpo: [String: Any] = [:]
+        if let texto, !texto.isEmpty { corpo["texto"] = String(texto.prefix(200)) }
+        if let refinamento, !refinamento.isEmpty { corpo["refinamento"] = String(refinamento.prefix(200)) }
+        if let descricao, !descricao.vazia { corpo["analise"] = descricao.comoAnalise }
+        if let preco, preco > 0 { corpo["preco_da_pessoa"] = preco }
+
+        var req = URLRequest(url: url.appendingPathComponent("functions/v1/ler-peca"),
+                             cachePolicy: .reloadIgnoringLocalCacheData,
+                             timeoutInterval: 90)
+        req.httpMethod = "POST"
+        req.setValue(chave, forHTTPHeaderField: "apikey")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.httpBody = try JSONSerialization.data(withJSONObject: corpo)
+
+        let dados: Data
+        do {
+            let (recebidos, resposta) = try await sessao.data(for: req)
+            let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
+            guard (200..<300).contains(codigo) else {
+                throw Falha.resposta(codigo, String(data: recebidos, encoding: .utf8) ?? "")
+            }
+            dados = recebidos
+        } catch let erro as URLError where erro.code == .cancelled {
+            throw CancellationError()
+        } catch let falha as Falha {
+            throw falha
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            throw Falha.rede(error)
+        }
+        do {
+            return try LeituraEspecifica.decodificar(dados)
+        } catch {
+            throw Falha.resposta(502, "reading_contract_failed")
         }
     }
 }

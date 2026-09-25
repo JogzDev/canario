@@ -79,16 +79,16 @@ enum Cluster {
     /// A frase principal. Só afirma direção quando o dado sustenta.
     static func manchete(_ r: Resposta) -> String {
         guard let indice = r.indice, r.nAtributos > 0 else {
-            return "There is no combined reading for this item yet."
+            return frase("There is no combined reading for this item yet.")
         }
         if r.nAtributos == 1 {
-            return "With one attribute, the combined reading is that attribute's own reading: "
+            return frase("With one attribute, the combined reading is that attribute's own reading: ")
                  + Leitura.emPalavras(indice) + "."
         }
         if !r.haDirecao {
-            return "This item's attributes do not point in the same direction."
+            return frase("This item's attributes do not point in the same direction.")
         }
-        return "Together, these attributes are \(Leitura.emPalavras(indice))."
+        return frase("Together, these attributes are \(Leitura.emPalavras(indice)).")
     }
 
     /// A explicação de baixo da manchete: o número, a unidade e a base.
@@ -102,12 +102,13 @@ enum Cluster {
         // para zero saía como "-0.00 standard deviations" -- um menos na frente
         // de zero, anunciando uma direção que a própria frase abaixo diz não
         // existir. Zero não tem lado.
-        var partes = ["\(Leitura.numero(indice, casas: 2, sinal: abs(indice) >= 0.005)) standard deviations, "
-                    + "an average of \(r.nAtributos) attribute\(r.nAtributos == 1 ? "" : "s") "
-                    + "weighted by how uncommon each one is in the panel"]
+        let desvios = Leitura.numero(indice, casas: 2, sinal: abs(indice) >= 0.005)
+        let quantos = String(r.nAtributos)
+        var partes = [r.nAtributos == 1
+            ? frase("\(desvios) standard deviations, an average of 1 attribute weighted by how uncommon it is in the panel")
+            : frase("\(desvios) standard deviations, an average of \(quantos) attributes weighted by how uncommon each one is in the panel")]
         if !r.haDirecao, let d = r.dispersao {
-            partes.append("They spread \(Leitura.numero(d, casas: 2)) deviations around that average — "
-                        + "more than the average moves away from zero. That is why no direction is stated")
+            partes.append(frase("They spread \(Leitura.numero(d, casas: 2)) deviations around that average — more than the average moves away from zero. That is why no direction is stated"))
         }
         return partes.joined(separator: ". ") + "."
     }
@@ -121,35 +122,34 @@ enum Cluster {
     static func concentracao(_ r: Resposta) -> String? {
         guard let efetivos = r.atributosEfetivos, r.nAtributos > 1,
               efetivos < Double(r.nAtributos) * 0.7 else { return nil }
-        return "In practice, the number rests on \(Leitura.numero(efetivos, casas: 1)) "
-             + "of the \(r.nAtributos) attributes because their weights are uneven."
+        return frase("In practice, the number rests on \(Leitura.numero(efetivos, casas: 1)) of the \(String(r.nAtributos)) attributes because their weights are uneven.")
     }
 
     /// Como a raridade foi calculada, em uma frase que o comprador entende.
     static func criterioDaRaridade(_ r: Resposta) -> String {
         let base: String
         if let c = r.categoriaUsada, c != "(todas)" {
-            base = "among the panel's \(Traducao.rotuloExibido(id: c).lowercased()) items"
+            base = frase("among the panel's \(Traducao.rotuloExibido(id: c).lowercased()) items")
         } else {
-            base = "across the whole panel because no single category was selected"
+            base = frase("across the whole panel because no single category was selected")
         }
-        return "An uncommon attribute weighs more than a common one. Rarity is measured \(base), "
-             + "within its own dimension — midi is compared with other lengths, not with colors."
+        return frase("An uncommon attribute weighs more than a common one. Rarity is measured \(base), within its own dimension — midi is compared with other lengths, not with colors.")
     }
 
     /// A linha de auditoria de um atributo: peso, e de onde o peso saiu.
     static func porQuePesa(_ a: Atributo) -> String? {
         guard let rel = a.pesoRelativo else { return nil }
-        var frase = "\(Leitura.numero(rel * 100, casas: 0))% of the weight"
+        // Chamava-se `frase`, e o nome passou a colidir com a função global
+        // que resolve texto no idioma escolhido. Aqui o compilador reclamaria;
+        // o risco de verdade é o caso em que ele não reclama.
+        var linha = frase("\(Leitura.numero(rel * 100, casas: 0))% of the weight")
         if a.papel == "denominador" {
-            return frase + " · it has no rarity of its own: it is a taxonomy baseline, "
-                 + "so it receives the dimension's average weight"
+            return linha + " · " + frase("it has no rarity of its own: it is a taxonomy baseline, so it receives the dimension's average weight")
         }
         if let pct = a.pctNaDimensao, let n = a.pecasNoPainel {
-            frase += " · \(Leitura.numero(pct, casas: 0))% of items with this dimension "
-                   + "(\(Formato.contagem(n)) in the panel)"
+            linha += " · " + frase("\(Leitura.numero(pct, casas: 0))% of items with this dimension (\(Formato.contagem(n)) in the panel)")
         }
-        return frase
+        return linha
     }
 
     /// Regra 6: o que ficou de fora aparece, com o motivo, no lugar onde a
@@ -169,8 +169,6 @@ enum Cluster {
         guard semanas.count > 1 else { return nil }
         let ordenadas = semanas.sorted()
         guard let mais = ordenadas.last, let menos = ordenadas.first else { return nil }
-        return "The attributes are not all from the same week: they range from \(Formato.data(menos)) "
-             + "to \(Formato.data(mais)). Each source has its own cadence, so the latest reading "
-             + "for each attribute is used."
+        return frase("The attributes are not all from the same week: they range from \(Formato.data(menos)) to \(Formato.data(mais)). Each source has its own cadence, so the latest reading for each attribute is used.")
     }
 }

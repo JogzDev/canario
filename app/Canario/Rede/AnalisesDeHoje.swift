@@ -77,10 +77,13 @@ public enum ContadorDeAnalises {
                              agora: Date = Date()) -> String? {
         guard let atual, atual.dia == dia(agora),
               atual.quantidade >= avisarAPartirDe else { return nil }
-        let plural = atual.quantidade == 1 ? "" : "s"
-        return "\(atual.quantidade) analysis\(plural.isEmpty ? "" : "es") "
-             + "from this iPhone today. The daily cap is \(tetoPorRede), "
-             + "shared by everyone on the same network."
+        // Duas frases inteiras em vez de um sufixo montado por ternário: em
+        // português muda o verbo, e nenhuma tradução reordena isso a partir de
+        // um "es" solto no meio da chave.
+        let teto = String(tetoPorRede)
+        return atual.quantidade == 1
+            ? frase("1 analysis from this iPhone today. The daily cap is \(teto), shared by everyone on the same network.")
+            : frase("\(String(atual.quantidade)) analyses from this iPhone today. The daily cap is \(teto), shared by everyone on the same network.")
     }
 }
 

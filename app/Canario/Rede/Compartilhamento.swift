@@ -39,7 +39,7 @@ enum ExportadorDoCloset {
                 let leituras = peca.termoIds.compactMap { id -> String? in
                     guard let termo = porId[id], let leitura = indices[id] else { return nil }
                     let valor = leitura.indice.map { Leitura.numero($0, casas: 2, sinal: true) } ?? "unavailable"
-                    return "\(Traducao.rotuloExibido(termo)): \(valor)"
+                    return frase("\(Traducao.rotuloExibido(termo)): \(valor)")
                 }
                 let semanas = Set(peca.termoIds.compactMap { indices[$0]?.semana }).sorted()
                 linha.append(leituras.joined(separator: "; "))
@@ -49,7 +49,7 @@ enum ExportadorDoCloset {
         }
         let texto = linhas.map { $0.map(escapar).joined(separator: ",") }.joined(separator: "\r\n")
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("DataDrobe-Closet-\(UUID().uuidString.prefix(8)).csv")
+            .appendingPathComponent("Seam-Closet-\(UUID().uuidString.prefix(8)).csv")
         do {
             // BOM faz Excel reconhecer UTF-8 sem destruir nomes acentuados.
             try (Data([0xEF, 0xBB, 0xBF]) + Data(texto.utf8)).write(to: url, options: .atomic)
@@ -76,7 +76,7 @@ enum CartaoCompartilhavel {
                     dentroDe: CGRect(x: 90, y: 80, width: 900, height: 650))
                 miniatura.draw(in: destino)
             }
-            let titulo = NSAttributedString(string: nome.isEmpty ? "A piece from my Closet" : nome,
+            let titulo = NSAttributedString(string: nome.isEmpty ? frase("A piece from my Closet") : nome,
                 attributes: [.font: UIFont.systemFont(ofSize: 72, weight: .bold),
                              .foregroundColor: UIColor.black])
             titulo.draw(in: CGRect(x: 90, y: temFoto ? 760 : 210, width: 900, height: 190))
@@ -153,7 +153,7 @@ struct ReceberPecaCompartilhada: View {
         }
         .task {
             do { termos = try await CatalogoDeTermos.shared.carregar() }
-            catch { erro = "The taxonomy is unavailable right now. Try again when you are online." }
+            catch { erro = frase("The taxonomy is unavailable right now. Try again when you are online.") }
             carregando = false
         }
     }
@@ -164,7 +164,7 @@ struct ReceberPecaCompartilhada: View {
                 apelido: nome.trimmingCharacters(in: .whitespacesAndNewlines),
                 termoIds: reconhecidos.map(\.id))
             if await PecasSalvas.shared.salvar(nova) { dismiss() }
-            else { erro = "Your Closet is full (\(PecasSalvas.teto))." }
+            else { erro = frase("Your Closet is full (\(String(PecasSalvas.teto))).") }
         }
     }
 }

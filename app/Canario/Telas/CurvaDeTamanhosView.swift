@@ -99,12 +99,17 @@ struct CurvaDeTamanhosView: View {
         let menores = porFaixa.first { $0.faixa == "menores" }
         let maiores = porFaixa.first { $0.faixa == "maiores" }
         return Group {
-            if let frase = CurvaDeTamanhos.formato(menores: menores, maiores: maiores) {
+            // A variável se chamava `frase` e sombreava a função global de
+            // tradução dentro deste bloco inteiro. É a quarta vez que este nome
+            // colide no projeto (Perna, Cluster, RelatorioDoTermo e aqui), e as
+            // quatro só apareceram porque o compilador reclamou -- nenhuma
+            // seria vista lendo o código.
+            if let formatoDaQuebra = CurvaDeTamanhos.formato(menores: menores, maiores: maiores) {
                 Cartao {
                     Text("Shape of the break").font(Tokens.Fonte.secao)
-                    Text(frase).font(Tokens.Fonte.corpo)
+                    Text(formatoDaQuebra).font(Tokens.Fonte.corpo)
                     if let m = menores, let g = maiores {
-                        LinhaInsumo(texto: "Smaller sizes: \(m.nQuebrou) of \(m.nEmRisco). Larger sizes: \(g.nQuebrou) of \(g.nEmRisco).")
+                        LinhaInsumo(texto: frase("Smaller sizes: \(String(m.nQuebrou)) of \(String(m.nEmRisco)). Larger sizes: \(String(g.nQuebrou)) of \(String(g.nEmRisco))."))
                     }
                 }
             }
@@ -179,7 +184,7 @@ struct BarraDeTamanho: View {
                     .font(Tokens.Fonte.numero)
                     .frame(width: 58, alignment: .trailing)
             }
-            LinhaInsumo(texto: "\(linha.nQuebrou) of \(linha.nEmRisco) became unavailable")
+            LinhaInsumo(texto: frase("\(String(linha.nQuebrou)) of \(String(linha.nEmRisco)) became unavailable"))
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Size \(linha.rotulo ?? ""), \(Leitura.numero(linha.taxaQuebra ?? 0, casas: 1)) percent, \(linha.nQuebrou) of \(linha.nEmRisco)")

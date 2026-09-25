@@ -2,6 +2,7 @@
 """Portoes locais para invariantes de seguranca que podem regredir em texto."""
 
 import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Optional
@@ -131,6 +132,55 @@ def main() -> None:
     assert not re.search(r"supabase-js@2(?:[\"'/]|$)", imports), (
         "dependencia Deno voltou a flutuar no major")
 
+    # Import fixo sem lock ainda pode mudar se o servidor remoto for
+    # comprometido. O Deno confere integridade de toda a arvore e o CI audita
+    # as versoes resolvidas, sem tratar falha de registro como resultado verde.
+    lock = json.loads(ler("supabase/functions/deno.lock"))
+    assert lock.get("version") == "5", "deno.lock ausente ou em formato inesperado"
+    specifiers = lock.get("specifiers", {})
+    assert "npm:@supabase/server@1.7.0" in specifiers, (
+        "dependencia direta da Luna ficou fora do lock Deno")
+    assert "@supabase/supabase-js@2.116.0" in lock.get("npm", {}), (
+        "cliente Supabase ficou fora do lock Deno")
+    assert "https://deno.land/x/jose@v5.9.6/index.ts" in lock.get("remote", {}), (
+        "biblioteca Apple remota ficou fora do lock Deno")
+    assert "https://esm.sh/@supabase/supabase-js@2.116.0" in lock.get(
+        "remote", {}), "cliente remoto Supabase ficou fora do lock Deno"
+
+    workflow_testes = ler(".github/workflows/testes.yml")
+    assert "Segredos no historico e na arvore (Gitleaks)" in workflow_testes
+    assert "GITLEAKS_VERSION: 8.30.1" in workflow_testes
+    assert "GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" in workflow_testes
+    assert "fetch-depth: 0" in workflow_testes, (
+        "scanner de segredos deixou de receber o historico Git completo")
+    assert '--redact=100' in workflow_testes, (
+        "scanner pode voltar a imprimir o proprio segredo no log")
+    assert '--log-opts="--full-history --all --diff-filter=tuxdb"' in workflow_testes
+    assert '"$scanner" dir' in workflow_testes, (
+        "scanner deixou de conferir a arvore atual")
+
+    gitleaks = ler(".gitleaks.toml")
+    assert "useDefault = true" in gitleaks, (
+        "configuracao local substituiu as regras oficiais em vez de estende-las")
+    assert 'id = "generic-api-key"' in gitleaks
+    assert 'condition = "AND"' in gitleaks, (
+        "excecao de checksum precisa casar valor e caminho simultaneamente")
+    assert "b38bb00b8c8702a568270aab85995c550f7f93d1503b818efdc5ff9a519b7168" in gitleaks
+    assert "ferramentas/backup/README\\.md" in gitleaks
+
+    assert "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc" in workflow_testes, (
+        "Package.resolved deixou de passar pelo OSV-Scanner fixado")
+    assert "upload-sarif: false" in workflow_testes, (
+        "repositorio sem Code Security voltou a tentar publicar SARIF")
+    assert "fail-on-vuln: true" in workflow_testes, (
+        "OSV deixou de bloquear dependencia vulneravel")
+    assert "denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed" in workflow_testes
+    assert "deno-version: v2.9.7" in workflow_testes
+    assert "deno audit --lock deno.lock --frozen-lockfile" in workflow_testes, (
+        "lock Deno deixou de ser auditado no CI")
+    assert "deno check --lock deno.lock --frozen-lockfile" in workflow_testes, (
+        "Edge Functions deixaram de ser verificadas contra o lock")
+
     for workflow in (RAIZ / ".github/workflows").glob("*.yml"):
         for numero, linha in enumerate(
                 workflow.read_text(encoding="utf-8").splitlines(), 1):
@@ -151,7 +201,7 @@ def main() -> None:
     assert "SUPABASE_SERVICE_ROLE_KEY" not in app
     assert "OPENAI_API_KEY" not in app
     conferir_inventario_de_acesso()
-    print("Seguranca: HTTPS, headers, imports fixos, Actions, segredos e grants protegidos")
+    print("Seguranca: HTTPS, headers, locks, scans, Actions, segredos e grants protegidos")
 
 
 if __name__ == "__main__":

@@ -31,12 +31,29 @@ public enum AbaDoApp: String, CaseIterable, Sendable {
 
     /// O texto que a pessoa lê. É este o valor que divergiu entre as duas
     /// navegações, e é por isso que ele agora tem um dono só.
+    ///
+    /// **`adicionar` deixou de se chamar "Add" em 05/09.** A revisão com a
+    /// diretoria foi específica: barra de navegação não carrega verbo. Uma aba
+    /// nomeia um LUGAR do app, e o rótulo tem de responder "onde estou", não
+    /// "o que faço" — as outras três já respondiam (Closet, Trends, Search) e
+    /// só esta pedia uma ação. O efeito colateral era de hierarquia: "Add" ao
+    /// lado de "Closet" faz a aba parecer um botão que caiu na barra.
+    ///
+    /// "Studio" é o lugar onde a peça é fotografada, recortada e descrita
+    /// antes de virar item do Closet — e é substantivo em português também
+    /// ("Estúdio"), o que importa desde que a interface passou a ter idioma.
+    /// **Isto é texto de TELA, e nunca identidade.** A identidade da aba é o
+    /// `case` do enum, que não traduz. Antes de 05/09 a diferença não existia
+    /// porque só havia um idioma, e o rótulo servia calado como chave em mais
+    /// de um lugar — ver `EntradaDoMenu`, onde isso chegou a ser navegação.
     public var titulo: String {
         switch self {
-        case .adicionar: return "Add"
-        case .armario: return "Closet"
-        case .dados: return "Trends"
-        case .buscar: return "Search"
+        // 2.0 (Seam): Esta semana · Acervo · Estúdio + Busca. Os casos mantêm o
+        // nome antigo porque viram argumento de teste e estado salvo.
+        case .adicionar: return frase("Studio")
+        case .armario: return frase("Archive")
+        case .dados: return frase("This week")
+        case .buscar: return frase("Search")
         }
     }
 
@@ -44,9 +61,9 @@ public enum AbaDoApp: String, CaseIterable, Sendable {
     /// identificam a mesma aba e separá-los recria o problema pela metade.
     public var simbolo: String {
         switch self {
-        case .adicionar: return "hanger"
-        case .armario: return "tshirt.fill"
-        case .dados: return "chart.line.uptrend.xyaxis"
+        case .adicionar: return "camera.aperture"
+        case .armario: return "hanger"
+        case .dados: return "newspaper"
         case .buscar: return "magnifyingglass"
         }
     }
@@ -59,7 +76,8 @@ public enum AbaDoApp: String, CaseIterable, Sendable {
     public var ehBusca: Bool { self == .buscar }
 
     /// As abas que aparecem lado a lado nas duas navegações, na mesma ordem.
+    /// A ordem da barra na 2.0; a do `allCases` é a da declaração.
     public static var principais: [AbaDoApp] {
-        allCases.filter { !$0.ehBusca }
+        [.dados, .armario, .adicionar]
     }
 }

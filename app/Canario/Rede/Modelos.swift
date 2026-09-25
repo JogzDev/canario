@@ -122,10 +122,12 @@ enum Estado: String {
 
     var rotulo: String {
         switch self {
-        case .emAlta: return "Trending up"
-        case .emQueda: return "Trending down"
-        case .pico: return "Spike"
-        case .estavel: return "Within the usual range"
+        case .emAlta: return frase("Trending up")
+        case .emQueda: return frase("Trending down")
+        // Ficou de fora do primeiro passe de tradução e ninguém acusou: o
+        // portão confere as chaves que EXISTEM, não as que faltaram nascer.
+        case .pico: return frase("Spike")
+        case .estavel: return frase("Within the usual range")
         }
     }
 
@@ -202,20 +204,29 @@ struct PontoSerie: Codable, Identifiable, Hashable {
 enum Perna {
     static func rotulo(_ fonte: String) -> String {
         switch fonte {
-        case "busca": return "search"
-        case "editorial_br": return "Brazilian editorial"
-        case "editorial_intl": return "international editorial"
-        case "varejo": return "retail"
+        case "busca": return frase("search")
+        case "editorial_br": return frase("Brazilian editorial")
+        case "editorial_intl": return frase("international editorial")
+        case "varejo": return frase("retail")
+        // Nome próprio de serviço: não traduz, como Seam ou Google.
         case "lyst": return "Lyst"
         default: return fonte
         }
     }
 
-    static func frase(_ pernas: [String]?) -> String {
+    /// Renomeado de `frase(_:)` em 05/09.
+    ///
+    /// O nome colidia com a função global `frase(_:)` que resolve texto no
+    /// idioma escolhido: dentro deste enum, `frase("...")` passava a chamar
+    /// este membro e a tentar converter uma `String` em `[String]?`. O
+    /// compilador pegou, mas o defeito interessante é o outro — se as
+    /// assinaturas fossem compatíveis, ele teria compilado e chamado a função
+    /// errada em silêncio.
+    static func baseadoEm(_ pernas: [String]?) -> String {
         guard let pernas, !pernas.isEmpty else {
-            return "no qualified combined external reading for this week"
+            return frase("no qualified combined external reading for this week")
         }
-        return "based on: " + pernas.map(rotulo).joined(separator: " + ")
+        return frase("based on: ") + pernas.map(rotulo).joined(separator: " + ")
     }
 }
 
@@ -256,21 +267,22 @@ struct Cobertura: Decodable, Hashable {
     var oQueFalta: String {
         var partes: [String] = []
         if let p = pecasNaCelula, p < minimoPecas {
-            partes.append("\(p) panel items this week, minimum \(minimoPecas)")
+            partes.append(frase("\(String(p)) panel items this week, minimum \(String(minimoPecas))"))
         }
         if let m = marcasExternas, m < minimoMarcas {
-            partes.append("\(m) external brands reporting, minimum \(minimoMarcas)")
+            partes.append(frase("\(String(m)) external brands reporting, minimum \(String(minimoMarcas))"))
         }
         if let pct = coberturaDimensaoPct,
            let minimo = minimoCoberturaDimensaoPct,
            pct < minimo {
             partes.append(
-                String(format: "this dimension labels %.1f%% of current offers, minimum %.0f%%",
-                       pct, minimo))
+                String(format: frase("this dimension labels %.1f%% of current offers, minimum %.0f%%"),
+                       locale: GestorDeIdioma.idiomaResolvido.locale,
+                       arguments: [pct, minimo]))
         } else if coberturaDimensaoPct == nil {
-            partes.append("dimension-level coverage has not been measured")
+            partes.append(frase("dimension-level coverage has not been measured"))
         }
-        return partes.isEmpty ? "coverage below the minimum" : partes.joined(separator: "; ")
+        return partes.isEmpty ? frase("coverage below the minimum") : partes.joined(separator: "; ")
     }
 }
 
@@ -442,7 +454,7 @@ enum LeituraDoEvento {
         switch tipo {
         case "reposicao":
             let t = detalhe?.tamanhos?.joined(separator: ", ") ?? "—"
-            return "Size \(t) returned and remained available"
+            return frase("Size \(t) returned and remained available")
         case "remarcacao":
             // "Price dropped 50%" media uma coisa e era lida como outra.
             //
@@ -458,15 +470,14 @@ enum LeituraDoEvento {
             // duvidar confere a conta na própria linha.
             if let pct = detalhe?.quedaPct,
                let de = detalhe?.precoDe, let para = detalhe?.precoPara {
-                return String(format: "%.0f%% below its previous price: %@ → %@",
-                              pct, Formato.dinheiro(de), Formato.dinheiro(para))
+                return frase("\(String(Int(pct.rounded())))% below its previous price: \(Formato.dinheiro(de)) → \(Formato.dinheiro(para))")
             }
             if let pct = detalhe?.quedaPct {
-                return String(format: "%.1f%% below its previous price", pct)
+                return frase("\(Leitura.numero(pct, casas: 1))% below its previous price")
             }
-            return "Price cut since the last reading"
+            return frase("Price cut since the last reading")
         case "saida_de_linha":
-            return "Removed from the catalog"
+            return frase("Removed from the catalog")
         default:
             return tipo
         }
@@ -482,37 +493,34 @@ enum LeituraDoEvento {
     /// "1ª reposição" com oito dias de coleta afirmaria que nunca houve outra
     /// antes, que é coisa que não medimos — e a regra 2 proíbe afirmar o que não
     /// foi medido.
+    /// **ESTA FRASE ERA METADE EM CADA IDIOMA.** O ordinal e cada fragmento
+    /// passam pela localização; caso contrário surgiam frases como
+    /// "2nd restock for size G in 2 dias".
     static func repeticao(tipo: String, ordinal: Int?,
                           detalhe: EventoVarejo.Detalhe?,
                           diasDesdeAPrimeira: Int?,
                           desde inicioDaColeta: String) -> String? {
         guard let ordinal else { return nil }
-        let coisa = tipo == "reposicao" ? "restock" : (tipo == "remarcacao" ? "markdown" : nil)
-        guard let coisa else { return nil }
+        let ehReposicao = tipo == "reposicao"
+        guard ehReposicao || tipo == "remarcacao" else { return nil }
 
         if ordinal == 1 {
-            return "First \(coisa) since \(Formato.data(inicioDaColeta))"
+            let quando = Formato.data(inicioDaColeta)
+            return ehReposicao
+                ? frase("First restock since \(quando)")
+                : frase("First markdown since \(quando)")
         }
-        let mod100 = ordinal % 100
-        let suffix: String
-        if 11...13 ~= mod100 {
-            suffix = "th"
-        } else {
-            switch ordinal % 10 {
-            case 1: suffix = "st"
-            case 2: suffix = "nd"
-            case 3: suffix = "rd"
-            default: suffix = "th"
-            }
-        }
-        var frase = "\(ordinal)\(suffix) \(coisa)"
-        if tipo == "reposicao", let t = detalhe?.tamanhos, !t.isEmpty {
-            frase += " for size \(t.joined(separator: "/"))"
+
+        let ordem = Leitura.ordinalFeminino(ordinal)
+        var texto = ehReposicao ? frase("\(ordem) restock")
+                                : frase("\(ordem) markdown")
+        if ehReposicao, let t = detalhe?.tamanhos, !t.isEmpty {
+            texto = frase("\(texto) for size \(t.joined(separator: "/"))")
         }
         if let dias = diasDesdeAPrimeira {
-            frase += " in \(Formato.periodo(dias: dias))"
+            texto = frase("\(texto) in \(Formato.periodo(dias: dias))")
         }
-        return frase
+        return texto
     }
 
     static func icone(tipo: String) -> String {
@@ -542,13 +550,13 @@ enum Leitura {
 
         var rotulo: String {
             switch self {
-            case .muitoAcima: return "Far Above the usual range"
-            case .acima: return "Above the usual range"
-            case .poucoAcima: return "Slightly above the usual range"
-            case .habitual: return "Within the usual range"
-            case .poucoAbaixo: return "Slightly under the usual range"
-            case .abaixo: return "Under the usual range"
-            case .muitoAbaixo: return "Far below the usual range"
+            case .muitoAcima: return frase("Far Above the usual range")
+            case .acima: return frase("Above the usual range")
+            case .poucoAcima: return frase("Slightly above the usual range")
+            case .habitual: return frase("Within the usual range")
+            case .poucoAbaixo: return frase("Slightly under the usual range")
+            case .abaixo: return frase("Under the usual range")
+            case .muitoAbaixo: return frase("Far below the usual range")
             }
         }
 
@@ -591,6 +599,24 @@ enum Leitura {
         return frase.prefix(1).uppercased() + frase.dropFirst()
     }
 
+    /// "2nd" em inglês, "2ª" em português.
+    ///
+    /// `NumberFormatter` com estilo ordinal resolve o sufixo de cada idioma —
+    /// escrever `st/nd/rd/th` no código é escrever inglês. Em português ele
+    /// devolve a forma masculina ("2º"); as duas palavras que esta frase
+    /// qualifica são femininas (reposição, remarcação), então o gênero é
+    /// ajustado aqui. É um caso pequeno o bastante para não merecer uma API de
+    /// gênero, e explícito o bastante para não virar armadilha.
+    static func ordinalFeminino(_ n: Int) -> String {
+        let formatador = NumberFormatter()
+        formatador.numberStyle = .ordinal
+        formatador.locale = GestorDeIdioma.idiomaResolvido.locale
+        let base = formatador.string(from: NSNumber(value: n)) ?? String(n)
+        return GestorDeIdioma.idiomaResolvido == .portugues
+            ? base.replacingOccurrences(of: "º", with: "ª")
+            : base
+    }
+
     /// O que o número é, dito por extenso. Vai na letra miúda, sempre.
     ///
     /// A direção sai do valor EXIBIDO, não do bruto. Com `z >= 0 ? above :
@@ -600,11 +626,22 @@ enum Leitura {
     /// em 19/08/2026. Duas frases sobre o mesmo número, uma contradizendo a
     /// outra, e a errada era a que afirmava direção que o número não sustenta.
     static func explicacao(_ z: Double) -> String {
+        // TRÊS FRASES INTEIRAS, E NÃO UM FRAGMENTO INTERPOLADO.
+        //
+        // Isto era `\(lado)` com "above"/"below"/"level with" crus por dentro
+        // de uma chave traduzida. A frase de fora ia para o português e o
+        // miolo ficava em inglês: "0,4 na escala estatística, **above** o
+        // comportamento usual". O portão de tradução não pega esse caso por
+        // construção — para ele a chave existe e está traduzida; o que ele não
+        // sabe é que um dos argumentos nunca passou por tradução nenhuma.
         let exibido = (abs(z) * 10).rounded() / 10
-        let lado = exibido == 0
-            ? "level with"
-            : (z > 0 ? "above" : "below")
-        return "\(numero(exibido, casas: 1)) on the statistical scale, \(lado) this attribute's usual behavior over the previous 12 weeks"
+        let valor = numero(exibido, casas: 1)
+        if exibido == 0 {
+            return frase("\(valor) on the statistical scale, level with this attribute's usual behavior over the previous 12 weeks")
+        }
+        return z > 0
+            ? frase("\(valor) on the statistical scale, above this attribute's usual behavior over the previous 12 weeks")
+            : frase("\(valor) on the statistical scale, below this attribute's usual behavior over the previous 12 weeks")
     }
 
     /// Variação percentual entre o valor mais recente e a média da janela.
@@ -612,7 +649,7 @@ enum Leitura {
     static func variacao(recente: Double?, media: Double?) -> String? {
         guard let recente, let media, media > 0 else { return nil }
         let pct = 100.0 * (recente - media) / media
-        return "\(numero(pct, casas: 0, sinal: true))% vs. the window average"
+        return frase("\(numero(pct, casas: 0, sinal: true))% vs. the window average")
     }
 
     /// Número no idioma-fonte da interface (inglês), com ponto decimal.

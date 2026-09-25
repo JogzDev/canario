@@ -149,3 +149,28 @@ enum MascaraDeInstancia {
                       pontuacao: cobertura - 0.04 * distancia)
     }
 }
+
+/// Calcula o bitmap de trabalho sem ampliar a origem e sem depender da escala
+/// de tela do aparelho. Uma foto 4032×3024 não pode virar 12096×9072 só porque
+/// o iPhone usa `@3x`: isso ultrapassaria 400 MB antes mesmo do Vision começar.
+enum DimensaoDaImagem {
+    struct Pixels: Equatable {
+        let largura: Int
+        let altura: Int
+
+        var bytesRGBA: Int { largura * altura * 4 }
+    }
+
+    static func limitada(largura: Int, altura: Int,
+                         ladoMaximo: Int) -> Pixels? {
+        guard largura > 0, altura > 0, ladoMaximo > 0 else { return nil }
+        let maior = max(largura, altura)
+        guard maior > ladoMaximo else {
+            return Pixels(largura: largura, altura: altura)
+        }
+        let escala = Double(ladoMaximo) / Double(maior)
+        return Pixels(
+            largura: max(1, Int((Double(largura) * escala).rounded())),
+            altura: max(1, Int((Double(altura) * escala).rounded())))
+    }
+}

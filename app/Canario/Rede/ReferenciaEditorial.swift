@@ -75,21 +75,18 @@ enum ReferenciaEditorial {
     /// que ele escreveu com o que o app afirma.
     static func manchete(_ r: Resposta) -> String? {
         guard r.buscavel, r.total > 0 else { return nil }
-        let quantas = r.total == 1
-            ? "1 story in the press we track mentions"
-            : "\(Formato.contagem(r.total)) stories in the press we track mention"
-        return "\(quantas) “\(r.expressao)”."
+        return r.total == 1
+            ? frase("1 story in the press we track mentions “\(r.expressao)”.")
+            : frase("\(Formato.contagem(r.total)) stories in the press we track mention “\(r.expressao)”.")
     }
 
     /// Quando a lista é amostra, ela diz que é. Sem isto, cinco linhas na tela
     /// afirmam "cinco matérias" quando existem vinte e três.
     static func recorte(_ r: Resposta) -> String? {
         guard r.total > r.materias.count, !r.materias.isEmpty else { return nil }
-        return "Showing the \(r.materias.count) most recent."
+        return frase("Showing the \(String(r.materias.count)) most recent.")
     }
 
     /// A ressalva que impede a leitura errada do bloco inteiro.
-    static let ondeEstaOTexto =
-        "DataDrobe stores the headline, the outlet, the date and the link — "
-        + "not the article. Open the source to read it."
+    static let ondeEstaOTexto = frase("Seam stores the headline, the outlet, the date and the link — not the article. Open the source to read it.")
 }

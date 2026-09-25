@@ -10,12 +10,14 @@ struct Analisar: View {
     var aoFechar: (() -> Void)?
     @State private var termos: [Termo] = []
     @State private var texto = ""
-    @State private var indices: [String: IndiceSemanal] = [:]
     @State private var carregando = true
     @State private var erro: String?
     /// A58: as matérias que contêm a expressão literal, e não a tradução dela.
     @State private var imprensa: ReferenciaEditorial.Resposta?
     @State private var imprensaFalhou = false
+    /// 2.0: o pedido que abre a leitura específica. Só ao confirmar: cada
+    /// leitura custa três chamadas da Luna e conta no limite diário.
+    @State private var leituraPedida: String?
 
     /// A tradução vive em `Traducao`, que é testada. Aqui a tela só consome.
     private var casados: [Termo] {
@@ -31,29 +33,10 @@ struct Analisar: View {
         Traducao.descricaoAmigavel(casados, consulta: texto)
     }
 
-    // Cores do gradiente de fundo
-    private let azulBase = Tokens.Cor.ceuFixo
-    private let azulMaisClaro = Color(red: 212/255, green: 239/255, blue: 244/255)
-    private let corLinha = Color.white.opacity(0.65)
-
     var body: some View {
         NavigationStack {
             ZStack {
-                // Fundo com degradê suave do azul base para um azul mais branquinho
-                LinearGradient(
-                    colors: [azulBase, azulMaisClaro],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-
-                // Ondas em SVG centralizadas e com largura de 410 pt
-                Image("SVG Background Search")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 410)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .ignoresSafeArea()
+                PapelDaEdicao().ignoresSafeArea()
 
                 Group {
                     if carregando {
@@ -65,10 +48,15 @@ struct Analisar: View {
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Search")
+            .navigationBarTitleDisplayMode(.large)
             .searchable(text: textoDaBusca,
                         placement: .navigationBarDrawer(displayMode: .always),
                         prompt: "Search by garment, fabric, cut, pattern…")
+            .onSubmit(of: .search) { lerAgora() }
+            .navigationDestination(item: $leituraPedida) { pedido in
+                LeituraDaPeca(pedido: pedido)
+            }
             .toolbar {
                 if let aoFechar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -77,165 +65,190 @@ struct Analisar: View {
                 }
             }
         }
-        .task { await carregar() }
+        .task {
+            await carregar()
+            #if DEBUG
+            // Captura e teste: `-CanarioLeituraPedida "jaqueta napoleão"` abre a
+            // leitura direto, sem digitar.
+            let argumentos = ProcessInfo.processInfo.arguments
+            if let i = argumentos.firstIndex(of: "-CanarioLeituraPedida"), i + 1 < argumentos.count {
+                texto = argumentos[i + 1]
+                lerAgora()
+            }
+            #endif
+        }
         // Reroda a cada mudança do texto, com uma pausa antes: a busca é um
         // `ilike` sobre 172 mil títulos, e disparar uma por tecla digitada
         // gastaria o banco para jogar 19 respostas fora.
         .task(id: texto) { await procurarNaImprensa() }
-        // A busca é `fullScreenCover` da `Raiz` e abre de QUALQUER aba,
-        // inclusive da Trends -- e a Trends deixa a cena em escuro. Como esta
-        // tela pinta o próprio fundo em #BBE5ED, sem declarar o esquema ela
-        // herdava tinta clara sobre fundo claro. É o mesmo defeito dos prints
-        // do Profile e do Q&A, só que numa tela que ninguém tinha aberto por
-        // esse caminho ainda.
-        .territorio(.armario)
+        .tint(Edicao.bordo)
+    }
+
+    private var conteudo: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                if texto.isEmpty {
+                    abertura
+                } else {
+                    // Uma peça fora da taxonomia ainda pode ser interpretada
+                    // pela Leitura; o pedido humano segue inteiro.
+                    botaoDaLeitura
+                    if !casados.isEmpty {
+                        if descreveUmaPeca { cardPecaCombinada }
+                        cardAtributos
+                    }
+                    cardDaImprensa
+                }
+            }
+            .padding(.horizontal, Edicao.margem)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
+        .scrollDismissesKeyboard(.immediately)
+    }
+
+    private var textoLimpo: String {
+        texto.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func lerAgora() {
+        guard Supabase.analiseRemotaHabilitada, textoLimpo.count >= 3 else { return }
+        leituraPedida = String(textoLimpo.prefix(200))
     }
 
     @ViewBuilder
-    private var conteudo: some View {
-        if texto.isEmpty {
-            abertura
-        } else if casados.isEmpty {
-            ScrollView {
-                VStack(spacing: 20) {
-                    CoberturaInsuficiente(
-                        titulo: "This term isn't tracked yet",
-                        explicacao: "“\(texto)” is outside the reviewed vocabulary, so there is no market reading for it yet.",
-                        oQueTem: "Try: " + sugestoes.joined(separator: ", ")
-                    )
-                    // O vocabulário não cobre a expressão, mas a imprensa pode
-                    // tê-la escrito -- foi exatamente o caso de "Napoleon
-                    // Jacket". Este é o lugar onde a busca deixa de terminar
-                    // em "não temos isso".
-                    cardDaImprensa
-                }
-                .padding(Tokens.Espaco.m)
-            }
-        } else {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
-                    if descreveUmaPeca {
-                        cardPecaCombinada
+    private var botaoDaLeitura: some View {
+        if Supabase.analiseRemotaHabilitada, textoLimpo.count >= 3 {
+            Button(action: lerAgora) {
+                HStack(spacing: 14) {
+                    Image(systemName: "text.magnifyingglass")
+                        .font(.title3.weight(.semibold))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(frase("Read “\(textoLimpo)” in the panel"))
+                            .font(Edicao.Tipo.linha)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("The reading finds the pieces, checks each one and shows the proof.")
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-
-                    cardAtributos
-                    // Depois dos atributos, e não antes: a leitura de mercado
-                    // é o que o app mede; a matéria é referência de fora.
-                    cardDaImprensa
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.forward")
+                        .font(.footnote.weight(.semibold))
+                        .accessibilityHidden(true)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 32)
+                .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.roundedRectangle(radius: Edicao.raio))
+            .tint(Edicao.bordoCheio)
+            .foregroundStyle(.white)
+            .accessibilityHint(Text("Opens a reading with the pieces that prove each sentence"))
         }
     }
 
-    /// Estado vazio com textos dentro de uma pílula translúcida centralizada na tela
+    /// O vocabulário real ocupa o estado inicial: não há exemplos fictícios nem
+    /// uma tela vazia que dependa da pessoa adivinhar o que pode pesquisar.
     private var abertura: some View {
-        VStack {
-            Spacer()
-
-            VStack(spacing: 6) {
-                Text("Search by garment, fabric, cut, pattern…")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.primary)
-
-                Text("Try: " + sugestoes.prefix(3).joined(separator: ", "))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.80))
-                    .multilineTextAlignment(.center)
+        Folha(espaco: 18) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Start with a word")
+                    .font(Edicao.Tipo.secao)
+                    .accessibilityAddTraits(.isHeader)
+                Text("Combine words to describe a piece, like black leather coat.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.85), Color.white.opacity(0.55)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .padding(.horizontal, 24)
 
-            Spacer()
+            ForEach(Array(gruposDoVocabulario.enumerated()), id: \.element.dimensao) { indice, grupo in
+                if indice > 0 { CosturaDaEdicao() }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(verbatim: Traducao.rotuloDaDimensao(grupo.dimensao))
+                        .font(Edicao.Tipo.linha)
+                        .foregroundStyle(.secondary)
+                        .accessibilityAddTraits(.isHeader)
+                    FlowLayout(espaco: 8) {
+                        ForEach(grupo.termos) { termo in
+                            Button {
+                                atualizarTextoDaBusca(Traducao.rotuloExibido(termo))
+                            } label: {
+                                HStack(spacing: 7) {
+                                    IconeDoTermo(termoId: termo.id, lado: 18)
+                                        .accessibilityHidden(true)
+                                    Text(verbatim: Traducao.rotuloExibido(termo))
+                                        .font(.subheadline.weight(.medium))
+                                }
+                                .padding(.horizontal, 12)
+                                .frame(minHeight: 44)
+                                .background(Edicao.papel, in: Capsule())
+                                .overlay(Capsule().strokeBorder(Color(.separator), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Search this attribute")
+                        }
+                    }
+                }
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// Card de leitura combinada (Liquid Glass)
+    private var gruposDoVocabulario: [(dimensao: String, termos: [Termo])] {
+        let ordem = ["categoria", "cor", "estampa", "tecido", "comprimento",
+                     "silhueta", "cintura", "estetica"]
+        let extras = Set(termos.map(\.dimensao))
+            .subtracting(ordem)
+            .subtracting(["motivo_estampa"])
+            .sorted()
+        return (ordem + extras).compactMap { dimensao in
+            var vistos = Set<String>()
+            let disponiveis = termos.filter {
+                $0.dimensao == dimensao
+                    && vistos.insert(Traducao.rotuloExibido($0)).inserted
+            }
+            return disponiveis.isEmpty ? nil : (dimensao, disponiveis)
+        }
+    }
+
+    /// A combinação é uma porta para a leitura da coorte, nunca uma média dos
+    /// índices dos atributos. Essa média não é histórico da peça pesquisada.
     private var cardPecaCombinada: some View {
         NavigationLink {
             RelatorioDaPeca(termos: casados, pecaSalva: nil,
                            descricaoAmigavel: descricaoDaBusca)
         } label: {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Text(descricaoDaBusca)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.primary)
-                }
-
-                Rectangle()
-                    .fill(corLinha)
-                    .frame(height: 1)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Combined reading")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary.opacity(0.85))
-
-                    Text(leituraCombinadaFormatada)
-                        .font(.system(size: 38, weight: .bold))
-                        .foregroundStyle(.primary)
-                }
+            Folha {
+                CabecalhoDaFolha(
+                    titulo: Text(verbatim: descricaoDaBusca),
+                    nota: frase("See similar pieces, attributes and the combined reading."),
+                    abre: true)
             }
-            .padding(18)
-            .background(cardBackground)
         }
         .buttonStyle(.plain)
     }
 
-    /// Card de atributos individuais com linhas e pílulas
+    /// A lista não antecipa números sem validar a cobertura da semana. Cada
+    /// linha leva à tela que já aplica o portão completo antes de mostrar o índice.
     private var cardAtributos: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(descreveUmaPeca ? "By attribute" : "Attributes")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
-
-            VStack(spacing: 0) {
-                ForEach(Array(casados.enumerated()), id: \.element.id) { index, termo in
-                    NavigationLink {
-                        RelatorioDoTermo(termo: termo)
-                    } label: {
-                        LinhaTermoGlass(
-                            termo: termo,
-                            indice: indices[termo.id],
-                            rotulo: Traducao.rotuloAmigavel(termo, na: texto)
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    if index < casados.count - 1 {
-                        Rectangle()
-                            .fill(corLinha)
-                            .frame(height: 1)
-                            .padding(.horizontal, 18)
-                    }
+        Folha(espaco: 0) {
+            CabecalhoDaFolha(titulo: Text("Attributes"))
+                .padding(.bottom, 8)
+            ForEach(Array(casados.enumerated()), id: \.element.id) { index, termo in
+                if index > 0 { CosturaDaEdicao() }
+                NavigationLink {
+                    RelatorioDoTermo(termo: termo)
+                } label: {
+                    LinhaDeAtributo(termoId: termo.id,
+                                    rotulo: Traducao.rotuloAmigavel(termo, na: texto),
+                                    dimensao: Traducao.rotuloDaDimensao(termo.dimensao),
+                                    leitura: nil,
+                                    mostraNumero: false, mostraFaixa: false)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.bottom, 8)
         }
-        .background(cardBackground)
     }
 
     /// **In the press**: as matérias cujo TÍTULO contém o que foi digitado.
@@ -246,32 +259,26 @@ struct Analisar: View {
     @ViewBuilder
     private var cardDaImprensa: some View {
         if let r = imprensa, let manchete = ReferenciaEditorial.manchete(r) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("In the press")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.primary)
+            Folha {
+                CabecalhoDaFolha(titulo: Text("In the press"))
                 Text(manchete)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.85))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                VStack(spacing: 0) {
-                    ForEach(Array(r.materias.enumerated()), id: \.element.id) { i, materia in
-                        materiaEmLinha(materia)
-                        if i < r.materias.count - 1 {
-                            Rectangle().fill(corLinha).frame(height: 1)
-                        }
-                    }
+                ForEach(Array(r.materias.enumerated()), id: \.element.id) { i, materia in
+                    if i > 0 { CosturaDaEdicao() }
+                    materiaEmLinha(materia)
                 }
 
                 if let recorte = ReferenciaEditorial.recorte(r) {
                     Text(recorte)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary.opacity(0.70))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 Text(ReferenciaEditorial.ondeEstaOTexto)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.70))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // Controle deterministico, presente apenas no processo de
@@ -283,16 +290,13 @@ struct Analisar: View {
                         .accessibilityIdentifier("trocar-consulta-editorial")
                 }
             }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(cardBackground)
         } else if imprensaFalhou {
             // Falha declarada, em voz baixa: este bloco é referência de fora,
             // não o resultado da busca, e não pode virar alarme vermelho no
             // meio de uma tela que respondeu o que sabia.
             Text("Press references could not be loaded.")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.70))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("imprensa-falhou")
         }
@@ -303,26 +307,26 @@ struct Analisar: View {
     private func materiaEmLinha(_ materia: ReferenciaEditorial.Materia) -> some View {
         let conteudo = VStack(alignment: .leading, spacing: 4) {
             Text(materia.titulo)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
             if !materia.procedencia.isEmpty {
                 Text(materia.procedencia)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary.opacity(0.70))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 10)
+        .frame(minHeight: 44)
 
         if let endereco = materia.endereco {
             Link(destination: endereco) {
                 HStack(alignment: .top, spacing: 10) {
                     conteudo
                     Image(systemName: "arrow.up.right")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.primary)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Edicao.bordo)
                         .padding(.top, 12)
                 }
                 .contentShape(Rectangle())
@@ -431,162 +435,28 @@ struct Analisar: View {
         return (error as? URLError)?.code == .cancelled
     }
 
-    private var leituraCombinadaFormatada: String {
-        let leituras = casados.compactMap { indices[$0.id]?.indice }
-        guard !leituras.isEmpty else { return "--" }
-        let media = leituras.reduce(0, +) / Double(leituras.count)
-        let sinal = media >= 0 ? "+" : ""
-        return String(format: "\(sinal)%.2f", media).replacingOccurrences(of: ".", with: ",")
-    }
-
-    private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [Color.white.opacity(0.85), Color.white.opacity(0.50)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-    }
-
-    private var sugestoes: [String] {
-        var vistas = Set<String>()
-        return termos.filter { vistas.insert($0.dimensao).inserted }
-            .prefix(5).map(Traducao.rotuloExibido)
-    }
-
     private func carregar() async {
         carregando = true
         erro = nil
-        do {
-            async let t = CatalogoDeTermos.shared.carregar()
-            async let i = CatalogoDeIndices.shared.carregar()
-            termos = try await t
+        if ProcessInfo.processInfo.arguments.contains("-CanarioUITestBuscaVocabulario") {
+            termos = [
+                Termo(id: "vestido", rotulo: "Dress", dimensao: "categoria",
+                      exclusiva: true, sinonimos: nil, semPernaBusca: nil,
+                      palavrasPt: nil, palavrasEn: nil),
+                Termo(id: "preto", rotulo: "Black", dimensao: "cor",
+                      exclusiva: false, sinonimos: nil, semPernaBusca: nil,
+                      palavrasPt: nil, palavrasEn: nil),
+            ]
             carregando = false
-            let recentes = try await i
-            indices = SelecaoDeEstado.porTermo(recentes)
+            return
+        }
+        do {
+            termos = try await CatalogoDeTermos.shared.carregar()
         } catch is CancellationError {
             return
         } catch {
             erro = (error as? LocalizedError)?.errorDescription ?? "\(error)"
         }
         carregando = false
-    }
-}
-
-/// Linha de atributo no padrão Figma / Liquid Glass com pílula de status
-struct LinhaTermoGlass: View {
-    let termo: Termo
-    let indice: IndiceSemanal?
-    var rotulo: String? = nil
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text(rotulo ?? Traducao.rotuloExibido(termo))
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.primary)
-
-                    if let valor = indice?.indice {
-                        Text(formatarIndice(valor))
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.primary)
-                    }
-                }
-
-                if let indice {
-                    pilulaGenerica(para: indice)
-                }
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.primary)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-    }
-
-    @ViewBuilder
-    private func pilulaGenerica(para indice: IndiceSemanal) -> some View {
-        if let valor = indice.indice {
-            if valor >= 1.0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Far Above the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.15, green: 0.45, blue: 0.12))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.52, green: 0.85, blue: 0.38).opacity(0.85), in: Capsule())
-            } else if valor > 0.3 {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Above the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.18, green: 0.40, blue: 0.15))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.65, green: 0.90, blue: 0.55).opacity(0.85), in: Capsule())
-            } else if valor < -1.0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "chart.line.downtrend.xyaxis")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Far Below the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.60, green: 0.10, blue: 0.10))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.95, green: 0.50, blue: 0.50).opacity(0.85), in: Capsule())
-            } else if valor < -0.3 {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.down.right")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Below the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(Color(red: 0.55, green: 0.15, blue: 0.15))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(red: 0.95, green: 0.65, blue: 0.65).opacity(0.85), in: Capsule())
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "equal")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Within the usual range")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .foregroundStyle(.primary.opacity(0.75))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(white: 0.55).opacity(0.35), in: Capsule())
-            }
-        } else {
-            HStack(spacing: 4) {
-                Image(systemName: "equal")
-                    .font(.system(size: 10, weight: .bold))
-                Text("Within the usual range")
-                    .font(.system(size: 10, weight: .bold))
-            }
-            .foregroundStyle(.primary.opacity(0.75))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color(white: 0.55).opacity(0.35), in: Capsule())
-        }
-    }
-
-    private func formatarIndice(_ valor: Double) -> String {
-        let sinal = valor >= 0 ? "+" : ""
-        return String(format: "\(sinal)%.2f", valor)
     }
 }

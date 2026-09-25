@@ -24,21 +24,36 @@ enum Importacao {
         let porTexto = Traducao.termos(para: leitura.texto, em: termos)
         if !porTexto.isEmpty {
             achado.marcados.formUnion(porTexto.map(\.id))
-            let fonte = leitura.origem == .textoDoPDF
-                ? "PDF text"
-                : "text recognized in the image"
-            achado.procedencia.append(
-                "From \(fonte): " + porTexto.map(Traducao.rotuloExibido).joined(separator: ", ") + ".")
+            // Frase inteira por origem, e não um fragmento interpolado: era
+            // `From \(fonte)` com "PDF text" cru por dentro, e o miolo ficava
+            // em inglês dentro do português. Mesma classe do `\(lado)` do
+            // `Leitura.explicacao`, e a mesma correção.
+            let lidos = porTexto.map(Traducao.rotuloExibido).joined(separator: ", ")
+            achado.procedencia.append(leitura.origem == .textoDoPDF
+                ? frase("From PDF text: \(lidos).")
+                : frase("From text recognized in the image: \(lidos)."))
         }
 
         if let cor = leitura.cor {
             let jaTemCor = porTexto.contains { $0.dimensao == "cor" }
             let existe = termos.first { $0.id == cor.termoId }
             if !jaTemCor, let termo = existe {
-                achado.marcados.insert(termo.id)
-                achado.procedencia.append(
-                    "From the image color: \(Traducao.rotuloExibido(termo)) — measured from the garment pixels, "
-                    + "and is the suggestion that most needs your review.")
+                // O portão da cor de constante (iOS 18): quando o SISTEMA mediu
+                // a captura e disse que não confia nela, o app não pré-marca.
+                //
+                // A alternativa era marcar assim mesmo e escrever "confiança
+                // baixa" ao lado. Isso inverte o custo do erro: a §28 desenhou
+                // a sugestão para custar um toque quando errada, mas um chip
+                // JÁ MARCADO é aceito por omissão — quem não lê a ressalva
+                // salva a cor errada no Closet sem nunca ter decidido nada.
+                // Deixar desmarcado custa o mesmo toque e não decide por
+                // ninguém, que é o que a regra 2 pede quando falta base.
+                if cor.podeSugerirCor {
+                    achado.marcados.insert(termo.id)
+                    achado.procedencia.append(frase("From the image color: \(Traducao.rotuloExibido(termo)) — measured from the garment pixels, and is the suggestion that most needs your review."))
+                } else {
+                    achado.procedencia.append(frase("The color was left unselected on purpose: this photo's lighting was not reliable enough to measure it. Pick the color below, or retake the photo with color-accurate capture."))
+                }
             }
         }
 

@@ -9,8 +9,7 @@ import ImageIO
 /// gráfico são recomputados do painel quando a peça abre; a miniatura é a única
 /// cópia visual persistente e fica no aparelho, sem metadados.
 struct MinhasPecas: View {
-    var menuAberto = false
-    var alternarMenu: (() -> Void)?
+    var abrirConta: () -> Void = {}
     @State private var pecas: [PecaSalva] = []
     @State private var termos: [Termo] = []
     @State private var carregando = true
@@ -57,20 +56,21 @@ struct MinhasPecas: View {
                     grade
                 }
             }
-            .background(Tokens.Cor.ceu.ignoresSafeArea())
-            .navigationTitle("Closet")
+            .papelDaEdicao()
+            .navigationTitle(Text("Archive"))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    if let alternarMenu {
-                        BotaoDoMenu(menuAberto: menuAberto, acao: alternarMenu)
+                    Button(action: abrirConta) {
+                        Image(systemName: "person.crop.circle")
                     }
+                    .accessibilityLabel("Account")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack {
                         Button {
                             filtrando = true
                         } label: {
-                            Label("Filter Closet", systemImage: temFiltro
+                            Label("Filter Archive", systemImage: temFiltro
                                   ? "line.3.horizontal.decrease.circle.fill"
                                   : "line.3.horizontal.decrease.circle")
                         }
@@ -110,18 +110,15 @@ struct MinhasPecas: View {
     }
 
     private var vazio: some View {
-        VStack(spacing: Tokens.Espaco.m) {
-            Image(systemName: "tshirt")
-                .font(.system(size: 42))
-                .foregroundStyle(Tokens.Cor.acao)
-            Text("No clothes yet").font(Tokens.Fonte.secao)
-            Text("Clothes you save from Add stay here, ready to open again and compare.")
-                .font(Tokens.Fonte.corpo)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+        ContentUnavailableView {
+            Label {
+                Text("Nothing in the Archive yet").font(Edicao.Tipo.secao)
+            } icon: {
+                Image(systemName: "hanger").foregroundStyle(Edicao.bordo)
+            }
+        } description: {
+            Text("Pieces you bring through the Studio stay here, yours or references, ready to open again and compare.")
         }
-        .padding(Tokens.Espaco.g)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var grade: some View {
@@ -205,7 +202,7 @@ struct MinhasPecas: View {
             termos = try await CatalogoDeTermos.shared.carregar()
             catalogo = CatalogoDoArmario(termos: termos)
         } catch {
-            erro = "The taxonomy is unavailable right now. Your clothes and photos are still on this iPhone."
+            erro = frase("The taxonomy is unavailable right now. Your clothes and photos are still on this iPhone.")
         }
     }
 
@@ -218,19 +215,19 @@ struct MinhasPecas: View {
             guard let dados = try await item.loadTransferable(type: Data.self),
                   let imagem = MiniaturaLocal.imagem(de: dados),
                   let miniatura = await MiniaturaLocal.dados(de: imagem) else {
-                erro = "I couldn't read that image. Try another photo."
+                erro = frase("I couldn't read that image. Try another photo.")
                 return nil
             }
             guard await PecasSalvas.shared.salvar(
                 peca, miniaturaDados: miniatura) else {
-                erro = "I couldn't save that photo. Your existing item was not changed."
+                erro = frase("I couldn't save that photo. Your existing item was not changed.")
                 return nil
             }
             pecas = await PecasSalvas.shared.todas()
             erro = nil
             return miniatura
         } catch {
-            erro = "I couldn't read that image. Try another photo."
+            erro = frase("I couldn't read that image. Try another photo.")
             return nil
         }
     }
@@ -292,7 +289,7 @@ private struct FiltroDoCloset: View {
         }
         if !tricos.isEmpty {
             resultado.append(Opcao(id: "knit_and_crochet",
-                                   rotulo: "Knit & crochet",
+                                   rotulo: frase("Knit & crochet"),
                                    dimensao: "tecido", ids: tricos))
         }
         let prioridadeDeEstampa = ["animal_print", "floral", "listra", "xadrez",
@@ -337,7 +334,7 @@ private struct FiltroDoCloset: View {
                     }
                 }
             }
-            .navigationTitle("Filter Closet")
+            .navigationTitle("Filter Archive")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -409,7 +406,7 @@ private struct CompartilharCloset: View {
                         Label("Spreadsheet · include market readings", systemImage: "chart.line.uptrend.xyaxis")
                     }
                 }
-                if preparando { ProgressView("Preparing export…") }
+                if preparando { ProgressView(frase("Preparing export…")) }
                 if let erro { Text(erro).font(Tokens.Fonte.miudo).foregroundStyle(.secondary) }
             }
             .navigationTitle("Share or export")
@@ -430,7 +427,7 @@ private struct CompartilharCloset: View {
     }
 
     private func compartilharLinks() {
-        guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
+        guard !escolhidas.isEmpty else { erro = frase("Choose at least one item."); return }
         preparando = true
         Task { @MainActor in
             var itens: [Any] = escolhidas.compactMap { peca in
@@ -459,14 +456,14 @@ private struct CompartilharCloset: View {
     }
 
     private func exportar(mercado: Bool) {
-        guard !escolhidas.isEmpty else { erro = "Choose at least one item."; return }
+        guard !escolhidas.isEmpty else { erro = frase("Choose at least one item."); return }
         preparando = true
         Task {
             let url = await ExportadorDoCloset.csv(
                 pecas: escolhidas, termos: termos, incluirMercado: mercado)
             preparando = false
             if let url { atividade = PacoteDeAtividade(itens: [url]); erro = nil }
-            else { erro = "The spreadsheet could not be created. Try again." }
+            else { erro = frase("The spreadsheet could not be created. Try again.") }
         }
     }
 }
@@ -506,16 +503,21 @@ private struct CartaoDoArmario: View {
                         pecaSalva: peca)
                 } label: {
                     VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                        ZStack {
+                        // O card é vidro sobre o céu da marca, e a miniatura
+                        // ficava direto sobre esse azul translúcido. A grade do
+                        // Closet é onde a pessoa compara peças entre si, então
+                        // é onde um fundo cromático mais atrapalha: o mesmo
+                        // azul entra em todas as fotos ao mesmo tempo. O vidro
+                        // continua sendo o card; a foto ganha a moldura neutra
+                        // por dentro dele.
+                        SubstratoDaPeca(raio: Tokens.Raio.cartao,
+                                        respiro: Tokens.Espaco.s) {
                             if let miniatura {
                                 Image(uiImage: miniatura)
                                     .resizable()
                                     .scaledToFit()
-                                    .padding(8)
                             } else {
-                                Image(systemName: "tshirt")
-                                    .font(.system(size: 46, weight: .light))
-                                    .foregroundStyle(.secondary.opacity(0.48))
+                                PecaSemFoto(simbolo: "tshirt", tamanho: 46)
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -532,14 +534,14 @@ private struct CartaoDoArmario: View {
                             Text(peca.temApelido
                                  ? peca.nome(comRotulos: rotulos)
                                  : (categoria ?? "Clothing"))
-                                .font(Tokens.Fonte.corpo.weight(.semibold))
+                                .font(Edicao.Tipo.nome)
                                 .foregroundStyle(.primary)
                                 .lineLimit(2)
                             if let detalhe = peca.detalhe(
                                 comRotulos: rotulos,
                                 semOsTermos: peca.temApelido ? [] : idsDeCategoria) {
                                 Text(detalhe)
-                                    .font(Tokens.Fonte.miudo)
+                                    .font(.footnote)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(2)
                             }
@@ -551,12 +553,12 @@ private struct CartaoDoArmario: View {
 
             }
 
-            Divider().opacity(0.32)
+            CosturaDaEdicao().padding(.top, 6)
             HStack(spacing: 4) {
                 Button(action: aoFavoritar) {
                     Image(systemName: (peca.favorita ?? false) ? "heart.fill" : "heart")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle((peca.favorita ?? false) ? .red : Tokens.Cor.noite)
+                        .foregroundStyle((peca.favorita ?? false) ? Edicao.bordo : .primary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
@@ -582,7 +584,7 @@ private struct CartaoDoArmario: View {
                         Label("Rename", systemImage: "pencil")
                     }
                     Button(role: .destructive, action: aoApagar) {
-                        Label("Delete from Closet", systemImage: "trash")
+                        Label("Delete from Archive", systemImage: "trash")
                     }
                 } label: {
                     Group {
@@ -591,7 +593,7 @@ private struct CartaoDoArmario: View {
                         } else {
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(Tokens.Cor.noite)
+                                .foregroundStyle(.primary)
                         }
                     }
                     .frame(width: 44, height: 44)
@@ -607,7 +609,12 @@ private struct CartaoDoArmario: View {
         // pelo nome/detalhe, que já são limitados a duas linhas.
         .frame(height: 268, alignment: .top)
         .clipped()
-        .background { Vidro(raio: 24) }
+        .background {
+            RoundedRectangle(cornerRadius: Edicao.raio, style: .continuous)
+                .fill(Edicao.cartao)
+                .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
+        }
+        .overlay { CosturaDaFolha() }
         .contextMenu {
             Button(action: aoFavoritar) {
                 Label((peca.favorita ?? false) ? "Unfavorite" : "Favorite",
@@ -617,7 +624,7 @@ private struct CartaoDoArmario: View {
                 Label("Rename", systemImage: "pencil")
             }
             Button(role: .destructive, action: aoApagar) {
-                Label("Delete from Closet", systemImage: "trash")
+                Label("Delete from Archive", systemImage: "trash")
             }
         }
         .photosPicker(isPresented: $escolhendoFoto,
@@ -638,7 +645,7 @@ private struct CartaoDoArmario: View {
             }
             miniatura = await MiniaturaParaTela.imagem(de: dados)
         }
-        .accessibilityAction(named: "Delete from Closet", aoApagar)
+        .accessibilityAction(named: "Delete from Archive", aoApagar)
     }
 }
 

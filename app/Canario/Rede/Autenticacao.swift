@@ -67,23 +67,23 @@ actor Autenticacao {
         var errorDescription: String? {
             switch self {
             case .semConfiguracao:
-                return "Account sync is not configured in this build. You can keep using DataDrobe without an account."
+                return frase("Account sync is not configured in this build. You can keep using Seam without an account.")
             case .emailInvalido:
-                return "Enter a valid email address."
+                return frase("Enter a valid email address.")
             case .senhaCurta:
-                return "Use at least 10 characters for your password."
+                return frase("Use at least 10 characters for your password.")
             case .callbackInvalido:
-                return "The sign-in response could not be verified. Please try again."
+                return frase("The sign-in response could not be verified. Please try again.")
             case .rede:
-                return "The account service could not be reached. Your local Closet is still available."
+                return frase("The account service could not be reached. Your local Closet is still available.")
             case .resposta(let codigo, let mensagem):
                 if codigo == 400 && mensagem.lowercased().contains("invalid login") {
-                    return "The email or password is incorrect."
+                    return frase("The email or password is incorrect.")
                 }
                 if codigo == 429 {
-                    return "Too many attempts. Wait a moment and try again."
+                    return frase("Too many attempts. Wait a moment and try again.")
                 }
-                return mensagem.isEmpty ? "The account service returned HTTP \(codigo)." : mensagem
+                return mensagem.isEmpty ? frase("The account service returned HTTP \(String(codigo)).") : mensagem
             }
         }
     }
@@ -331,7 +331,7 @@ actor Autenticacao {
         let (dados, resposta) = try await sessaoHTTP.data(for: req)
         let codigo = (resposta as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(codigo) else {
-            throw Falha.resposta(codigo, "The account could not be deleted. Please try again.")
+            throw Falha.resposta(codigo, frase("The account could not be deleted. Please try again."))
         }
         let respostaDaExclusao = try? JSONDecoder().decode(RespostaDeExclusao.self, from: dados)
         let usavaApple = atual.usuario.provedores?.contains("apple") == true
@@ -356,7 +356,7 @@ actor Autenticacao {
         let (_, resposta) = try await sessaoHTTP.data(for: req)
         let status = (resposta as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            throw Falha.resposta(status, "Apple authorization could not be prepared for account deletion.")
+            throw Falha.resposta(status, frase("Apple authorization could not be prepared for account deletion."))
         }
     }
 

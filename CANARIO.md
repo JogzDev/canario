@@ -883,3 +883,65 @@ Quatro pontos do Figma que colidem com o documento, registrados antes de virarem
 - `CORREÇÃO` | **A46 — verde por ausência é pior que vermelho.** `-only-testing` com um nome inexistente não falha: o `xcodebuild` roda zero testes e devolve `** TEST SUCCEEDED **`. `testFillInfoAbreClothingDetailsForaDaSheet` nunca existiu, estava listado como um dos cinco fluxos offline protegidos do CI e nunca rodou — justamente o fluxo Fill Info → Clothing Details que o JP pediu. O nome correto é `testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails`, e `teste_workflows.py` passa a exigir que todo identificador pedido por `-only-testing` exista no arquivo de testes. Cobertura afirmada e não executada é a mesma classe de defeito que a documentação que contradiz o binário.
 - `CORREÇÃO` | **A48 — seis frutas não são uma dimensão.** A A31 criou `motivo_estampa` com tomate, cereja, morango, banana, abacaxi e melancia. Medido na produção em 26/08: cereja devolve 24 peças em 9 marcas, banana 24 em 2, morango 22 em 3, tomate 12 em 3, abacaxi 5 em 2 e **melancia 0** — um termo aprovado que nunca casou uma peça. E o que falta é maior que o que existe: não há azeitona, abacate, limão, sardinha, coração, estrela nem borboleta, e as três últimas estão nomeadas dentro do `palavras_en` do próprio `conversacional`. Os seis passam a `status = 'reprovado'`, o guarda-chuva `conversacional` cobre a família inteira e é exibido como **Illustrated prints** — o termo de mercado "conversational print" saiu por reprovar no teste mais simples que existe: o dono do projeto perguntou o que era. Nenhum índice, z-score, raridade ou série é tocado: estes termos nasceram com `sem_perna_busca = true`. Fazer direito seria vocabulário aberto de motivos, com "outras frutas", legumes e bichos desenhados; é projeto de virada de temporada, não seis linhas.
 - `ADITIVA` | **A46 — o `+` do Add é conferido por geometria, não por opinião.** O botão foi relatado torto duas vezes. A primeira correção centrou o `+` no desenho (de 27 unidades para 1), mas o quadro `0 0 108 232` tem centro em 54 enquanto o eixo do manequim é 50: `scaledToFit` centraliza o quadro, não a tinta. Com `viewBox="-4 0 108 232"` e o disco azul concêntrico ao glifo, quadro, manequim, disco e `+` ficam todos em **x = 50,000**. `teste_experiencia_app.py` compara os dois números a cada push.
+### 05/09/2026 — a revisão com a diretoria vira quatro emendas (A53–A56)
+
+Decisões do JP depois de apresentar o produto aos chefes. As quatro tocam a
+interface da 1.2, que a blueprint da 1.3 declarava congelada; o congelamento
+valia para não desviar a construção do radar, e não para recusar correção de
+produto vinda de quem decide. Nenhuma delas altera índice, série, taxonomia
+aprovada, direito de fonte ou qualquer regra da PARTE 0.
+
+- `REVOGATÓRIA` | **A53 — a interface troca de idioma inteira.** ~~A16: a
+  interface da v1 será em inglês.~~ ~~§34: sem multi-idioma.~~ As duas caem: o
+  app passa a oferecer **português e inglês**, escolhidos nos Ajustes, com
+  "acompanhar o idioma do iPhone" como padrão. "Inteiro" é literal e é a parte
+  cara — telas, mensagens de erro, prosa do relatório, rótulos da taxonomia,
+  datas e moeda. Os **ids** da taxonomia continuam em português e imutáveis:
+  eles são contrato de banco e série histórica, não texto de tela. **Manchete
+  de veículo não é traduzida**, porque é citação de fonte e traduzi-la
+  inventaria texto que a fonte não publicou, contra a regra inviolável 3. A
+  tradução tem portão próprio (`ferramentas/extrair_frases.py --conferir`)
+  porque esta é uma falha que não quebra build, não aparece em log e não
+  derruba teste: ela só chega ao usuário em inglês no meio do português.
+- `ADITIVA` | **A54 — foto de peça é desenhada sobre cinza neutro, nunca sobre
+  cor.** A peça aparecia sobre `#BBE5ED`, o céu da marca, em seis lugares. Um
+  entorno cromático desloca a cor percebida na direção complementar, e o app
+  fazia isso justamente na dimensão que o `CorDaPeca` mede e pré-marca no
+  formulário: o algoritmo lia o pixel cru e a pessoa julgava a peça puxada para
+  o quente. O substrato é `#CBCBCB` — neutro (R = G = B) e com fator de
+  luminância de 60%, o entorno que a ISO 3664 recomenda para avaliação prática
+  de cor. É **fixo**, e não adaptativo: superfície de julgamento de cor não
+  pode mudar com o tema do sistema, ou a mesma peça leria diferente em dois
+  aparelhos. O céu da marca continua nos botões e nos fundos de tela, onde não
+  há peça dentro para ser julgada.
+- `ADITIVA` | **A55 — barra de navegação não carrega verbo.** `Add` vira
+  **`Studio`** (`Estúdio`). Uma aba nomeia um lugar, e o rótulo tem de
+  responder "onde estou" — as outras três já respondiam. O efeito colateral do
+  verbo era de hierarquia: "Add" ao lado de "Closet" fazia a aba parecer um
+  botão que caiu na barra. A identidade da aba continua sendo o `case` do enum,
+  que não traduz; o rótulo passou a ser só texto de tela.
+- `ADITIVA` | **A56 — cor medida com flash de espectro conhecido, quando o
+  aparelho souber.** O balanço de branco automático corrige a cena inteira: a
+  mesma blusa branca sai bege sob lâmpada quente e azulada sob LED frio, e o
+  `CorDaPeca` grava essa diferença como se fosse a peça. A rota de **cor
+  constante** do iOS 18 (`AVCapturePhotoOutput.isConstantColorEnabled`)
+  reconstrói a cor independentemente da luz do ambiente e devolve uma confiança
+  medida. Ela é **escolha explícita da pessoa**, e não o caminho padrão, porque
+  dispara o flash em toda captura. O ganho que mais importa não é a foto mais
+  bonita: com confiança medida, o app passa a saber **quando não deve sugerir
+  cor** — abaixo do piso, a cor fica desmarcada e a tela diz por quê, como a
+  regra inviolável 2 exige. Confiança **ausente** (fototeca, arquivo, câmera
+  comum, iOS 17) continua significando "não medida" e preserva o comportamento
+  de sempre; tratá-la como zero seria uma regressão silenciosa para quase todo
+  mundo. O piso de confiança está registrado como **não calibrado** e erra para
+  o lado de não sugerir até existir uma amostra fotografada sob luzes
+  conhecidas.
+  `[EMENDA ADITIVA 05/09/2026, depois do teste em aparelho: a captura devolve
+  DUAS fotos da mesma cena, e elas têm funções diferentes. A natural é a que a
+  pessoa vê, recorta e guarda; a de cor constante só mede. O motivo é físico e
+  foi relatado no aparelho: flash no eixo cria reflexo especular e desbota a
+  superfície para quem olha, mesmo com a medição correta — o oposto do que a
+  A54 existe para garantir. O par só vale enquanto a geometria não muda:
+  recortar ou isolar a peça invalida a correspondência, e a leitura volta ao
+  comportamento de sempre. A tela declara essa perda em vez de deixá-la
+  invisível.]`

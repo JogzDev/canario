@@ -91,6 +91,21 @@ enum Formato {
         return bruto.replacingOccurrences(of: "\u{00A0}", with: " ")
     }
 
+    /// Confirmação de um valor digitado: aqui os centavos nunca somem, porque
+    /// a pessoa precisa conferir se `1.299,90` virou 1.299,90, não apenas uma
+    /// aproximação boa para um cartão de mercado.
+    static func dinheiroExato(_ v: Double) -> String {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.numberStyle = .currency
+        f.currencyCode = "BRL"
+        f.minimumFractionDigits = 2
+        f.maximumFractionDigits = 2
+        let bruto = f.string(from: NSNumber(value: v)) ??
+            String(format: "R$ %.2f", v)
+        return bruto.replacingOccurrences(of: "\u{00A0}", with: " ")
+    }
+
     /// Contagem com separador de milhar no idioma-fonte da interface.
     ///
     /// Existe porque a tela do cluster mostrava "3542 no painel". Número de
@@ -110,16 +125,22 @@ enum Formato {
     static func periodo(dias: Int) -> String {
         switch dias {
         case ..<0:   return "—"
-        case 0...13: return "\(max(dias, 1)) day\(dias == 1 ? "" : "s")"
+        // Uma chave por forma, em vez de sufixo montado por ternário: em
+        // português "1 dia"/"3 dias" mudam só no plural, mas "1 semana"/"3
+        // semanas" mudam o gênero do que vem junto, e uma tradução não
+        // consegue reordenar isso a partir de um "s" solto dentro da chave.
+        case 0...13:
+            let d = max(dias, 1)
+            return d == 1 ? frase("1 day") : frase("\(String(d)) days")
         case 14...44:
             let semanas = Int((Double(dias) / 7).rounded())
-            return "\(semanas) week\(semanas == 1 ? "" : "s")"
+            return semanas == 1 ? frase("1 week") : frase("\(String(semanas)) weeks")
         default:
             // `dias/30 + 1` e não `ceil`: com ceil, 90 dias viraria "menos de 3
             // meses", que é falso — 90 dias são três meses cravados. Somar um ao
             // piso deixa a frase sempre verdadeira, que é o que a regra 2 pede.
             let meses = dias / 30 + 1
-            return "under \(meses) months"
+            return frase("under \(String(meses)) months")
         }
     }
 
@@ -159,5 +180,134 @@ enum Formato {
         let semFracao = ISO8601DateFormatter()
         if let d = semFracao.date(from: texto) { return f.string(from: d) }
         return nil
+    }
+}
+
+/// Interpreta preço em real sem usar o idioma atual do aparelho ou do app.
+///
+/// O produto aceita tanto `79,90` quanto `79.90`. Com os dois separadores, o
+/// último é decimal (`1.299,90` e `1,299.90`). Um único separador seguido de
+/// três dígitos é deliberadamente ambíguo: `1.299` pode significar 1.299 reais
+/// ou mil duzentos e noventa e nove. Inventar uma das duas leituras seria pior
+/// que pedir dois centavos explícitos ou nenhum separador.
+enum PrecoDigitado {
+    enum Leitura: Equatable {
+        case vazio
+        case valor(Double)
+        case ambiguo
+        case invalido
+
+        var valor: Double? {
+            guard case let .valor(valor) = self else { return nil }
+            return valor
+        }
+
+        var permiteAvancar: Bool {
+            switch self {
+            case .vazio, .valor: return true
+            case .ambiguo, .invalido: return false
+            }
+        }
+    }
+
+    static func interpretar(_ entrada: String) -> Leitura {
+        var texto = entrada.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !texto.isEmpty else { return .vazio }
+
+        let maiusculo = texto.uppercased()
+        if maiusculo.hasPrefix("R$") {
+            texto.removeFirst(2)
+        } else if maiusculo.hasPrefix("BRL") {
+            texto.removeFirst(3)
+        }
+        texto = String(texto.filter { !$0.isWhitespace })
+        guard !texto.isEmpty else { return .invalido }
+
+        let permitidos = CharacterSet(charactersIn: "0123456789,.")
+        guard texto.unicodeScalars.allSatisfy(permitidos.contains) else {
+            return .invalido
+        }
+
+        let virgulas = texto.filter { $0 == "," }.count
+        let pontos = texto.filter { $0 == "." }.count
+        if virgulas > 0 && pontos > 0 {
+            guard let ultimaVirgula = texto.lastIndex(of: ","),
+                  let ultimoPonto = texto.lastIndex(of: ".") else {
+                return .invalido
+            }
+            let decimal: Character = ultimaVirgula > ultimoPonto ? "," : "."
+            let milhar: Character = decimal == "," ? "." : ","
+            guard texto.filter({ $0 == decimal }).count == 1 else {
+                return .invalido
+            }
+            let partes = texto.split(separator: decimal,
+                                     omittingEmptySubsequences: false)
+            guard partes.count == 2,
+                  (1...2).contains(partes[1].count),
+                  somenteDigitos(partes[1]) else { return .invalido }
+            let inteiro = String(partes[0])
+            guard inteiroValido(inteiro, separador: milhar) else {
+                return .invalido
+            }
+            let canonico = inteiro.replacingOccurrences(
+                of: String(milhar), with: "") + "." + partes[1]
+            return valor(canonico)
+        }
+
+        if virgulas + pontos == 0 {
+            guard somenteDigitos(Substring(texto)) else { return .invalido }
+            return valor(texto)
+        }
+
+        let separador: Character = virgulas > 0 ? "," : "."
+        let partes = texto.split(separator: separador,
+                                 omittingEmptySubsequences: false)
+        guard partes.allSatisfy({ !$0.isEmpty && somenteDigitos($0) }) else {
+            return .invalido
+        }
+
+        if partes.count == 2 {
+            switch partes[1].count {
+            case 1, 2:
+                return valor(String(partes[0]) + "." + partes[1])
+            case 3:
+                return .ambiguo
+            default:
+                return .invalido
+            }
+        }
+
+        guard gruposDeMilharValidos(partes) else { return .invalido }
+        return valor(partes.joined())
+    }
+
+    private static func somenteDigitos(_ texto: Substring) -> Bool {
+        !texto.isEmpty && texto.utf8.allSatisfy { (48...57).contains($0) }
+    }
+
+    private static func inteiroValido(_ texto: String,
+                                      separador: Character) -> Bool {
+        guard texto.contains(separador) else {
+            return somenteDigitos(Substring(texto))
+        }
+        let grupos = texto.split(separator: separador,
+                                 omittingEmptySubsequences: false)
+        return gruposDeMilharValidos(grupos)
+    }
+
+    private static func gruposDeMilharValidos(_ grupos: [Substring]) -> Bool {
+        guard let primeiro = grupos.first,
+              (1...3).contains(primeiro.count),
+              somenteDigitos(primeiro), grupos.count > 1 else { return false }
+        return grupos.dropFirst().allSatisfy {
+            $0.count == 3 && somenteDigitos($0)
+        }
+    }
+
+    private static func valor(_ canonico: String) -> Leitura {
+        guard let valor = Double(canonico), valor.isFinite, valor > 0 else {
+            return .invalido
+        }
+        return .valor(valor)
     }
 }
