@@ -22,10 +22,12 @@ final class ResumoDeEventosTests: XCTestCase {
 
     private func marca(_ nome: String, pecas: Int, eventos: Int,
                        ofertadas: Int?, porMil: Double?,
+                       observadas: Int? = nil, porMilObservadas: Double? = nil,
                        exemplos: Int = 12) -> ResumoDeEventos.Marca {
         .init(marca: nome, pecas: pecas, eventos: eventos, pecasRepetidas: 31,
               maiorQuedaPct: nil, pecasOfertadas: ofertadas,
-              porMilOfertadas: porMil, tamanhos: ["P", "M", "G"],
+              porMilOfertadas: porMil, pecasObservadas: observadas,
+              porMilObservadas: porMilObservadas, tamanhos: ["P", "M", "G"],
               exemplos: (1...exemplos).map { exemplo("Peça \($0)") })
     }
 
@@ -45,6 +47,8 @@ final class ResumoDeEventosTests: XCTestCase {
             ResumoDeEventos.Resposta.self, from: Data(json.utf8))
         XCTAssertEqual(r.totalPecas, 2312)
         XCTAssertEqual(r.marcas.first?.porMilOfertadas, 201.3)
+        XCTAssertNil(r.marcas.first?.porMilObservadas,
+                     "cache antigo continua legível sem inventar a nova proporção")
         // O sinal que o JP pediu em 31/07 viaja no exemplo desde a A58.
         XCTAssertEqual(r.marcas.first?.exemplos.first?.ordinal, 3)
         XCTAssertEqual(r.marcas.first?.exemplos.first?.detalhe?.tamanhos, ["PP", "P"])
@@ -84,9 +88,10 @@ final class ResumoDeEventosTests: XCTestCase {
 
     func testTaxaSoExisteComDenominador() throws {
         let comDenominador = marca("Le Lis Blanc", pecas: 351, eventos: 382,
-                                   ofertadas: 1744, porMil: 201.3)
+                                   ofertadas: 1744, porMil: 201.3,
+                                   observadas: 2400, porMilObservadas: 146.3)
         XCTAssertEqual(ResumoDeEventos.taxa(comDenominador),
-                       "201.3 per 1,000 offered")
+                       "146.3 per 1,000 observed this week")
 
         // Fora da retenção de snapshots não há sortimento observado. A taxa
         // se cala; dividir pelo sortimento de hoje seria pior que não dividir.
@@ -96,6 +101,10 @@ final class ResumoDeEventosTests: XCTestCase {
         XCTAssertFalse(ResumoDeEventos.apoio(sem).contains("per 1,000"))
         XCTAssertTrue(ResumoDeEventos.apoio(sem).contains("382 events"),
                       "sem denominador a contagem absoluta continua existindo")
+        let antigo = marca("Dress To", pecas: 2123, eventos: 2127,
+                           ofertadas: 1880, porMil: 1129.3)
+        XCTAssertNil(ResumoDeEventos.taxa(antigo),
+                     "a taxa de 113% do contrato anterior não pode aparecer")
     }
 
     /// Doze cartões não podem afirmar "doze peças" quando a marca tem

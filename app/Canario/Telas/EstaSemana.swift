@@ -14,6 +14,7 @@ import SwiftUI
 struct EstaSemana: View {
     var abrirConta: () -> Void = {}
     @StateObject private var dados = DadosDaSemana()
+    @State private var mostrarTodasManchetes = false
 
     var body: some View {
         NavigationStack {
@@ -93,9 +94,19 @@ struct EstaSemana: View {
             }
             folhaDaBusca
             if !dados.manchetes.isEmpty {
-                CartaoDeImprensaDaEdicao(manchetes: Array(dados.manchetes.prefix(4)))
+                CartaoDeImprensaDaEdicao(manchetes: mostrarTodasManchetes
+                    ? dados.manchetes : Array(dados.manchetes.prefix(4)))
+                if dados.manchetes.count > 4 {
+                    Button(mostrarTodasManchetes ? "Show fewer headlines" : "Show all headlines") {
+                        mostrarTodasManchetes.toggle()
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .frame(minHeight: 44)
+                }
             }
-            prateleira(usadas: Set([reposicao?.marca.marca, remarcacao?.marca.marca].compactMap { $0 }))
+            let usadas = Set([reposicao?.marca.marca, remarcacao?.marca.marca].compactMap { $0 })
+            prateleira("reposicao", usadas: usadas)
+            prateleira("remarcacao", usadas: usadas)
         }
     }
 
@@ -103,56 +114,77 @@ struct EstaSemana: View {
 
     @ViewBuilder private var folhaDaBusca: some View {
         let linhas = Array(dados.buscaDaSemana.prefix(6))
+        let maiorQueda = dados.buscaDaSemana.last.flatMap { ($0.z ?? 0) < 0 ? $0 : nil }
         if !linhas.isEmpty {
             Folha(espaco: 4) {
-                CabecalhoDaFolha(
-                    titulo: Text("What Brazil is searching"),
-                    nota: dados.semanaDaBusca.map {
-                        frase("Google searches in Brazil, each term against its own last 12 weeks. Week of \(Formato.data($0)).")
-                    },
-                    simbolo: "magnifyingglass")
-                    .padding(.bottom, 6)
+                NavigationLink {
+                    TodasAsBuscas(dados: dados)
+                } label: {
+                    CabecalhoDaFolha(
+                        titulo: Text("What Brazil is searching"),
+                        nota: dados.semanaDaBusca.map {
+                            frase("Google searches in Brazil, each term against its own last 12 weeks. Week of \(Formato.data($0)).")
+                        },
+                        simbolo: "magnifyingglass", abre: true)
+                        .padding(.bottom, 6)
+                }
+                .buttonStyle(.plain)
                 ForEach(Array(linhas.enumerated()), id: \.element.termoId) { i, ponto in
                     Group {
                         if let termo = dados.termo(ponto.termoId) {
                             NavigationLink { RelatorioDoTermo(termo: termo) } label: {
-                                linha(ponto, destacar: i == 0)
+                                linha(ponto, destacar: i == 0,
+                                      destacarQueda: ponto.termoId == maiorQueda?.termoId)
                             }
                             .buttonStyle(.plain)
                         } else {
-                            linha(ponto, destacar: i == 0)
+                            linha(ponto, destacar: i == 0,
+                                  destacarQueda: ponto.termoId == maiorQueda?.termoId)
                         }
                     }
                     if i < linhas.count - 1 { CosturaDaEdicao() }
+                }
+                if let maiorQueda, !linhas.contains(where: { $0.termoId == maiorQueda.termoId }) {
+                    CosturaDaEdicao()
+                    ChamadaDaEdicao(texto: frase("Biggest drop"))
+                    if let termo = dados.termo(maiorQueda.termoId) {
+                        NavigationLink { RelatorioDoTermo(termo: termo) } label: {
+                            linha(maiorQueda, destacar: false, destacarQueda: true)
+                        }.buttonStyle(.plain)
+                    }
                 }
             }
         }
     }
 
-    private func linha(_ ponto: PontoSerie, destacar: Bool) -> some View {
+    private func linha(_ ponto: PontoSerie, destacar: Bool, destacarQueda: Bool = false) -> some View {
         LinhaDeAtributo(termoId: ponto.termoId,
                         rotulo: dados.rotulo(ponto.termoId),
                         dimensao: dados.dimensao(ponto.termoId),
                         leitura: ponto.z,
                         serie: dados.serieDeBusca(ponto.termoId),
                         destacar: destacar,
+                        destacarQueda: destacarQueda,
                         abre: dados.termo(ponto.termoId) != nil)
     }
 
     // MARK: Prateleira
 
-    @ViewBuilder private func prateleira(usadas: Set<String>) -> some View {
-        let marcas = dados.prateleira("reposicao", sem: usadas)
-        if !marcas.isEmpty, let resposta = dados.resumos["reposicao"] {
+    @ViewBuilder private func prateleira(_ tipo: String, usadas: Set<String>) -> some View {
+        let marcas = dados.prateleira(tipo, sem: usadas)
+        if !marcas.isEmpty, let resposta = dados.resumos[tipo] {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Also back in stock")
+                Group {
+                    if tipo == "reposicao" { Text("Also back in stock") }
+                    else { Text("Also marked down") }
+                }
                     .font(Edicao.Tipo.secao)
                     .accessibilityAddTraits(.isHeader)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 14) {
                         ForEach(marcas) { marca in
                             NavigationLink {
-                                MovimentosDaMarca(marca: marca, tipo: "reposicao", resposta: resposta)
+                                MovimentosDaMarca(marca: marca, tipo: tipo, resposta: resposta)
                             } label: {
                                 CartaoDaPrateleira(marca: marca)
                             }
@@ -164,6 +196,47 @@ struct EstaSemana: View {
                 .scrollClipDisabled()
             }
         }
+    }
+}
+
+/// Todos os termos medidos na última semana de busca, inclusive os em queda.
+private struct TodasAsBuscas: View {
+    @ObservedObject var dados: DadosDaSemana
+
+    var body: some View {
+        let linhas = dados.buscaDaSemana
+        let menor = linhas.last?.termoId
+        ScrollView {
+            VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+                Folha(espaco: 4) {
+                    CabecalhoDaFolha(titulo: Text("What Brazil is searching"),
+                        nota: dados.semanaDaBusca.map {
+                            frase("Google searches in Brazil, each term against its own last 12 weeks. Week of \(Formato.data($0)).")
+                        }, simbolo: "magnifyingglass")
+                    ForEach(Array(linhas.enumerated()), id: \.element.termoId) { i, ponto in
+                        if i > 0 { CosturaDaEdicao() }
+                        if i == 0 { ChamadaDaEdicao(texto: frase("Biggest rise")) }
+                        if ponto.termoId == menor && (ponto.z ?? 0) < 0 {
+                            ChamadaDaEdicao(texto: frase("Biggest drop"))
+                        }
+                        if let termo = dados.termo(ponto.termoId) {
+                            NavigationLink { RelatorioDoTermo(termo: termo) } label: {
+                                LinhaDeAtributo(termoId: ponto.termoId,
+                                    rotulo: dados.rotulo(ponto.termoId),
+                                    dimensao: dados.dimensao(ponto.termoId),
+                                    leitura: ponto.z, serie: dados.serieDeBusca(ponto.termoId),
+                                    destacar: i == 0,
+                                    destacarQueda: ponto.termoId == menor && (ponto.z ?? 0) < 0)
+                            }.buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, Edicao.margem)
+            .padding(.vertical, 12)
+        }
+        .papelDaEdicao()
+        .navigationTitle(Text("Search in Brazil"))
     }
 }
 
@@ -243,10 +316,10 @@ struct CapaDaHistoria: View {
         var partes: [String] = []
         if historia.porProporcao, let cem = historia.deCadaCem {
             partes.append(ehReposicao
-                ? frase("\(String(cem)) of every 100 items on sale came back, the highest share among the brands.")
-                : frase("\(String(cem)) of every 100 items on sale got cheaper, the highest share among the brands."))
+                ? frase("\(String(cem)) of every 100 items observed this week came back, the highest share among the brands.")
+                : frase("\(String(cem)) of every 100 items observed this week got cheaper, the highest share among the brands."))
         } else {
-            partes.append(frase("The largest count this week; no assortment count covers this period, so there is no share."))
+            partes.append(frase("The largest count of items with this movement in the period."))
         }
         if ehReposicao, let tamanhos = historia.marca.tamanhos, !tamanhos.isEmpty {
             partes.append(frase("Sizes that came back most: \(ListFormatter.localizedString(byJoining: Array(tamanhos.prefix(3))))."))
@@ -316,8 +389,8 @@ struct MovimentosDaMarca: View {
         var itens: [(String, String)] = [
             (Formato.contagem(marca.pecas), tipo == "reposicao" ? frase("items back") : frase("items cheaper"))
         ]
-        if let porMil = marca.porMilOfertadas {
-            itens.append(("\(Int((porMil / 10).rounded()))%", frase("of what is on sale")))
+        if let porMil = marca.porMilObservadas {
+            itens.append(("\(Int((porMil / 10).rounded()))%", frase("of items observed this week")))
         }
         if marca.eventos > marca.pecas {
             itens.append((Formato.contagem(marca.eventos), frase("events")))

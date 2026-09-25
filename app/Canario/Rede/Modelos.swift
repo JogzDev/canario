@@ -277,7 +277,8 @@ struct Cobertura: Decodable, Hashable {
            pct < minimo {
             partes.append(
                 String(format: frase("this dimension labels %.1f%% of current offers, minimum %.0f%%"),
-                       pct, minimo))
+                       locale: GestorDeIdioma.idiomaResolvido.locale,
+                       arguments: [pct, minimo]))
         } else if coberturaDimensaoPct == nil {
             partes.append(frase("dimension-level coverage has not been measured"))
         }
@@ -469,11 +470,10 @@ enum LeituraDoEvento {
             // duvidar confere a conta na própria linha.
             if let pct = detalhe?.quedaPct,
                let de = detalhe?.precoDe, let para = detalhe?.precoPara {
-                return String(format: "%.0f%% below its previous price: %@ → %@",
-                              pct, Formato.dinheiro(de), Formato.dinheiro(para))
+                return frase("\(String(Int(pct.rounded())))% below its previous price: \(Formato.dinheiro(de)) → \(Formato.dinheiro(para))")
             }
             if let pct = detalhe?.quedaPct {
-                return String(format: "%.1f%% below its previous price", pct)
+                return frase("\(Leitura.numero(pct, casas: 1))% below its previous price")
             }
             return frase("Price cut since the last reading")
         case "saida_de_linha":

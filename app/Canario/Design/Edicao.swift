@@ -43,6 +43,7 @@ enum Edicao {
     /// Anotação de dado: a esferográfica azul do caderno.
     static let caneta = cor(0x2743D6, 0x8FA2FF)
     static let marcaTexto = cor(0xF7E27A, 0x5E5421)
+    static let marcaTextoQueda = cor(0xD8CCED, 0x514566)
     /// Papel de caderno: quente no claro, grafite no escuro.
     static let papel = cor(0xF7F5EF, 0x1A1917)
     static let cartao = cor(0xFFFFFF, 0x262523)
@@ -342,6 +343,7 @@ struct LinhaDeAtributo: View {
     let leitura: Double?
     var serie: [PontoSerie] = []
     var destacar = false
+    var destacarQueda = false
     var abre = true
     /// Onde a tela antes não mostrava número, a linha também não mostra.
     var mostraNumero = true
@@ -357,9 +359,14 @@ struct LinhaDeAtributo: View {
                 // A dimensão pequena ao lado do nome, como legenda: "Preto"
                 // sozinho não dizia se era a cor. Um `Text` só, para quebrar
                 // junto com o nome em vez de empurrá-lo.
-                Text("\(Text(rotulo).font(Edicao.Tipo.linha).foregroundStyle(.primary)) \(Text(dimensao ?? "").font(.footnote).foregroundStyle(.secondary))")
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(rotulo)
+                    .font(Edicao.Tipo.linha)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                if let dimensao, !dimensao.isEmpty {
+                    Text(dimensao).font(.footnote).foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
                 if mostraFaixa { apoio }
             }
             Spacer(minLength: 8)
@@ -368,7 +375,8 @@ struct LinhaDeAtributo: View {
                     .frame(width: 56, height: 30)
             }
             if mostraNumero {
-                NumeroDaEdicao(valor: leitura, destacar: destacar)
+                NumeroDaEdicao(valor: leitura, destacar: destacar,
+                               destacarQueda: destacarQueda)
             }
             if abre { SetaDaLinha() }
         }
@@ -411,19 +419,21 @@ struct LinhaDeAtributo: View {
 struct NumeroDaEdicao: View {
     let valor: Double?
     var destacar = false
+    var destacarQueda = false
 
     var body: some View {
+        let marcado = destacar || destacarQueda
         // Duas casas, como na tela do atributo. Com uma, −0,98 saía "−1.0"
         // ao lado de "um pouco abaixo" — e −1 já é "abaixo" na régua.
         Text(valor.map { Leitura.numero($0, casas: 2, sinal: abs($0) >= 0.005) } ?? "—")
             // A frase ao lado lidera; o número fica como explicação (JP, 23/09).
-            .font(destacar ? Edicao.Tipo.numero : .subheadline.monospacedDigit())
-            .foregroundStyle(destacar ? .primary : .secondary)
+            .font(marcado ? Edicao.Tipo.numero : .subheadline.monospacedDigit())
+            .foregroundStyle(marcado ? .primary : .secondary)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background {
-                if destacar {
-                    Capsule().fill(Edicao.marcaTexto)
+                if marcado {
+                    Capsule().fill(destacarQueda ? Edicao.marcaTextoQueda : Edicao.marcaTexto)
                         .rotationEffect(.degrees(-3))
                         .padding(.vertical, 2)
                 }

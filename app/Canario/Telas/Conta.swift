@@ -324,12 +324,27 @@ struct ContaDoMenu: View {
             .clipShape(RoundedRectangle(cornerRadius: Edicao.raio))
 
             Button { conta.entrarComGoogle() } label: {
-                Label("Continue with Google", systemImage: "g.circle.fill")
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 50)
+                HStack {
+                    Image("GoogleLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
+                    Spacer()
+                    Text("Continue with Google")
+                    Spacer()
+                    Color.clear.frame(width: 20, height: 20)
+                }
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .padding(.horizontal, 16)
+                .background(Edicao.cartao,
+                            in: RoundedRectangle(cornerRadius: Edicao.raio))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Edicao.raio)
+                        .strokeBorder(Color(.separator), lineWidth: 1)
+                }
+                .foregroundStyle(.primary)
             }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.roundedRectangle(radius: Edicao.raio))
+            .buttonStyle(.plain)
 
             Button { mostrarEmail = true } label: {
                 Label("Continue with email", systemImage: "envelope.fill")

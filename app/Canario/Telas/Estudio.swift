@@ -24,21 +24,7 @@ struct Estudio: View {
             ZStack {
                 ParedeDoAcervo(pecas: pecas)
                     .ignoresSafeArea()
-                if leituras.isEmpty {
-                    cartao.padding(.horizontal, 28)
-                } else {
-                    ScrollView {
-                        VStack(spacing: 28) {
-                            cartao
-                                .padding(.top, 64)
-                            leiturasFeitas
-                        }
-                        .frame(maxWidth: 500)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
-                    }
-                }
+                cartao.padding(.horizontal, 28)
             }
             .navigationTitle(Text("Studio"))
             .toolbar {
@@ -47,6 +33,22 @@ struct Estudio: View {
                         Image(systemName: "person.crop.circle")
                     }
                     .accessibilityLabel(Text("Account"))
+                }
+                if !leituras.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            ScrollView {
+                                leiturasFeitas
+                                    .padding(.horizontal, Edicao.margem)
+                                    .padding(.vertical, 20)
+                            }
+                            .papelDaEdicao()
+                            .navigationTitle(Text("Readings made"))
+                        } label: {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+                        .accessibilityLabel(Text("Readings made"))
+                    }
                 }
             }
         }
@@ -239,7 +241,7 @@ struct ParedeDoAcervo: View {
     private let colunas = 3
     private let porColuna = 5
     /// Pontos por segundo; cada coluna com a sua, para a parede não andar em bloco.
-    private let velocidades: [Double] = [9, 12, 10]
+    private let velocidades: [Double] = [18, 22, 19]
 
     /// Peça da pessoa ou lugar vazio em croqui.
     private enum Quadro { case peca(UIImage), croqui(IconeDaTaxonomia.Glifo) }

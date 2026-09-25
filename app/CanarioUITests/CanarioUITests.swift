@@ -286,6 +286,27 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Back"].exists)
     }
 
+    func testPerguntasAparecemEmPortugues() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues"]
+        app.launch()
+        app.buttons["Conta"].tap()
+        let menu = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        menu.name = "menu-conta-pt"
+        menu.lifetime = .keepAlways
+        add(menu)
+        app.buttons["Perguntas"].tap()
+        XCTAssertTrue(app.staticTexts["O que é um movimento confirmado?"]
+            .waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "Duas semanas consecutivas"))
+            .firstMatch.exists)
+        let perguntas = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        perguntas.name = "perguntas-pt"
+        perguntas.lifetime = .keepAlways
+        add(perguntas)
+    }
+
     func testConfirmacaoFinalSalvaSemTelaRepetidaDeClothingDetails() {
         let app = aplicativo(argumentos: ["-CanarioUITestDetalhes"])
         app.launch()
@@ -474,6 +495,7 @@ final class CanarioUITests: XCTestCase {
                                "-CanarioAbrirEstudio", "-CanarioUITestLeiturasFeitas"]
         app.launch()
 
+        app.buttons["Leituras feitas"].tap()
         XCTAssertTrue(app.staticTexts["Leituras feitas"].waitForExistence(timeout: 5))
         let registro = app.buttons.matching(
             NSPredicate(format: "label CONTAINS %@", "saia midi plissada")
@@ -589,4 +611,5 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["PP"].exists)
         XCTAssertTrue(app.staticTexts["GG"].exists)
     }
+
 }

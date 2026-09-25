@@ -43,6 +43,16 @@ struct RelatorioDoTermo: View {
         return c.suficiente
     }
 
+    private var buscaRecente: PontoSerie? {
+        serie.filter { $0.fonte == "busca" && $0.z != nil }
+            .max { $0.semana < $1.semana }
+    }
+
+    private var coberturaDaSemana: Cobertura? {
+        guard let semana = atual?.semana else { return nil }
+        return coberturas.first { $0.semana == semana }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
@@ -138,14 +148,29 @@ struct RelatorioDoTermo: View {
                     .background(Color(.tertiarySystemFill), in: Capsule())
             }
 
+            if !temCobertura, let buscaRecente, let z = buscaRecente.z {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                    Text("Google search interest")
+                    Spacer()
+                    Text(fmt(z)).font(Edicao.Tipo.estatistica)
+                }
+                .foregroundStyle(Edicao.caneta)
+            }
+
             if explicandoAEscala {
                 cartaoDaEscala
             }
 
             Text(manchete).font(.body)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(Perna.baseadoEm(atual?.pernasAtivas))
-                .font(.footnote).foregroundStyle(.secondary)
+            if temCobertura {
+                Text(Perna.baseadoEm(atual?.pernasAtivas))
+                    .font(.footnote).foregroundStyle(.secondary)
+            } else if let coberturaDaSemana {
+                Text(frase("Panel index not shown: \(coberturaDaSemana.oQueFalta)."))
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -197,7 +222,10 @@ struct RelatorioDoTermo: View {
         // só era montado do lado liberado. Recusar o número em corpo 34 e
         // sussurrá-lo em corpo 15 não é recusar.
         guard temCobertura else {
-            return frase("The panel does not have enough coverage this week to state an index for \(Traducao.rotuloExibido(termo)). What each source measured on its own is below.")
+            if let buscaRecente, let z = buscaRecente.z {
+                return frase("In the week of \(Formato.data(buscaRecente.semana)), Google searches for \(Traducao.rotuloExibido(termo)) were \(Leitura.emPalavras(z)). The source history and panel coverage are below.")
+            }
+            return frase("The sources measured for \(Traducao.rotuloExibido(termo)) are below. There is no qualified panel index for this week.")
         }
         guard let atual, let valor = atual.indice else {
             return frase("There is no index for \(Traducao.rotuloExibido(termo)) in this panel cut yet.")
@@ -298,7 +326,7 @@ struct RelatorioDoTermo: View {
         return naJanela.filter { compartilhadas.contains($0.semana) }
     }
 
-    /// §29.4 — um bloco por fator, com fonte e data. Agora em grade de dois.
+    /// §29.4 — um bloco por fator, com fonte e data.
     private var insumos: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
@@ -307,10 +335,7 @@ struct RelatorioDoTermo: View {
                              texto: Self.textoDasFontes,
                              rotulo: frase("What these percentages are"))
             }
-            LazyVGrid(columns: tipoDinamico >= .xxLarge
-                      ? [GridItem(.flexible())]
-                      : [GridItem(.flexible(), spacing: 12), GridItem(.flexible())],
-                      spacing: 12) {
+            VStack(spacing: 12) {
                 ForEach(porFonte, id: \.0) { fonte, pontos in
                     NavigationLink {
                         DetalheDaFonteEditorial(termo: termo, fonte: fonte, pontos: pontos)
@@ -318,15 +343,9 @@ struct RelatorioDoTermo: View {
                         CartaoDaPerna(fonte: fonte,
                                       variacao: variacaoDaFonte(fonte, pontos: pontos),
                                       leitura: resumoDaFonte(fonte, pontos: pontos),
+                                      amostra: pontos.first?.nAmostra,
                                       semanas: pontos.count,
                                       ultima: pontos.first?.semana)
-                        // Numa `LazyVGrid` a linha toma a altura do item mais
-                        // alto, e o mais baixo fica boiando com uma sobra
-                        // embaixo. "Search" cabe numa linha e "Brazilian
-                        // Editorial" em duas; "6 weeks" cabe e "235 weeks"
-                        // quebra. O resultado eram quatro caixas de alturas
-                        // diferentes -- o desalinhamento que o JP viu.
-                        .frame(maxHeight: .infinity)
                     }
                     .buttonStyle(.plain)
                 }
@@ -372,10 +391,10 @@ struct RelatorioDoTermo: View {
             let anteriores = pontos.dropFirst().prefix(12).compactMap(\.nAmostra)
             let media = anteriores.isEmpty ? nil
                 : Double(anteriores.reduce(0, +)) / Double(anteriores.count)
-            if let media {
+            if let media, media > 0 {
                 return frase("0 articles in the latest 4-week window · previous-window average \(Leitura.numero(media, casas: 1))")
             }
-            return frase("0 articles in the latest 4-week window")
+            return frase("No qualifying fashion articles in the latest 4-week window.")
         }
         return Leitura.variacao(recente: pontos.first?.valorBruto,
                                 media: mediaDaJanela(pontos))
@@ -604,6 +623,7 @@ struct CartaoDaPerna: View {
     let fonte: String
     let variacao: Double?
     let leitura: String
+    let amostra: Int?
     let semanas: Int
     let ultima: String?
     private var tinta: Color { Edicao.tintaDaFonte(fonte) }
@@ -638,14 +658,21 @@ struct CartaoDaPerna: View {
                         .font(Edicao.Tipo.estatistica)
                 }
                 .foregroundStyle(tinta)
+                if let amostra {
+                    Text(quantidade(amostra))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             } else {
                 Text(leitura)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if let amostra, amostra > 0,
+                   fonte == "editorial_br" || fonte == "editorial_intl" {
+                    Text(quantidade(amostra))
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
-
-            Spacer(minLength: 0)
 
             if let ultima {
                 VStack(alignment: .leading, spacing: 0) {
@@ -657,7 +684,7 @@ struct CartaoDaPerna: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 150, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rotuloFalado)
     }
@@ -667,5 +694,16 @@ struct CartaoDaPerna: View {
             frase("\(Leitura.numero($0, casas: 0, sinal: true)) percent versus its own 12-week average")
         } ?? leitura
         return frase("\(Perna.rotulo(fonte)), \(numero)")
+    }
+
+    private func quantidade(_ n: Int) -> String {
+        if fonte.hasPrefix("editorial") {
+            if n == 1 { return frase("1 qualifying article in the latest 4-week window") }
+            return frase("\(String(n)) qualifying articles in the latest 4-week window")
+        }
+        if fonte == "varejo" {
+            return frase("\(String(n)) observed items with this attribute")
+        }
+        return frase("\(String(n)) measurements")
     }
 }

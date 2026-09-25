@@ -70,7 +70,7 @@ public enum EntradaDoMenu: String, CaseIterable, Sendable {
 
     /// As entradas grandes, na ordem em que aparecem.
     public static var acoes: [EntradaDoMenu] {
-        allCases.filter { $0.familia == .acao }
+        [.ajustes, .conta, .favoritos]
     }
 
     /// As entradas de leitura, que a tela agrupa pequenas no rodapé.

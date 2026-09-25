@@ -11,7 +11,7 @@ import XCTest
 final class EntradasDoMenuTests: XCTestCase {
 
     func testAcaoELeituraEstaoSeparadas() {
-        XCTAssertEqual(EntradaDoMenu.acoes, [.favoritos, .conta, .ajustes])
+        XCTAssertEqual(EntradaDoMenu.acoes, [.ajustes, .conta, .favoritos])
         XCTAssertEqual(EntradaDoMenu.leituras, [.termos, .privacidade, .perguntas])
     }
 

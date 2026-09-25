@@ -32,7 +32,8 @@ final class DadosDaSemana: ObservableObject {
     ///
     /// Por contagem bruta a C&A ganha quase todo dia: é 32% do sortimento do
     /// painel. A capa virava vitrine de quem tem o maior catálogo, e isso não é
-    /// descoberta. A régua passa a ser peças movidas por mil ofertadas, entre
+    /// descoberta. A régua passa a ser peças movidas por mil observadas na
+    /// mesma janela, entre
     /// as marcas com volume suficiente; a contagem continua na manchete, e a
     /// frase de apoio diz por que ESTA marca é a história. Sem denominador na
     /// janela (fora da retenção), cai para a contagem e diz isso.
@@ -41,8 +42,8 @@ final class DadosDaSemana: ObservableObject {
         let candidatas = r.marcas.filter {
             $0.marca != outra && $0.pecas >= Self.pecasMinimasParaTaxa
         }
-        let comTaxa = candidatas.filter { $0.porMilOfertadas != nil }
-        if let melhor = comTaxa.max(by: { ($0.porMilOfertadas ?? 0) < ($1.porMilOfertadas ?? 0) }) {
+        let comTaxa = candidatas.filter { $0.porMilObservadas != nil }
+        if let melhor = comTaxa.max(by: { ($0.porMilObservadas ?? 0) < ($1.porMilObservadas ?? 0) }) {
             return Historia(tipo: tipo, marca: melhor, resposta: r, porProporcao: true)
         }
         if let maior = (candidatas.isEmpty ? r.marcas.filter { $0.marca != outra } : candidatas)
@@ -60,9 +61,9 @@ final class DadosDaSemana: ObservableObject {
         let porProporcao: Bool
         var id: String { tipo + marca.marca }
 
-        /// "19 de cada 100 peças à venda": a taxa por mil em linguagem de gente.
+        /// "19 de cada 100 peças observadas": a taxa por mil em linguagem de gente.
         var deCadaCem: Int? {
-            marca.porMilOfertadas.map { Int(($0 / 10).rounded()) }
+            marca.porMilObservadas.map { Int(($0 / 10).rounded()) }
         }
     }
 
@@ -71,7 +72,7 @@ final class DadosDaSemana: ObservableObject {
         guard let r = resumos[tipo] else { return [] }
         return r.marcas
             .filter { !usadas.contains($0.marca) && !$0.exemplos.isEmpty }
-            .sorted { ($0.porMilOfertadas ?? -1, $0.pecas) > ($1.porMilOfertadas ?? -1, $1.pecas) }
+            .sorted { ($0.porMilObservadas ?? -1, $0.pecas) > ($1.porMilObservadas ?? -1, $1.pecas) }
             .prefix(limite).map { $0 }
     }
 
@@ -103,7 +104,6 @@ final class DadosDaSemana: ObservableObject {
             .flatMap { $0.meta?.exemplos ?? [] }
             .filter { Explicacao.mancheteDeclaraModa($0.titulo) }
             .filter { vistos.insert(($0.url ?? $0.titulo).lowercased()).inserted }
-            .prefix(8).map { $0 }
     }
 
     func termo(_ id: String) -> Termo? { termosPorId[id] }

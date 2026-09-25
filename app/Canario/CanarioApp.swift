@@ -130,6 +130,8 @@ struct Raiz: View {
                 contaAberta = false
                 itemDoMenu = ItemDoMenu(entrada: entrada)
             }
+            .presentationDetents([.height(430)])
+            .presentationDragIndicator(.visible)
         }
         .fullScreenCover(item: $itemDoMenu) { item in
             TelaDoMenu(entrada: item.entrada)
