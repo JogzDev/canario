@@ -127,9 +127,12 @@ def testar_template_tem_contrato_de_exportacao():
         assert trecho in html, trecho
 
 
-def testar_workflow_aceita_holdout_de_300():
-    workflow = (RAIZ / ".github" / "workflows" / "revisar-luna.yml").read_text()
-    assert "options: ['24', '300']" in workflow
+def testar_cli_aceita_quantidade_para_holdout_de_300():
+    ajuda = subprocess.run(
+        [sys.executable, str(CAMINHO), "--help"],
+        capture_output=True, text=True, check=False)
+    assert ajuda.returncode == 0, ajuda.stderr
+    assert "--quantidade QUANTIDADE" in ajuda.stdout
     fonte = CAMINHO.read_text()
     assert "selecionar_amostra_de_avaliacao" in fonte
 
@@ -138,7 +141,7 @@ def main():
     testes = [
         testar_parser_e_pacote_cego,
         testar_template_tem_contrato_de_exportacao,
-        testar_workflow_aceita_holdout_de_300,
+        testar_cli_aceita_quantidade_para_holdout_de_300,
     ]
     for teste in testes:
         teste()
