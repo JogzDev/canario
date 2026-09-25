@@ -6,8 +6,9 @@ estratificada pelas oito pastas de categoria e usa semente fixa. O nome da
 pasta vem do matcher do titulo do produto: serve como rotulo fraco para o
 smoke test, nao como verdade humana para abrir o portao de 80% da A15.
 
-Exemplo (no runner i7):
-    OPENAI_API_KEY=... python3 ferramentas/avaliar_luna.py --quantidade 24
+Uso manual: compile `ferramentas/segmentar_fundo.swift` com Vision e passe o
+executavel em `--segmentador`. A chave vem do ambiente; nunca da linha de
+comando. Sem segmentacao, nenhuma chamada paga e iniciada.
 """
 
 import argparse
@@ -731,16 +732,15 @@ def argumentos():
 
 def main():
     args = argumentos()
+    if args.quantidade < 8 or args.quantidade > 300:
+        raise SystemExit("--quantidade precisa estar entre 8 e 300")
+    if args.segmentador is None:
+        raise SystemExit("--segmentador obrigatorio; imagem bruta e proibida")
+    if not args.segmentador.is_file():
+        raise SystemExit("--segmentador nao encontrado")
     chave = os.environ.get("OPENAI_API_KEY", "")
     if not chave:
         raise SystemExit("OPENAI_API_KEY ausente")
-    if args.quantidade < 8 or args.quantidade > 300:
-        raise SystemExit("--quantidade precisa estar entre 8 e 300")
-    if args.segmentador is not None and not args.segmentador.is_file():
-        raise SystemExit("--segmentador nao encontrado")
-    if args.quantidade > 24 and args.segmentador is None:
-        raise SystemExit(
-            "Benchmark de 300 exige --segmentador; imagem bruta e proibida")
 
     taxonomia = carregar_taxonomia(args.taxonomia)
     prompt_sha256 = hash_do_prompt(taxonomia)

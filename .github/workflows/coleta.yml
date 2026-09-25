@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # O comentario antigo dizia que o Python 3.9 do macOS serviria de reserva.
       # Nao serve: no i7 o `python3` e um atalho que exige as Command Line Tools
@@ -118,7 +118,7 @@ jobs:
       - name: Guardar veredito do pente fino
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.marca == '' && inputs.pente_fino }}
         continue-on-error: true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pente-fino-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -166,7 +166,7 @@ jobs:
       - name: Guardar cache de departamentos atualizado
         if: ${{ always() && steps.cache.outputs.alterado == 'true' }}
         continue-on-error: true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: departamentos-vtex-${{ github.run_id }}-${{ github.run_attempt }}
           path: anexos/departamentos_vtex.json

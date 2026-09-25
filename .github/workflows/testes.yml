@@ -48,7 +48,7 @@ jobs:
     # Lógica Python não depende de macOS nem de computador pessoal.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/python-mac
       - name: Instalar pyyaml (usado pelo teste de workflows)
         run: "$PY -m pip install --quiet pyyaml"
@@ -224,7 +224,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Fora do workspace: `actions/checkout` limpa o diretorio a cada
       # execucao. Com o lockfile igual, `npm install` nao baixa nada.
@@ -255,7 +255,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Fora do workspace de proposito: `actions/checkout` limpa o diretorio a
       # cada execucao, e reinstalar 133 MB por push seria desperdicio. Com o
@@ -279,7 +279,7 @@ jobs:
     # scheme compartilhado protegido por teste no job Python acima.
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Logica pura em macOS
         working-directory: app
         run: swift test

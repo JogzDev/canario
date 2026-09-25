@@ -633,12 +633,10 @@ ROTULOS_PESSOAIS = {"self-hosted", "sempre-ligado", "xcode", "X64"}
 
 
 def checar_runner_das_tarefas_automaticas(arquivos):
-    """O caminho regular não pode depender de nenhuma máquina do responsável."""
+    """Nenhum job depende de máquina pessoal; agendas têm executor previsível."""
     falhas = []
     for caminho in arquivos:
         nome = os.path.basename(caminho)
-        if nome not in WORKFLOWS_QUE_DEVEM_SER_AUTONOMOS:
-            continue
         with open(caminho, encoding="utf-8") as arquivo:
             for numero, linha in enumerate(arquivo, 1):
                 bruto = linha.strip()
@@ -649,7 +647,8 @@ def checar_runner_das_tarefas_automaticas(arquivos):
                     falhas.append((caminho, (
                         "linha {}: `{}` ainda depende de runner pessoal."
                     ).format(numero, alvo)))
-                elif "${{" in alvo and "inputs.executor" not in alvo:
+                elif (nome in WORKFLOWS_QUE_DEVEM_SER_AUTONOMOS
+                      and "${{" in alvo and "inputs.executor" not in alvo):
                     falhas.append((caminho, (
                         "linha {}: executor variável não está restrito ao "
                         "fallback gerenciado do Trends.").format(numero)))
