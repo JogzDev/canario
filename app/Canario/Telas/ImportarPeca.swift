@@ -176,6 +176,9 @@ struct ImportarPeca: View {
     /// aqui a ordem só é preservada e fica editável.
     @State private var coresPorPrioridade: [String] = []
     @State private var analiseConcluidaParaOAlvo = false
+    /// A taxonomia confirmada fica em `detectados`; isto guarda somente os
+    /// detalhes livres da análise para a Leitura pedida pela pessoa.
+    @State private var analiseDaFoto: AnaliseVisualRemota?
     @State private var mostrandoEditorDeRecorte = false
     @State private var pedindoConsentimentoDaNuvem = false
     @State private var imagemConfirmadaPendente: CGImage?
@@ -217,6 +220,7 @@ struct ImportarPeca: View {
                             precoAlvo: precoAlvo,
                             miniaturaJPEG: miniaturaJPEG,
                             pecaSalva: nil,
+                            analiseDaFoto: analiseDaFoto,
                             coresPorPrioridade: coresPorPrioridade,
                             apelido: nomeDaPeca,
                             todosOsTermos: termosDoFormulario,
@@ -285,7 +289,8 @@ struct ImportarPeca: View {
         }
         .task {
             avisoDeUso = await RegistroDeAnalises.shared.aviso()
-            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
+            if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes")
+                || LeituraDaPeca.testeDeInterfaceAtivo {
                 detectados = Set(["vestido", "preto"])
                 // A rota determinística preenche o conjunto na mão, então
                 // precisa preencher a ordem também -- senão a tela mostraria
@@ -961,6 +966,7 @@ struct ImportarPeca: View {
         procedencia = []
         detectados = []
         analiseConcluidaParaOAlvo = false
+        analiseDaFoto = nil
         let opcoes = await MiniaturaLocal.opcoesDeAlvo(de: imagem)
         guard !opcoes.isEmpty else {
             erro = frase("I could not prepare this image. Choose another photo or file.")
@@ -1088,6 +1094,7 @@ struct ImportarPeca: View {
         nomeDaPeca = ""
         precoDigitado = ""
         procedencia = []
+        analiseDaFoto = nil
         nomeDoArquivo = nil
         miniaturaJPEG = nil
         erro = nil
@@ -1097,6 +1104,7 @@ struct ImportarPeca: View {
 
     private func cancelarConfirmacao() {
         etapa = .entrada
+        analiseDaFoto = nil
         imagemPendente = nil
         imagemOriginal = nil
         // A medição morre com a confirmação. Sem isto, cancelar e importar
@@ -1132,6 +1140,7 @@ struct ImportarPeca: View {
         lendo = true
         erro = nil
         procedencia = []
+        analiseDaFoto = nil
         nomeDoArquivo = nome
         let leitura = await LeitorDeArquivo.ler(
             imagem, imagemParaCor: medicaoDoAlvo,
@@ -1152,6 +1161,7 @@ struct ImportarPeca: View {
                     }
                     erro = frase("The visual analysis found more than one plausible garment. Choose the category and attributes yourself, or try a tighter photo.")
                 } else {
+                    analiseDaFoto = analise
                     let existentes = Set(termos.map(\.id))
                     var sugeridos = FormularioDaPeca.podar(
                         analise.idsSugeridos(existentes: existentes),
@@ -1206,6 +1216,7 @@ struct ImportarPeca: View {
                     if !FormularioDaPeca.temCategoria(detectados, termos: termos) {
                         detectados = []
                         coresPorPrioridade = []
+                        analiseDaFoto = nil
                         erro = frase("The analysis returned an invalid category. Choose the attributes manually.")
                     }
                 }

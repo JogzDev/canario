@@ -114,6 +114,27 @@ struct DescricaoDaPeca: Sendable, Hashable {
     var silhueta: String?
     var cores: [String] = []
     var tecidos: [String] = []
+    var detalhes: [String] = []
+
+    /// Os ids que a pessoa confirmou substituem qualquer classificação da
+    /// foto. Só os detalhes livres, que a taxonomia não guarda, vêm da análise.
+    static func daFoto(_ analise: AnaliseVisualRemota, confirmados ids: [String],
+                       em termos: [Termo]) -> DescricaoDaPeca {
+        var descricao = dosTermos(ids, em: termos)
+        descricao.detalhes = limparDetalhes(analise.additionalVisualAttributes)
+        return descricao
+    }
+
+    static func limparDetalhes(_ valores: [String]) -> [String] {
+        var vistos = Set<String>()
+        return Array(valores.compactMap { valor -> String? in
+            let limpo = valor.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            guard !limpo.isEmpty, limpo.lowercased() != "not_visible" else { return nil }
+            let curto = String(limpo.prefix(60))
+            guard vistos.insert(curto.lowercased()).inserted else { return nil }
+            return curto
+        }.prefix(6))
+    }
 
     static func dosTermos(_ ids: [String], em termos: [Termo]) -> DescricaoDaPeca {
         let dimensao = Dictionary(termos.map { ($0.id, $0.dimensao) }, uniquingKeysWith: { a, _ in a })
@@ -142,12 +163,12 @@ struct DescricaoDaPeca: Sendable, Hashable {
             "silhouette": silhueta ?? "not_visible",
             "colors": Array(cores.prefix(3)),
             "fabrics": Array(tecidos.prefix(3)),
-            "additional_visual_attributes": [String](),
+            "additional_visual_attributes": Self.limparDetalhes(detalhes),
         ]
     }
 
     var vazia: Bool {
         categoria == nil && estampa == nil && comprimento == nil && silhueta == nil
-            && cores.isEmpty && tecidos.isEmpty
+            && cores.isEmpty && tecidos.isEmpty && detalhes.isEmpty
     }
 }

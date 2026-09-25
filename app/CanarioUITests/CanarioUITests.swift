@@ -273,6 +273,58 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Close"].exists)
     }
 
+    func testAtributosAbremLeituraAntesDeSalvarSemUsarCota() {
+        let app = aplicativo(argumentos: ["-CanarioUITestLeituraDaFoto"])
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Fill the info"].waitForExistence(timeout: 5))
+        app.buttons["Show me the market"].tap()
+
+        let ler = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Read this piece in the panel")
+        ).firstMatch
+        XCTAssertTrue(ler.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Add to Closet"].exists,
+                      "ler e salvar são escolhas separadas")
+        ler.tap()
+        XCTAssertTrue(app.staticTexts["Uma peça do painel corresponde ao pedido."]
+            .waitForExistence(timeout: 5))
+    }
+
+    func testLeituraDaFotoEmPortuguesMostraAProva() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues", "-CanarioUITestLeituraDaFoto"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Preencha os dados"].waitForExistence(timeout: 5))
+        app.buttons["Me mostre o mercado"].tap()
+        let ler = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Ler esta peça no painel")
+        ).firstMatch
+        XCTAssertTrue(ler.waitForExistence(timeout: 5))
+        let antes = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        antes.name = "foto-leitura-antes-de-salvar"
+        antes.lifetime = .keepAlways
+        add(antes)
+
+        ler.tap()
+        XCTAssertTrue(app.staticTexts["Uma peça do painel corresponde ao pedido."]
+            .waitForExistence(timeout: 5))
+        let leitura = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        leitura.name = "foto-leitura-com-prova"
+        leitura.lifetime = .keepAlways
+        add(leitura)
+
+        app.buttons["Uma peça do painel corresponde ao pedido."].tap()
+        XCTAssertTrue(app.navigationBars["Prova"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1 peça do painel sustenta esta frase."].exists)
+        XCTAssertTrue(app.staticTexts["Marca de teste"].exists)
+        let prova = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        prova.name = "foto-leitura-prova-aberta"
+        prova.lifetime = .keepAlways
+        add(prova)
+    }
+
     func testCompareNaoFicaReduzidoAUmAtributo() throws {
         try XCTSkipUnless(
             ProcessInfo.processInfo.environment["CANARIO_REAL_DATA_UI_TESTS"] == "1",

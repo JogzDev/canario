@@ -96,7 +96,8 @@ struct Raiz: View {
         }
         if argumentos.contains("-CanarioAbrirEstudio")
             || argumentos.contains("-CanarioUITestImportacao")
-            || argumentos.contains("-CanarioUITestDetalhes") {
+            || argumentos.contains("-CanarioUITestDetalhes")
+            || LeituraDaPeca.testeDeInterfaceAtivo {
             return .adicionar
         }
         return .dados

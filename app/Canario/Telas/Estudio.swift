@@ -49,7 +49,8 @@ struct Estudio: View {
         .task {
             carregarPecas()
             if ProcessInfo.processInfo.arguments.contains("-CanarioUITestImportacao")
-                || ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes") {
+                || ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes")
+                || LeituraDaPeca.testeDeInterfaceAtivo {
                 termos = [
                     Termo(id: "vestido", rotulo: "Dress", dimensao: "categoria", exclusiva: true,
                           sinonimos: nil, semPernaBusca: nil, palavrasPt: nil, palavrasEn: nil),

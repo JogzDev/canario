@@ -7,6 +7,14 @@ import SwiftUI
 /// sustentam aquela frase. Parecidas aparecem à parte, fora dos números. As
 /// perguntas de refinamento e o preço da peça da pessoa refazem a leitura.
 struct LeituraDaPeca: View {
+    static var testeDeInterfaceAtivo: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-CanarioUITestLeituraDaFoto")
+        #else
+        false
+        #endif
+    }
+
     let pedido: String
     var descricao: DescricaoDaPeca? = nil
 
@@ -111,7 +119,10 @@ struct LeituraDaPeca: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let data = leitura.painelObservadoEm {
-                Text(frase("Panel of \(Formato.data(data)) · \(String(leitura.pecas.count)) pieces read"))
+                let resumo = leitura.pecas.count == 1
+                    ? frase("Panel of \(Formato.data(data)) · 1 piece read")
+                    : frase("Panel of \(Formato.data(data)) · \(String(leitura.pecas.count)) pieces read")
+                Text(resumo)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -192,6 +203,20 @@ struct LeituraDaPeca: View {
         erro = nil
         limiteDoDia = false
         defer { carregando = false }
+        #if DEBUG
+        if Self.testeDeInterfaceAtivo {
+            leitura = try? LeituraEspecifica.decodificar(Data("""
+            {"versao":"teste-de-interface","nome":"vestido preto",
+             "painel_observado_em":"2026-09-24",
+             "frases":[{"texto":"Uma peça do painel corresponde ao pedido.","fatos":["total"]}],
+             "fatos":{"total":{"pecas":1,"provas":[1]}},
+             "pecas":[{"id":1,"titulo":"Vestido preto","marca":"Marca de teste",
+                       "preco":450,"url":"https://example.invalid/peca"}],
+             "parecidas":[],"perguntas":[]}
+            """.utf8))
+            return
+        }
+        #endif
         do {
             leitura = try await Supabase.shared.lerPeca(
                 texto: pedido, refinamento: refinamento, descricao: descricao, preco: preco)
@@ -266,7 +291,9 @@ private struct ProvaDaFrase: View {
                     Text(verbatim: frase.texto)
                         .font(Edicao.Tipo.citacao)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(Canario.frase("\(String(pecas.count)) pieces from the panel back this sentence."))
+                    Text(pecas.count == 1
+                         ? Canario.frase("1 piece from the panel backs this sentence.")
+                         : Canario.frase("\(String(pecas.count)) pieces from the panel back this sentence."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 16) {

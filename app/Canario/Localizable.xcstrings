@@ -1423,6 +1423,23 @@
         }
       }
     },
+    "1 piece from the panel backs this sentence.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "1 piece from the panel backs this sentence."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 peça do painel sustenta esta frase."
+          }
+        }
+      }
+    },
     "1 qualifying article formed this 4-week reading; the evidence list is being refreshed.": {
       "extractionState": "manual",
       "localizations": {
@@ -5470,6 +5487,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dados do painel"
+          }
+        }
+      }
+    },
+    "Panel of %@ · 1 piece read": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Panel of %@ · 1 piece read"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Painel de %@ · 1 peça lida"
           }
         }
       }

@@ -89,4 +89,59 @@ final class DescricaoDaPecaTests: XCTestCase {
         XCTAssertFalse(d.vazia)
         XCTAssertTrue(DescricaoDaPeca.dosTermos([], em: termos).vazia)
     }
+
+    private var analiseDaFoto: AnaliseVisualRemota {
+        get throws {
+            try JSONDecoder().decode(AnaliseVisualRemota.self, from: Data("""
+            {"target_clarity":"single_clear_target","garment_structure":"upper_other",
+             "category":"blusa_top","decision_evidence":[],"pattern":"not_visible",
+             "fabrics":[],"length":"not_visible","silhouette":"not_visible",
+             "waist":"not_visible","aesthetics":[],"colors":["azul"],
+             "additional_visual_attributes":["  abotoamento   duplo  ", "not_visible", "",
+               "lapela larga", "ABOTOAMENTO DUPLO", "manga bufante", "forro claro",
+               "textura canelada", "costura aparente", "um detalhe adicional",
+               "peça com descrição visual longa, maior que sessenta caracteres para cortar"],
+             "model":"teste","prompt_version":"teste"}
+            """.utf8))
+        }
+    }
+
+    func testFotoRespeitaOsAtributosConfirmadosELevaSoDetalhesValidos() throws {
+        let termos = [termo("camisa", "categoria"), termo("blusa_top", "categoria"),
+                      termo("preto", "cor"), termo("azul", "cor")]
+        let descricao = DescricaoDaPeca.daFoto(try analiseDaFoto,
+                                               confirmados: ["camisa", "preto"], em: termos)
+        XCTAssertEqual(descricao.categoria, "camisa")
+        XCTAssertEqual(descricao.cores, ["preto"])
+        XCTAssertEqual(descricao.estampa, nil)
+        XCTAssertEqual(descricao.comoAnalise["category"] as? String, "camisa")
+        XCTAssertEqual(descricao.comoAnalise["colors"] as? [String], ["preto"])
+        XCTAssertEqual(descricao.comoAnalise["pattern"] as? String, "not_visible")
+        XCTAssertEqual(descricao.detalhes.count, 6)
+        XCTAssertEqual(descricao.detalhes.first, "abotoamento duplo")
+        XCTAssertFalse(descricao.detalhes.contains("not_visible"))
+        XCTAssertTrue(descricao.detalhes.allSatisfy { $0.count <= 60 })
+        XCTAssertEqual(descricao.comoAnalise["additional_visual_attributes"] as? [String],
+                       descricao.detalhes)
+    }
+
+    func testDetalhesLongosSaoCortadosEApenasDetalhesTambemContam() {
+        let longo = String(repeating: "x", count: 75)
+        XCTAssertEqual(DescricaoDaPeca.limparDetalhes([longo]),
+                       [String(repeating: "x", count: 60)])
+        var descricao = DescricaoDaPeca()
+        XCTAssertTrue(descricao.vazia)
+        descricao.detalhes = ["abotoamento duplo"]
+        XCTAssertFalse(descricao.vazia)
+    }
+
+    func testPecaSalvaNoFormatoAntigoContinuaAbrindoSemDetalhes() throws {
+        let dados = Data("""
+        {"id":"61F00B3B-CE42-49A0-A493-5178BDEB1D1E","apelido":"Camisa antiga",
+         "termoIds":["camisa"],"criadaEm":0}
+        """.utf8)
+        let antiga = try JSONDecoder().decode(PecaSalva.self, from: dados)
+        XCTAssertNil(antiga.detalhesVisuais)
+        XCTAssertEqual(antiga.termoIds, ["camisa"])
+    }
 }

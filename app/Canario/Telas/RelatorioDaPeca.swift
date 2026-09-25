@@ -21,6 +21,9 @@ struct RelatorioDaPeca: View {
     var miniaturaJPEG: Data?
     /// Quando aberto pelo Closet, evita salvar uma duplicata da mesma peça.
     var pecaSalva: PecaSalva? = nil
+    /// Análise da foto atual. A Leitura usa os detalhes livres dela, mas os
+    /// atributos são sempre os que a pessoa confirmou no formulário.
+    var analiseDaFoto: AnaliseVisualRemota? = nil
     /// As cores em ordem de prioridade, vindas da tela de atributos. Vazio
     /// quando a tela é aberta de um lugar que não tem essa informação — e aí a
     /// peça é guardada sem ordem, que é diferente de guardada com a ordem
@@ -80,12 +83,21 @@ struct RelatorioDaPeca: View {
     @State private var erroDaFoto: String?
     @State private var pecaGuardadaNestaTela: PecaSalva?
 
+    private var descricaoParaLeitura: DescricaoDaPeca {
+        var descricao = analiseDaFoto.map {
+            DescricaoDaPeca.daFoto($0, confirmados: termos.map(\.id),
+                                   em: todosOsTermos.isEmpty ? termos : todosOsTermos)
+        } ?? DescricaoDaPeca.dosTermos(termos.map(\.id), em: termos)
+        if let detalhes = pecaSalva?.detalhesVisuais {
+            descricao.detalhes = DescricaoDaPeca.limparDetalhes(detalhes)
+        }
+        return descricao
+    }
+
     /// Guarda a peça em "Minhas peças" (§27, A10).
     ///
-    /// Grava só os `termoIds` — o que o usuário confirmou. Nada do que está na
-    /// tela abaixo: índice, estado e similares são recomputados do dado de hoje
-    /// quando ela for reaberta. É essa a diferença entre lista de trabalho e
-    /// armário, e a §34 exclui o segundo.
+    /// Grava os termos confirmados e os detalhes visuais locais. Índice,
+    /// estado e similares são recomputados do dado de hoje ao reabrir.
     @ViewBuilder
     private var botaoDeGuardar: some View {
         if pecaSalva != nil {
@@ -122,7 +134,8 @@ struct RelatorioDaPeca: View {
                         termoIds: termos.map(\.id), precoAlvo: precoAlvo,
                         similaresRejeitados: rejeitouSimilares ? true : nil,
                         coresPorPrioridade: coresPorPrioridade.isEmpty
-                            ? nil : coresPorPrioridade)
+                            ? nil : coresPorPrioridade,
+                        detalhesVisuais: descricaoParaLeitura.detalhes)
                     guardada = await PecasSalvas.shared.salvar(
                         nova, miniaturaDados: miniaturaJPEG)
                     if guardada == true { pecaGuardadaNestaTela = nova }
@@ -139,12 +152,12 @@ struct RelatorioDaPeca: View {
     /// 2.0: a leitura específica desta peça, com o preço que a pessoa já deu.
     @ViewBuilder
     private var cartaoDaLeitura: some View {
-        if Supabase.analiseRemotaHabilitada {
+        if Supabase.analiseRemotaHabilitada || LeituraDaPeca.testeDeInterfaceAtivo {
             let pedido = apelido.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 ? Traducao.descricaoAmigavel(termos, consulta: "") : apelido
             NavigationLink {
                 LeituraDaPeca(pedido: pedido,
-                              descricao: DescricaoDaPeca.dosTermos(termos.map(\.id), em: termos),
+                              descricao: descricaoParaLeitura,
                               precoInicial: precoAlvo)
             } label: {
                 HStack(spacing: 12) {
@@ -930,6 +943,13 @@ struct RelatorioDaPeca: View {
         carregandoSimilares = true
         carregandoCluster = true
         carregandoSerie = true
+        if LeituraDaPeca.testeDeInterfaceAtivo {
+            carregando = false
+            carregandoSimilares = false
+            carregandoCluster = false
+            carregandoSerie = false
+            return
+        }
         guard !termos.isEmpty else { carregando = false; return }
         let termoIds = termos.map(\.id)
         let ids = termoIds.joined(separator: ",")
