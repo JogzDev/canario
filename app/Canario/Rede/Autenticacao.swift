@@ -67,7 +67,7 @@ actor Autenticacao {
         var errorDescription: String? {
             switch self {
             case .semConfiguracao:
-                return frase("Account sync is not configured in this build. You can keep using DataDrobe without an account.")
+                return frase("Account sync is not configured in this build. You can keep using Seam without an account.")
             case .emailInvalido:
                 return frase("Enter a valid email address.")
             case .senhaCurta:

@@ -208,7 +208,7 @@ enum Perna {
         case "editorial_br": return frase("Brazilian editorial")
         case "editorial_intl": return frase("international editorial")
         case "varejo": return frase("retail")
-        // Nome próprio de serviço: não traduz, como DataDrobe ou Google.
+        // Nome próprio de serviço: não traduz, como Seam ou Google.
         case "lyst": return "Lyst"
         default: return fonte
         }

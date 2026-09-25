@@ -133,7 +133,7 @@ actor Supabase {
             case "daily_origin_limit":
                 return frase("This network reached today's limit of 12 visual analyses. \(reset) \(manual)")
             case "daily_project_limit":
-                return frase("DataDrobe reached its overall daily limit for visual analysis. \(reset) \(manual)")
+                return frase("Seam reached its overall daily limit for visual analysis. \(reset) \(manual)")
             case "rate_limited":
                 return frase("The visual analysis was refused for exceeding a daily limit. \(reset) \(manual)")
             case "rate_limit_unavailable":

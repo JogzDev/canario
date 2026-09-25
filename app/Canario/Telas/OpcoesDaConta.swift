@@ -422,6 +422,10 @@ private struct PrivacidadeDoMenu: View {
                     Text("Privacy in this build")
                         .font(Edicao.Tipo.secao)
                         .accessibilityAddTraits(.isHeader)
+                        BlocoInformativo(
+                            icone: "text.bubble",
+                            titulo: "Readings you request",
+                            texto: "When you request a reading, the words you entered, any follow-up answer, confirmed photo attributes and optional price go to our Supabase service. The service uses OpenAI to interpret the request and write evidence-backed sentences. It does not send your original photo. A hash of the request and its interpretation can be kept for seven days to make repeated readings consistent; your saved readings stay on this iPhone.")
                         if Supabase.analiseRemotaHabilitada {
                             BlocoInformativo(
                                 icone: "camera",
@@ -444,7 +448,7 @@ private struct PrivacidadeDoMenu: View {
                         BlocoInformativo(
                             icone: "person.crop.circle.badge.checkmark",
                             titulo: "Optional account",
-                            texto: "If you sign in, Supabase processes your account identifier, email when provided, and the Closet details needed for sync. DataDrobe does not store your password itself. You can use the app without an account and delete a connected account from Account settings.")
+                            texto: "If you sign in, Supabase processes your account identifier, email when provided, and the Closet details needed for sync. Seam does not store your password itself. You can use the app without an account and delete a connected account from Account settings.")
                         BlocoInformativo(
                             icone: "arrow.triangle.2.circlepath.icloud",
                             titulo: "What syncs",

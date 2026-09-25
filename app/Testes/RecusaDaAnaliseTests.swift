@@ -35,7 +35,7 @@ final class RecusaDaAnaliseTests: XCTestCase {
         let rede = mensagem(429, "daily_origin_limit")
         let projeto = mensagem(429, "daily_project_limit")
         XCTAssertNotEqual(rede, projeto)
-        XCTAssertTrue(projeto.contains("DataDrobe"), projeto)
+        XCTAssertTrue(projeto.contains("Seam"), projeto)
     }
 
     /// Nenhuma dessas falhas impede adicionar a peça. Toda recusa lembra disso,

@@ -288,7 +288,7 @@ struct ContaDoMenu: View {
             }
             Button("Later", role: .cancel) {}
         } message: {
-            Text("Your DataDrobe account and data are already deleted. In Apple Account, open Sign-In & Security → Sign in with Apple and remove DataDrobe to revoke the remaining Apple authorization.")
+            Text("Your Seam account and data are already deleted. In Apple Account, open Sign-In & Security → Sign in with Apple and remove Seam to revoke the remaining Apple authorization.")
         }
         .confirmationDialog(
             "Permanently delete this account?", isPresented: $confirmarExclusao,
@@ -339,7 +339,7 @@ struct ContaDoMenu: View {
             .buttonStyle(.bordered)
             .buttonBorderShape(.roundedRectangle(radius: Edicao.raio))
 
-            Text("You can close this screen and keep using DataDrobe without an account. Nothing is uploaded until you sign in.")
+            Text("You can use Seam without an account. A reading sends the request you submit; photo analysis asks separately before sending a reduced image.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
@@ -463,7 +463,7 @@ private struct EntradaPorEmail: View {
                         .focused($campoEmFoco, equals: .senha)
                         .onSubmit { enviar() }
                 } footer: {
-                    Text("Use at least 10 characters. DataDrobe never stores your password itself.")
+                    Text("Use at least 10 characters. Seam never stores your password itself.")
                 }
 
                 Section {

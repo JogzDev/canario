@@ -363,6 +363,21 @@ final class CanarioUITests: XCTestCase {
         add(ajustes)
     }
 
+    func testPrivacidadeExplicaLeituraEmPortugues() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-idioma_da_interface", "portugues", "-CanarioAbrirPrivacy"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Leituras que você pede"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "as palavras que você digitou"))
+            .firstMatch.exists)
+        let tela = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        tela.name = "privacidade-leitura-pt"
+        tela.lifetime = .keepAlways
+        add(tela)
+    }
+
     func testImportacaoAbreSemRedeComAsEntradasPrincipais() {
         let app = aplicativo(argumentos: ["-CanarioUITestImportacao"])
         app.launch()

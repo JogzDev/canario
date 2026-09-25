@@ -23,6 +23,7 @@ import json
 import os
 import plistlib
 import re
+import struct
 import sys
 
 
@@ -118,6 +119,43 @@ def main():
             print("FALHOU: Info.plist repete a versao em vez de referenciar "
                   "$(MARKETING_VERSION); volta a poder divergir do pbxproj")
             return 1
+    with open(info, "rb") as arquivo:
+        plist_identidade = plistlib.load(arquivo)
+    if plist_identidade.get("CFBundleDisplayName") != "Seam":
+        print("FALHOU: nome visível do app precisa ser Seam")
+        return 1
+    for uso in ("NSCameraUsageDescription", "NSPhotoLibraryUsageDescription"):
+        descricao = plist_identidade.get(uso, "")
+        if "Seam" not in descricao or "DataDrobe" in descricao:
+            print("FALHOU: texto de permissão ainda usa a identidade anterior: " + uso)
+            return 1
+
+    icones = os.path.join(APP, "Canario", "Assets.xcassets", "AppIcon.appiconset")
+    with open(os.path.join(icones, "Contents.json"), encoding="utf-8") as arquivo:
+        variantes = json.load(arquivo)["images"]
+    esperadas = {
+        "light": "AppIcon-clara-1024.png",
+        "dark": "AppIcon-escura-1024.png",
+        "tinted": "AppIcon-tingida-1024.png",
+    }
+    achadas = {}
+    for variante in variantes:
+        aparencias = variante.get("appearances", [])
+        nome = aparencias[0]["value"] if aparencias else "light"
+        achadas[nome] = variante["filename"]
+        with open(os.path.join(icones, variante["filename"]), "rb") as arquivo:
+            cabecalho = arquivo.read(26)
+        if cabecalho[:16] != b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR" or struct.unpack(">II", cabecalho[16:24]) != (1024, 1024):
+            print("FALHOU: ícone ausente ou fora de 1024×1024: " + variante["filename"])
+            return 1
+        # As variantes coloridas precisam ser opacas; a versão tingida usa
+        # transparência para o iOS aplicar a cor escolhida pela pessoa.
+        if nome != "tinted" and cabecalho[25] in (4, 6):
+            print("FALHOU: ícone colorido contém canal alfa: " + variante["filename"])
+            return 1
+    if achadas != esperadas:
+        print("FALHOU: faltam aparências do ícone Seam: " + repr(achadas))
+        return 1
 
     # 4. O String Catalog precisa existir, ser valido e estar empacotado. Sem
     #    estes tres guardrails, uma tela nova volta a espalhar texto sem uma
@@ -133,6 +171,9 @@ def main():
         return 1
     if len(dados_catalogo.get("strings", {})) < 100:
         print("FALHOU: String Catalog incompleto (menos de 100 chaves)")
+        return 1
+    if "DataDrobe" in json.dumps(dados_catalogo, ensure_ascii=False):
+        print("FALHOU: catálogo ainda exibe a identidade anterior")
         return 1
     if "Localizable.xcstrings in Resources" not in pbx:
         print("FALHOU: String Catalog existe, mas nao entra no app")

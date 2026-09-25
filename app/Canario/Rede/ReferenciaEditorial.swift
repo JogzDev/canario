@@ -88,5 +88,5 @@ enum ReferenciaEditorial {
     }
 
     /// A ressalva que impede a leitura errada do bloco inteiro.
-    static let ondeEstaOTexto = frase("DataDrobe stores the headline, the outlet, the date and the link — not the article. Open the source to read it.")
+    static let ondeEstaOTexto = frase("Seam stores the headline, the outlet, the date and the link — not the article. Open the source to read it.")
 }

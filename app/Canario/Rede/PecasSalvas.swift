@@ -562,6 +562,7 @@ actor PecasSalvas {
 }
 
 extension Notification.Name {
+    // Nomes internos estáveis para eventos entre componentes; não são texto de tela.
     static let closetMudouDeUsuario = Notification.Name("DataDrobe.closetMudouDeUsuario")
     static let closetFoiSincronizado = Notification.Name("DataDrobe.closetFoiSincronizado")
 }

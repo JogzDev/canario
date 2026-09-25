@@ -49,7 +49,7 @@ enum ExportadorDoCloset {
         }
         let texto = linhas.map { $0.map(escapar).joined(separator: ",") }.joined(separator: "\r\n")
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("DataDrobe-Closet-\(UUID().uuidString.prefix(8)).csv")
+            .appendingPathComponent("Seam-Closet-\(UUID().uuidString.prefix(8)).csv")
         do {
             // BOM faz Excel reconhecer UTF-8 sem destruir nomes acentuados.
             try (Data([0xEF, 0xBB, 0xBF]) + Data(texto.utf8)).write(to: url, options: .atomic)

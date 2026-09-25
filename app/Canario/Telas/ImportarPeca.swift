@@ -351,7 +351,7 @@ struct ImportarPeca: View {
                 }
             }
         } message: {
-            Text("Recommended for more complete suggestions. DataDrobe analyzes only the reduced, metadata-free image you confirmed. The original is not uploaded, and you will review every attribute before saving. You can change this later in Settings; on-device analysis does not use the cloud-analysis limit.")
+            Text("Recommended for more complete suggestions. Seam analyzes only the reduced, metadata-free image you confirmed. The original is not uploaded, and you will review every attribute before saving. You can change this later in Settings; on-device analysis does not use the cloud-analysis limit.")
         }
     }
 

@@ -1601,19 +1601,19 @@
         }
       }
     },
-    "Account sync is not configured in this build. You can keep using DataDrobe without an account.": {
+    "Account sync is not configured in this build. You can keep using Seam without an account.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "Account sync is not configured in this build. You can keep using DataDrobe without an account."
+            "value": "Account sync is not configured in this build. You can keep using Seam without an account."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "A sincronização de conta não está configurada nesta versão. Você pode continuar usando o DataDrobe sem conta."
+            "value": "A sincronização de conta não está configurada nesta versão. Você pode continuar usando o Seam sem conta."
           }
         }
       }
@@ -3059,36 +3059,36 @@
         }
       }
     },
-    "DataDrobe reached its overall daily limit for visual analysis. %@ %@": {
+    "Seam reached its overall daily limit for visual analysis. %@ %@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "DataDrobe reached its overall daily limit for visual analysis. %@ %@"
+            "value": "Seam reached its overall daily limit for visual analysis. %@ %@"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "O DataDrobe atingiu o limite diário geral de análise visual. %1$@ %2$@"
+            "value": "O Seam atingiu o limite diário geral de análise visual. %1$@ %2$@"
           }
         }
       }
     },
-    "DataDrobe stores the headline, the outlet, the date and the link — not the article. Open the source to read it.": {
+    "Seam stores the headline, the outlet, the date and the link — not the article. Open the source to read it.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "DataDrobe stores the headline, the outlet, the date and the link — not the article. Open the source to read it."
+            "value": "Seam stores the headline, the outlet, the date and the link — not the article. Open the source to read it."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "O DataDrobe guarda a manchete, o veículo, a data e o link — não o artigo. Abra a fonte para lê-lo."
+            "value": "O Seam guarda a manchete, o veículo, a data e o link — não o artigo. Abra a fonte para lê-lo."
           }
         }
       }
@@ -4099,19 +4099,19 @@
         }
       }
     },
-    "If you sign in, Supabase processes your account identifier, email when provided, and the Closet details needed for sync. DataDrobe does not store your password itself. You can use the app without an account and delete a connected account from Account settings.": {
+    "If you sign in, Supabase processes your account identifier, email when provided, and the Closet details needed for sync. Seam does not store your password itself. You can use the app without an account and delete a connected account from Account settings.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "If you sign in, Supabase processes your account identifier, email when provided, and the Closet details needed for sync. DataDrobe does not store your password itself. You can use the app without an account and delete a connected account from Account settings."
+            "value": "If you sign in, Supabase processes your account identifier, email when provided, and the Closet details needed for sync. Seam does not store your password itself. You can use the app without an account and delete a connected account from Account settings."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se você entrar na conta, o Supabase processa o identificador da sua conta, o e-mail quando fornecido e os dados do Closet necessários para a sincronização. O DataDrobe não guarda a sua senha. Dá para usar o app sem conta, e para apagar uma conta conectada pelos ajustes de Conta."
+            "value": "Se você entrar na conta, o Supabase processa o identificador da sua conta, o e-mail quando fornecido e os dados do Closet necessários para a sincronização. O Seam não guarda a sua senha. Dá para usar o app sem conta, e para apagar uma conta conectada pelos ajustes de Conta."
           }
         }
       }
@@ -5254,7 +5254,7 @@
       }
     },
     "Open Apple Account": {
-      "comment": "A button that opens Apple Account to remove DataDrobe from it.",
+      "comment": "A button that opens Apple Account to remove Seam from it.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "pt-BR": {
@@ -5965,14 +5965,14 @@
         }
       }
     },
-    "Recommended for more complete suggestions. DataDrobe analyzes only the reduced, metadata-free image you confirmed. The original is not uploaded, and you will review every attribute before saving. You can change this later in Settings; on-device analysis does not use the cloud-analysis limit.": {
+    "Recommended for more complete suggestions. Seam analyzes only the reduced, metadata-free image you confirmed. The original is not uploaded, and you will review every attribute before saving. You can change this later in Settings; on-device analysis does not use the cloud-analysis limit.": {
       "comment": "A message in the alert that asks if the user wants to",
       "isCommentAutoGenerated": true,
       "localizations": {
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recomendado para sugestões mais completas. O DataDrobe analisa apenas a imagem reduzida e sem metadados que você confirmou. A original não é enviada, e você revisa cada atributo antes de salvar. Dá para mudar isto depois nos Ajustes; a análise no aparelho não consome o limite de análise na nuvem."
+            "value": "Recomendado para sugestões mais completas. O Seam analisa apenas a imagem reduzida e sem metadados que você confirmou. A original não é enviada, e você revisa cada atributo antes de salvar. Dá para mudar isto depois nos Ajustes; a análise no aparelho não consome o limite de análise na nuvem."
           }
         }
       }
@@ -6610,7 +6610,7 @@
       }
     },
     "Sign in to restore item details and their private, metadata-free thumbnails. Original photos stay on this iPhone.": {
-      "comment": "A description of how users can sign in to DataDrobe.",
+      "comment": "A description of how users can sign in to Seam.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "pt-BR": {
@@ -7125,7 +7125,7 @@
       }
     },
     "Take your Closet with you": {
-      "comment": "A title describing the benefits of using DataDrobe.",
+      "comment": "A title describing the benefits of using Seam.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "pt-BR": {
@@ -7628,19 +7628,19 @@
         }
       }
     },
-    "The panel items that share these attributes, week by week. It is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there.": {
+    "The panel items that share these attributes, week by week. It is not your item: Seam never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "new",
-            "value": "The panel items that share these attributes, week by week. It is not your item: DataDrobe never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there."
+            "value": "The panel items that share these attributes, week by week. It is not your item: Seam never tracks a piece you own. A marked point is a week built on fewer attributes than you selected, so the line is thinner there."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "As peças do painel que compartilham estes atributos, semana a semana. Não é a sua peça: o DataDrobe nunca acompanha uma peça que é sua. Um ponto marcado é uma semana construída sobre menos atributos do que você escolheu, e por isso a linha é mais fina ali."
+            "value": "As peças do painel que compartilham estes atributos, semana a semana. Não é a sua peça: o Seam nunca acompanha uma peça que é sua. Um ponto marcado é uma semana construída sobre menos atributos do que você escolheu, e por isso a linha é mais fina ali."
           }
         }
       }
@@ -8700,14 +8700,14 @@
         }
       }
     },
-    "Use at least 10 characters. DataDrobe never stores your password itself.": {
+    "Use at least 10 characters. Seam never stores your password itself.": {
       "comment": "A footer for the password field.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Use pelo menos 10 caracteres. O DataDrobe nunca guarda a sua senha."
+            "value": "Use pelo menos 10 caracteres. O Seam nunca guarda a sua senha."
           }
         }
       }
@@ -9274,14 +9274,14 @@
         }
       }
     },
-    "You can close this screen and keep using DataDrobe without an account. Nothing is uploaded until you sign in.": {
-      "comment": "A description of the benefits of signing in to DataDrobe.",
+    "You can use Seam without an account. A reading sends the request you submit; photo analysis asks separately before sending a reduced image.": {
+      "comment": "A description of the benefits of signing in to Seam.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Você pode fechar esta tela e continuar usando o DataDrobe sem conta. Nada é enviado até você entrar."
+            "value": "Você pode usar o Seam sem conta. Uma Leitura envia o pedido que você fizer; a análise de foto pede autorização separada antes de enviar uma imagem reduzida."
           }
         }
       }
@@ -9422,14 +9422,14 @@
         }
       }
     },
-    "Your DataDrobe account and data are already deleted. In Apple Account, open Sign-In & Security → Sign in with Apple and remove DataDrobe to revoke the remaining Apple authorization.": {
+    "Your Seam account and data are already deleted. In Apple Account, open Sign-In & Security → Sign in with Apple and remove Seam to revoke the remaining Apple authorization.": {
       "comment": "A message displayed in an alert when the user deletes their Apple account.",
       "isCommentAutoGenerated": true,
       "localizations": {
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sua conta DataDrobe e os dados dela já foram apagados. Na Conta Apple, abra Início de Sessão e Segurança → Iniciar sessão com a Apple e remova o DataDrobe para revogar a autorização Apple restante."
+            "value": "Sua conta Seam e os dados dela já foram apagados. Na Conta Apple, abra Início de Sessão e Segurança → Iniciar sessão com a Apple e remova o Seam para revogar a autorização Apple restante."
           }
         }
       }
@@ -10577,6 +10577,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "O preço máximo para uma Leitura é R$ 99.999,99."
+          }
+        }
+      }
+    },
+    "Readings you request": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Readings you request"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leituras que você pede"
+          }
+        }
+      }
+    },
+    "When you request a reading, the words you entered, any follow-up answer, confirmed photo attributes and optional price go to our Supabase service. The service uses OpenAI to interpret the request and write evidence-backed sentences. It does not send your original photo. A hash of the request and its interpretation can be kept for seven days to make repeated readings consistent; your saved readings stay on this iPhone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "When you request a reading, the words you entered, any follow-up answer, confirmed photo attributes and optional price go to our Supabase service. The service uses OpenAI to interpret the request and write evidence-backed sentences. It does not send your original photo. A hash of the request and its interpretation can be kept for seven days to make repeated readings consistent; your saved readings stay on this iPhone."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ao pedir uma Leitura, as palavras que você digitou, uma resposta de refinamento, os atributos confirmados da foto e o preço opcional vão para o nosso serviço no Supabase. O serviço usa a OpenAI para interpretar o pedido e redigir frases fundamentadas nos dados. A foto original não é enviada. Um resumo criptográfico do pedido e sua interpretação podem ser guardados por sete dias para manter a consistência de Leituras repetidas; as Leituras que você salva ficam neste iPhone."
           }
         }
       }
