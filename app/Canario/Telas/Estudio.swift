@@ -55,10 +55,7 @@ struct Estudio: View {
             carregarPecas()
             carregarLeituras()
         }) {
-            // O fluxo de importação ainda é o da 1.x e foi desenhado para o
-            // claro; ele entra na v4 no percurso da Leitura.
             ImportarPeca(termos: termos) { carregarPecas() }
-                .preferredColorScheme(.light)
         }
         .onReceive(NotificationCenter.default.publisher(for: .closetFoiSincronizado)) { _ in
             carregarPecas()

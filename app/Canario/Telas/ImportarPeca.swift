@@ -21,22 +21,6 @@ struct ImportarPeca: View {
     let termos: [Termo]
     var aoSalvar: (() -> Void)? = nil
 
-    // MARK: - Tokens Locais
-
-    /// A moldura das três prévias da peça: NEUTRA, não o céu da marca.
-    ///
-    /// Era `Tokens.Cor.ceu` (#BBE5ED) até 05/09, e este fluxo é onde o dano
-    /// era maior: a pessoa olha a prévia sobre azul, decide se a cor sugerida
-    /// pela análise está certa e confirma — ou seja, a moldura influenciava
-    /// justamente o passo em que o dado de cor entra no Closet. Um fundo
-    /// cromático desloca a percepção na direção complementar; a peça lia mais
-    /// quente do que é. Ver `SubstratoDaPeca` em `Componentes.swift`.
-    ///
-    /// Os botões desta tela (`Choose from Photos`, `BotaoDeEntrada`) continuam
-    /// no céu da marca de propósito: ali a cor é identidade, e não há nenhuma
-    /// peça dentro deles para ser julgada.
-    private let corDestaque = Tokens.Cor.substratoDaPeca
-
     @State private var mostrandoSeletor = false
     @State private var mostrandoCamera = false
     @State private var mostrandoCorConstante = false
@@ -235,6 +219,7 @@ struct ImportarPeca: View {
                     }
                 }
             }
+            .papelDaEdicao()
             .navigationTitle(tituloDaEtapa)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -247,10 +232,10 @@ struct ImportarPeca: View {
                         }
                     } label: {
                         Image(systemName: etapa == .entrada || lendo ? "xmark" : "chevron.left")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.black)
-                            .frame(width: 32, height: 32)
-                            .background(Color.black.opacity(0.06))
+                            .font(.footnote.weight(.bold))
+                            .foregroundStyle(Edicao.bordo)
+                            .frame(width: 44, height: 44)
+                            .background(Edicao.cartao)
                             .clipShape(Circle())
                     }
                     .accessibilityLabel(etapa == .entrada || lendo ? "Close" : "Back")
@@ -287,6 +272,7 @@ struct ImportarPeca: View {
                 }
             }
         }
+        .tint(Edicao.bordo)
         .task {
             avisoDeUso = await RegistroDeAnalises.shared.aviso()
             if ProcessInfo.processInfo.arguments.contains("-CanarioUITestDetalhes")
@@ -385,17 +371,13 @@ struct ImportarPeca: View {
                                  id: escolhida.id,
                                  altura: 240,
                                  selecionada: false,
-                                 corDeFundo: corDestaque,
-                                 raio: Tokens.Raio.cartaoGrande)
-                        .sombraDeCartao()
+                                 raio: Edicao.raioDaPeca)
                         .accessibilityLabel("Selected photo of your item")
                 }
 
                 // 2. Seletor de Foto (No Background vs Full Photo)
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Choose a photo")
-                        .font(.system(.headline, design: .rounded))
-                        .foregroundStyle(Tokens.Cor.tinta)
+                Folha {
+                    CabecalhoDaFolha(titulo: Text("Choose a photo"))
 
                     HStack(spacing: 14) {
                         ForEach(opcoesDeAlvo) { opcao in
@@ -410,13 +392,11 @@ struct ImportarPeca: View {
                                                  id: opcao.id,
                                                  altura: 96,
                                                  selecionada: alvoEscolhido == opcao.id,
-                                                 corDeFundo: corDestaque,
-                                                 raio: Tokens.Raio.cartao)
-                                        .sombraDeCartao()
+                                                 raio: Edicao.raioDaPeca)
 
                                     Text(opcao.tipo == .primeiroPlano ? "No Background" : "Full photo")
-                                        .font(.system(.footnote, design: .rounded).weight(.semibold))
-                                        .foregroundStyle(Tokens.Cor.tinta)
+                                        .font(.footnote.weight(.semibold))
+                                        .foregroundStyle(.primary)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -425,16 +405,12 @@ struct ImportarPeca: View {
                     }
                 }
 
-                // 3. Campo de Dica Opcional com Card Arredondado Neutro
-                VStack(alignment: .leading, spacing: 8) {
+                Folha {
                     Text("If there is more than 1 item in the photo, specify the target")
-                        .font(.system(.subheadline, design: .rounded).weight(.bold))
-                        .foregroundStyle(Tokens.Cor.tinta)
-
-                    Divider()
+                        .font(Edicao.Tipo.linha)
 
                     TextField("Ex: Black Tank Top", text: $descricaoDoAlvo)
-                        .font(.system(size: 15, design: .rounded))
+                        .font(.body)
                         .focused($dicaDoAlvoEmFoco)
                         .submitLabel(.done)
                         .onSubmit { dicaDoAlvoEmFoco = false }
@@ -442,13 +418,6 @@ struct ImportarPeca: View {
                             analiseConcluidaParaOAlvo = false
                         }
                 }
-                .padding(.horizontal, Tokens.Espaco.m)
-                .padding(.vertical, 14)
-                // Cinza do sistema, e não um preto a 5%: o cinza do sistema
-                // acompanha o aparelho e o contraste, e o preto translúcido
-                // fica sujo sobre qualquer fundo que não seja branco puro.
-                .background(Tokens.Cor.superficie)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 // O aviso do teto diário mora aqui, e não na tela de
                 // resultado: este é o botão que gasta a próxima análise, e
@@ -465,11 +434,11 @@ struct ImportarPeca: View {
                         Task { await confirmarAlvo() }
                     } label: {
                         Text("Analyze this item")
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 52)
-                            .background(Tokens.Cor.acao)
+                            .background(Edicao.bordoCheio)
                             .clipShape(Capsule())
                             .sombraDeCartao()
                     }
@@ -480,8 +449,8 @@ struct ImportarPeca: View {
                         cancelarConfirmacao()
                     } label: {
                         Text("Choose another photo")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(Tokens.Cor.acao)
+                            .font(.headline)
+                            .foregroundStyle(Edicao.bordo)
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 44)
                     }
@@ -532,7 +501,7 @@ struct ImportarPeca: View {
     private var telaDeEntrada: some View {
         GeometryReader { area in
             ScrollView {
-                VStack(spacing: Tokens.Espaco.g) {
+                VStack(spacing: Edicao.entreFolhas) {
                     Spacer(minLength: 0)
                     importador
                     Spacer(minLength: 0)
@@ -541,8 +510,8 @@ struct ImportarPeca: View {
                     }
                     avisoDePrivacidade
                 }
-                .padding(.horizontal, Tokens.Espaco.g)
-                .padding(.vertical, Tokens.Espaco.m)
+                .padding(.horizontal, Edicao.margem)
+                .padding(.vertical, 20)
                 .frame(maxWidth: .infinity, minHeight: area.size.height)
             }
         }
@@ -573,14 +542,13 @@ struct ImportarPeca: View {
 
     private var telaDeAtributosSemTeclado: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+            VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
                 if let miniaturaJPEG {
                     PreviaDoAlvo(dados: miniaturaJPEG,
                                  id: miniaturaJPEG.count,
                                  altura: 220,
-                                 selecionada: true,
-                                 corDeFundo: corDestaque,
-                                 raio: 24)
+                                 selecionada: false,
+                                 raio: Edicao.raioDaPeca)
                         .accessibilityLabel("Item being described")
                 }
                 if let erro {
@@ -615,11 +583,11 @@ struct ImportarPeca: View {
                         etapa = .painel
                     } label: {
                         Text("Show me the market")
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Tokens.Cor.acao)
+                            .frame(minHeight: 52)
+                            .background(Edicao.bordoCheio)
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -627,31 +595,25 @@ struct ImportarPeca: View {
                     .opacity(leituraDoPreco.permiteAvancar ? 1 : 0.45)
                 }
             }
-            .padding(Tokens.Espaco.m)
+            .padding(.horizontal, Edicao.margem)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
         }
     }
 
     private var importador: some View {
-        VStack(spacing: Tokens.Espaco.m) {
+        VStack(spacing: 12) {
             PhotosPicker(selection: $daFototeca, matching: .images,
                          photoLibrary: .shared()) {
-                VStack(spacing: Tokens.Espaco.g) {
-                    // Variante preenchida, como no Figma: o cartão é a ação
-                    // principal da tela e o desenho vazado do contorno some
-                    // dentro de 300 pt de superfície colorida.
+                Folha {
                     Image(systemName: "photo.fill.on.rectangle.fill")
-                        .font(.system(size: 76))
-                        .foregroundStyle(Tokens.Cor.noite)
+                        .font(.system(size: 60))
+                        .foregroundStyle(Edicao.bordo)
                     Text("Choose from Photos")
-                        .font(.system(.headline, design: .rounded))
-                        .foregroundStyle(Tokens.Cor.noite)
+                        .font(Edicao.Tipo.titulo)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 300)
-                .background(Tokens.Cor.ceu)
-                .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.cartaoGrande,
-                                            style: .continuous))
-                .sombraDeCartao()
+                .frame(minHeight: 220)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Choose from Photos")
@@ -691,67 +653,54 @@ struct ImportarPeca: View {
         Text(Supabase.analiseRemotaHabilitada
              ? "The app prepares the image on this iPhone and asks before sending a reduced, metadata-free copy for visual analysis. The original is not stored; only a local thumbnail remains if you save the item to Closet."
              : frase("The app reads the file on this iPhone. The original is not stored; only a local, metadata-free thumbnail remains if you save the item to Closet."))
-            .font(Tokens.Fonte.miudo)
-            .foregroundStyle(Tokens.Cor.tintaFraca)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
     }
 
     private var oQueLi: some View {
-        Cartao {
+        Folha {
             DisclosureGroup {
-                VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+                VStack(alignment: .leading, spacing: 12) {
                     ForEach(procedencia, id: \.self) { LinhaInsumo(texto: $0) }
                     LinhaInsumo(texto: frase("Review every suggestion. Your confirmed selection is what counts."))
                 }
-                .padding(.top, Tokens.Espaco.s)
+                .padding(.top, 12)
             } label: {
-                Text("What I read from this file").font(Tokens.Fonte.secao)
+                CabecalhoDaFolha(titulo: Text("What I read from this file"))
             }
+            .tint(Edicao.bordo)
         }
     }
 
     private var atributos: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            HStack {
-                Text("Describe your item attributes")
-                    .font(.system(.headline, design: .rounded))
-                Spacer()
-                if !detectados.isEmpty {
-                    Button("Clear") { limparAtributos() }
-                        .font(Tokens.Fonte.miudo)
+        VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
+            Folha {
+                HStack {
+                    CabecalhoDaFolha(titulo: Text("Describe your item attributes"))
+                    if !detectados.isEmpty {
+                        Button("Clear") { limparAtributos() }
+                            .font(.footnote)
+                            .frame(minHeight: 44)
+                    }
                 }
-            }
-
-            // Uma linha no lugar de um relatório. Ela diz as duas coisas que
-            // a pessoa precisa saber para agir: já veio preenchido, e mexer é
-            // esperado. O texto é do Davi, quase palavra por palavra.
-            Text("We've selected what we identified — adjust anything that looks off.")
-                .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-
-            // O nome fica aqui, entre o convite e a grade, como no Figma: é o
-            // único campo digitado da tela e some se ficar espremido entre
-            // dois cartões.
-            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                HStack(spacing: Tokens.Espaco.s) {
-                    TextField("Clothing name (optional)", text: $nomeDaPeca)
-                        .textInputAutocapitalization(.sentences)
-                        .submitLabel(.done)
-                        .focused($nomeDaPecaEmFoco)
-                        .onSubmit { nomeDaPecaEmFoco = false }
-                    Image(systemName: "pencil")
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
-                        .accessibilityHidden(true)
-                }
-                Divider()
+                Text("We've selected what we identified — adjust anything that looks off.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                CosturaDaEdicao()
+                TextField("Clothing name (optional)", text: $nomeDaPeca)
+                    .textInputAutocapitalization(.sentences)
+                    .submitLabel(.done)
+                    .focused($nomeDaPecaEmFoco)
+                    .onSubmit { nomeDaPecaEmFoco = false }
+                    .textFieldStyle(.roundedBorder)
                 Text("If left blank, Closet, links and spreadsheets use the confirmed category.")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
             ForEach(dimensoes, id: \.self) { dimensao in
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(Traducao.rotuloDaDimensao(dimensao))
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                Folha {
+                    CabecalhoDaFolha(titulo: Text(Traducao.rotuloDaDimensao(dimensao)))
                     if dimensao == "cor" { legendaDaOrdemDeCor }
                     FlowLayout(espaco: dimensao == "cor" ? 8 : 12) {
                         ForEach(termosVisiveis(na: dimensao)) { termo in
@@ -762,7 +711,6 @@ struct ImportarPeca: View {
                                             acao: { alternar(termo) })
                         }
                     }
-                    Divider()
                 }
             }
         }
@@ -776,8 +724,8 @@ struct ImportarPeca: View {
         Text(coresPorPrioridade.isEmpty
              ? "Pick up to \(Self.tetoDeCores), in order — the first one is the main color."
              : "1 is the main color, 2 and 3 are secondary. Tap a color again to remove it.")
-            .font(Tokens.Fonte.miudo)
-            .foregroundStyle(Tokens.Cor.tintaFraca)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 
     private func prioridade(de termo: Termo) -> Int? {
@@ -842,11 +790,11 @@ struct ImportarPeca: View {
     }
 
     private var precoOpcional: some View {
-        Cartao {
-            Text("Your intended price").font(Tokens.Fonte.secao)
+        Folha {
+            CabecalhoDaFolha(titulo: Text("Your intended price"))
             Text("Optional. If you add it, I show its position among similar pieces in the panel — a price position, not a judgment.")
-                .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             TextField("R$ 0,00", text: $precoDigitado)
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.roundedBorder)
@@ -857,18 +805,18 @@ struct ImportarPeca: View {
                 EmptyView()
             case let .valor(valor):
                 Text(frase("Understood as \(Formato.dinheiroExato(valor))."))
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                     .accessibilityIdentifier("preco-entendido")
             case .ambiguo:
                 Text("This price is ambiguous. Use 1299 or 1.299,00 for R$ 1.299.")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.queda)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
                     .accessibilityIdentifier("erro-preco")
             case .invalido:
                 Text("Enter a price such as 79,90 or 79.90.")
-                    .font(Tokens.Fonte.miudo)
-                    .foregroundStyle(Tokens.Cor.queda)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
                     .accessibilityIdentifier("erro-preco")
             }
         }
@@ -1298,21 +1246,18 @@ private struct BotaoDeEntrada: View {
 
     var body: some View {
         Button(action: acao) {
-            HStack(spacing: Tokens.Espaco.s) {
-                Image(systemName: simbolo)
-                    .font(.system(size: 18, weight: .semibold))
-                Text(titulo)
-                    .font(.system(.callout, design: .rounded).weight(.bold))
+            Folha {
+                HStack(spacing: 12) {
+                    Image(systemName: simbolo)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Edicao.bordo)
+                    Text(titulo)
+                        .font(Edicao.Tipo.linha)
+                    Spacer(minLength: 8)
+                    SetaDaLinha()
+                }
+                .frame(minHeight: 44)
             }
-            .foregroundStyle(Tokens.Cor.noite)
-            .frame(maxWidth: .infinity)
-            // 54 é confortável e passa dos 44 pt mínimos da HIG; `minHeight`
-            // em vez de `height` para o botão crescer com Dynamic Type em vez
-            // de cortar o rótulo.
-            .frame(minHeight: 54)
-            .background(Tokens.Cor.ceu)
-            .clipShape(Capsule())
-            .sombraDeCartao()
         }
         .buttonStyle(.plain)
     }
@@ -1362,8 +1307,8 @@ private struct EditorDeRecorte: View {
                         .simultaneously(with: gestoDeAmpliacao(area: area)))
 
                     Text("Pinch to zoom and drag until the target garment fills the frame.")
-                        .font(Tokens.Fonte.apoio)
-                        .foregroundStyle(Tokens.Cor.tintaFraca)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
                     Button {
@@ -1376,6 +1321,7 @@ private struct EditorDeRecorte: View {
                             .frame(minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(Edicao.bordoCheio)
                 }
                 .padding(Tokens.Espaco.m)
             }
@@ -1393,6 +1339,8 @@ private struct EditorDeRecorte: View {
                 }
             }
         }
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
     }
 
     private func tamanhoDoRecorte(em disponivel: CGSize) -> CGSize {
@@ -1468,36 +1416,21 @@ private struct PreviaDoAlvo: View {
     let id: Int
     let altura: CGFloat
     let selecionada: Bool
-    /// Neutro por padrão: quem esquecer de passar a cor recebe o substrato, e
-    /// não uma superfície de sistema que muda com o tema. Cor de moldura de
-    /// peça não é decoração, é condição de medição.
-    var corDeFundo: Color = Tokens.Cor.substratoDaPeca
-    var raio: CGFloat = Tokens.Raio.cartao
+    var raio: CGFloat = Edicao.raioDaPeca
 
     @State private var imagem: UIImage?
 
     private var compacta: Bool { altura < 160 }
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: raio, style: .continuous)
-                .fill(corDeFundo)
-            if let imagem {
-                Image(uiImage: imagem)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(Tokens.Espaco.s)
-            } else {
-                ProgressView()
-            }
-        }
+        ImagemDaPeca(imagem: imagem, raio: raio)
         .frame(width: compacta ? 96 : nil)
         .frame(maxWidth: compacta ? nil : .infinity)
         .frame(height: altura)
         .overlay {
             if selecionada && compacta {
                 RoundedRectangle(cornerRadius: raio, style: .continuous)
-                    .stroke(Color.blue, lineWidth: 2)
+                    .stroke(Edicao.bordo, lineWidth: 2)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: raio, style: .continuous))
@@ -1515,7 +1448,7 @@ struct FluxoDeChips: View {
     @Binding var marcados: Set<String>
 
     var body: some View {
-        FlowLayout(espaco: Tokens.Espaco.s) {
+        FlowLayout(espaco: 12) {
             ForEach(termos) { termo in
                 let ativo = marcados.contains(termo.id)
                 ChipDeAtributo(termo: termo, ativo: ativo) {
@@ -1534,11 +1467,11 @@ private struct ChipDeAtributo: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: Tokens.Espaco.xs) {
+            HStack(spacing: 8) {
                 if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
                     Circle()
                         .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
-                        .overlay(Circle().strokeBorder(Tokens.Cor.borda, lineWidth: 0.5))
+                        .overlay(Circle().strokeBorder(Color(.separator), lineWidth: 0.5))
                         .frame(width: 12, height: 12)
                 }
                 Text(Traducao.rotuloExibido(termo))
@@ -1547,12 +1480,12 @@ private struct ChipDeAtributo: View {
                 Text(pista).font(.caption2).opacity(0.72)
             }
         }
-        .font(Tokens.Fonte.miudo)
-        .padding(.horizontal, Tokens.Espaco.m)
-        .padding(.vertical, Tokens.Espaco.s)
-        .background(ativo ? Tokens.Cor.tinta : Tokens.Cor.superficie)
-        .foregroundStyle(ativo ? Tokens.Cor.fundo : Tokens.Cor.tinta)
-        .clipShape(RoundedRectangle(cornerRadius: Tokens.Raio.etiqueta))
+        .font(.footnote)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(ativo ? Edicao.bordoCheio : Edicao.cartao)
+        .foregroundStyle(ativo ? Color.white : Color.primary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .frame(minHeight: 44)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

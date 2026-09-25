@@ -310,6 +310,10 @@ final class CanarioUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Back"].exists)
         XCTAssertFalse(app.buttons["Open Clothing Details"].exists)
         XCTAssertFalse(app.staticTexts["Keep this item"].exists)
+        let formulario = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        formulario.name = "importacao-atributos"
+        formulario.lifetime = .keepAlways
+        add(formulario)
 
         app.buttons["Back"].tap()
         XCTAssertTrue(app.buttons["Photo options"].waitForExistence(timeout: 2))
@@ -341,6 +345,10 @@ final class CanarioUITests: XCTestCase {
         // Três entradas e nada mais. O preço desceu para a tela de atributos.
         XCTAssertFalse(app.staticTexts["Your intended price"].exists)
         XCTAssertTrue(app.buttons["Close"].exists)
+        let entrada = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        entrada.name = "importacao-entrada"
+        entrada.lifetime = .keepAlways
+        add(entrada)
     }
 
     func testAtributosAbremLeituraAntesDeSalvarSemUsarCota() {
