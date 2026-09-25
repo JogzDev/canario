@@ -7136,6 +7136,23 @@
         }
       }
     },
+    "Tap an attribute for its reading and press coverage.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Tap an attribute for its reading and press coverage."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toque em um atributo para ver sua leitura e a cobertura da imprensa."
+          }
+        }
+      }
+    },
     "Tap the heart on a Closet item to keep it here.": {
       "localizations": {
         "pt-BR": {

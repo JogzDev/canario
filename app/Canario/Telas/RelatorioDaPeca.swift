@@ -3,14 +3,8 @@ import SwiftUI
 import UIKit
 
 /// Leitura de uma peça a partir dos atributos confirmados pelo usuário (§29).
-///
-/// **A ordem desta tela é a da §29, e ela é deliberada:** primeiro o parágrafo
-/// dos similares (o substituto aprovado da previsão, §5), depois os similares,
-/// depois cada atributo, e só então o número do conjunto (§22, K5).
-///
-/// O conjunto vem por último de propósito. Um número único no topo é lido como
-/// veredito; o mesmo número depois das partes é lido como resumo delas. E ele
-/// se cala quando os atributos discordam entre si — ver `Cluster.haDirecao`.
+/// A foto abre a tela; resultado, similares e atributos mostram a prova antes
+/// da leitura combinada, que se cala quando os atributos discordam.
 struct RelatorioDaPeca: View {
     let termos: [Termo]
     /// Preço que o usuário pretende praticar, se informou. §29.5 chama isso de
@@ -114,13 +108,13 @@ struct RelatorioDaPeca: View {
             } else {
                 Label("Saved", systemImage: "archivebox.fill")
                     .labelStyle(.titleAndIcon)
-                    .font(Tokens.Fonte.miudo)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
             }
         case false:
             // O teto é dito, e não engole a peça em silêncio.
             Text("Closet full (\(PecasSalvas.teto))")
-                .font(Tokens.Fonte.miudo)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
         case nil:
             Button {
@@ -156,30 +150,26 @@ struct RelatorioDaPeca: View {
                               descricao: descricaoParaLeitura,
                               precoInicial: precoAlvo)
             } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "text.magnifyingglass")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(Edicao.caneta)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Read this piece in the panel")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        Text("The reading finds pieces like it, checks each one and shows the proof.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                Folha {
+                    HStack(spacing: 12) {
+                        Image(systemName: "text.magnifyingglass")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Edicao.bordo)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Read this piece in the panel")
+                                .font(Edicao.Tipo.linha)
+                                .foregroundStyle(.primary)
+                            Text("The reading finds pieces like it, checks each one and shows the proof.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 8)
+                        SetaDaLinha()
                     }
-                    Spacer(minLength: 8)
-                    SetaDaLinha()
+                    .frame(minHeight: 44)
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background {
-                    RoundedRectangle(cornerRadius: Edicao.raio, style: .continuous)
-                        .fill(Edicao.cartao)
-                }
-                .overlay { CosturaDaFolha() }
             }
             .buttonStyle(.plain)
         }
@@ -187,53 +177,31 @@ struct RelatorioDaPeca: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Tokens.Espaco.g) {
+            VStack(alignment: .leading, spacing: Edicao.entreFolhas) {
                 if carregando {
                     Carregando()
                 } else if let erro {
                     FalhaDeRede(mensagem: erro) { Task { await carregar() } }
                 } else {
-                    // A ordem mudou em 27/08, e o motivo está medido.
-                    //
-                    // A foto NÃO aparecia neste caminho: `fotoDaPeca` só
-                    // desenhava com `pecaSalva != nil`, ou seja, só vindo do
-                    // Closet. Quem acabava de fotografar a peça chegava ao
-                    // painel dela sem vê-la. E o nome que a tela anterior pede
-                    // não aparecia em lugar nenhum.
-                    //
-                    // Os similares subiram porque a reclamação nº 1 da revisão
-                    // de 20/08 continua na PENDENCIAS: "ter os similares logo
-                    // em seguida e com foto! ... acho que é a parte mais legal
-                    // da nossa ferramenta". Eles eram o quinto bloco.
-                    //
-                    // A §29 continua respeitada: ela manda o parágrafo do
-                    // painel vir antes do número do conjunto, e vem -- Result
-                    // antes de By attribute, e o Combined reading por último.
-                    // O que mudou de lugar é a foto e a vitrine, não a ordem
-                    // da leitura.
+                    // A foto e os similares ficam no alto; a leitura combinada
+                    // vem depois das partes, conforme §29.
                     heroiDaPeca
                     cartaoDaLeitura
-                    vitrineDeSimilares
                     resumo
+                    vitrineDeSimilares
                     porAtributo
-                    if pecaSalva != nil { editorialDosAtributos }
                     blocoDoCluster
                     if let selecao, !todosOsTermos.isEmpty {
                         chipsDeCorrecao(selecao)
                     }
                 }
             }
-            .padding(Tokens.Espaco.m)
+            .padding(.horizontal, Edicao.margem)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
         }
-        // O painel de uma peça pertence ao território claro, mas não ao branco
-        // padrão do sistema. Era a única tela desse percurso que descartava o
-        // céu da marca ao ser empurrada pelo Closet e, por isso, parecia outro
-        // app. O fundo e a barra são declarados juntos para não haver um frame
-        // branco entre a foto e a área segura durante a navegação.
-        .background(Tokens.Cor.ceu.ignoresSafeArea())
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(Tokens.Cor.ceuFixo, for: .navigationBar)
-        .toolbarColorScheme(.light, for: .navigationBar)
+        .papelDaEdicao()
+        .tint(Edicao.bordo)
         .task { await carregar() }
         .task(id: pecaSalva?.miniaturaArquivo) { await carregarMiniaturaDaPeca() }
         .onAppear { rejeitouSimilares = pecaSalva?.similaresRejeitados ?? false }
@@ -266,58 +234,29 @@ struct RelatorioDaPeca: View {
     /// lidos em vez de espremidos numa miniatura de 96 pt.
     @ViewBuilder
     private var vitrineDeSimilares: some View {
-        if carregandoSimilares {
-            secaoCarregando(frase("Similar pieces"))
-        } else if let erroDosSimilares {
-            falhaLocal(titulo: frase("Similar pieces"), mensagem: erroDosSimilares)
-        } else if let s = similares, let r = s.resumo,
+        if let s = similares, let r = s.resumo,
                   !s.pecas.filter(Similares.podeExibir).isEmpty {
             let visiveis = s.pecas.filter(Similares.podeExibir)
-            VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+            Folha {
                 NavigationLink {
                     TodosOsSimilares(resumo: r, pecas: visiveis,
                                      atributos: termos, precoAlvo: precoAlvo,
                                      nomeDaPeca: nomeExibido)
                 } label: {
-                    HStack {
-                        Text("Show similar pieces").font(Tokens.Fonte.secao)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Tokens.Cor.tintaFraca)
-                    }
-                    .contentShape(Rectangle())
+                    CabecalhoDaFolha(titulo: Text("Show similar pieces"), abre: true)
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Show all \(visiveis.count) similar pieces")
 
-                // O critério continua dito ANTES da vitrine: quantos casaram e
-                // com quantos atributos. Sem ele a fileira parece um resultado
-                // exato, e quase nunca é.
-                LinhaInsumo(texto: Similares.criterio(r))
-
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .top, spacing: Tokens.Espaco.m) {
+                    HStack(alignment: .top, spacing: 12) {
                         ForEach(visiveis.prefix(8)) { peca in
                             MiniaturaDeSimilar(peca: peca, pedidos: termos)
                         }
                     }
                     .padding(.vertical, 2)
                 }
-
-                if let leitura = Similares.leituraDoPreco(r, alvo: precoAlvo) {
-                    Cartao {
-                        Text("Where your price falls")
-                            .font(Tokens.Fonte.miudo.weight(.semibold))
-                        Text(leitura).font(Tokens.Fonte.apoio)
-                    }
-                }
-            }
-        } else if let s = similares, let r = s.resumo {
-            // Zero similares tem texto próprio e não some da tela.
-            Cartao {
-                Text("Similar pieces").font(Tokens.Fonte.secao)
-                LinhaInsumo(texto: Similares.criterio(r))
             }
         }
     }
@@ -331,29 +270,17 @@ struct RelatorioDaPeca: View {
     /// peça sem vê-la -- e o nome digitado uma tela antes não aparecia em
     /// canto nenhum do app até a peça ser guardada.
     private var heroiDaPeca: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.m) {
-            // A moldura é NEUTRA, não o céu da marca. Este é o maior retrato
-            // de peça do app (300 pt) e era o pior caso da indução cromática
-            // apontada na revisão de 05/09; ver `SubstratoDaPeca`.
-            SubstratoDaPeca {
-                if let imagem = imagemDoHeroi {
-                    Image(uiImage: imagem)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    // Sem foto o quadro não vira buraco: ele diz o que falta.
-                    PecaSemFoto(legenda: "No photo for this item")
-                }
-            }
-            .frame(height: 300)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(imagemDoHeroi == nil
-                                ? "This item has no photo" : "Photo of \(nomeExibido)")
+        VStack(alignment: .leading, spacing: 12) {
+            ImagemDaPeca(imagem: imagemDoHeroi, simbolo: "photo")
+                .frame(height: 300)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(imagemDoHeroi == nil
+                                    ? "This item has no photo" : "Photo of \(nomeExibido)")
 
             Text(nomeExibido)
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Tokens.Cor.azulMarca)
+                .font(Edicao.Tipo.destaque)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
 
             // Os atributos confirmados como subtítulo, e não mais como cartão
             // de lista. Eles são a legenda da peça, não uma seção -- e a
@@ -365,8 +292,8 @@ struct RelatorioDaPeca: View {
             if !atributosDaLegenda.isEmpty {
                 Text(atributosDaLegenda.map(Traducao.rotuloExibido)
                         .joined(separator: " · "))
-                    .font(Tokens.Fonte.apoio)
-                    .foregroundStyle(Tokens.Cor.tintaFraca)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -414,58 +341,26 @@ struct RelatorioDaPeca: View {
         return termos.isEmpty ? "Item" : Traducao.rotuloExibido(termos[0])
     }
 
-    /// Atalho pedido para o Closet: cada atributo abre a mesma série editorial
-    /// auditável usada em Trends, sem criar uma leitura especial por peça.
-    private var editorialDosAtributos: some View {
-        Cartao {
-            Text("How the press is covering these attributes")
-                .font(Tokens.Fonte.secao)
-            Text("Open an attribute to see Brazilian and international coverage, weekly counts and contributing publications.")
-                .font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-            ForEach(termos) { termo in
-                NavigationLink {
-                    RelatorioDoTermo(termo: termo)
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(Traducao.rotuloExibido(termo))
-                                .foregroundStyle(.primary)
-                            Text(Traducao.rotuloDaDimensao(termo.dimensao))
-                                .font(Tokens.Fonte.miudo)
-                                .foregroundStyle(Tokens.Cor.tintaFraca)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Tokens.Cor.tintaFraca)
-                    }
-                    .frame(minHeight: 44)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
     /// A edição visual mora no detalhe, onde há contexto para entender qual
     /// peça será alterada. A foto em si subiu para o herói; aqui ficou só a
     /// ação, que é do Closet e não do fluxo de importação — no fluxo a foto
     /// acabou de ser escolhida e trocar significa voltar, não editar.
     private var trocarFoto: some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
+        VStack(alignment: .leading, spacing: 8) {
             if let erroDaFoto {
-                Text(erroDaFoto).font(Tokens.Fonte.miudo).foregroundStyle(.secondary)
+                Text(erroDaFoto).font(.footnote).foregroundStyle(.secondary)
             }
             PhotosPicker(selection: $fotoEscolhida, matching: .images) {
-                HStack(spacing: Tokens.Espaco.xs) {
+                HStack(spacing: 8) {
                     if processandoFoto { ProgressView().controlSize(.small) }
                     Label(miniaturaDaPeca == nil ? "Add photo" : "Replace photo",
                           systemImage: "photo.badge.arrow.down")
                 }
-                .font(Tokens.Fonte.miudo.weight(.medium))
+                .font(.footnote.weight(.medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Tokens.Cor.acao)
+            .foregroundStyle(Edicao.bordo)
+            .frame(minHeight: 44)
             .disabled(processandoFoto)
         }
     }
@@ -504,60 +399,10 @@ struct RelatorioDaPeca: View {
         }
     }
 
-    /// §29.1 — template determinístico. Só conta o que foi medido.
-    ///
-    /// O parágrafo do painel vem PRIMEIRO, e o da taxonomia depois: é o que a
-    /// §29 pede, e faz sentido — "encontrei 230 peças parecidas, 22% a preço
-    /// cheio" responde a uma pergunta que o comprador tem; "3 atributos, 2 com
-    /// leitura" responde a uma pergunta que ele não fez.
-    /// Os atributos confirmados, corrigíveis sem sair do painel.
-    ///
-    /// Mudar um chip recalcula o painel na hora e **não chama a análise visual
-    /// de novo**: reler a foto é outra ação, e custa. Corrigir o que ela leu é
-    /// grátis, e é o que a pessoa espera ao consertar um erro.
+    /// Corrigir a taxonomia refaz o painel, sem reler a foto. A lista acima
+    /// já mostra os atributos confirmados; aqui fica só a edição.
     private func chipsDeCorrecao(_ selecao: Binding<Set<String>>) -> some View {
-        Cartao {
-            Text("Confirmed attributes").font(Tokens.Fonte.secao)
-
-            // A lista do que ESTÁ marcado, uma linha por atributo. A primeira
-            // versão desta caixa mostrava a taxonomia inteira aqui, com os não
-            // marcados junto -- era a tela de atributos de novo, dentro da tela
-            // de resultado. Aqui a pergunta já é outra: "o que foi confirmado?".
-            VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                // Todo item começa por marcador, cor inclusive. A amostra da
-                // cor trocava o marcador por ela mesma, e a lista ficava com
-                // duas margens: os atributos alinhavam por "•" e as cores por
-                // uma bolinha de outro tamanho. Agora a amostra vem DEPOIS do
-                // nome, como ilustração do que já foi dito.
-                ForEach(confirmados(selecao.wrappedValue), id: \.id) { termo in
-                    HStack(alignment: .firstTextBaseline, spacing: Tokens.Espaco.s) {
-                        Text("•").foregroundStyle(Tokens.Cor.tintaFraca)
-                        Text(Traducao.rotuloExibido(termo))
-                            .fixedSize(horizontal: false, vertical: true)
-                        if let rgb = CorDaPeca.rgbRepresentativo(de: termo.id) {
-                            Circle()
-                                .fill(Color(red: rgb.0, green: rgb.1, blue: rgb.2))
-                                .overlay(Circle().strokeBorder(
-                                    Tokens.Cor.borda, lineWidth: 0.5))
-                                .frame(width: 10, height: 10)
-                                // Círculo não tem linha de base. Sem isto ele
-                                // encosta a borda inferior na base do texto e
-                                // parece afundado.
-                                .alignmentGuide(.firstTextBaseline) { d in
-                                    d[.bottom] - 1
-                                }
-                        }
-                    }
-                    // Sem isto o VoiceOver lê "marcador" antes de cada
-                    // atributo, e lê a amostra de cor como imagem sem rótulo.
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Traducao.rotuloExibido(termo))
-                }
-            }
-            .font(Tokens.Fonte.corpo)
-
-            // Corrigir continua a um toque, mas recolhido: quem chegou aqui
-            // veio ler o resultado, não refazer o formulário.
+        Folha {
             DisclosureGroup {
                 FluxoDeChips(
                     termos: todosOsTermos.filter { termo in
@@ -570,62 +415,51 @@ struct RelatorioDaPeca: View {
                     },
                     todos: todosOsTermos,
                     marcados: selecao)
-                .padding(.top, Tokens.Espaco.s)
+                .padding(.top, 12)
             } label: {
-                Text("Change something")
-                    .font(Tokens.Fonte.miudo.weight(.medium))
+                CabecalhoDaFolha(titulo: Text("Change something"),
+                                 simbolo: "slider.horizontal.3")
             }
-            .tint(Tokens.Cor.tintaFraca)
+            .tint(Edicao.bordo)
         }
     }
 
-    /// Os termos marcados, na ordem da taxonomia — que desde o P15 é a ordem
-    /// por frequência real no painel, e não a alfabética do id interno.
-    private func confirmados(_ marcados: Set<String>) -> [Termo] {
-        todosOsTermos.filter { marcados.contains($0.id) }
-    }
-
+    @ViewBuilder
     private var resumo: some View {
-        Cartao {
-            // A revisão de UX apontou que esta tela não deixa claro qual é o
-            // resultado -- ela abre com um parágrafo e a pessoa tem de deduzir.
-            // A ordem NÃO muda (ver o cabeçalho deste arquivo: o número do
-            // conjunto vem por último de propósito, senão vira veredito). O que
-            // muda é dizer, com todas as letras, que isto aqui é o resultado.
-            Text("Result").font(Tokens.Fonte.secao)
-            if let r = similares?.resumo {
-                // As mesmas frases da §29, uma por linha. Nada foi reescrito:
-                // o parágrafo sempre foi uma lista de frases, juntada no fim.
-                let frases = Similares.frasesDoResumo(
-                    r, atributos: termos, descricao: descricaoAmigavel)
-                VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                    ForEach(frases, id: \.self) { f in
-                        HStack(alignment: .firstTextBaseline,
-                               spacing: Tokens.Espaco.s) {
-                            Text("•").foregroundStyle(Tokens.Cor.tintaFraca)
-                            Text(f).fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
+        if carregandoSimilares {
+            secaoCarregando(frase("Result"))
+        } else if let erroDosSimilares {
+            falhaLocal(titulo: frase("Result"), mensagem: erroDosSimilares)
+        } else if let r = similares?.resumo {
+            Folha {
+                CabecalhoDaFolha(titulo: Text("Result"))
+                ForEach(Similares.frasesDoResumo(
+                    r, atributos: termos, descricao: descricaoAmigavel), id: \.self) { fraseDoPainel in
+                    Text(verbatim: fraseDoPainel)
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .font(Tokens.Fonte.corpo)
-                // Para o VoiceOver a lista vira uma frase só: marcador lido a
-                // cada linha viraria ruído.
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Similares.paragrafo(
-                    r, atributos: termos, descricao: descricaoAmigavel))
-                Divider()
+                if r.nSimilares > 0 {
+                    CosturaDaEdicao()
+                    Text(Similares.criterio(r))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                if let posicao = Similares.leituraDoPreco(r, alvo: precoAlvo) {
+                    CosturaDaEdicao()
+                    Text("Where your price falls")
+                        .font(Edicao.Tipo.linha)
+                    Text(verbatim: posicao)
+                        .font(.subheadline)
+                }
             }
-            Text(leituraDoConjunto).font(Tokens.Fonte.apoio)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
         }
     }
 
-    /// §29.4 — o bloco de insumos de varejo: similares com preço, remarcação e
-    /// estado da grade, sempre.
-        private func secaoCarregando(_ titulo: String) -> some View {
-        Cartao {
+    private func secaoCarregando(_ titulo: String) -> some View {
+        Folha {
             HStack {
-                Text(titulo).font(Tokens.Fonte.secao)
+                Text(titulo).font(Edicao.Tipo.titulo)
                 Spacer()
                 ProgressView()
             }
@@ -633,121 +467,51 @@ struct RelatorioDaPeca: View {
     }
 
     private func falhaLocal(titulo: String, mensagem: String) -> some View {
-        Cartao {
-            Text(titulo).font(Tokens.Fonte.secao)
-            Text(mensagem).font(Tokens.Fonte.miudo)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
+        Folha {
+            CabecalhoDaFolha(titulo: Text(verbatim: titulo))
+            Text(mensagem).font(.footnote)
+                .foregroundStyle(.secondary)
             Button("Try again") { Task { await carregar() } }
                 .buttonStyle(.bordered)
         }
     }
 
-    /// Renomeada de `frase` em 05/09: o nome sombreava a função global
-    /// `frase(_:)` dentro desta View inteira.
-    private var leituraDoConjunto: String {
-        let comLeitura = termos.filter {
-            let indice = indices[$0.id]
-            return indice?.indice != nil
-                && Elegibilidade.indice(indice, cobertura: coberturas[$0.id])
-        }
-        let total = String(termos.count)
-        if comLeitura.isEmpty {
-            return termos.count == 1
-                ? frase("You selected 1 attribute, but it has no available reading in this panel cut.")
-                : frase("You selected \(total) attributes, but none has an available reading in this panel cut.")
-        }
-        let acima = comLeitura.filter { (indices[$0.id]?.indice ?? 0) >= 1 }
-        let abaixo = comLeitura.filter { (indices[$0.id]?.indice ?? 0) <= -1 }
-        let lidos = String(comLeitura.count)
-        var partes = [termos.count == 1
-            ? frase("This item has 1 attribute, with readings for \(lidos).")
-            : frase("This item has \(total) attributes, with readings for \(lidos).")]
-        if !acima.isEmpty {
-            partes.append(frase("Above the usual range: \(acima.map(Traducao.rotuloExibido).joined(separator: ", "))."))
-        }
-        if !abaixo.isEmpty {
-            partes.append(frase("Below the usual range: \(abaixo.map(Traducao.rotuloExibido).joined(separator: ", "))."))
-        }
-        if acima.isEmpty && abaixo.isEmpty {
-            partes.append(frase("All are within their usual ranges."))
-        }
-        return partes.joined(separator: " ")
-    }
-
-    /// Um bloco por atributo, cada um com o próprio portão de cobertura.
+    /// Uma lista só para leitura e imprensa: cada atributo é uma porta para
+    /// o relatório completo, com a posição publicada nesta folha.
     @ViewBuilder
     private var porAtributo: some View {
-        let publicaveis = termos.filter {
-            let indice = indices[$0.id]
-            return indice?.indice != nil
-                && Elegibilidade.indice(indice, cobertura: coberturas[$0.id])
-        }
-        if !publicaveis.isEmpty {
-          VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-            Text("BY ATTRIBUTE")
-                .font(Tokens.Fonte.grupo)
-                .tracking(0.6)
-                .foregroundStyle(Tokens.Cor.tintaFraca)
-                .padding(.leading, Tokens.Espaco.xs)
-            ForEach(publicaveis) { termo in
-                Cartao {
-                    let indice = indices[termo.id]
-                    HStack(alignment: .firstTextBaseline) {
-                        VStack(alignment: .leading, spacing: Tokens.Espaco.xs) {
-                            Text(Traducao.rotuloExibido(termo))
-                                .font(.system(.title3, design: .rounded).weight(.semibold))
-                            Text(Traducao.rotuloDaDimensao(termo.dimensao))
-                                .font(Tokens.Fonte.miudo)
-                                .foregroundStyle(Tokens.Cor.tintaFraca)
-                        }
-                        Spacer()
-                        // O número sobe para o mesmo peso do rótulo, e fica na
-                        // COR DA TINTA.
-                        //
-                        // No desenho da Bianca ele estava em verde, e verde
-                        // quer dizer "bom". Isto aqui é desvio-padrão: acima
-                        // da faixa usual não é bom nem ruim, é posição. Pintar
-                        // de verde transformaria medição em veredito, que é
-                        // exatamente o que as regras 2 e 6 existem para
-                        // impedir. A direção continua dita -- por escrito, na
-                        // pílula, que a §32 exige que não dependa de cor.
-                        if let valor = indice?.indice {
-                            // Sinal só quando ele significa alguma coisa. Com
-                            // `sinal: true` sempre, um índice nulo saía como
-                            // "+0.0" -- um mais na frente de zero, que sugere
-                            // direção onde não há nenhuma.
-                            Text(Leitura.numero(valor, casas: 1,
-                                                sinal: abs(valor) >= 0.05))
-                                .font(.system(size: 34, weight: .semibold,
-                                              design: .rounded))
-                                .foregroundStyle(Tokens.Cor.tinta)
-                                .monospacedDigit()
-                                .accessibilityLabel(
-                                    "\(Leitura.numero(valor, casas: 1, sinal: abs(valor) >= 0.05)) on the statistical scale")
+        if !termos.isEmpty {
+            Folha(espaco: 0) {
+                CabecalhoDaFolha(
+                    titulo: Text("Attributes"),
+                    nota: frase("Tap an attribute for its reading and press coverage."))
+                    .padding(.bottom, 8)
+                ForEach(Array(termos.enumerated()), id: \.element.id) { indiceDaLinha, termo in
+                    if indiceDaLinha > 0 { CosturaDaEdicao() }
+                    NavigationLink {
+                        RelatorioDoTermo(termo: termo)
+                    } label: {
+                        let indice = indices[termo.id]
+                        let publicavel = Elegibilidade.indice(
+                            indice, cobertura: coberturas[termo.id])
+                        VStack(alignment: .leading, spacing: 0) {
+                            LinhaDeAtributo(
+                                termoId: termo.id,
+                                rotulo: Traducao.rotuloExibido(termo),
+                                dimensao: Traducao.rotuloDaDimensao(termo.dimensao),
+                                leitura: publicavel ? indice?.indice : nil)
+                            if publicavel, let semana = indice?.semana {
+                                Text(frase("Week of \(Formato.data(semana))."))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 44)
+                                    .padding(.bottom, 8)
+                            }
                         }
                     }
-                    SeloEstado(estado: indice?.estado, leitura: indice?.indice)
-                    conteudo(de: termo)
+                    .buttonStyle(.plain)
                 }
             }
-          }
-        }
-    }
-
-    @ViewBuilder
-    private func conteudo(de termo: Termo) -> some View {
-        let i = indices[termo.id]
-        if let valor = i?.indice {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                LinhaInsumo(texto: Leitura.explicacao(valor))
-                // "on the statistical scale" dizia que existe uma escala sem
-                // dizer qual. O "?" diz.
-                BotaoDeAjuda(titulo: Explicacao.tituloDaEscala,
-                             texto: Explicacao.textoDaEscala,
-                             rotulo: frase("What this number is"))
-            }
-            LinhaInsumo(texto: Perna.baseadoEm(i?.pernasAtivas)
-                        + " · week of \(Formato.data(i?.semana ?? ""))")
         }
     }
 
@@ -764,11 +528,15 @@ struct RelatorioDaPeca: View {
         } else if let erroDoCluster {
             falhaLocal(titulo: frase("Combined reading"), mensagem: erroDoCluster)
         } else if let c = cluster, c.nAtributos > 0 {
-            Cartao {
-                Text("Combined reading").font(Tokens.Fonte.secao)
-                Text(Cluster.manchete(c)).font(Tokens.Fonte.corpo)
-                if let e = Cluster.explicacao(c) { LinhaInsumo(texto: e) }
-                if let k = Cluster.concentracao(c) { LinhaInsumo(texto: k) }
+            Folha {
+                CabecalhoDaFolha(titulo: Text("Combined reading"))
+                Text(Cluster.manchete(c)).font(.body)
+                if let e = Cluster.explicacao(c) {
+                    Text(verbatim: e).font(.footnote).foregroundStyle(.secondary)
+                }
+                if let k = Cluster.concentracao(c) {
+                    Text(verbatim: k).font(.footnote).foregroundStyle(.secondary)
+                }
 
                 // A revisão de UX pediu para separar visualmente esta caixa:
                 // o RESULTADO e a TRILHA DE AUDITORIA estavam no mesmo cartão,
@@ -781,16 +549,18 @@ struct RelatorioDaPeca: View {
                 // auditoria esteja sempre aberta ocupando a tela de quem já
                 // confia. Fica a um toque, e o rótulo diz o que tem dentro.
                 DisclosureGroup {
-                    VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
-                        LinhaInsumo(texto: Cluster.criterioDaRaridade(c))
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(verbatim: Cluster.criterioDaRaridade(c))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                         blocoDeProcedencia(c)
                     }
-                    .padding(.top, Tokens.Espaco.s)
+                    .padding(.top, 12)
                 } label: {
                     Text("Where this number comes from")
-                        .font(Tokens.Fonte.miudo.weight(.semibold))
+                        .font(.footnote.weight(.semibold))
                 }
-                .tint(Tokens.Cor.tintaFraca)
+                .tint(Edicao.bordo)
             }
         }
     }
@@ -799,15 +569,15 @@ struct RelatorioDaPeca: View {
     /// com o peso, e cada um que ficou de fora, com o motivo (regra 6).
     @ViewBuilder
     private func blocoDeProcedencia(_ c: Cluster.Resposta) -> some View {
-        VStack(alignment: .leading, spacing: Tokens.Espaco.s) {
+        VStack(alignment: .leading, spacing: 12) {
             ForEach(Cluster.dentro(c)) { a in
                     HStack(alignment: .firstTextBaseline) {
-                        Text(rotuloDoAtributo(a)).font(Tokens.Fonte.miudo)
+                        Text(rotuloDoAtributo(a)).font(.footnote)
                         Spacer()
                         if let i = a.indice {
                             Text(Leitura.numero(i, casas: 2, sinal: true))
-                                .font(Tokens.Fonte.miudo.monospacedDigit())
-                                .foregroundStyle(Tokens.Cor.tintaFraca)
+                                .font(.footnote.monospacedDigit())
+                                .foregroundStyle(.secondary)
                         }
                     }
                     // A barra do peso, colada no texto que a nomeia.

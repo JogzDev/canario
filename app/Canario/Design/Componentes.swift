@@ -376,9 +376,9 @@ struct BarraDePeso: View {
         GeometryReader { area in
             let cheia = max(0, min(1, fracao))
             ZStack(alignment: .leading) {
-                Capsule().fill(Tokens.Cor.superficie)
+                Capsule().fill(Color(.tertiarySystemFill))
                 Capsule()
-                    .fill(Tokens.Cor.azulMarca.opacity(0.55))
+                    .fill(Edicao.caneta.opacity(0.7))
                     .frame(width: max(2, area.size.width * cheia))
             }
         }
