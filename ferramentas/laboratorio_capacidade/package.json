@@ -10,7 +10,7 @@
     "test": "node rodar.mjs"
   },
   "dependencies": {
-    "pg": "8.23.0"
+    "pg": "8.23.1"
   },
   "optionalDependencies": {
     "@embedded-postgres/darwin-arm64": "17.10.0-beta.17",
